@@ -3,7 +3,9 @@
 import useSWR from "swr";
 import { useState } from "react";
 import Link from "next/link";
+import { Download } from "lucide-react";
 import { cn, formatCompact, formatPercent } from "@/lib/utils";
+import { downloadCSV } from "@/lib/csv";
 
 type Row = {
   ticker: string;
@@ -42,6 +44,29 @@ export default function StocksScreen() {
             {data ? `${data.count} resultados` : "Carregando..."}
           </p>
         </div>
+        {data && data.rows.length > 0 && (
+          <button
+            onClick={() =>
+              downloadCSV(
+                `stocks-${new Date().toISOString().slice(0, 10)}`,
+                data.rows,
+                [
+                  { key: "ticker", label: "Ticker" },
+                  { key: "industry", label: "Setor" },
+                  { key: "price", label: "Preço" },
+                  { key: "changePercent", label: "Variação %" },
+                  { key: "marketCap", label: "Market Cap (M USD)" },
+                  { key: "peRatio", label: "P/E" },
+                  { key: "dividendYield", label: "Yield %" },
+                ],
+              )
+            }
+            className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-foreground px-3 py-1.5 rounded-md border border-border hover:border-foreground/30 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Exportar CSV
+          </button>
+        )}
       </div>
 
       <div className="rounded-lg border border-border bg-surface p-5 mb-6">

@@ -10,6 +10,7 @@ import {
   PieChart,
   Bitcoin,
   Star,
+  BarChartHorizontal,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { href: "/screen/etfs", label: "ETFs", icon: PieChart },
   { href: "/screen/crypto", label: "Crypto", icon: Bitcoin },
   { href: "/search", label: "Buscar", icon: Search },
+  { href: "/compare", label: "Comparar", icon: BarChartHorizontal },
   { href: "/watchlist", label: "Watchlist", icon: Star },
 ];
 
