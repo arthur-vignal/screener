@@ -40,7 +40,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
   const enriched = useMemo(() => {
     const points = data?.points ?? [];
     if (points.length === 0) return [];
-    const prices = points.map(p => p.close);
+    const prices = points.map((p) => p.close);
     const sma20 = sma(prices, 20);
     const sma50 = sma(prices, 50);
     return points.map((p, i) => ({
@@ -53,6 +53,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
   const rsiData = useMemo(() => {
     const points = data?.points ?? [];
     if (points.length === 0) return [];
+    const prices = points.map((p) => p.close);
     const rsiValues = rsi(prices, 14);
     return points.map((p, i) => ({
       date: p.date,
@@ -61,7 +62,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
   }, [data]);
 
   const points = enriched;
-  const prices = points.map((p) => p.close);
+  const prices = useMemo(() => points.map((p) => p.close), [points]);
   const min = prices.length ? Math.min(...prices) : 0;
   const max = prices.length ? Math.max(...prices) : 0;
   const padding = (max - min) * 0.05 || 1;
@@ -205,7 +206,6 @@ export function PriceChart({ ticker }: { ticker: string }) {
         </div>
       </div>
 
-      {/* RSI chart */}
       {rsiData.length > 0 && (
         <div className="rounded-lg border border-border bg-surface overflow-hidden">
           <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">

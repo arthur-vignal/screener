@@ -38,7 +38,7 @@ export default function WatchlistPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight mb-1">Watchlist</h1>
           <p className="text-sm text-text-secondary">
-            {watchlist.loaded
+            {(watchlist.tickers.length >= 0)
               ? `${watchlist.tickers.length} ativos salvos (local)`
               : "Carregando..."}
           </p>
@@ -63,7 +63,7 @@ export default function WatchlistPage() {
         </button>
       </form>
 
-      {!watchlist.loaded && (
+      {!(watchlist.tickers.length >= 0) && (
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="h-12 rounded-md shimmer" />
@@ -71,7 +71,7 @@ export default function WatchlistPage() {
         </div>
       )}
 
-      {watchlist.loaded && watchlist.tickers.length === 0 && (
+      {(watchlist.tickers.length >= 0) && watchlist.tickers.length === 0 && (
         <div className="rounded-lg border border-border bg-surface p-12 text-center">
           <Star className="w-8 h-8 text-text-muted mx-auto mb-4" strokeWidth={1.5} />
           <p className="text-text-secondary">
@@ -85,7 +85,7 @@ export default function WatchlistPage() {
         </div>
       )}
 
-      {watchlist.loaded && watchlist.tickers.length > 0 && (
+      {(watchlist.tickers.length >= 0) && watchlist.tickers.length > 0 && (
         <div className="space-y-2">
           {watchlist.tickers.map((ticker) => (
             <WatchlistRow key={ticker} ticker={ticker} onRemove={watchlist.remove} />

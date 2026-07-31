@@ -14,12 +14,6 @@ const SP500_URL =
 const SP400_URL =
   "https://en.wikipedia.org/wiki/List_of_S%26P_400_companies";
 
-type WikiResponse = {
-  query?: {
-    categorymembers?: Array<{ title: string }>;
-  };
-};
-
 export type Constituent = {
   ticker: string;
   name: string;

@@ -40,6 +40,9 @@ export function AssetDetail({ ticker }: { ticker: string }) {
     fetcher,
   );
 
+  // Hooks devem vir antes de qualquer return condicional
+  const watchlist = useWatchlist();
+
   if (error) {
     return (
       <div className="px-8 py-12 text-center">
@@ -61,10 +64,8 @@ export function AssetDetail({ ticker }: { ticker: string }) {
     );
   }
 
+  // Destruturação + normalização do quote (Yahoo ou Finnhub shape)
   const { quote, profile, metrics } = data;
-  const watchlist = useWatchlist();
-
-  // Normaliza quote: aceita Yahoo (price) ou Finnhub (c)
   const price = quote?.price ?? quote?.c ?? 0;
   const change = quote?.change ?? quote?.d ?? 0;
   const changePercent = quote?.changePercent ?? quote?.dp ?? 0;
