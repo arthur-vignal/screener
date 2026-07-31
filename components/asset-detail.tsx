@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Star } from "lucide-react";
 import { useWatchlist } from "@/lib/use-watchlist";
 import { PriceChart } from "@/components/price-chart";
+import { AssetScores } from "@/components/asset-scores";
 import { cn, formatCompact, formatNumber, formatPercent } from "@/lib/utils";
 
 type Quote = {
@@ -117,6 +118,10 @@ export function AssetDetail({ ticker }: { ticker: string }) {
       </div>
 
       <PriceChart ticker={data.ticker} />
+
+      <div className="mt-6">
+        <AssetScores ticker={data.ticker} currentPrice={price} />
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
         <Stat label="Market cap" value={`$${formatCompact(((profile?.marketCapitalization ?? 0) * 1e6))}`} />
