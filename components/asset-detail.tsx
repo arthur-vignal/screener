@@ -1,0 +1,114 @@
+"use client";
+
+import useSWR from "swr";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { PriceChart } from "@/components/price-chart";
+import { cn, formatCompact, formatNumber, formatPercent } from "@/lib/utils";
+
+type AssetData = {
+  ticker: string;
+  quote: { c: number; d: number; dp: number; h: number; l: number; o: number; pc: number };
+  profile: { name: string; finnhubIndustry: string; exchange: string; currency: string; marketCapitalization: number };
+  metrics: Record<string, number | null>;
+};
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+export function AssetDetail({ ticker }: { ticker: string }) {
+  const { data, error, isLoading } = useSWR<AssetData>(
+    `/api/asset/${ticker}`,
+    fetcher,
+  );
+
+  if (error) {
+    return (
+      <div className="px-8 py-12 text-center">
+        <p className="text-negative">{String(error)}</p>
+        <Link href="/screen/stocks" className="text-sm text-accent hover:underline mt-2 inline-block">
+          ← Voltar para lista
+        </Link>
+      </div>
+    );
+  }
+
+  if (isLoading || !data) {
+    return (
+      <div className="px-8 py-8 space-y-4">
+        <div className="h-8 w-48 shimmer rounded" />
+        <div className="h-72 shimmer rounded-lg" />
+        <div className="h-32 shimmer rounded-lg" />
+      </div>
+    );
+  }
+
+  const { quote, profile, metrics } = data;
+
+  return (
+    <div className="px-8 py-8 max-w-6xl">
+      <Link
+        href="/screen/stocks"
+        className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-foreground mb-6 transition-colors"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        Voltar
+      </Link>
+
+      <div className="flex items-baseline gap-3 mb-1">
+        <h1 className="text-3xl font-semibold tracking-tight font-mono">
+          {data.ticker}
+        </h1>
+        <span className="text-text-secondary">{profile.name}</span>
+      </div>
+      <div className="flex items-baseline gap-4 mb-8">
+        <span className="text-5xl font-semibold tabular-nums tracking-tight">
+          ${quote.c.toFixed(2)}
+        </span>
+        <span
+          className={cn(
+            "text-base font-mono tabular-nums",
+            quote.dp >= 0 ? "text-positive" : "text-negative",
+          )}
+        >
+          {quote.dp >= 0 ? "+" : ""}
+          {quote.d.toFixed(2)} ({formatPercent(quote.dp)})
+        </span>
+      </div>
+
+      <PriceChart ticker={data.ticker} />
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+        <Stat label="Market cap" value={`$${formatCompact(profile.marketCapitalization * 1e6)}`} />
+        <Stat label="Setor" value={profile.finnhubIndustry} />
+        <Stat label="Exchange" value={profile.exchange} />
+        <Stat label="Moeda" value={profile.currency} />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+        <Stat label="P/E" value={formatNumber(metrics.peRatio)} />
+        <Stat label="PEG" value={formatNumber(metrics.pegRatio)} />
+        <Stat label="P/VP" value={formatNumber(metrics.priceToBook)} />
+        <Stat label="EV/EBITDA" value={formatNumber(metrics.evEbitda)} />
+        <Stat label="ROE" value={metrics.roe ? formatPercent(metrics.roe) : "—"} />
+        <Stat label="ROA" value={metrics.roa ? formatPercent(metrics.roa) : "—"} />
+        <Stat label="Margem op." value={metrics.operatingMargin ? formatPercent(metrics.operatingMargin) : "—"} />
+        <Stat label="Margem líq." value={metrics.profitMargin ? formatPercent(metrics.profitMargin) : "—"} />
+        <Stat label="Dividend yield" value={metrics.dividendYield ? formatPercent(metrics.dividendYield) : "—"} />
+        <Stat label="Payout" value={metrics.payoutRatio ? formatPercent(metrics.payoutRatio) : "—"} />
+        <Stat label="Beta" value={formatNumber(metrics.beta)} />
+        <Stat label="52w high" value={metrics.yearHigh ? `$${metrics.yearHigh.toFixed(2)}` : "—"} />
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border bg-surface p-3">
+      <div className="text-xs uppercase tracking-wider text-text-muted mb-1">
+        {label}
+      </div>
+      <div className="text-sm font-medium font-mono tabular-nums">{value}</div>
+    </div>
+  );
+}

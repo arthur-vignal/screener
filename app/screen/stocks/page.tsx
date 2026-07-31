@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import { useState } from "react";
+import Link from "next/link";
 import { cn, formatCompact, formatPercent } from "@/lib/utils";
 
 type Row = {
@@ -115,12 +116,17 @@ export default function StocksScreen() {
                 <tr
                   key={r.ticker}
                   className={cn(
-                    "border-b border-border-subtle last:border-0 hover:bg-surface-elevated transition-colors",
+                    "border-b border-border-subtle last:border-0 hover:bg-surface-elevated transition-colors cursor-pointer",
                     i % 2 === 0 ? "bg-transparent" : "bg-surface-elevated/30",
                   )}
                 >
                   <td className="px-4 py-3">
-                    <span className="font-mono font-semibold text-foreground">{r.ticker}</span>
+                    <Link
+                      href={`/asset/${r.ticker}`}
+                      className="font-mono font-semibold text-foreground hover:text-accent transition-colors"
+                    >
+                      {r.ticker}
+                    </Link>
                   </td>
                   <td className="px-4 py-3 text-text-secondary text-xs">{r.industry}</td>
                   <td className="px-4 py-3 text-right font-mono tabular-nums">
