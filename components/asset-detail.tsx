@@ -6,14 +6,32 @@ import { ArrowLeft } from "lucide-react";
 import { PriceChart } from "@/components/price-chart";
 import { cn, formatCompact, formatNumber, formatPercent } from "@/lib/utils";
 
+type Quote = {
+  // Yahoo shape
+  price?: number;
+  change?: number;
+  changePercent?: number;
+  // Finnhub shape (fallback)
+  c?: number;
+  d?: number;
+  dp?: number;
+};
+
 type AssetData = {
   ticker: string;
-  quote: { c: number; d: number; dp: number; h: number; l: number; o: number; pc: number };
+  quote: Quote;
   profile: { name: string; finnhubIndustry: string; exchange: string; currency: string; marketCapitalization: number };
   metrics: Record<string, number | null>;
 };
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = async (url: string) => {
+  const r = await fetch(url);
+  if (!r.ok) {
+    const err = new Error(`HTTP ${r.status}`);
+    throw err;
+  }
+  return r.json();
+};
 
 export function AssetDetail({ ticker }: { ticker: string }) {
   const { data, error, isLoading } = useSWR<AssetData>(
@@ -32,7 +50,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
     );
   }
 
-  if (isLoading || !data) {
+  if (isLoading || !data || !data.profile) {
     return (
       <div className="px-8 py-8 space-y-4">
         <div className="h-8 w-48 shimmer rounded" />
@@ -43,6 +61,11 @@ export function AssetDetail({ ticker }: { ticker: string }) {
   }
 
   const { quote, profile, metrics } = data;
+
+  // Normaliza quote: aceita Yahoo (price) ou Finnhub (c)
+  const price = quote?.price ?? quote?.c ?? 0;
+  const change = quote?.change ?? quote?.d ?? 0;
+  const changePercent = quote?.changePercent ?? quote?.dp ?? 0;
 
   return (
     <div className="px-8 py-8 max-w-6xl">
@@ -58,30 +81,30 @@ export function AssetDetail({ ticker }: { ticker: string }) {
         <h1 className="text-3xl font-semibold tracking-tight font-mono">
           {data.ticker}
         </h1>
-        <span className="text-text-secondary">{profile.name}</span>
+        <span className="text-text-secondary">{profile?.name ?? ticker}</span>
       </div>
       <div className="flex items-baseline gap-4 mb-8">
         <span className="text-5xl font-semibold tabular-nums tracking-tight">
-          ${quote.c.toFixed(2)}
+          ${price.toFixed(2)}
         </span>
         <span
           className={cn(
             "text-base font-mono tabular-nums",
-            quote.dp >= 0 ? "text-positive" : "text-negative",
+            changePercent >= 0 ? "text-positive" : "text-negative",
           )}
         >
-          {quote.dp >= 0 ? "+" : ""}
-          {quote.d.toFixed(2)} ({formatPercent(quote.dp)})
+          {changePercent >= 0 ? "+" : ""}
+          {change.toFixed(2)} ({formatPercent(changePercent)})
         </span>
       </div>
 
       <PriceChart ticker={data.ticker} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
-        <Stat label="Market cap" value={`$${formatCompact(profile.marketCapitalization * 1e6)}`} />
-        <Stat label="Setor" value={profile.finnhubIndustry} />
-        <Stat label="Exchange" value={profile.exchange} />
-        <Stat label="Moeda" value={profile.currency} />
+        <Stat label="Market cap" value={`$${formatCompact(((profile?.marketCapitalization ?? 0) * 1e6))}`} />
+        <Stat label="Setor" value={(profile?.finnhubIndustry ?? '—')} />
+        <Stat label="Exchange" value={(profile?.exchange ?? '—')} />
+        <Stat label="Moeda" value={(profile?.currency ?? 'USD')} />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
