@@ -2,7 +2,8 @@
 
 import useSWR from "swr";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Star } from "lucide-react";
+import { useWatchlist } from "@/lib/use-watchlist";
 import { PriceChart } from "@/components/price-chart";
 import { cn, formatCompact, formatNumber, formatPercent } from "@/lib/utils";
 
@@ -61,6 +62,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
   }
 
   const { quote, profile, metrics } = data;
+  const watchlist = useWatchlist();
 
   // Normaliza quote: aceita Yahoo (price) ou Finnhub (c)
   const price = quote?.price ?? quote?.c ?? 0;
@@ -82,6 +84,21 @@ export function AssetDetail({ ticker }: { ticker: string }) {
           {data.ticker}
         </h1>
         <span className="text-text-secondary">{profile?.name ?? ticker}</span>
+        <button
+          onClick={() => watchlist.has(data.ticker) ? watchlist.remove(data.ticker) : watchlist.add(data.ticker)}
+          className="ml-2 p-1.5 rounded-md hover:bg-surface-elevated transition-colors"
+          aria-label={watchlist.has(data.ticker) ? "Remover da watchlist" : "Adicionar à watchlist"}
+        >
+          <Star
+            className={cn(
+              "w-5 h-5 transition-colors",
+              watchlist.has(data.ticker)
+                ? "text-yellow-500 fill-yellow-500"
+                : "text-text-muted hover:text-foreground"
+            )}
+            strokeWidth={1.5}
+          />
+        </button>
       </div>
       <div className="flex items-baseline gap-4 mb-8">
         <span className="text-5xl font-semibold tabular-nums tracking-tight">
