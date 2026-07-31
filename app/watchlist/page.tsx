@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Star, Trash2, Plus } from "lucide-react";
 import { useWatchlist } from "@/lib/use-watchlist";
@@ -109,15 +109,20 @@ function WatchlistRow({ ticker, onRemove }: { ticker: string; onRemove: (t: stri
   const [data, setData] = useState<Row | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useState(() => {
+  useEffect(() => {
+    let cancelled = false;
     fetch(`/api/screen/stocks?limit=200`)
       .then((r) => r.json())
       .then((d) => {
+        if (cancelled) return;
         const row = (d.rows as Row[]).find((r) => r.ticker === ticker);
         setData(row ?? null);
       })
-      .finally(() => setLoading(false));
-  });
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [ticker]);
 
   return (
     <div className="rounded-lg border border-border bg-surface p-4 flex items-center gap-4">
