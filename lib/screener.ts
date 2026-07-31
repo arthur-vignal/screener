@@ -10,6 +10,7 @@
  */
 
 import { getFinancials, getProfile, getQuote } from "./finnhub";
+import { getSP500Tickers } from "./sp500";
 import { cached } from "./cache";
 
 export type StockScreenerRow = {
@@ -26,42 +27,12 @@ export type StockScreenerRow = {
   beta: number | null;
 };
 
-// Top 80 US stocks by market cap + common ETFs — curated for the screener.
-// Sorted by typical market cap (approximate, July 2026).
-export const TOP_US_TICKERS = [
-  // Mega cap tech
-  "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA",
-  // Big tech
-  "AVGO", "ORCL", "CRM", "AMD", "INTC", "CSCO", "ADBE", "NFLX",
-  // Financials
-  "JPM", "BAC", "WFC", "GS", "MS", "BLK", "SCHW", "AXP", "C",
-  // Healthcare
-  "UNH", "JNJ", "LLY", "PFE", "ABBV", "MRK", "TMO", "ABT", "DHR",
-  // Consumer
-  "WMT", "PG", "KO", "PEP", "MCD", "NKE", "SBUX", "TGT", "COST", "HD",
-  // Industrial
-  "BA", "CAT", "GE", "HON", "UPS", "RTX", "LMT", "DE",
-  // Energy
-  "XOM", "CVX", "COP", "SLB", "EOG", "OXY",
-  // Automotive
-  "F", "GM", "STLA", "RIVN",
-  // Telecom
-  "T", "VZ", "TMUS", "CMCSA",
-  // Real Estate
-  "AMT", "PLD", "CCI",
-  // Utilities
-  "NEE", "DUK", "SO",
-  // Materials
-  "LIN", "APD", "ECL",
-  // Consumer staples
-  "PM", "MO", "CL", "EL",
-  // Travel / leisure
-  "MAR", "HLT", "BKNG",
-  // Crypto-adjacent
-  "COIN", "MSTR",
-  // Mid-cap popular
-  "PLTR", "SNOW", "CRWD", "NET", "PANW", "ZS",
-] as const;
+// S&P 500 constituents dynamically fetched from Wikipedia (cached 24h).
+// Falls back to hardcoded list if Wikipedia is unreachable.
+async function getTickerUniverse(): Promise<string[]> {
+  const constituents = await getSP500Tickers();
+  return constituents.map((c) => c.ticker);
+}
 
 export async function screenStocks(opts: {
   peMax?: number;
@@ -72,8 +43,10 @@ export async function screenStocks(opts: {
   const cacheKey = `screen:${opts.peMax ?? "any"}:${opts.mcapMin ?? "any"}:${opts.divYieldMin ?? "any"}:${opts.limit ?? "all"}`;
 
   return cached(cacheKey, 600, async () => {
+    // Pega ate 100 tickers do S&P 500 (limite para nao bater rate limit da Finnhub: 60 req/min)
+    const universe = (await getTickerUniverse()).slice(0, 100);
     const rows: (StockScreenerRow | null)[] = await Promise.all(
-      TOP_US_TICKERS.map(async (ticker): Promise<StockScreenerRow | null> => {
+      universe.map(async (ticker): Promise<StockScreenerRow | null> => {
         try {
           const [quote, profile, fins] = await Promise.all([
             getQuote(ticker),
