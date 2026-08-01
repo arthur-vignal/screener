@@ -1,8 +1,10 @@
 "use client";
 
+export const dynamic = "force-dynamic";
 import { ArrowRight, Lock } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+
 
 type RiskLevel = "conservative" | "moderate" | "aggressive";
 

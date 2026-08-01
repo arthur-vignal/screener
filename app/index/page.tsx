@@ -1,10 +1,12 @@
 "use client";
 
+export const dynamic = "force-dynamic";
 import { useState } from "react";
 import { ArrowRight, Info } from "lucide-react";
 import Link from "next/link";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
+
 
 type IndexCategory = "predefined" | "community" | "yours";
 type IndexEntry = {

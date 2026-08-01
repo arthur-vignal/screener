@@ -1,10 +1,12 @@
 "use client";
 
+export const dynamic = "force-dynamic";
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, YAxis, XAxis, Tooltip, CartesianGrid } from "recharts";
 import { cn } from "@/lib/utils";
+
 
 // Mock index data — in a future version, fetch from API
 const INDEXES_DATA: Record<string, {

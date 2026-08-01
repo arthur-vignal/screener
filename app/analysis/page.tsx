@@ -1,9 +1,11 @@
 "use client";
 
+export const dynamic = "force-dynamic";
 import { useState } from "react";
 import Link from "next/link";
 import { Search, Loader2, ArrowLeft, TrendingUp, Activity, BarChart3, AlertTriangle, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
+
 
 type AnalysisData = {
   bars: number;

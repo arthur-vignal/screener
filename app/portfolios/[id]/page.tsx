@@ -1,9 +1,11 @@
 "use client";
 
+export const dynamic = "force-dynamic";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { use, useState } from "react";
 import {
+
   CartesianGrid,
   Line,
   LineChart,
