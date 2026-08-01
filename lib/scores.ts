@@ -32,31 +32,31 @@ export type PiotroskiResult = {
 };
 
 export function piotroskiF(s: YahooSummaryLike): PiotroskiResult {
+  // Inputs are already in percent (0-100), not fractions.
   const signals: PiotroskiResult["signals"] = [];
   // Profitability (4 signals)
   signals.push({
     name: "ROE positivo",
     passed: s.roe != null ? s.roe > 0 : null,
-    reason: s.roe == null ? "sem dados" : `ROE = ${(s.roe * 100).toFixed(1)}%`,
+    reason: s.roe == null ? "sem dados" : `ROE = ${s.roe.toFixed(1)}%`,
   });
   signals.push({
     name: "ROA positivo",
     passed: s.roa != null ? s.roa > 0 : null,
-    reason: s.roa == null ? "sem dados" : `ROA = ${(s.roa * 100).toFixed(1)}%`,
+    reason: s.roa == null ? "sem dados" : `ROA = ${s.roa.toFixed(1)}%`,
   });
   signals.push({
     name: "Margem bruta > 0",
     passed: s.grossMargin != null ? s.grossMargin > 0 : null,
-    reason: s.grossMargin == null ? "sem dados" : `GM = ${(s.grossMargin * 100).toFixed(1)}%`,
+    reason: s.grossMargin == null ? "sem dados" : `GM = ${s.grossMargin.toFixed(1)}%`,
   });
   signals.push({
-    name: "Fluxo de caixa positivo",
+    name: "Margem operacional > 0",
     passed: s.operatingMargin != null ? s.operatingMargin > 0 : null,
-    reason: s.operatingMargin == null ? "sem dados" : `Op margin = ${(s.operatingMargin * 100).toFixed(1)}%`,
+    reason: s.operatingMargin == null ? "sem dados" : `Op margin = ${s.operatingMargin.toFixed(1)}%`,
   });
 
-  // Leverage/Liquidity (3 signals)
-  // (not in summary, so we mark as null)
+  // Leverage/Liquidity (3 signals) — not in free Finnhub metrics
   signals.push({ name: "Dívida de longo prazo caindo", passed: null, reason: "não calculado" });
   signals.push({ name: "Current ratio subindo", passed: null, reason: "não calculado" });
   signals.push({ name: "Shares outstanding estáveis", passed: null, reason: "não calculado" });
@@ -65,12 +65,12 @@ export function piotroskiF(s: YahooSummaryLike): PiotroskiResult {
   signals.push({
     name: "Crescimento de receita",
     passed: s.revenueGrowth != null ? s.revenueGrowth > 0 : null,
-    reason: s.revenueGrowth == null ? "sem dados" : `Rev growth = ${(s.revenueGrowth * 100).toFixed(1)}%`,
+    reason: s.revenueGrowth == null ? "sem dados" : `Rev growth = ${s.revenueGrowth.toFixed(1)}%`,
   });
   signals.push({
     name: "Crescimento de lucro",
     passed: s.earningsGrowth != null ? s.earningsGrowth > 0 : null,
-    reason: s.earningsGrowth == null ? "sem dados" : `EPS growth = ${(s.earningsGrowth * 100).toFixed(1)}%`,
+    reason: s.earningsGrowth == null ? "sem dados" : `EPS growth = ${s.earningsGrowth.toFixed(1)}%`,
   });
 
   const score = signals.filter((sig) => sig.passed === true).length;

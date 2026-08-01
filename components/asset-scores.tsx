@@ -7,8 +7,7 @@ import { cn } from "@/lib/utils";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-type Summary = {
-  symbol: string;
+type Metrics = {
   roe: number | null;
   roa: number | null;
   grossMargin: number | null;
@@ -19,23 +18,41 @@ type Summary = {
   payoutRatio: number | null;
   beta: number | null;
   priceToBook: number | null;
-  marketCap: number | null;
-  // Analyst
-  targetMeanPrice: number | null;
-  targetHighPrice: number | null;
-  targetLowPrice: number | null;
-  analystCount: number | null;
-  recommendation: string | null;
-  // ESG
-  esgScore: number | null;
 };
 
-export function AssetScores({ ticker, currentPrice }: { ticker: string; currentPrice: number }) {
-  const { data, isLoading } = useSWR<{ summary: Summary }>(
-    `/api/summary/${ticker}`,
-    fetcher,
-    { revalidateOnFocus: false },
-  );
+type Recommendation = {
+  period: string;
+  strongBuy: number;
+  buy: number;
+  hold: number;
+  sell: number;
+  strongSell: number;
+};
+
+type ScoresData = {
+  metrics: Metrics;
+  recommendation: Recommendation | null;
+};
+
+function recommendationKey(r: Recommendation): { key: string; buyPct: number } {
+  const total = r.strongBuy + r.buy + r.hold + r.sell + r.strongSell;
+  if (total === 0) return { key: "—", buyPct: 0 };
+  const buyPct = ((r.strongBuy + r.buy) / total) * 100;
+  let key = "HOLD";
+  if (buyPct >= 70) key = "BUY";
+  else if (buyPct >= 50) key = "BUY";
+  else if (buyPct >= 30) key = "HOLD";
+  else if (buyPct >= 10) key = "SELL";
+  else key = "SELL";
+  if (r.strongBuy >= total * 0.4) key = "STRONG BUY";
+  if (r.strongSell >= total * 0.4) key = "STRONG SELL";
+  return { key, buyPct };
+}
+
+export function AssetScores({ ticker }: { ticker: string }) {
+  const { data, isLoading } = useSWR<ScoresData>(`/api/scores/${ticker}`, fetcher, {
+    revalidateOnFocus: false,
+  });
 
   if (isLoading) {
     return (
@@ -46,7 +63,7 @@ export function AssetScores({ ticker, currentPrice }: { ticker: string; currentP
     );
   }
 
-  if (!data?.summary) {
+  if (!data) {
     return (
       <div className="rounded-lg border border-border bg-surface p-6 text-text-muted text-sm text-center">
         Scores indisponíveis pra esse ticker.
@@ -54,9 +71,9 @@ export function AssetScores({ ticker, currentPrice }: { ticker: string; currentP
     );
   }
 
-  const s = data.summary;
-  const f = piotroskiF(s);
-  const z = altmanZ(s);
+  const m = data.metrics;
+  const f = piotroskiF(m);
+  const z = altmanZ(m);
 
   const scorePct = f.max > 0 ? f.score / f.max : 0;
   const scoreColor =
@@ -66,63 +83,51 @@ export function AssetScores({ ticker, currentPrice }: { ticker: string; currentP
         ? "text-yellow-400"
         : "text-negative";
 
-  const upside = s.targetMeanPrice && currentPrice > 0
-    ? ((s.targetMeanPrice - currentPrice) / currentPrice) * 100
-    : null;
+  const rec = data.recommendation;
+  const recInfo = rec ? recommendationKey(rec) : null;
 
   return (
     <div className="space-y-3">
-      {/* Analyst targets + Piotroski side by side */}
+      {/* Analyst recommendation + Piotroski */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Recommendation card */}
         <div className="rounded-lg border border-border bg-surface p-4">
           <div className="flex items-baseline justify-between mb-3">
-            <h3 className="text-sm font-medium text-foreground">Analyst target</h3>
-            {s.recommendation && (
-              <span className="text-xs px-2 py-0.5 rounded-md bg-surface-elevated text-text-secondary uppercase tracking-wider font-mono">
-                {s.recommendation}
+            <h3 className="text-sm font-medium text-foreground">Recomendação analistas</h3>
+            {recInfo && (
+              <span
+                className={cn(
+                  "text-xs px-2 py-0.5 rounded-md font-mono uppercase tracking-wider",
+                  recInfo.key === "STRONG BUY" || recInfo.key === "BUY"
+                    ? "bg-positive/10 text-positive"
+                    : recInfo.key === "SELL" || recInfo.key === "STRONG SELL"
+                      ? "bg-negative/10 text-negative"
+                      : "bg-yellow-400/10 text-yellow-400",
+                )}
+              >
+                {recInfo.key}
               </span>
             )}
           </div>
-          {s.targetMeanPrice ? (
-            <div className="space-y-2">
-              <div className="flex items-baseline justify-between">
-                <span className="text-xs text-text-muted">Preço atual</span>
-                <span className="font-mono tabular-nums">${currentPrice.toFixed(2)}</span>
+          {rec ? (
+            <>
+              <div className="space-y-1.5 text-xs">
+                <Bar label="Compra forte" value={rec.strongBuy} max={Math.max(rec.strongBuy + rec.buy + rec.hold + rec.sell + rec.strongSell, 1)} color="bg-positive" />
+                <Bar label="Compra" value={rec.buy} max={Math.max(rec.strongBuy + rec.buy + rec.hold + rec.sell + rec.strongSell, 1)} color="bg-positive/60" />
+                <Bar label="Mantém" value={rec.hold} max={Math.max(rec.strongBuy + rec.buy + rec.hold + rec.sell + rec.strongSell, 1)} color="bg-yellow-400/60" />
+                <Bar label="Venda" value={rec.sell} max={Math.max(rec.strongBuy + rec.buy + rec.hold + rec.sell + rec.strongSell, 1)} color="bg-negative/60" />
+                <Bar label="Venda forte" value={rec.strongSell} max={Math.max(rec.strongBuy + rec.buy + rec.hold + rec.sell + rec.strongSell, 1)} color="bg-negative" />
               </div>
-              <div className="flex items-baseline justify-between">
-                <span className="text-xs text-text-muted">Target médio</span>
-                <span className="font-mono tabular-nums font-semibold">
-                  ${s.targetMeanPrice.toFixed(2)}
-                </span>
+              <div className="text-xs text-text-muted text-center pt-2 mt-2 border-t border-border-subtle">
+                {rec.period} · {rec.strongBuy + rec.buy + rec.hold + rec.sell + rec.strongSell} analistas
               </div>
-              <div className="flex items-baseline justify-between">
-                <span className="text-xs text-text-muted">Range</span>
-                <span className="font-mono tabular-nums text-xs text-text-secondary">
-                  ${s.targetLowPrice?.toFixed(0) ?? "?"} – ${s.targetHighPrice?.toFixed(0) ?? "?"}
-                </span>
-              </div>
-              <div className="border-t border-border-subtle pt-2 mt-2 flex items-baseline justify-between">
-                <span className="text-xs text-text-muted">Upside</span>
-                <span
-                  className={cn(
-                    "font-mono tabular-nums font-semibold",
-                    upside && upside >= 0 ? "text-positive" : "text-negative",
-                  )}
-                >
-                  {upside != null ? `${upside >= 0 ? "+" : ""}${upside.toFixed(1)}%` : "—"}
-                </span>
-              </div>
-              {s.analystCount != null && (
-                <div className="text-xs text-text-muted text-center pt-1">
-                  baseado em {s.analystCount} analistas
-                </div>
-              )}
-            </div>
+            </>
           ) : (
-            <p className="text-xs text-text-muted">Sem cobertura de analistas</p>
+            <p className="text-xs text-text-muted">Sem cobertura</p>
           )}
         </div>
 
+        {/* Piotroski */}
         <div className="rounded-lg border border-border bg-surface p-4">
           <div className="flex items-baseline justify-between mb-3">
             <h3 className="text-sm font-medium text-foreground">Piotroski F-Score</h3>
@@ -157,7 +162,7 @@ export function AssetScores({ ticker, currentPrice }: { ticker: string; currentP
         </div>
       </div>
 
-      {/* Altman Z + ESG */}
+      {/* Altman Z + Growth */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="rounded-lg border border-border bg-surface p-3">
           <div className="text-xs uppercase tracking-wider text-text-muted mb-1">Altman Z</div>
@@ -192,41 +197,57 @@ export function AssetScores({ ticker, currentPrice }: { ticker: string; currentP
         </div>
 
         <div className="rounded-lg border border-border bg-surface p-3">
-          <div className="text-xs uppercase tracking-wider text-text-muted mb-1">ESG Score</div>
-          <div className="flex items-baseline gap-2">
-            {s.esgScore != null ? (
-              <>
-                <span className="text-xl font-mono font-semibold tabular-nums">
-                  {s.esgScore.toFixed(0)}
+          <div className="text-xs uppercase tracking-wider text-text-muted mb-1">Crescimento</div>
+          <div className="space-y-0.5 text-sm font-mono tabular-nums">
+            {m.revenueGrowth != null && (
+              <div>
+                Receita: <span className={cn(m.revenueGrowth >= 0 ? "text-positive" : "text-negative")}>
+                  {m.revenueGrowth >= 0 ? "+" : ""}{(m.revenueGrowth * 100).toFixed(1)}%
                 </span>
-                <span className="text-xs text-text-muted">/100 (lower is better)</span>
-              </>
-            ) : (
-              <span className="text-sm text-text-muted">indisponível</span>
+              </div>
+            )}
+            {m.earningsGrowth != null && (
+              <div>
+                Lucro: <span className={cn(m.earningsGrowth >= 0 ? "text-positive" : "text-negative")}>
+                  {m.earningsGrowth >= 0 ? "+" : ""}{(m.earningsGrowth * 100).toFixed(1)}%
+                </span>
+              </div>
             )}
           </div>
         </div>
 
         <div className="rounded-lg border border-border bg-surface p-3">
-          <div className="text-xs uppercase tracking-wider text-text-muted mb-1">Crescimento</div>
-          <div className="space-y-0.5 text-sm font-mono tabular-nums">
-            {s.revenueGrowth != null && (
-              <div>
-                Receita: <span className={cn(s.revenueGrowth >= 0 ? "text-positive" : "text-negative")}>
-                  {s.revenueGrowth >= 0 ? "+" : ""}{(s.revenueGrowth * 100).toFixed(1)}%
-                </span>
-              </div>
+          <div className="text-xs uppercase tracking-wider text-text-muted mb-1">Dividend</div>
+          <div className="text-sm font-mono tabular-nums">
+            {m.dividendYield != null ? (
+              <span className="text-positive">{m.dividendYield.toFixed(2)}% yield</span>
+            ) : (
+              <span className="text-text-muted">não paga dividendo</span>
             )}
-            {s.earningsGrowth != null && (
-              <div>
-                Lucro: <span className={cn(s.earningsGrowth >= 0 ? "text-positive" : "text-negative")}>
-                  {s.earningsGrowth >= 0 ? "+" : ""}{(s.earningsGrowth * 100).toFixed(1)}%
-                </span>
+            {m.payoutRatio != null && (
+              <div className="text-text-muted text-xs mt-0.5">
+                payout {m.payoutRatio.toFixed(0)}%
               </div>
             )}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Bar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const pct = max > 0 ? (value / max) * 100 : 0;
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-text-secondary w-24 shrink-0">{label}</span>
+      <div className="flex-1 h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+        <div
+          className={cn("h-full rounded-full", color)}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="text-text-muted font-mono w-6 text-right">{value}</span>
     </div>
   );
 }

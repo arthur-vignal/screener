@@ -41,35 +41,8 @@ export type CompanyProfile = {
 };
 
 export type BasicFinancials = {
-  metric: {
-    peBasicExtraTTM?: number;
-    pegRatio?: number;
-    priceToBookRatio?: number;
-    evEbitda?: number;
-    evRevenue?: number;
-    freeCashFlowYieldTTM?: number;
-    operatingMarginTTM?: number;
-    profitMarginTTM?: number;
-    grossMarginTTM?: number;
-    currentRatio?: number;
-    quickRatio?: number;
-    debtEquityRatio?: number;
-    roeTTM?: number;
-    roaTTM?: number;
-    roicTTM?: number;
-    dividendYieldIndicatedAnnual?: number;
-    payoutRatioTTM?: number;
-    beta?: number;
-    "52WeekHigh"?: number;
-    "52WeekLow"?: number;
-    "52WeekPriceReturnDaily"?: number;
-    epsBasicExtraTTM?: number;
-    epsDilutedExtraTTM?: number;
-    bookValuePerShareQuarterly?: number;
-    revenuePerShareTTM?: number;
-    ebitdaPerShareTTM?: number;
-    cashPerShareQuarterly?: number;
-  };
+  // Open index signature — Finnhub returns many metric fields; access by name.
+  metric: Record<string, number | string | null | undefined>;
   series?: Record<string, unknown>;
 };
 
@@ -100,6 +73,31 @@ export async function getProfile(ticker: string): Promise<CompanyProfile | null>
       const data = (await r.json()) as CompanyProfile;
       if (!data.ticker) return null;
       return data;
+    },
+  );
+}
+
+export type RecommendationTrend = {
+  period: string;
+  strongBuy: number;
+  buy: number;
+  hold: number;
+  sell: number;
+  strongSell: number;
+};
+
+export async function getRecommendation(ticker: string): Promise<RecommendationTrend | null> {
+  return cached(
+    `finnhub:recommendation:${ticker}`,
+    7 * 24 * 3600,
+    async () => {
+      const r = await fetch(
+        `${BASE}/stock/recommendation?symbol=${encodeURIComponent(ticker)}&token=${getKey()}`,
+      );
+      if (!r.ok) return null;
+      const data = (await r.json()) as RecommendationTrend[];
+      if (!Array.isArray(data) || data.length === 0) return null;
+      return data[0];
     },
   );
 }
