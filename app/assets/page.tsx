@@ -1,11 +1,11 @@
 "use client";
 
-export const dynamic = "force-dynamic";
 import { useState, useEffect, useMemo } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import { Search as SearchIcon, Loader2, Filter } from "lucide-react";
 import { cn, formatCompact, formatPercent } from "@/lib/utils";
+
 
 
 type AssetType = "stock" | "etf" | "crypto";

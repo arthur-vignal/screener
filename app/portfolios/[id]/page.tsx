@@ -1,6 +1,5 @@
 "use client";
 
-export const dynamic = "force-dynamic";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { use, useState } from "react";
@@ -15,6 +14,7 @@ import {
   YAxis,
 } from "recharts";
 import { cn } from "@/lib/utils";
+
 
 type RiskLevel = "conservative" | "moderate" | "aggressive";
 

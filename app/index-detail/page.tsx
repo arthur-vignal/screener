@@ -1,11 +1,13 @@
 "use client";
 
-export const dynamic = "force-dynamic";
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, YAxis, XAxis, Tooltip, CartesianGrid } from "recharts";
 import { cn } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
+
 
 
 // Mock index data — in a future version, fetch from API
@@ -137,6 +139,7 @@ function generateMockSeries(days: number, drift: number, vol: number) {
   return out;
 }
 
+
 export default function IndexDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const [id, setId] = useState<string | null>(null);
 
@@ -156,7 +159,7 @@ export default function IndexDetailPage({ params }: { params: Promise<{ id: stri
     return (
       <div className="px-8 py-12 text-center">
         <p className="text-text-secondary">Índice não encontrado.</p>
-        <Link href="/index" className="text-accent hover:underline text-sm mt-2 inline-block">
+        <Link href="/index-detail" className="text-accent hover:underline text-sm mt-2 inline-block">
           ← Voltar para Index
         </Link>
       </div>
@@ -173,7 +176,7 @@ export default function IndexDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="px-8 py-6 max-w-6xl">
       <Link
-        href="/index"
+        href="/index-detail"
         className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-foreground mb-4 transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />

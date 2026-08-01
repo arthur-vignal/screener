@@ -1,11 +1,11 @@
 "use client";
 
-export const dynamic = "force-dynamic";
 import { useState } from "react";
 import { ArrowRight, Info } from "lucide-react";
 import Link from "next/link";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
+
 
 
 type IndexCategory = "predefined" | "community" | "yours";
@@ -124,7 +124,7 @@ export default function IndexListPage() {
         {filtered.map((idx) => (
           <Link
             key={idx.id}
-            href={`/index/${idx.id}`}
+            href={`/index-detail/${idx.id}`}
             className="rounded-lg border border-border bg-surface p-5 hover:border-foreground/30 hover:bg-surface-elevated transition-all group"
           >
             <div className="flex items-start justify-between mb-2">
