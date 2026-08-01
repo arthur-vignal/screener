@@ -222,3 +222,42 @@ export async function getYahooSummary(ticker: string): Promise<YahooSummary | nu
     };
   });
 }
+
+export type YahooHolding = {
+  symbol: string;
+  name: string;
+  pctHeld: number; // 0..1
+};
+
+export async function getYahooHoldings(ticker: string): Promise<YahooHolding[]> {
+  return cached("yahoo:holdings:" + ticker, 24 * 3600, async () => {
+    // Yahoo ETF holdings: https://query2.finance.yahoo.com/v10/finance/quoteSummary/{ticker}?modules=topHoldings
+    const r = await fetchYahoo("/v10/finance/quoteSummary/" + encodeURIComponent(ticker), {
+      modules: "topHoldings",
+    });
+    if (!r.ok) return [];
+    const data = (await r.json()) as {
+      quoteSummary?: {
+        result?: Array<{
+          topHoldings?: {
+            holdings?: Array<{
+              symbol?: string;
+              holdingName?: string;
+              holdingPercent?: { raw?: number };
+            }>;
+          };
+        }>;
+      };
+    };
+    const holdings = data.quoteSummary?.result?.[0]?.topHoldings?.holdings ?? [];
+    return holdings
+      .filter((h) => h.symbol && h.holdingPercent?.raw != null)
+      .map((h) => ({
+        symbol: h.symbol as string,
+        name: h.holdingName ?? (h.symbol as string),
+        pctHeld: h.holdingPercent?.raw ?? 0,
+      }))
+      .sort((a, b) => b.pctHeld - a.pctHeld)
+      .slice(0, 10);
+  });
+}

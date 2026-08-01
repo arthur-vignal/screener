@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { href: "/screen/etfs", label: "ETFs", icon: PieChart },
   { href: "/screen/crypto", label: "Crypto", icon: Bitcoin },
   { href: "/search", label: "Buscar", icon: Search },
+  { href: "/sectors", label: "Setores", icon: TrendingUp },
   { href: "/compare", label: "Comparar", icon: BarChartHorizontal },
   { href: "/watchlist", label: "Watchlist", icon: Star },
 ];
