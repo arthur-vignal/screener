@@ -4,6 +4,7 @@
  */
 
 import { cached } from "./cache";
+import { getCompanyName } from "./asset-names";
 
 export type AssetType = "stock" | "etf" | "crypto";
 export type AssetSummary = {
@@ -144,39 +145,71 @@ export async function getAssetQuote(symbol: string) {
 }
 
 /**
- * Search assets by symbol prefix or name substring.
- * Returns ranked list (symbol exact > symbol prefix > name match).
+ * Search assets by symbol prefix OR company name.
+ * Returns ranked list:
+ *   1. exact symbol match
+ *   2. symbol starts with query
+ *   3. symbol contains query
+ *   4. company name starts with query
+ *   5. company name contains query
  */
 export function searchAssets(query: string, types?: AssetType[]): AssetSummary[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
 
   const all: AssetSummary[] = [];
-  if (!types || types.includes("stock")) {
-    for (const s of STOCKS) all.push({ symbol: s, name: s, type: "stock" });
-  }
-  if (!types || types.includes("etf")) {
-    for (const s of ETFS) all.push({ symbol: s, name: s, type: "etf" });
-  }
-  if (!types || types.includes("crypto")) {
-    for (const s of CRYPTOS) all.push({
-      symbol: s.replace("-USD", ""),
-      name: s.replace("-USD", ""),
-      type: "crypto",
+  const addToList = (symbol: string, type: AssetType) => {
+    all.push({
+      symbol: type === "crypto" ? symbol.replace("-USD", "") : symbol,
+      name: getCompanyName(symbol),
+      type,
     });
-  }
+  };
 
-  const exact = all.filter((a) => a.symbol.toLowerCase() === q);
-  const prefix = all.filter(
+  if (!types || types.includes("stock")) for (const s of STOCKS) addToList(s, "stock");
+  if (!types || types.includes("etf")) for (const s of ETFS) addToList(s, "etf");
+  if (!types || types.includes("crypto")) for (const s of CRYPTOS) addToList(s, "crypto");
+
+  const exactSym = all.filter((a) => a.symbol.toLowerCase() === q);
+  const prefixSym = all.filter(
     (a) => a.symbol.toLowerCase().startsWith(q) && a.symbol.toLowerCase() !== q,
   );
-  const substring = all.filter(
+  const containsSym = all.filter(
     (a) =>
-      !a.symbol.toLowerCase().startsWith(q) &&
-      (a.name.toLowerCase().includes(q) || a.symbol.toLowerCase().includes(q)),
+      !a.symbol.toLowerCase().startsWith(q) && a.symbol.toLowerCase().includes(q),
+  );
+  const prefixName = all.filter(
+    (a) =>
+      !a.symbol.toLowerCase().includes(q) && a.name.toLowerCase().startsWith(q),
+  );
+  const containsName = all.filter(
+    (a) =>
+      !a.symbol.toLowerCase().includes(q) &&
+      !a.name.toLowerCase().startsWith(q) &&
+      a.name.toLowerCase().includes(q),
   );
 
-  return [...exact, ...prefix, ...substring].slice(0, 20);
+  // Multi-word: split query into terms, all must match somewhere
+  const terms = q.split(/\s+/).filter(Boolean);
+  const multiWord = terms.length > 1
+    ? all.filter((a) => {
+        const haystack = `${a.symbol} ${a.name}`.toLowerCase();
+        return terms.every((t) => haystack.includes(t));
+      })
+    : [];
+
+  // Combine ranked, dedupe by symbol
+  const seen = new Set<string>();
+  const ranked = [...exactSym, ...prefixSym, ...containsSym, ...prefixName, ...containsName, ...multiWord];
+  const out: AssetSummary[] = [];
+  for (const r of ranked) {
+    const key = `${r.symbol}-${r.type}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(r);
+    if (out.length >= 20) break;
+  }
+  return out;
 }
 
 /**

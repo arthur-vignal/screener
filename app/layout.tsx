@@ -3,6 +3,15 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 
+// Geist loaded locally to suppress Turbopack's automatic Geist fetch
+// (Next 16 bug). The class is added but we use Inter as the primary font.
+const geist = localFont({
+  src: "../public/fonts/InterVariable.woff2",
+  variable: "--font-geist",
+  display: "swap",
+  weight: "100 900",
+});
+
 const inter = localFont({
   src: "../public/fonts/InterVariable.woff2",
   variable: "--font-inter",
@@ -23,7 +32,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} h-full antialiased`}
+      className={`${geist.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground">
         <div className="flex min-h-screen">

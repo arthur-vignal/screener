@@ -41,18 +41,39 @@ const ALL_TYPES: { value: AssetType | "all"; label: string }[] = [
 
 export default function AssetsPage() {
   const [query, setQuery] = useState("");
+  const [semanticQuery, setSemanticQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<AssetType | "all">("all");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [debouncedSemantic, setDebouncedSemantic] = useState("");
+  const [searchMode, setSearchMode] = useState<"exact" | "semantic">("exact");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Search suggestions
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), 200);
     return () => clearTimeout(t);
   }, [query]);
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSemantic(semanticQuery), 600);
+    return () => clearTimeout(t);
+  }, [semanticQuery]);
+
+  // Exact search (symbol/name prefix)
   const search = useSWR<{ results: { symbol: string; name: string }[]; count: number }>(
-    `/api/assets/search?q=${encodeURIComponent(debouncedQuery)}`,
+    debouncedQuery ? `/api/assets/search?q=${encodeURIComponent(debouncedQuery)}` : null,
+    fetcher,
+    { revalidateOnFocus: false, keepPreviousData: true },
+  );
+
+  // Semantic search (NLP / keywords)
+  const semantic = useSWR<{
+    results: { symbol: string; name: string; type: string; sector: string }[];
+    explanation: string;
+    mode: string;
+  }>(
+    debouncedSemantic && searchMode === "semantic"
+      ? `/api/assets/semantic?q=${encodeURIComponent(debouncedSemantic)}`
+      : null,
     fetcher,
     { revalidateOnFocus: false, keepPreviousData: true },
   );
@@ -99,22 +120,66 @@ export default function AssetsPage() {
         </button>
       </div>
 
-      <div className="relative mb-6">
-        <SearchIcon
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted"
-          strokeWidth={2}
-        />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar por ticker, nome ou descrição (ex: 'empresa de energia')"
-          className="w-full bg-surface border border-border rounded-md pl-10 pr-4 py-2.5 text-sm placeholder:text-text-muted focus:outline-none focus:border-foreground/30 transition-colors"
-        />
-        {search.isLoading && (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted animate-spin" />
-        )}
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={() => setSearchMode("exact")}
+          className={cn(
+            "px-3 py-1 text-xs rounded-md border transition-colors",
+            searchMode === "exact"
+              ? "bg-foreground text-background border-foreground"
+              : "border-border text-text-secondary hover:text-foreground"
+          )}
+        >
+          Ticker / Nome
+        </button>
+        <button
+          onClick={() => setSearchMode("semantic")}
+          className={cn(
+            "px-3 py-1 text-xs rounded-md border transition-colors",
+            searchMode === "semantic"
+              ? "bg-foreground text-background border-foreground"
+              : "border-border text-text-secondary hover:text-foreground"
+          )}
+        >
+          Busca semântica
+        </button>
       </div>
+
+      {searchMode === "exact" && (
+        <div className="relative mb-6">
+          <SearchIcon
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted"
+            strokeWidth={2}
+          />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por ticker ou nome (ex: AAPL, Apple, Microsoft)"
+            className="w-full bg-surface border border-border rounded-md pl-10 pr-4 py-2.5 text-sm placeholder:text-text-muted focus:outline-none focus:border-foreground/30 transition-colors"
+          />
+          {search.isLoading && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted animate-spin" />
+          )}
+        </div>
+      )}
+
+      {searchMode === "semantic" && (
+        <div className="mb-6">
+          <input
+            type="text"
+            value={semanticQuery}
+            onChange={(e) => setSemanticQuery(e.target.value)}
+            placeholder="Busca semântica (ex: 'empresa de IA', 'banco grande', 'crypto top')"
+            className="w-full bg-surface border border-border rounded-md px-4 py-2.5 text-sm placeholder:text-text-muted focus:outline-none focus:border-foreground/30 transition-colors"
+          />
+          {semantic.data?.explanation && (
+            <div className="mt-2 text-xs text-text-muted">
+              {semantic.data.mode === "ollama" ? "🤖 LLM" : "🔍 keyword"} — {semantic.data.explanation}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Type filter chips */}
       {showFilters && (
@@ -147,7 +212,48 @@ export default function AssetsPage() {
         </div>
       )}
 
-      {filteredRows.length === 0 && !quotes.isLoading && (
+      {searchMode === "semantic" && semantic.data && semantic.data.results.length > 0 && (
+        <div className="rounded-lg border border-border bg-surface overflow-hidden mb-3">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-text-muted text-xs uppercase tracking-wider">
+                <th className="text-left px-4 py-3 font-medium">Ativo</th>
+                <th className="text-left px-4 py-3 font-medium">Setor</th>
+                <th className="text-right px-4 py-3 font-medium">Preço</th>
+                <th className="text-right px-4 py-3 font-medium">24h</th>
+              </tr>
+            </thead>
+            <tbody>
+              {semantic.data.results.slice(0, 30).map((r, i) => (
+                <tr
+                  key={r.symbol}
+                  className={cn(
+                    "border-b border-border-subtle last:border-0 hover:bg-surface-elevated transition-colors",
+                    i % 2 === 0 ? "bg-transparent" : "bg-surface-elevated/30",
+                  )}
+                >
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/asset/${encodeURIComponent(r.symbol)}`}
+                      className="font-mono font-semibold text-foreground hover:text-accent transition-colors"
+                    >
+                      {r.symbol}
+                    </Link>
+                    <span className="ml-2 text-xs text-text-muted">{r.name}</span>
+                  </td>
+                  <td className="px-4 py-3 text-text-muted text-xs">{r.sector}</td>
+                  <td className="px-4 py-3 text-right font-mono tabular-nums text-text-muted">
+                    —
+                  </td>
+                  <td className="px-4 py-3 text-right text-text-muted">—</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {filteredRows.length === 0 && !quotes.isLoading && searchMode === "exact" && (
         <div className="rounded-lg border border-border bg-surface p-12 text-center">
           <p className="text-text-secondary">
             Nenhum resultado. Tente outro ticker ou nome.
