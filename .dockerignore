@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+build/
+.git/
+.gitignore
+.env
+.env.local
+.env*.local
+*.md
+screenshots/
+.DS_Store
+*.log
+.vercel
+next-env.d.ts
