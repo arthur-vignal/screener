@@ -128,7 +128,7 @@ function sharpeScore(sharpe: number | null): { score: number; note: string } {
 
 /** Drawdown risk (0-100): invert MDD. -50% MDD = 0 score. */
 function drawdownScore(mdd: number | null): { score: number; note: string } {
-  if (mdd == null) return { score: 50, note: "drawdown indeterminável" };
+  if (mdd == null || !Number.isFinite(mdd)) return { score: 50, note: "drawdown indeterminável" };
   const positiveMdd = Math.abs(mdd);
   // Map 0..60 → 100..0
   const s = clamp(100 - (positiveMdd / 60) * 100);

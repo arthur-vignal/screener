@@ -28,8 +28,8 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export function PriceChart({ ticker }: { ticker: string }) {
   const [range, setRange] = useState<Range>("1Y");
-  const [showSMA20, setShowSMA20] = useState(true);
-  const [showSMA50, setShowSMA50] = useState(true);
+  const [showSMA20, setShowSMA20] = useState(false);
+  const [showSMA50, setShowSMA50] = useState(false);
   const [showRSI, setShowRSI] = useState(false);
 
   const { data, isLoading } = useSWR<{ points: Candle[] }>(
@@ -74,7 +74,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
   const lastRsi = rsiData.length > 0 ? rsiData[rsiData.length - 1].rsi : null;
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3 h-[600px]">
       <div className="rounded-lg border border-border bg-surface overflow-hidden">
         <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
           <h3 className="text-sm font-medium text-foreground">Preço</h3>
@@ -96,7 +96,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
           </div>
         </div>
 
-        <div className="px-4 py-6 h-72 relative">
+        <div className="px-4 py-6 flex-1 relative min-h-[280px]">
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-sm text-text-muted">Carregando…</div>
@@ -219,7 +219,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
 
       <div
         className={cn(
-          "grid transition-all duration-500 ease-out",
+          "grid transition-all duration-500 ease-out shrink-0",
           showRSI && rsiData.length > 0 ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
         )}
         style={{ transitionProperty: "grid-template-rows, opacity" }}

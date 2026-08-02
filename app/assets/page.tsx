@@ -7,8 +7,10 @@ import {
   Search as SearchIcon,
   Loader2,
   Filter,
+  Settings2,
+  X,
 } from "lucide-react";
-import { cn, formatPercent } from "@/lib/utils";
+import { cn, formatCompact, formatPercent } from "@/lib/utils";
 
 type AssetType = "stock" | "etf" | "crypto";
 
@@ -30,6 +32,9 @@ type Analysis = {
   rsi: number | null;
   volatility: number | null;
   sharpe: number | null;
+  atrPct: number | null;
+  mfi: number | null;
+  bbWidth: number | null;
   trend: "bullish" | "bearish" | "neutral";
 };
 
@@ -66,6 +71,182 @@ const EXCHANGES = [
 
 const PAGE_SIZE = 50;
 
+// Columns the user can toggle. Only render if value exists.
+type ColumnDef = {
+  key: string;
+  label: string;
+  align: "left" | "right";
+  defaultOn: boolean;
+  // Returns true if column has a meaningful value for this row
+  hasValue: (row: Row) => boolean;
+  render: (row: Row) => React.ReactNode;
+};
+
+const COLUMNS: ColumnDef[] = [
+  {
+    key: "setor",
+    label: "Setor",
+    align: "left",
+    defaultOn: true,
+    hasValue: (r) => !!r.sector && r.sector !== "—",
+    render: (r) => <span className="text-text-muted text-xs">{r.sector || "—"}</span>,
+  },
+  {
+    key: "preco",
+    label: "Preço",
+    align: "right",
+    defaultOn: true,
+    hasValue: (r) => r.quote != null,
+    render: (r) =>
+      r.quote ? <span>${r.quote.price.toFixed(2)}</span> : <span className="text-text-muted">—</span>,
+  },
+  {
+    key: "24h",
+    label: "24h",
+    align: "right",
+    defaultOn: true,
+    hasValue: (r) => r.quote != null,
+    render: (r) =>
+      r.quote ? (
+        <span className={cn(r.quote.changePercent >= 0 ? "text-positive" : "text-negative")}>
+          {formatPercent(r.quote.changePercent)}
+        </span>
+      ) : (
+        <span className="text-text-muted">—</span>
+      ),
+  },
+  {
+    key: "volume",
+    label: "Vol 24h",
+    align: "right",
+    defaultOn: false,
+    hasValue: (r) => r.quote != null && r.quote.volume > 0,
+    render: (r) =>
+      r.quote && r.quote.volume > 0 ? (
+        <span className="text-text-muted">{formatCompact(r.quote.volume)}</span>
+      ) : (
+        <span className="text-text-muted">—</span>
+      ),
+  },
+  {
+    key: "dayRange",
+    label: "Range 24h",
+    align: "right",
+    defaultOn: false,
+    hasValue: (r) =>
+      r.quote != null && r.quote.dayLow > 0 && r.quote.dayHigh > r.quote.dayLow,
+    render: (r) =>
+      r.quote && r.quote.dayLow > 0 ? (
+        <span className="text-text-muted text-xs tabular-nums">
+          ${r.quote.dayLow.toFixed(2)} – ${r.quote.dayHigh.toFixed(2)}
+        </span>
+      ) : (
+        <span className="text-text-muted">—</span>
+      ),
+  },
+  {
+    key: "adx",
+    label: "ADX",
+    align: "right",
+    defaultOn: false,
+    hasValue: (r) => r.analysis?.adx != null,
+    render: (r) =>
+      r.analysis?.adx != null ? (
+        <span className="text-text-muted">{r.analysis.adx.toFixed(0)}</span>
+      ) : (
+        <span className="text-text-muted">—</span>
+      ),
+  },
+  {
+    key: "rsi",
+    label: "RSI",
+    align: "right",
+    defaultOn: false,
+    hasValue: (r) => r.analysis?.rsi != null,
+    render: (r) =>
+      r.analysis?.rsi != null ? (
+        <span
+          className={cn(
+            r.analysis.rsi < 30
+              ? "text-positive"
+              : r.analysis.rsi > 70
+                ? "text-negative"
+                : "text-text-muted",
+          )}
+        >
+          {r.analysis.rsi.toFixed(0)}
+        </span>
+      ) : (
+        <span className="text-text-muted">—</span>
+      ),
+  },
+  {
+    key: "vol",
+    label: "Vol %",
+    align: "right",
+    defaultOn: false,
+    hasValue: (r) => r.analysis?.volatility != null,
+    render: (r) =>
+      r.analysis?.volatility != null ? (
+        <span className="text-text-muted">{r.analysis.volatility.toFixed(0)}%</span>
+      ) : (
+        <span className="text-text-muted">—</span>
+      ),
+  },
+  {
+    key: "atr",
+    label: "ATR %",
+    align: "right",
+    defaultOn: false,
+    hasValue: (r) => r.analysis?.atrPct != null,
+    render: (r) =>
+      r.analysis?.atrPct != null ? (
+        <span className="text-text-muted">{r.analysis.atrPct.toFixed(1)}%</span>
+      ) : (
+        <span className="text-text-muted">—</span>
+      ),
+  },
+  {
+    key: "mfi",
+    label: "MFI",
+    align: "right",
+    defaultOn: false,
+    hasValue: (r) => r.analysis?.mfi != null,
+    render: (r) =>
+      r.analysis?.mfi != null ? (
+        <span
+          className={cn(
+            r.analysis.mfi < 20
+              ? "text-positive"
+              : r.analysis.mfi > 80
+                ? "text-negative"
+                : "text-text-muted",
+          )}
+        >
+          {r.analysis.mfi.toFixed(0)}
+        </span>
+      ) : (
+        <span className="text-text-muted">—</span>
+      ),
+  },
+  {
+    key: "sharpe",
+    label: "Sharpe",
+    align: "right",
+    defaultOn: false,
+    hasValue: (r) => r.analysis?.sharpe != null,
+    render: (r) =>
+      r.analysis?.sharpe != null ? (
+        <span className="text-text-muted tabular-nums">{r.analysis.sharpe.toFixed(2)}</span>
+      ) : (
+        <span className="text-text-muted">—</span>
+      ),
+  },
+];
+
+const DEFAULT_COLS = new Set(COLUMNS.filter((c) => c.defaultOn).map((c) => c.key));
+const COLS_KEY = "screener:assets:cols";
+
 type Band = { min: number | null; max: number | null; label: string; tone: "good" | "bad" | "neutral" };
 
 function classifyValue(value: number, bands: Band[]): { label: string; tone: "good" | "bad" | "neutral" } {
@@ -84,20 +265,20 @@ const VOL_BANDS: Band[] = [
 ];
 
 const RSI_BANDS: Band[] = [
-  { min: null, max: 30, label: "Sobrevendido (sinal de compra)", tone: "good" },
+  { min: null, max: 30, label: "Sobrevendido", tone: "good" },
   { min: 30, max: 70, label: "Neutro", tone: "neutral" },
-  { min: 70, max: null, label: "Sobrecomprado (sinal de venda)", tone: "bad" },
+  { min: 70, max: null, label: "Sobrecomprado", tone: "bad" },
 ];
 
 const ADX_BANDS: Band[] = [
   { min: null, max: 20, label: "Sem tendência", tone: "neutral" },
   { min: 20, max: 25, label: "Fraca", tone: "neutral" },
   { min: 25, max: 50, label: "Forte", tone: "good" },
-  { min: 50, max: null, label: "Muito forte (exaustão)", tone: "bad" },
+  { min: 50, max: null, label: "Muito forte", tone: "bad" },
 ];
 
 const SHARPE_BANDS: Band[] = [
-  { min: null, max: 0, label: "Pior que sem risco", tone: "bad" },
+  { min: null, max: 0, label: "Negativo", tone: "bad" },
   { min: 0, max: 1, label: "Aceitável", tone: "neutral" },
   { min: 1, max: 2, label: "Bom", tone: "good" },
   { min: 2, max: null, label: "Excelente", tone: "good" },
@@ -107,6 +288,7 @@ export default function AssetsPage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [showFilters, setShowFilters] = useState(true);
+  const [showColumnPicker, setShowColumnPicker] = useState(false);
 
   // Filters
   const [exchangeFilter, setExchangeFilter] = useState<string>("all");
@@ -117,7 +299,32 @@ export default function AssetsPage() {
   const [sharpeRange, setSharpeRange] = useState<[number, number]>([-10, 10]);
   const [adxRange, setAdxRange] = useState<[number, number]>([0, 100]);
 
-  // Pagination state (1-indexed page)
+  // Column visibility (persisted to localStorage) — lazy init to avoid SSR mismatch
+  const [activeCols, setActiveCols] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return DEFAULT_COLS;
+    try {
+      const stored = localStorage.getItem(COLS_KEY);
+      if (stored) {
+        const arr = JSON.parse(stored) as string[];
+        if (Array.isArray(arr)) return new Set(arr);
+      }
+    } catch {}
+    return DEFAULT_COLS;
+  });
+
+  const toggleCol = (key: string) => {
+    setActiveCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      try {
+        localStorage.setItem(COLS_KEY, JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+  };
+
+  // Pagination
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -125,7 +332,6 @@ export default function AssetsPage() {
     return () => clearTimeout(t);
   }, [debouncedQuery, query]);
 
-  // Reset to page 1 when filters change
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setPage(1);
@@ -133,7 +339,6 @@ export default function AssetsPage() {
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const offset = (page - 1) * PAGE_SIZE;
-
   const listUrl = useMemo(() => {
     const sp = new URLSearchParams({
       exchange: exchangeFilter,
@@ -149,13 +354,11 @@ export default function AssetsPage() {
     keepPreviousData: true,
   });
 
-  // Items = current page items (no accumulation; replacing on page change)
-  const allItems = useMemo(() => listData?.items ?? [], [listData]);
+  const allItems = useMemo(() => listData?.items ?? [], [listData?.items]);
   const totalPages = Math.max(1, Math.ceil((listData?.total ?? 0) / PAGE_SIZE));
   const hasPrev = page > 1;
   const hasNext = (listData?.hasMore ?? false) || page < totalPages;
 
-  // Build visible page numbers: first 2, current ±1, last 2 (with ellipsis)
   const pageNumbers = useMemo(() => {
     const cur = page;
     const last = totalPages;
@@ -172,7 +375,6 @@ export default function AssetsPage() {
     return result;
   }, [page, totalPages]);
 
-  // Quotes for accumulated items
   const symbols = useMemo(() => allItems.map((it) => it.symbol), [allItems]);
   const quotes = useSWR<{ rows: Row[] }>(
     symbols.length > 0 ? `/api/assets/quote?symbols=${symbols.join(",")}` : null,
@@ -182,7 +384,6 @@ export default function AssetsPage() {
 
   const sectors = useMemo(() => listData?.sectors ?? [], [listData?.sectors]);
 
-  // Analysis (lazy — only when filters active)
   const [analysisMap, setAnalysisMap] = useState<Record<string, Analysis | null>>({});
 
   const filtersActive =
@@ -212,6 +413,9 @@ export default function AssetsPage() {
               rsi: a.rsi ?? null,
               volatility: a.volatility ?? null,
               sharpe: a.sharpe ?? null,
+              atrPct: a.atrPct ?? null,
+              mfi: a.mfi ?? null,
+              bbWidth: a.bbWidth ?? null,
               trend:
                 a.adx != null && a.adx > 25
                   ? (a.smaTrend === "up" ? "bullish" : "bearish")
@@ -231,7 +435,8 @@ export default function AssetsPage() {
     return () => {
       cancelled = true;
     };
-  }, [filtersActive, symbolsKey, symbols.length, symbols]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersActive, symbolsKey, symbols.length]);
 
   const rows = useMemo(() => {
     const baseRows = quotes.data?.rows ?? [];
@@ -269,6 +474,12 @@ export default function AssetsPage() {
     return out;
   }, [rows, trendFilter, volRange, rsiRange, sharpeRange, adxRange]);
 
+  // Only show columns that have values in any visible row
+  const visibleCols = useMemo(() => {
+    const cols = COLUMNS.filter((c) => activeCols.has(c.key));
+    return cols.filter((c) => filteredRows.some((r) => c.hasValue(r)));
+  }, [activeCols, filteredRows]);
+
   const volZone = classifyValue((volRange[0] + volRange[1]) / 2, VOL_BANDS);
   const rsiZone = classifyValue((rsiRange[0] + rsiRange[1]) / 2, RSI_BANDS);
   const sharpeZone = classifyValue((sharpeRange[0] + sharpeRange[1]) / 2, SHARPE_BANDS);
@@ -278,27 +489,42 @@ export default function AssetsPage() {
     filtersActive && symbols.length > 0 && Object.keys(analysisMap).length === 0 && !loadingList;
 
   const total = listData?.total ?? 0;
+
   return (
     <div className="px-8 py-8 max-w-7xl">
       <div className="mb-6 flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight mb-1">Assets</h1>
           <p className="text-sm text-text-secondary">
-            <span className="font-mono text-foreground">{total}</span> ativos no universo · {filteredRows.length} mostrados
+            <span className="font-mono text-foreground">{total}</span> ativos · {filteredRows.length} mostrados · {visibleCols.length} colunas
           </p>
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-1 text-xs rounded-md border transition-colors",
-            showFilters
-              ? "bg-foreground text-background border-foreground"
-              : "border-border text-text-secondary hover:text-foreground"
-          )}
-        >
-          <Filter className="w-3 h-3" />
-          Filtros
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowColumnPicker(!showColumnPicker)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1 text-xs rounded-md border transition-colors",
+              showColumnPicker
+                ? "bg-foreground text-background border-foreground"
+                : "border-border text-text-secondary hover:text-foreground",
+            )}
+          >
+            <Settings2 className="w-3 h-3" />
+            Colunas
+          </button>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1 text-xs rounded-md border transition-colors",
+              showFilters
+                ? "bg-foreground text-background border-foreground"
+                : "border-border text-text-secondary hover:text-foreground",
+            )}
+          >
+            <Filter className="w-3 h-3" />
+            Filtros
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-2 mb-4">
@@ -341,67 +567,106 @@ export default function AssetsPage() {
         )}
       </div>
 
+      {showColumnPicker && (
+        <div className="rounded-lg border border-border bg-surface p-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-foreground">Colunas visíveis</h3>
+            <button
+              onClick={() => setShowColumnPicker(false)}
+              className="p-1 hover:bg-surface-elevated rounded"
+              aria-label="Fechar"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {COLUMNS.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => toggleCol(c.key)}
+                className={cn(
+                  "px-2.5 py-1 text-xs rounded border transition-colors",
+                  activeCols.has(c.key)
+                    ? "bg-foreground text-background border-foreground"
+                    : "border-border text-text-muted hover:text-foreground",
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-text-muted mt-3">
+            Colunas sem valor nos resultados visíveis são escondidas automaticamente.
+          </p>
+        </div>
+      )}
+
       {showFilters && (
         <div className="rounded-lg border border-border bg-surface p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <RangeSlider
-              label="Volatilidade (anualizada)"
+              label="Volatilidade %"
               value={volRange}
               onChange={setVolRange}
               min={0}
               max={100}
               step={1}
-              unit="%"
               zone={volZone}
             />
             <RangeSlider
-              label="RSI (14)"
+              label="RSI"
               value={rsiRange}
               onChange={setRsiRange}
               min={0}
               max={100}
               step={1}
-              unit=""
               zone={rsiZone}
             />
             <RangeSlider
-              label="ADX (força da tendência)"
+              label="ADX"
               value={adxRange}
               onChange={setAdxRange}
               min={0}
               max={100}
               step={1}
-              unit=""
               zone={adxZone}
             />
             <RangeSlider
-              label="Sharpe (risk-adj. return)"
+              label="Sharpe"
               value={sharpeRange}
               onChange={setSharpeRange}
               min={-5}
               max={5}
               step={0.1}
-              unit=""
               zone={sharpeZone}
             />
-            <div>
-              <label className="text-xs uppercase tracking-wider text-text-muted font-medium block mb-2">
-                Tendência
-              </label>
-              <select
-                value={trendFilter}
-                onChange={(e) => setTrendFilter(e.target.value as typeof trendFilter)}
-                className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-sm"
-              >
-                <option value="all">Qualquer</option>
-                <option value="bullish">↑ Alta (SMA20 acima de SMA50, ADX acima de 25)</option>
-                <option value="bearish">↓ Baixa (SMA20 abaixo de SMA50, ADX acima de 25)</option>
-                <option value="neutral">→ Lateral (ADX até 25)</option>
-              </select>
+          </div>
+          <div className="mt-4 flex items-center gap-2 flex-wrap">
+            <span className="text-xs uppercase tracking-wider text-text-muted">Tendência:</span>
+            <div className="flex gap-1">
+              {[
+                { value: "all" as const, label: "Qualquer" },
+                { value: "bullish" as const, label: "↑ Alta" },
+                { value: "bearish" as const, label: "↓ Baixa" },
+                { value: "neutral" as const, label: "→ Lateral" },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setTrendFilter(opt.value)}
+                  className={cn(
+                    "px-2.5 py-1 text-xs rounded transition-colors",
+                    trendFilter === opt.value
+                      ? "bg-foreground text-background"
+                      : "border border-border text-text-secondary hover:text-foreground",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
           {filtersActive && (
-            <div className="mt-4 text-xs text-text-muted">
+            <div className="mt-3 text-xs text-text-muted">
               {analysisLoading ? (
                 <span className="inline-flex items-center gap-1.5">
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -415,82 +680,77 @@ export default function AssetsPage() {
         </div>
       )}
 
-      <div className="rounded-lg border border-border bg-surface overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-text-muted text-xs uppercase tracking-wider">
-              <th className="text-left px-4 py-3 font-medium">Ativo</th>
-              <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Setor</th>
-              <th className="text-right px-4 py-3 font-medium">Preço</th>
-              <th className="text-right px-4 py-3 font-medium">24h</th>
-              <th className="text-right px-4 py-3 font-medium hidden lg:table-cell">ADX</th>
-              <th className="text-right px-4 py-3 font-medium hidden lg:table-cell">RSI</th>
-              <th className="text-right px-4 py-3 font-medium hidden xl:table-cell">Vol%</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredRows.map((r, i) => (
-              <tr
-                key={`${r.symbol}-${r.type}`}
-                className={cn(
-                  "border-b border-border-subtle last:border-0 hover:bg-surface-elevated transition-colors",
-                  i % 2 === 0 ? "bg-transparent" : "bg-surface-elevated/30",
-                )}
-              >
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-surface-elevated text-text-muted uppercase">
-                      {r.type === "stock" ? "ação" : r.type === "etf" ? "etf" : "crypto"}
-                    </span>
-                    <Link
-                      href={`/asset/${encodeURIComponent(r.symbol)}`}
-                      className="font-mono font-semibold text-foreground hover:text-accent transition-colors"
-                    >
-                      {r.symbol}
-                    </Link>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-text-muted text-xs hidden md:table-cell">{r.sector}</td>
-                <td className="px-4 py-3 text-right font-mono tabular-nums">
-                  {r.quote ? (
-                    <span>${r.quote.price.toFixed(2)}</span>
-                  ) : (
-                    <span className="text-text-muted">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right font-mono tabular-nums">
-                  {r.quote ? (
-                    <span className={cn(r.quote.changePercent >= 0 ? "text-positive" : "text-negative")}>
-                      {formatPercent(r.quote.changePercent)}
-                    </span>
-                  ) : (
-                    <span className="text-text-muted">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right font-mono tabular-nums text-text-muted hidden lg:table-cell">
-                  {r.analysis?.adx != null ? r.analysis.adx.toFixed(0) : "—"}
-                </td>
-                <td className="px-4 py-3 text-right font-mono tabular-nums hidden lg:table-cell">
-                  {r.analysis?.rsi != null ? (
-                    <span className={cn(
-                      r.analysis.rsi < 30 ? "text-positive" : r.analysis.rsi > 70 ? "text-negative" : "text-text-muted",
-                    )}>
-                      {r.analysis.rsi.toFixed(0)}
-                    </span>
-                  ) : (
-                    <span className="text-text-muted">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right font-mono tabular-nums text-text-muted hidden xl:table-cell">
-                  {r.analysis?.volatility != null ? `${r.analysis.volatility.toFixed(0)}%` : "—"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {filteredRows.length === 0 && !loadingList && (
+        <div className="rounded-lg border border-border bg-surface p-12 text-center">
+          <p className="text-text-secondary text-sm">
+            Nenhum resultado. Tente outro ticker ou nome.
+          </p>
+        </div>
+      )}
 
-      {/* Pagination */}
+      {visibleCols.length > 0 && (
+        <div className="rounded-lg border border-border bg-surface overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-text-muted text-xs uppercase tracking-wider">
+                  <th className="text-left px-4 py-3 font-medium sticky left-0 bg-surface">
+                    Ativo
+                  </th>
+                  {visibleCols.map((c) => (
+                    <th
+                      key={c.key}
+                      className={cn(
+                        "px-4 py-3 font-medium",
+                        c.align === "right" ? "text-right" : "text-left",
+                      )}
+                    >
+                      {c.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRows.map((r, i) => (
+                  <tr
+                    key={`${r.symbol}-${r.type}`}
+                    className={cn(
+                      "border-b border-border-subtle last:border-0 hover:bg-surface-elevated transition-colors",
+                      i % 2 === 0 ? "bg-transparent" : "bg-surface-elevated/30",
+                    )}
+                  >
+                    <td className="px-4 py-3 sticky left-0 bg-inherit">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-surface-elevated text-text-muted uppercase">
+                          {r.type === "stock" ? "ação" : r.type === "etf" ? "etf" : "crypto"}
+                        </span>
+                        <Link
+                          href={`/asset/${encodeURIComponent(r.symbol)}`}
+                          className="font-mono font-semibold text-foreground hover:text-accent transition-colors"
+                        >
+                          {r.symbol}
+                        </Link>
+                      </div>
+                    </td>
+                    {visibleCols.map((c) => (
+                      <td
+                        key={c.key}
+                        className={cn(
+                          "px-4 py-3 font-mono tabular-nums",
+                          c.align === "right" ? "text-right" : "text-left",
+                        )}
+                      >
+                        {c.render(r)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {(totalPages > 1 || hasPrev) && (
         <div className="mt-6 flex items-center justify-center gap-1">
           <button
@@ -542,7 +802,6 @@ function RangeSlider({
   min,
   max,
   step,
-  unit,
   zone,
 }: {
   label: string;
@@ -551,49 +810,66 @@ function RangeSlider({
   min: number;
   max: number;
   step: number;
-  unit: string;
   zone: { label: string; tone: "good" | "bad" | "neutral" };
 }) {
+  const [lo, hi] = value;
+  const span = max - min || 1;
+  const loPct = ((lo - min) / span) * 100;
+  const hiPct = ((hi - min) / span) * 100;
+
   return (
-    <div>
-      <div className="flex items-baseline justify-between mb-2">
-        <label className="text-xs uppercase tracking-wider text-text-muted font-medium">
+    <div className="rounded-lg bg-surface-elevated/40 border border-border-subtle p-3">
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-[11px] uppercase tracking-wider text-text-muted font-medium">
           {label}
         </label>
-        {zone.label && (
-          <span
-            className={cn(
-              "text-xs font-medium",
-              zone.tone === "good" && "text-positive",
-              zone.tone === "bad" && "text-negative",
-              zone.tone === "neutral" && "text-text-secondary",
-            )}
-          >
-            {zone.label}
-          </span>
-        )}
+        <span
+          className={cn(
+            "text-[11px] font-medium px-1.5 py-0.5 rounded",
+            zone.tone === "good" && "bg-positive/10 text-positive",
+            zone.tone === "bad" && "bg-negative/10 text-negative",
+            zone.tone === "neutral" && "bg-surface text-text-secondary",
+          )}
+        >
+          {zone.label}
+        </span>
       </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="number"
-          value={value[0]}
-          min={min}
-          max={value[1]}
-          step={step}
-          onChange={(e) => onChange([parseFloat(e.target.value), value[1]])}
-          className="w-20 bg-background border border-border rounded-md px-2 py-1.5 text-sm font-mono tabular-nums"
+      <div className="flex items-baseline gap-1 mb-2 font-mono tabular-nums text-sm">
+        <span className="text-foreground font-medium">{lo}</span>
+        <span className="text-text-muted">–</span>
+        <span className="text-foreground font-medium">{hi}</span>
+      </div>
+      {/* Dual range */}
+      <div className="relative h-6 flex items-center">
+        <div className="absolute inset-x-0 h-1.5 bg-surface rounded-full" />
+        <div
+          className="absolute h-1.5 bg-foreground/60 rounded-full"
+          style={{ left: `${loPct}%`, right: `${100 - hiPct}%` }}
         />
-        <span className="text-text-muted text-xs">a</span>
         <input
-          type="number"
-          value={value[1]}
-          min={value[0]}
+          type="range"
+          min={min}
           max={max}
           step={step}
-          onChange={(e) => onChange([value[0], parseFloat(e.target.value)])}
-          className="w-20 bg-background border border-border rounded-md px-2 py-1.5 text-sm font-mono tabular-nums"
+          value={lo}
+          onChange={(e) => {
+            const v = parseFloat(e.target.value);
+            onChange([Math.min(v, hi), hi]);
+          }}
+          className="absolute inset-x-0 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-background [&::-webkit-slider-thumb]:cursor-grab [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-foreground [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-background [&::-moz-range-thumb]:cursor-grab"
         />
-        {unit && <span className="text-text-muted text-xs">{unit}</span>}
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={hi}
+          onChange={(e) => {
+            const v = parseFloat(e.target.value);
+            onChange([lo, Math.max(v, lo)]);
+          }}
+          className="absolute inset-x-0 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-background [&::-webkit-slider-thumb]:cursor-grab [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-foreground [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-background [&::-moz-range-thumb]:cursor-grab"
+        />
       </div>
     </div>
   );

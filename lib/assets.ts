@@ -4,6 +4,9 @@
  */
 
 import { cached } from "./cache";
+import { SP500 } from "./snp500";
+
+// Build sector map: S&P 500 (authoritative) + ETF/Crypto by type
 import { getCompanyName } from "./asset-names";
 
 export type AssetType = "stock" | "etf" | "crypto";
@@ -220,6 +223,17 @@ export type Sector = {
   industry: string;
 };
 
+const SECTOR_BY_SYMBOL = new Map<string, string>();
+for (const e of SP500) {
+  SECTOR_BY_SYMBOL.set(e.symbol, e.sector);
+}
+for (const sym of ETFS) {
+  if (!SECTOR_BY_SYMBOL.has(sym)) SECTOR_BY_SYMBOL.set(sym, "ETF");
+}
+for (const sym of CRYPTOS) {
+  if (!SECTOR_BY_SYMBOL.has(sym)) SECTOR_BY_SYMBOL.set(sym, "Cryptocurrency");
+}
+
 const SECTOR_KEY = "yahoo:sectors:batch";
 
 export async function getSectorsFor(symbols: string[]): Promise<Map<string, string>> {
@@ -227,41 +241,17 @@ export async function getSectorsFor(symbols: string[]): Promise<Map<string, stri
   return cached(SECTOR_KEY + ":" + sortedKey, 24 * 3600, async () => {
     const map = new Map<string, string>();
     if (symbols.length === 0) return map;
-    // Fetch summary in batch via /v7/finance/quote (no auth required for basic fields)
-    // but we need industry — fetch via /v10/finance/quoteSummary? No, that's auth.
-    // Use /v8/finance/chart and look up via a hardcoded map for common tickers.
-    const knownIndustries: Record<string, string> = {
-      AAPL: "Technology", MSFT: "Technology", GOOGL: "Media", AMZN: "Retail",
-      NVDA: "Semiconductors", META: "Media", TSLA: "Automobiles",
-      JPM: "Banking", BAC: "Banking", GS: "Banking", MS: "Banking",
-      XOM: "Energy", CVX: "Energy", COP: "Energy",
-      UNH: "Healthcare", JNJ: "Healthcare", LLY: "Pharmaceuticals",
-      PFE: "Pharmaceuticals", ABBV: "Pharmaceuticals",
-      WMT: "Retail", HD: "Retail", NKE: "Apparel", MCD: "Restaurants",
-      KO: "Beverages", PEP: "Beverages",
-      DIS: "Media", NFLX: "Media",
-      V: "Financial Services", MA: "Financial Services",
-      COST: "Retail", SBUX: "Restaurants",
-      BA: "Aerospace", CAT: "Machinery", GE: "Industrials",
-      F: "Automobiles", GM: "Automobiles",
-      BTC: "Cryptocurrency", ETH: "Cryptocurrency",
-      // ETFs
-      SPY: "ETF", VOO: "ETF", QQQ: "ETF", VTI: "ETF",
-      IVV: "ETF", VEA: "ETF", VTV: "ETF", IEFA: "ETF",
-      VWO: "ETF", IEMG: "ETF", IJR: "ETF", VUG: "ETF", IWF: "ETF",
-      BNDX: "ETF", IWM: "ETF", VIG: "ETF", IJH: "ETF", VGT: "ETF",
-      VXUS: "ETF", ITOT: "ETF", SCHB: "ETF", EFA: "ETF", VB: "ETF",
-      SCHD: "ETF", VV: "ETF", TLT: "ETF", BIV: "ETF", GLD: "ETF",
-      VO: "ETF", IVE: "ETF", QUAL: "ETF", DIA: "ETF", VYM: "ETF",
-      MGV: "ETF", SCHF: "ETF", MBB: "ETF", TIP: "ETF", IEI: "ETF",
-      SHY: "ETF", BSV: "ETF",
-    };
     for (const sym of symbols) {
       const upper = sym.toUpperCase();
-      if (knownIndustries[upper]) {
-        map.set(upper, knownIndustries[upper]);
+      const sector = SECTOR_BY_SYMBOL.get(upper);
+      if (sector) {
+        map.set(upper, sector);
       } else {
-        map.set(upper, "—");
+        // Fallback by type
+        const hasDash = upper.includes("-");
+        if (hasDash) map.set(upper, "Cryptocurrency");
+        else if (upper.length <= 5) map.set(upper, "ETF");
+        else map.set(upper, "—");
       }
     }
     return map;

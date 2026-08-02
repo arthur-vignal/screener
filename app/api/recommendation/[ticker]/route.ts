@@ -47,7 +47,8 @@ export async function GET(
 
       const rets = returns(closes);
       const sharpe = sharpeRatio(rets);
-      const mdd = maxDrawdown(closes);
+      const mddResult = maxDrawdown(closes);
+      const mdd = mddResult?.pct ?? null;
       const z = zScore(closes, 20);
 
       const last = candles.length - 1;
@@ -59,7 +60,7 @@ export async function GET(
           ? Math.sqrt(rets.reduce((a, r) => a + r * r, 0) / rets.length) * Math.sqrt(252) * 100
           : null,
         sharpe,
-        maxDrawdown: mdd != null ? Number(mdd) * 100 : null,
+        maxDrawdown: mdd != null ? Number(mdd) : null,
         zScore: z[last] ?? null,
       });
 
