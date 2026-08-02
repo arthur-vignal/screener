@@ -20,14 +20,6 @@ export type AssetSummary = {
 
 const BASE = "https://query2.finance.yahoo.com";
 
-async function fetchYahoo(path: string, params: Record<string, string>): Promise<Response> {
-  const qs = new URLSearchParams(params).toString();
-  return fetch(`${BASE}${path}?${qs}`, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    },
-  });
-}
 
 /**
  * Curated lists. Live "universal search" would need a premium API.

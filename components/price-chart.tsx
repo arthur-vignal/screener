@@ -96,7 +96,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
           </div>
         </div>
 
-        <div className={cn("px-4 py-6 relative transition-all duration-300", showRSI ? "h-72" : "h-96")}>
+        <div className={cn("px-4 py-6 relative transition-all duration-300", showRSI ? "h-[260px]" : "h-[420px]")}>
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-sm text-text-muted">Carregando…</div>

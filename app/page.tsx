@@ -54,22 +54,18 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [quickSearch, setQuickSearch] = useState("");
 
-  // Load top assets (highest priced movers)
+  // Load top movers (single batch request)
   useEffect(() => {
-    Promise.all(
-      FEED_TICKERS.map((t) =>
-        fetch(`/api/assets/quote?symbols=${encodeURIComponent(t)}`)
-          .then((r) => r.json())
-          .then((d) => ({ rows: (d.rows ?? []) as AssetRow[] }))
-          .catch(() => ({ rows: [] as AssetRow[] })),
-      ),
-    ).then((results) => {
-      const all = results.flatMap((r) => r.rows);
-      // Top movers by absolute change
-      all.sort((a, b) => Math.abs(b.quote?.changePercent ?? 0) - Math.abs(a.quote?.changePercent ?? 0));
-      setTopAssets(all.slice(0, 8));
-      setLoading(false);
-    });
+    fetch(`/api/assets/quote?symbols=${encodeURIComponent(FEED_TICKERS.join(","))}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const rows = (d.rows ?? []) as AssetRow[];
+        // Top movers by absolute change
+        rows.sort((a, b) => Math.abs(b.quote?.changePercent ?? 0) - Math.abs(a.quote?.changePercent ?? 0));
+        setTopAssets(rows.slice(0, 8));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   // Load news

@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { cached } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 15;
+export const maxDuration = 20;
 
 const ALLOWED_DOMAINS = [
   "yahoo.com",
   "finance.yahoo.com",
-  "news.google.com",  // Google News redirect URLs
+  "news.google.com",
   "reuters.com",
   "bloomberg.com",
   "wsj.com",
@@ -23,6 +23,10 @@ const ALLOWED_DOMAINS = [
   "zacks.com",
   "nasdaq.com",
   "sec.gov",
+  "coindesk.com",
+  "cointelegraph.com",
+  "decrypt.co",
+  "bitcoinmagazine.com",
 ];
 
 const USER_AGENT =
@@ -37,33 +41,21 @@ function isAllowed(url: string): boolean {
   }
 }
 
-/**
- * Extract readable text from HTML using simple heuristics:
- * - Strip <script>, <style>, <nav>, <header>, <footer>, <aside>
- * - Prefer <article> content if present
- * - Otherwise collect all <p> tags
- */
 function extractContent(html: string): string | null {
-  // Strip scripts and styles (including content)
   const cleaned = html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
     .replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
 
-  // Try to find <article> first
   const articleMatch = cleaned.match(/<article[\s\S]*?<\/article>/i);
   let content = articleMatch ? articleMatch[0] : cleaned;
 
-  // Strip remaining tags but keep <p> as paragraph breaks
-  // Convert <p>, <br>, </p> to newlines
   content = content.replace(/<\s*br\s*\/?>/gi, "\n");
   content = content.replace(/<\s*\/\s*p\s*>/gi, "\n\n");
   content = content.replace(/<\s*p[^>]*>/gi, "");
 
-  // Strip remaining HTML tags
   content = content.replace(/<[^>]+>/g, "");
 
-  // Decode common HTML entities
   content = content
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
@@ -73,22 +65,64 @@ function extractContent(html: string): string | null {
     .replace(/&#39;/g, "'")
     .replace(/&apos;/g, "'");
 
-  // Normalize whitespace
   content = content
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
     .join("\n\n");
 
-  // Drop if too short (means extraction failed)
   if (content.length < 200) return null;
 
-  // Truncate to reasonable size
   if (content.length > 30000) {
     content = content.slice(0, 30000) + "...";
   }
 
   return content;
+}
+
+async function tryFetch(url: string): Promise<string | null> {
+  try {
+    const r = await fetch(url, {
+      headers: {
+        "User-Agent": USER_AGENT,
+        Accept: "text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      signal: AbortSignal.timeout(10000),
+      redirect: "follow",
+    });
+    if (!r.ok) return null;
+    const text = await r.text();
+    return extractContent(text);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchWithWaybackFallback(url: string): Promise<string | null> {
+  // Try direct first
+  const direct = await tryFetch(url);
+  if (direct) return direct;
+
+  // Google News URLs are tricky — server-side blocks 400
+  // Fall back to Wayback Machine for any URL that fails direct fetch
+  try {
+    const wbUrl = `https://archive.org/wayback/available?url=${encodeURIComponent(url)}`;
+    const r = await fetch(wbUrl, {
+      headers: { "User-Agent": USER_AGENT },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!r.ok) return null;
+    const data = (await r.json()) as {
+      archived_snapshots?: { closest?: { available?: boolean; url?: string } };
+    };
+    const snapshot = data.archived_snapshots?.closest;
+    if (!snapshot?.available || !snapshot.url) return null;
+    // Fetch the wayback snapshot (rewrites to original)
+    return await tryFetch(snapshot.url.replace(/^http:/, "https:"));
+  } catch {
+    return null;
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -106,20 +140,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const content = await cached(`article:${url}`, 3600, async () => {
-      const r = await fetch(url, {
-        headers: {
-          "User-Agent": USER_AGENT,
-          Accept: "text/html,application/xhtml+xml",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-        signal: AbortSignal.timeout(12000),
-        redirect: "follow",
-      });
-      // For Google News, the final URL is what we should report
-      // (but we keep using the original URL for the "open in source" link)
-      if (!r.ok) return null;
-      const html = await r.text();
-      return extractContent(html);
+      return await fetchWithWaybackFallback(url);
     });
 
     if (!content) {
