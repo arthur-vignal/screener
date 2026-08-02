@@ -30,6 +30,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
   const [range, setRange] = useState<Range>("1Y");
   const [showSMA20, setShowSMA20] = useState(true);
   const [showSMA50, setShowSMA50] = useState(true);
+  const [showRSI, setShowRSI] = useState(false);
 
   const { data, isLoading } = useSWR<{ points: Candle[] }>(
     `/api/chart/${ticker}?range=${range}`,
@@ -203,10 +204,20 @@ export function PriceChart({ ticker }: { ticker: string }) {
             <span className="w-3 h-0.5 bg-violet-400" />
             SMA 50
           </button>
+          <button
+            onClick={() => setShowRSI(!showRSI)}
+            className={cn(
+              "flex items-center gap-1.5 px-2 py-1 rounded transition-colors",
+              showRSI ? "text-foreground" : "text-text-muted hover:text-foreground",
+            )}
+          >
+            <span className="w-3 h-0.5 bg-blue-400" />
+            RSI 14
+          </button>
         </div>
       </div>
 
-      {rsiData.length > 0 && (
+      {rsiData.length > 0 && showRSI && (
         <div className="rounded-lg border border-border bg-surface overflow-hidden">
           <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
             <h3 className="text-sm font-medium text-foreground">RSI (14)</h3>

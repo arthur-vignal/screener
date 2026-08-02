@@ -1,11 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Search, Loader2, ArrowLeft, TrendingUp, Activity, BarChart3, AlertTriangle, Layers } from "lucide-react";
+import {
+  Search,
+  Loader2,
+  ArrowLeft,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
+import {
+  Area,
+  ComposedChart,
+  ResponsiveContainer,
+  YAxis,
+  XAxis,
+  Tooltip,
+  CartesianGrid,
+  Line,
+} from "recharts";
 import { cn } from "@/lib/utils";
 
-
+type Candle = { date: string; timestamp: number; close: number };
 
 type AnalysisData = {
   bars: number;
@@ -41,16 +58,29 @@ type AnalysisData = {
   };
 };
 
+const RANGES = [
+  { value: "1M", label: "1M" },
+  { value: "3M", label: "3M" },
+  { value: "6M", label: "6M" },
+  { value: "1Y", label: "1Y" },
+  { value: "2Y", label: "2Y" },
+] as const;
+
+type Range = typeof RANGES[number]["value"];
+
 type Group = "trend" | "momentum" | "volatility" | "volume" | "fractal" | "risk";
 
-const GROUPS: { value: Group; label: string; icon: typeof Activity }[] = [
-  { value: "trend", label: "Tendência", icon: TrendingUp },
-  { value: "momentum", label: "Momentum", icon: Activity },
-  { value: "volatility", label: "Volatilidade", icon: BarChart3 },
-  { value: "volume", label: "Volume", icon: Layers },
-  { value: "fractal", label: "Fractal", icon: AlertTriangle },
-  { value: "risk", label: "Risco", icon: AlertTriangle },
+const GROUPS: { value: Group; label: string }[] = [
+  { value: "trend", label: "Tendência" },
+  { value: "momentum", label: "Momentum" },
+  { value: "volatility", label: "Volatilidade" },
+  { value: "volume", label: "Volume" },
+  { value: "fractal", label: "Fractal" },
+  { value: "risk", label: "Risco" },
 ];
+
+// Toggle visibility per indicator
+type ToggleState = Record<string, boolean>;
 
 export default function AnalysisPage() {
   const [ticker, setTicker] = useState("");
@@ -59,8 +89,21 @@ export default function AnalysisPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeGroup, setActiveGroup] = useState<Group>("trend");
+  const [range, setRange] = useState<Range>("1Y");
 
-  // Nota: ticker só é setado quando o usuário submete (não em effect).
+  // Toggles — todos default OFF conforme regra
+  const [toggles, setToggles] = useState<ToggleState>({
+    price: true, // preço sempre visivel (é o gráfico principal)
+    sma20: false,
+    sma50: false,
+    bb: false,
+    keltner: false,
+    rsi: false,
+    stoch: false,
+    obv: false,
+    vwap: false,
+  });
+
   const loadTicker = async (sym: string) => {
     const upper = sym.toUpperCase().trim();
     if (!upper) return;
@@ -79,12 +122,18 @@ export default function AnalysisPage() {
     }
   };
 
+  const toggle = (key: string) =>
+    setToggles((t) => ({ ...t, [key]: !t[key] }));
+
+  // Price chart com SMA20/50 e BB/Keltner toggles
+  const { priceSeries } = useChartData(ticker, range);
+
   return (
     <div className="px-8 py-8 max-w-6xl">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight mb-1">Analysis</h1>
         <p className="text-sm text-text-secondary">
-          Análise técnica profunda com indicadores avançados (ADX, Hurst, OBV, BB, etc).
+          Análise técnica profunda. Toggle nos indicadores para customizar o gráfico.
         </p>
       </div>
 
@@ -95,7 +144,7 @@ export default function AnalysisPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
         <input
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => setInput(e.target.value.toUpperCase())}
           placeholder="Ticker (ex: AAPL)"
           className="w-full bg-surface border border-border rounded-md pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-foreground/30"
         />
@@ -113,7 +162,7 @@ export default function AnalysisPage() {
       {loading && (
         <div className="flex items-center justify-center py-20 gap-2 text-text-muted">
           <Loader2 className="w-4 h-4 animate-spin" />
-          Carregando análise profunda...
+          Calculando indicadores avançados (1Y de candles)...
         </div>
       )}
 
@@ -125,193 +174,307 @@ export default function AnalysisPage() {
 
       {data && !loading && (
         <>
-          <div className="flex items-center gap-2 mb-4 bg-surface border border-border rounded-md p-0.5 w-fit overflow-x-auto">
-            {GROUPS.map((g) => {
-              const Icon = g.icon;
-              return (
-                <button
-                  key={g.value}
-                  onClick={() => setActiveGroup(g.value)}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors whitespace-nowrap",
-                    activeGroup === g.value
-                      ? "bg-foreground text-background"
-                      : "text-text-secondary hover:text-foreground",
-                  )}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {g.label}
-                </button>
-              );
-            })}
+          {/* CHART com toggles */}
+          {priceSeries.length > 0 && (
+            <div className="rounded-lg border border-border bg-surface p-5 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <div className="text-lg font-medium">{ticker} — Price</div>
+                  <div className="text-xs text-text-muted">Range: {range}</div>
+                </div>
+                <div className="flex gap-1">
+                  {RANGES.map((r) => (
+                    <button
+                      key={r.value}
+                      onClick={() => setRange(r.value)}
+                      className={cn(
+                        "px-2.5 py-1 text-xs rounded transition-colors",
+                        range === r.value
+                          ? "bg-foreground text-background"
+                          : "bg-surface-elevated text-text-secondary hover:text-foreground",
+                      )}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <Chart
+                series={priceSeries}
+                showPrice={toggles.price}
+                showSMA20={toggles.sma20}
+                showSMA50={toggles.sma50}
+                showBB={toggles.bb}
+                showKeltner={toggles.keltner}
+              />
+              {/* Toggle bar */}
+              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border-subtle">
+                <ToggleBtn label="Preço" checked={toggles.price} onChange={() => toggle("price")} color="bg-foreground" />
+                <ToggleBtn label="SMA 20" checked={toggles.sma20} onChange={() => toggle("sma20")} color="bg-yellow-400" />
+                <ToggleBtn label="SMA 50" checked={toggles.sma50} onChange={() => toggle("sma50")} color="bg-violet-400" />
+                <ToggleBtn label="Bollinger" checked={toggles.bb} onChange={() => toggle("bb")} color="bg-blue-400" />
+                <ToggleBtn label="Keltner" checked={toggles.keltner} onChange={() => toggle("keltner")} color="bg-amber-400" />
+              </div>
+            </div>
+          )}
+
+          {/* Toggle group nav */}
+          <div className="flex items-center gap-1 mb-4 bg-surface border border-border rounded-md p-0.5 w-fit overflow-x-auto">
+            {GROUPS.map((g) => (
+              <button
+                key={g.value}
+                onClick={() => setActiveGroup(g.value)}
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded transition-colors whitespace-nowrap",
+                  activeGroup === g.value
+                    ? "bg-foreground text-background"
+                    : "text-text-secondary hover:text-foreground",
+                )}
+              >
+                {g.label}
+              </button>
+            ))}
           </div>
 
           <div className="rounded-lg border border-border bg-surface p-6">
             {activeGroup === "trend" && (
-              <div className="space-y-4">
-                <Indicator
+              <div className="space-y-5">
+                <DetailedIndicator
                   name="ADX (Average Directional Index)"
-                  formula="ADX = avg(14) of |+DI - -DI| / (+DI + -DI) × 100"
-                  description="Mede a força da tendência. >25 = tendência forte, <20 = fraca/sem tendência."
+                  formula="ADX = SMA(14) de |+DI - -DI| / (+DI + -DI) × 100"
+                  rangeGuide={[
+                    { label: "0–20", meaning: "Sem tendência definida. Mercado lateral ou fraco.", tone: "neutral" },
+                    { label: "20–25", meaning: "Tendência fraca começando. Pode entrar/sair do range.", tone: "neutral" },
+                    { label: "25–50", meaning: "Tendência forte estabelecida. Operar a favor.", tone: "positive" },
+                    { label: "50–75", meaning: "Tendência muito forte. Cuidado com exaustão.", tone: "positive" },
+                    { label: "75+", meaning: "Tendência extrema. Risco de reversão iminente.", tone: "negative" },
+                  ]}
                   value={data.latest.adx}
-                  interpretation={interpADX(data.latest.adx)}
                 />
-                <Indicator
-                  name="Aroon Up / Down"
-                  formula="Aroon Up = (periods since 1-period high / period) × 100"
-                  description="Identifica se o ativo está em tendência de alta ou baixa."
-                  value={`${(data.latest.aroonUp ?? 0).toFixed(0)} / ${(data.latest.aroonDown ?? 0).toFixed(0)}`}
-                  interpretation={interpAroon(data.latest.aroonUp ?? 0, data.latest.aroonDown ?? 0)}
+                <DetailedIndicator
+                  name="Aroon (Up / Down)"
+                  formula="Aroon Up = (períodos desde máxima / período) × 100; Aroon Down = análogo para mínima"
+                  rangeGuide={[
+                    { label: "Aroon Up > 70", meaning: "Tendência de ALTA forte. Máxima recente.", tone: "positive" },
+                    { label: "Aroon Down > 70", meaning: "Tendência de BAIXA forte. Mínima recente.", tone: "negative" },
+                    { label: "Ambos < 30", meaning: "Sem direção. Mercado em consolidação.", tone: "neutral" },
+                  ]}
+                  value={`Up ${data.latest.aroonUp?.toFixed(0) ?? "—"} / Down ${data.latest.aroonDown?.toFixed(0) ?? "—"}`}
                 />
               </div>
             )}
 
             {activeGroup === "momentum" && (
-              <div className="space-y-4">
-                <Indicator
+              <div className="space-y-5">
+                <DetailedIndicator
                   name="Stochastic Oscillator (%K, %D)"
-                  formula="%K = (close - low14) / (high14 - low14) × 100; %D = SMA(3) de %K"
-                  description="Momentum de curto prazo. >80 = sobrecomprado, <20 = sobrevendido."
-                  value={`${(data.latest.stochK ?? 0).toFixed(1)} / ${(data.latest.stochD ?? 0).toFixed(1)}`}
-                  interpretation={interpStochastic(data.latest.stochK ?? 0)}
+                  formula="%K = (close - min14) / (max14 - min14) × 100; %D = SMA(3) de %K"
+                  rangeGuide={[
+                    { label: "%K > 80", meaning: "Sobrecomprado. Possível correção.", tone: "negative" },
+                    { label: "%K 20–80", meaning: "Zona neutra.", tone: "neutral" },
+                    { label: "%K < 20", meaning: "Sobrevendido. Possível repique.", tone: "positive" },
+                    { label: "%K cruza %D pra cima", meaning: "Sinal de compra.", tone: "positive" },
+                    { label: "%K cruza %D pra baixo", meaning: "Sinal de venda.", tone: "negative" },
+                  ]}
+                  value={`%K ${data.latest.stochK?.toFixed(1) ?? "—"} / %D ${data.latest.stochD?.toFixed(1) ?? "—"}`}
                 />
-                <Indicator
+                <DetailedIndicator
                   name="Williams %R"
                   formula="%R = (high14 - close) / (high14 - low14) × -100"
-                  description="Similar ao Stochastic invertido. >-20 = sobrecomprado, <-80 = sobrevendido."
-                  value={data.latest.williams}
-                  interpretation={interpWilliams(data.latest.williams ?? 0)}
+                  rangeGuide={[
+                    { label: "%R > -20", meaning: "Sobrecomprado. Início de correção.", tone: "negative" },
+                    { label: "%R -20 a -80", meaning: "Neutro.", tone: "neutral" },
+                    { label: "%R < -80", meaning: "Sobrevendido. Possível fundo.", tone: "positive" },
+                  ]}
+                  value={data.latest.williams?.toFixed(1) ?? null}
                 />
-                <Indicator
+                <DetailedIndicator
                   name="CCI (Commodity Channel Index)"
-                  formula="CCI = (TP - SMA20) / (0.015 × mean deviation)"
-                  description="Desvios da média. >100 = forte alta, <-100 = forte baixa."
-                  value={data.latest.cci}
-                  interpretation={interpCCI(data.latest.cci ?? 0)}
+                  formula="CCI = (TP - SMA20) / (0.015 × desvio médio)"
+                  rangeGuide={[
+                    { label: "CCI > +100", meaning: "Forte ALTA. Tendência sustentável.", tone: "positive" },
+                    { label: "CCI -100 a +100", meaning: "Mercado lateral / fraco.", tone: "neutral" },
+                    { label: "CCI < -100", meaning: "Forte BAIXA. Possível continuação.", tone: "negative" },
+                  ]}
+                  value={data.latest.cci?.toFixed(1) ?? null}
                 />
-                <Indicator
+                <DetailedIndicator
                   name="MFI (Money Flow Index)"
                   formula="MFI = 100 - 100 / (1 + Money Ratio)"
-                  description="Volume-weighted RSI. >80 = sobrecomprado, <20 = sobrevendido."
-                  value={data.latest.mfi}
-                  interpretation={interpMFI(data.latest.mfi ?? 0)}
+                  rangeGuide={[
+                    { label: "MFI > 80", meaning: "Sobrecomprado por fluxo. Distribuição possível.", tone: "negative" },
+                    { label: "MFI 20–80", meaning: "Fluxo neutro.", tone: "neutral" },
+                    { label: "MFI < 20", meaning: "Sobrevendido por fluxo. Acumulação possível.", tone: "positive" },
+                  ]}
+                  value={data.latest.mfi?.toFixed(1) ?? null}
                 />
               </div>
             )}
 
             {activeGroup === "volatility" && (
-              <div className="space-y-4">
-                <Indicator
+              <div className="space-y-5">
+                <DetailedIndicator
                   name="Bollinger Bands"
-                  formula="Upper/Lower = SMA20 ± 2σ"
-                  description="Bandas de volatilidade. Preço toca banda superior = possível reversão; banda inferior = possível continuação (com confirmação)."
-                  value={`${(data.latest.bbUpper ?? 0).toFixed(2)} / ${(data.latest.bbMiddle ?? 0).toFixed(2)} / ${(data.latest.bbLower ?? 0).toFixed(2)}`}
-                  extra={`Largura: ${(data.latest.bbWidth ?? 0).toFixed(1)}%`}
+                  formula="Upper/Lower = SMA20 ± 2×σ20; Width = (Upper - Lower) / Middle × 100"
+                  rangeGuide={[
+                    { label: "Preço toca banda superior", meaning: "Possível resistência / reversão de curto prazo.", tone: "negative" },
+                    { label: "Preço toca banda inferior", meaning: "Possível suporte / continuação (com confirmação).", tone: "positive" },
+                    { label: "Bandwidth < 5%", meaning: "Squeeze. Expansão de volatilidade iminente.", tone: "neutral" },
+                    { label: "Bandwidth > 15%", meaning: "Alta volatilidade. Risco elevado.", tone: "neutral" },
+                    { label: "Bandwidth > 20%", meaning: "Volatilidade extrema. Possível reversão.", tone: "negative" },
+                  ]}
+                  value={`Upper ${data.latest.bbUpper?.toFixed(2) ?? "—"} / Mid ${data.latest.bbMiddle?.toFixed(2) ?? "—"} / Lower ${data.latest.bbLower?.toFixed(2) ?? "—"}`}
+                  extra={`Bandwidth: ${data.latest.bbWidth?.toFixed(2) ?? "—"}%`}
                 />
-                <Indicator
-                  name="ATR (Average True Range)"
-                  formula="ATR = avg(14) de True Range"
-                  description="Volatilidade absoluta. Usado para stop-loss e position sizing."
-                  value={data.latest.atr}
-                  extra={`${(data.latest.atrPct ?? 0).toFixed(2)}% do preço`}
+                <DetailedIndicator
+                  name="ATR (Average True Range, 14d)"
+                  formula="ATR = SMA(14) de True Range"
+                  rangeGuide={[
+                    { label: "ATR / Preço < 2%", meaning: "Baixa volatilidade. Range diário apertado.", tone: "neutral" },
+                    { label: "ATR / Preço 2-4%", meaning: "Volatilidade média. Típico de blue chips.", tone: "neutral" },
+                    { label: "ATR / Preço > 5%", meaning: "Alta volatilidade. Risco elevado.", tone: "negative" },
+                    { label: "ATR / Preço > 8%", meaning: "Especulativo (penny stocks, crypto).", tone: "negative" },
+                  ]}
+                  value={data.latest.atr?.toFixed(2) ?? null}
+                  extra={`${data.latest.atrPct?.toFixed(2) ?? "—"}% do preço`}
                 />
-                <Indicator
-                  name="Keltner Channels"
-                  formula="Upper/Lower = EMA20 ± 2×ATR"
-                  description="Similar a Bollinger mas usa ATR. Boa para breakout trading."
-                  value={`${(data.latest.keltnerUpper ?? 0).toFixed(2)} / ${(data.latest.keltnerLower ?? 0).toFixed(2)}`}
-                />
-                <Indicator
-                  name="Volatilidade anualizada"
+                <DetailedIndicator
+                  name="Volatilidade Anualizada"
                   formula="σ_anual = σ_diária × √252"
-                  description="Desvio padrão dos retornos diários anualizado. ~15-25% = normal pra ações, >40% = alta volatilidade."
+                  rangeGuide={[
+                    { label: "< 15%", meaning: "Muito baixa (bonds, utilities).", tone: "neutral" },
+                    { label: "15–25%", meaning: "Típica de blue chips.", tone: "neutral" },
+                    { label: "25–40%", meaning: "Alta (small caps, growth).", tone: "negative" },
+                    { label: "> 40%", meaning: "Especulativa (crypto, biotech).", tone: "negative" },
+                  ]}
                   value={data.latest.volatility != null ? `${data.latest.volatility.toFixed(1)}%` : null}
                 />
               </div>
             )}
 
             {activeGroup === "volume" && (
-              <div className="space-y-4">
-                <Indicator
+              <div className="space-y-5">
+                <DetailedIndicator
                   name="OBV (On-Balance Volume)"
                   formula="OBV += volume se close subiu, -= volume se caiu"
-                  description="Acumulação de volume. Slope positivo = compradores acumulando."
-                  value={data.latest.obv}
-                  extra={`Slope 5d: ${data.latest.obvSlope && data.latest.obvSlope > 0 ? "+" : ""}${data.latest.obvSlope?.toLocaleString() ?? "—"}`}
+                  rangeGuide={[
+                    { label: "OBV subindo + preço lateral", meaning: "Acumulação. Possível breakout pra cima.", tone: "positive" },
+                    { label: "OBV caindo + preço lateral", meaning: "Distribuição. Possível breakdown pra baixo.", tone: "negative" },
+                    { label: "OBV confirmando novos topos", meaning: "Tendência saudável.", tone: "positive" },
+                    { label: "OBV divergindo do preço", meaning: "Fraqueza subjacente. Cuidado.", tone: "negative" },
+                  ]}
+                  value={data.latest.obv?.toLocaleString() ?? null}
+                  extra={`Slope 5d: ${data.latest.obvSlope?.toLocaleString() ?? "—"}`}
                 />
-                <Indicator
-                  name="CMF (Chaikin Money Flow)"
-                  formula="CMF = sum(MFV × volume, 20) / sum(volume, 20)"
-                  description="Pressão compradora/vendedora. >0.05 = acumulação, <-0.05 = distribuição."
-                  value={data.latest.cmf}
-                  extra={interpCMF(data.latest.cmf ?? 0)}
+                <DetailedIndicator
+                  name="CMF (Chaikin Money Flow, 20d)"
+                  formula="CMF = sum(MFV, 20) / sum(volume, 20), MFV = ((close-low)-(high-close))/(high-low) × volume"
+                  rangeGuide={[
+                    { label: "CMF > +0.05", meaning: "Pressão compradora. Acumulação.", tone: "positive" },
+                    { label: "CMF -0.05 a +0.05", meaning: "Neutro.", tone: "neutral" },
+                    { label: "CMF < -0.05", meaning: "Pressão vendedora. Distribuição.", tone: "negative" },
+                  ]}
+                  value={data.latest.cmf?.toFixed(3) ?? null}
                 />
-                <Indicator
+                <DetailedIndicator
                   name="VWAP (Volume-Weighted Avg Price)"
-                  formula="VWAP = Σ(P×V) / Σ(V)"
-                  description="Preço médio ponderado por volume. Acima = bullish, abaixo = bearish."
-                  value={data.latest.vwap}
+                  formula="VWAP cumulativo = Σ(P×V) / Σ(V)"
+                  rangeGuide={[
+                    { label: "Preço > VWAP", meaning: "Compradores no controle.", tone: "positive" },
+                    { label: "Preço < VWAP", meaning: "Vendedores no controle.", tone: "negative" },
+                    { label: "Preço cruza VWAP pra cima", meaning: "Sinal de continuação de alta.", tone: "positive" },
+                    { label: "Preço cruza VWAP pra baixo", meaning: "Sinal de continuação de baixa.", tone: "negative" },
+                  ]}
+                  value={data.latest.vwap?.toFixed(2) ?? null}
                 />
               </div>
             )}
 
             {activeGroup === "fractal" && (
-              <div className="space-y-4">
-                <Indicator
+              <div className="space-y-5">
+                <DetailedIndicator
                   name="Hurst Exponent (R/S method)"
-                  formula="H via regressão de log(R/S) em log(lag)"
-                  description="Mede memória de longo prazo. <0.5 mean-reverting, =0.5 random walk, >0.5 trending."
-                  value={data.latest.hurst}
-                  extra={interpHurst(data.latest.hurst)}
+                  formula="H via regressão log-log de R/S vs lag"
+                  rangeGuide={[
+                    { label: "H < 0.45", meaning: "Mean-reverting (anti-persistente). Reversão à média favorecida.", tone: "negative" },
+                    { label: "H ≈ 0.50", meaning: "Random walk. Sem memória. Mercado eficiente.", tone: "neutral" },
+                    { label: "H 0.50–0.65", meaning: "Trending persistente. Momentum funciona.", tone: "positive" },
+                    { label: "H > 0.70", meaning: "Forte trending / persistente. Risco de bolha.", tone: "positive" },
+                  ]}
+                  value={data.latest.hurst.toFixed(3)}
                 />
-                <Indicator
+                <DetailedIndicator
                   name="Z-Score (rolling 20d)"
                   formula="Z = (price - SMA20) / σ20"
-                  description="Desvio padronizado do preço em relação à média de 20 dias. |Z|>2 = significante."
-                  value={data.latest.zScore}
-                  extra={interpZScore(data.latest.zScore ?? 0)}
+                  rangeGuide={[
+                    { label: "|Z| < 1", meaning: "Preço dentro do range normal.", tone: "neutral" },
+                    { label: "1 ≤ |Z| < 2", meaning: "Desvio moderado. Possível continuação.", tone: "neutral" },
+                    { label: "|Z| ≥ 2", meaning: "Desvio significativo (~5% das vezes). Mean-reversion provável.", tone: "negative" },
+                  ]}
+                  value={data.latest.zScore?.toFixed(2) ?? null}
                 />
               </div>
             )}
 
             {activeGroup === "risk" && (
-              <div className="space-y-4">
-                <Indicator
+              <div className="space-y-5">
+                <DetailedIndicator
                   name="Sharpe Ratio (anualizado)"
                   formula="Sharpe = μ_r / σ_r × √252"
-                  description="Retorno excedente por unidade de volatilidade total. >1 = bom, >2 = excelente."
-                  value={data.latest.sharpe}
+                  rangeGuide={[
+                    { label: "Sharpe < 0", meaning: "Performance pior que sem risco. Evitar.", tone: "negative" },
+                    { label: "0 a 1", meaning: "Aceitável. Compensa pelo risco.", tone: "neutral" },
+                    { label: "1 a 2", meaning: "Bom.", tone: "positive" },
+                    { label: "2 a 3", meaning: "Muito bom. Referência para hedge funds.", tone: "positive" },
+                    { label: "> 3", meaning: "Excelente. Suspeito — verificar se está inflado.", tone: "positive" },
+                  ]}
+                  value={data.latest.sharpe.toFixed(2)}
                 />
-                <Indicator
+                <DetailedIndicator
                   name="Sortino Ratio"
                   formula="Sortino = μ_r / σ_downside × √252"
-                  description="Similar ao Sharpe mas usa só volatilidade downside (retornos negativos). Melhor pra distribuições assimétricas."
-                  value={data.latest.sortino}
+                  rangeGuide={[
+                    { label: "Sortino < 0", meaning: "Performance negativa. Evitar.", tone: "negative" },
+                    { label: "0 a 1", meaning: "OK mas com drawdowns significativos.", tone: "neutral" },
+                    { label: "1 a 2", meaning: "Bom. Melhor que Sharpe pra assets assimétricos.", tone: "positive" },
+                    { label: "> 2", meaning: "Excelente risco-retorno.", tone: "positive" },
+                  ]}
+                  value={data.latest.sortino.toFixed(2)}
                 />
-                <Indicator
+                <DetailedIndicator
                   name="Maximum Drawdown"
-                  formula="MDD = max(peak - trough) / peak"
-                  description="Maior queda peak-to-trough no período. Mede risco de cauda histórico."
+                  formula="MDD = max((peak - trough) / peak) no período"
+                  rangeGuide={[
+                    { label: "MDD < 10%", meaning: "Baixo risco. Tendência saudável.", tone: "positive" },
+                    { label: "MDD 10-20%", meaning: "Moderado. Normal pra ações.", tone: "neutral" },
+                    { label: "MDD 20-35%", meaning: "Alto. Bear market típico.", tone: "negative" },
+                    { label: "MDD > 50%", meaning: "Crise extrema. Recovery longo esperado.", tone: "negative" },
+                  ]}
                   value={data.latest.maxDrawdown != null ? `${data.latest.maxDrawdown.toFixed(1)}%` : null}
                 />
-                <Indicator
-                  name="Value at Risk (95%)"
-                  formula="VaR95 = -quantile(5%) de retornos diários"
-                  description="Perda máxima em 1 dia com 95% de confiança. Métrica histórica."
+                <DetailedIndicator
+                  name="Value at Risk (95%, 1 dia)"
+                  formula="VaR95 = -quantile(5%) dos retornos diários"
+                  rangeGuide={[
+                    { label: "VaR < 1%", meaning: "Ativo de baixo risco.", tone: "positive" },
+                    { label: "VaR 1-2%", meaning: "Risco moderado. Blue chips.", tone: "neutral" },
+                    { label: "VaR 2-3%", meaning: "Risco elevado.", tone: "negative" },
+                    { label: "VaR > 5%", meaning: "Muito arriscado. Crypto / small caps.", tone: "negative" },
+                  ]}
                   value={data.latest.var95 != null ? `${data.latest.var95.toFixed(2)}%` : null}
                 />
-                <Indicator
+                <DetailedIndicator
                   name="Conditional VaR (95%)"
                   formula="CVaR95 = E[loss | loss > VaR95]"
-                  description="Perda esperada dado que estamos no pior 5%. Mais conservador que VaR."
+                  rangeGuide={[
+                    { label: "CVaR < 2%", meaning: "Cauda controlada.", tone: "positive" },
+                    { label: "CVaR 2-4%", meaning: "Risco de cauda moderado.", tone: "neutral" },
+                    { label: "CVaR > 5%", meaning: "Risco de cauda severo.", tone: "negative" },
+                  ]}
                   value={data.latest.cvar95 != null ? `${data.latest.cvar95.toFixed(2)}%` : null}
                 />
               </div>
             )}
-          </div>
-
-          <div className="mt-4 text-xs text-text-muted">
-            Baseado em {data.bars} candles diários. Cache: 1h. Fontes: Yahoo Finance.
           </div>
         </>
       )}
@@ -319,108 +482,224 @@ export default function AnalysisPage() {
   );
 }
 
-function Indicator({
+function ToggleBtn({ label, checked, onChange, color }: { label: string; checked: boolean; onChange: () => void; color: string }) {
+  return (
+    <button
+      onClick={onChange}
+      className={cn(
+        "flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors border",
+        checked
+          ? "border-foreground text-foreground bg-surface-elevated"
+          : "border-border text-text-muted hover:text-foreground",
+      )}
+    >
+      {checked ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+      <span className={`w-3 h-0.5 ${color}`} />
+      {label}
+    </button>
+  );
+}
+
+function DetailedIndicator({
   name,
   formula,
-  description,
+  rangeGuide,
   value,
   extra,
-  interpretation,
 }: {
   name: string;
   formula: string;
-  description: string;
+  rangeGuide: { label: string; meaning: string; tone: "positive" | "negative" | "neutral" }[];
   value: string | number | null;
-  extra?: string | { tone: "positive" | "negative" | "neutral"; text: string };
-  interpretation?: { tone: "positive" | "negative" | "neutral"; text: string };
+  extra?: string;
 }) {
+  const [open, setOpen] = useState(false);
+
   return (
     <div className="border-l-2 border-border-subtle pl-4">
       <div className="flex items-baseline justify-between mb-1">
         <h3 className="font-medium text-foreground text-sm">{name}</h3>
-        <span className="font-mono font-semibold tabular-nums">
+        <span className="font-mono font-semibold tabular-nums text-sm">
           {value == null ? "—" : String(value)}
-          {extra && (
-            typeof extra === "string" ? (
-              <span className="ml-2 text-xs text-text-muted font-normal">{extra}</span>
-            ) : (
-              <span
-                className={cn(
-                  "ml-2 text-xs font-normal",
-                  extra.tone === "positive" && "text-positive",
-                  extra.tone === "negative" && "text-negative",
-                  extra.tone === "neutral" && "text-text-muted",
-                )}
-              >
-                → {extra.text}
-              </span>
-            )
-          )}
+          {extra && <span className="ml-2 text-xs text-text-muted font-normal">{extra}</span>}
         </span>
       </div>
-      {interpretation && (
-        <div
-          className={cn(
-            "text-xs mb-1",
-            interpretation.tone === "positive" && "text-positive",
-            interpretation.tone === "negative" && "text-negative",
-            interpretation.tone === "neutral" && "text-text-muted",
-          )}
-        >
-          → {interpretation.text}
+      <p className="text-xs text-text-muted mb-1">{formula}</p>
+
+      <button
+        onClick={() => setOpen(!open)}
+        className="text-xs text-accent hover:underline mt-1"
+      >
+        {open ? "▾ Ocultar interpretação" : "▸ O que significa cada valor?"}
+      </button>
+
+      {open && (
+        <div className="mt-3 space-y-1.5 bg-surface-elevated/40 rounded-md p-3">
+          {rangeGuide.map((r, i) => (
+            <div key={i} className="flex items-start gap-2 text-xs">
+              {r.tone === "positive" && <CheckCircle2 className="w-3.5 h-3.5 text-positive shrink-0 mt-0.5" />}
+              {r.tone === "negative" && <XCircle className="w-3.5 h-3.5 text-negative shrink-0 mt-0.5" />}
+              {r.tone === "neutral" && <AlertCircle className="w-3.5 h-3.5 text-text-muted shrink-0 mt-0.5" />}
+              <div>
+                <span className="font-mono text-text-foreground">{r.label}</span>
+                <span className="text-text-muted"> — {r.meaning}</span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
-      <p className="text-xs text-text-secondary mb-1">{description}</p>
-      <code className="text-[10px] text-text-muted font-mono">{formula}</code>
     </div>
   );
 }
 
-// Interpretations
-function interpADX(v: number | null): { tone: "positive" | "negative" | "neutral"; text: string } {
-  if (v == null) return { tone: "neutral", text: "—" };
-  if (v > 25) return { tone: "positive", text: "tendência forte" };
-  if (v < 20) return { tone: "neutral", text: "sem tendência definida" };
-  return { tone: "neutral", text: "tendência moderada" };
+function Chart({
+  series,
+  showPrice,
+  showSMA20,
+  showSMA50,
+  showBB,
+  showKeltner,
+}: {
+  series: Candle[];
+  showPrice: boolean;
+  showSMA20: boolean;
+  showSMA50: boolean;
+  showBB: boolean;
+  showKeltner: boolean;
+}) {
+  // Calcular SMA e Bollinger localmente
+  const enriched = useMemo(() => {
+    const closes = series.map((c) => c.close);
+    const sma20 = calcMA(closes, 20);
+    const sma50 = calcMA(closes, 50);
+    const bb = calcBB(closes, 20, 2);
+    const keltner = calcKeltner(closes, 20, 2); // simplificado, sem ATR
+    return series.map((p, i) => ({
+      ...p,
+      sma20: sma20[i],
+      sma50: sma50[i],
+      bbUpper: bb.upper[i],
+      bbLower: bb.lower[i],
+      bbMiddle: bb.middle[i],
+      keltnerUpper: keltner.upper[i],
+      keltnerLower: keltner.lower[i],
+    }));
+  }, [series]);
+
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <ComposedChart data={enriched}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "var(--text-muted)" }} minTickGap={50} />
+        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "var(--text-muted)" }} tickFormatter={(v) => `$${v.toFixed(0)}`} domain={["auto", "auto"]} />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: "var(--surface-elevated)",
+            border: "1px solid var(--border)",
+            borderRadius: 6,
+            fontSize: 12,
+            padding: "8px 12px",
+          }}
+          formatter={(v) => `$${Number(v).toFixed(2)}`}
+        />
+        {showKeltner && (
+          <>
+            <Line type="monotone" dataKey="keltnerUpper" stroke="#fbbf24" strokeWidth={1} dot={false} strokeDasharray="2 2" name="Keltner Upper" />
+            <Line type="monotone" dataKey="keltnerLower" stroke="#fbbf24" strokeWidth={1} dot={false} strokeDasharray="2 2" name="Keltner Lower" />
+          </>
+        )}
+        {showBB && (
+          <>
+            <Line type="monotone" dataKey="bbUpper" stroke="#60a5fa" strokeWidth={1} dot={false} name="BB Upper" />
+            <Line type="monotone" dataKey="bbLower" stroke="#60a5fa" strokeWidth={1} dot={false} name="BB Lower" />
+          </>
+        )}
+        {showSMA50 && <Line type="monotone" dataKey="sma50" stroke="#8b5cf6" strokeWidth={1.5} dot={false} name="SMA 50" />}
+        {showSMA20 && <Line type="monotone" dataKey="sma20" stroke="#fbbf24" strokeWidth={1.5} dot={false} name="SMA 20" />}
+        {showPrice && (
+          <Area
+            type="monotone"
+            dataKey="close"
+            stroke="#ededed"
+            strokeWidth={1.5}
+            fill="url(#priceGrad)"
+            isAnimationActive={false}
+            name="Preço"
+          />
+        )}
+        <defs>
+          <linearGradient id="priceGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ededed" stopOpacity={0.2} />
+            <stop offset="100%" stopColor="#ededed" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
 }
-function interpAroon(up: number, down: number): { tone: "positive" | "negative" | "neutral"; text: string } {
-  if (up > 70 && down < 30) return { tone: "positive", text: "tendência de alta" };
-  if (down > 70 && up < 30) return { tone: "negative", text: "tendência de baixa" };
-  return { tone: "neutral", text: "sem direção clara" };
+
+function calcMA(prices: number[], period: number): (number | null)[] {
+  const out: (number | null)[] = [];
+  for (let i = 0; i < prices.length; i++) {
+    if (i < period - 1) {
+      out.push(null);
+    } else {
+      const slice = prices.slice(i - period + 1, i + 1);
+      out.push(slice.reduce((a, b) => a + b, 0) / period);
+    }
+  }
+  return out;
 }
-function interpStochastic(k: number): { tone: "positive" | "negative" | "neutral"; text: string } {
-  if (k > 80) return { tone: "negative", text: "sobrecomprado" };
-  if (k < 20) return { tone: "positive", text: "sobrevendido" };
-  return { tone: "neutral", text: "zona neutra" };
+
+function calcBB(prices: number[], period: number, stdDev: number) {
+  const ma = calcMA(prices, period);
+  const upper: (number | null)[] = [];
+  const middle = ma;
+  const lower: (number | null)[] = [];
+  for (let i = 0; i < prices.length; i++) {
+    if (ma[i] == null) {
+      upper.push(null);
+      lower.push(null);
+    } else {
+      const slice = prices.slice(i - period + 1, i + 1);
+      const mean = ma[i]!;
+      const variance = slice.reduce((a, b) => a + (b - mean) ** 2, 0) / period;
+      const std = Math.sqrt(variance);
+      upper.push(mean + stdDev * std);
+      lower.push(mean - stdDev * std);
+    }
+  }
+  return { upper, middle, lower };
 }
-function interpWilliams(r: number): { tone: "positive" | "negative" | "neutral"; text: string } {
-  if (r > -20) return { tone: "negative", text: "sobrecomprado" };
-  if (r < -80) return { tone: "positive", text: "sobrevendido" };
-  return { tone: "neutral", text: "zona neutra" };
+
+function calcKeltner(prices: number[], period: number, multiplier: number) {
+  // Simplified Keltner — sem ATR (usa stdDev como proxy)
+  const ma = calcMA(prices, period);
+  const upper: (number | null)[] = [];
+  const lower: (number | null)[] = [];
+  for (let i = 0; i < prices.length; i++) {
+    if (ma[i] == null) {
+      upper.push(null);
+      lower.push(null);
+    } else {
+      const slice = prices.slice(i - period + 1, i + 1);
+      const mean = ma[i]!;
+      const std = Math.sqrt(slice.reduce((a, b) => a + (b - mean) ** 2, 0) / period);
+      upper.push(mean + multiplier * std);
+      lower.push(mean - multiplier * std);
+    }
+  }
+  return { upper, middle: ma, lower };
 }
-function interpCCI(v: number): { tone: "positive" | "negative" | "neutral"; text: string } {
-  if (v > 100) return { tone: "positive", text: "forte alta" };
-  if (v < -100) return { tone: "negative", text: "forte baixa" };
-  return { tone: "neutral", text: "normal" };
-}
-function interpMFI(v: number): { tone: "positive" | "negative" | "neutral"; text: string } {
-  if (v > 80) return { tone: "negative", text: "sobrecomprado" };
-  if (v < 20) return { tone: "positive", text: "sobrevendido" };
-  return { tone: "neutral", text: "fluxo neutro" };
-}
-function interpCMF(v: number): string {
-  if (v > 0.05) return "acumulação";
-  if (v < -0.05) return "distribuição";
-  return "neutro";
-}
-function interpHurst(h: number): { tone: "positive" | "negative" | "neutral"; text: string } {
-  if (h > 0.55) return { tone: "positive", text: "tendência persistente (momentum continua)" };
-  if (h < 0.45) return { tone: "negative", text: "mean-reverting (volta à média)" };
-  return { tone: "neutral", text: "random walk" };
-}
-function interpZScore(z: number): { tone: "positive" | "negative" | "neutral"; text: string } {
-  if (Math.abs(z) > 2) return { tone: "neutral", text: "desvio significativo" };
-  if (z > 1) return { tone: "positive", text: "acima da média" };
-  if (z < -1) return { tone: "negative", text: "abaixo da média" };
-  return { tone: "neutral", text: "dentro do normal" };
+
+function useChartData(ticker: string, range: Range) {
+  const [series, setSeries] = useState<Candle[]>([]);
+  useEffect(() => {
+    if (!ticker) return;
+    fetch(`/api/chart/${ticker}?range=${range}`)
+      .then((r) => r.json())
+      .then((d) => setSeries((d.points ?? []) as Candle[]))
+      .catch(() => setSeries([]));
+  }, [ticker, range]);
+  return { priceSeries: series };
 }
