@@ -7,7 +7,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
-import { getDb } from "./db";
+import { queryOne, exec } from "./db";
 
 const SECRET = process.env.AUTH_SECRET || "dev-secret-change-in-production";
 const COOKIE_NAME = "screener_session";
@@ -40,18 +40,19 @@ export async function signup(opts: {
     return { ok: false, error: "senha deve ter pelo menos 8 caracteres" };
   }
 
-  const db = getDb();
-  const existing = db
-    .prepare("SELECT id FROM users WHERE username = ? OR email = ?")
-    .get(username, email);
+  const existing = await queryOne(
+    "SELECT id FROM users WHERE username = ? OR email = ?",
+    [username, email],
+  );
   if (existing) {
     return { ok: false, error: "username ou email já cadastrado" };
   }
 
   const hash = await bcrypt.hash(opts.password, 10);
-  const result = db
-    .prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)")
-    .run(username, email, hash);
+  const result = await exec(
+    "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+    [username, email, hash],
+  );
   const userId = Number(result.lastInsertRowid);
 
   return { ok: true, ...(await createSession(userId)) };
@@ -62,10 +63,10 @@ export async function login(opts: {
   password: string;
 }): Promise<{ ok: true; sessionId: string } | { ok: false; error: string }> {
   const username = opts.username.trim().toLowerCase();
-  const db = getDb();
-  const user = db
-    .prepare("SELECT id, password_hash FROM users WHERE username = ? OR email = ?")
-    .get(username, username) as { id: number; password_hash: string } | undefined;
+  const user = (await queryOne(
+    "SELECT id, password_hash FROM users WHERE username = ? OR email = ?",
+    [username, username],
+  )) as { id: number; password_hash: string } | null;
   if (!user) return { ok: false, error: "usuário ou senha inválidos" };
 
   const ok = await bcrypt.compare(opts.password, user.password_hash);
@@ -76,12 +77,10 @@ export async function login(opts: {
 
 async function createSession(userId: number): Promise<{ sessionId: string }> {
   const sessionId = newSessionId();
-  const db = getDb();
   const expiresAt = Math.floor(Date.now() / 1000) + COOKIE_MAX_AGE;
-  db.prepare("INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)").run(
-    sessionId,
-    userId,
-    expiresAt,
+  await exec(
+    "INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)",
+    [sessionId, userId, expiresAt],
   );
 
   const token = jwt.sign({ sid: sessionId, uid: userId }, SECRET, {
@@ -103,8 +102,7 @@ export async function logout() {
   if (token) {
     try {
       const decoded = jwt.verify(token, SECRET) as { sid: string };
-      const db = getDb();
-      db.prepare("DELETE FROM sessions WHERE id = ?").run(decoded.sid);
+      await exec("DELETE FROM sessions WHERE id = ?", [decoded.sid]);
     } catch {
       // ignore
     }
@@ -118,15 +116,16 @@ export async function getCurrentUser(): Promise<Session | null> {
   if (!token) return null;
   try {
     const decoded = jwt.verify(token, SECRET) as { sid: string; uid: number };
-    const db = getDb();
-    const session = db
-      .prepare("SELECT user_id, expires_at FROM sessions WHERE id = ?")
-      .get(decoded.sid) as { user_id: number; expires_at: number } | undefined;
+    const session = await queryOne<{ user_id: number; expires_at: number }>(
+      "SELECT user_id, expires_at FROM sessions WHERE id = ?",
+      [decoded.sid],
+    );
     if (!session) return null;
     if (session.expires_at < Math.floor(Date.now() / 1000)) return null;
-    const user = db
-      .prepare("SELECT id, username FROM users WHERE id = ?")
-      .get(session.user_id) as { id: number; username: string } | undefined;
+    const user = await queryOne<{ id: number; username: string }>(
+      "SELECT id, username FROM users WHERE id = ?",
+      [session.user_id],
+    );
     if (!user) return null;
     return { userId: user.id, username: user.username };
   } catch {

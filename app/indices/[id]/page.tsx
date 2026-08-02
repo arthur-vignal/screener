@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import Link from "next/link";
-import { use, useState } from "react";
+import { use } from "react";
 import useSWR from "swr";
 import { cn } from "@/lib/utils";
 

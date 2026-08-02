@@ -117,6 +117,7 @@ export default function PortfolioDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const seed = SEED_DETAILS[id];
 
 
   const { data: portfolio, error: portfolioError } = useSWR<PortfolioDetail | { error: string }>(

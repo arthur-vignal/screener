@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { query, exec } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +15,8 @@ type Row = {
   created_at: number;
   updated_at: number;
   username: string | null;
+  symbol: string | null;
+  weight: number | null;
 };
 
 export async function GET(
@@ -22,39 +24,39 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const db = getDb();
-  const row = db
-    .prepare(
-      `SELECT p.id, p.owner_id, p.slug, p.name, p.description, p.initial_value, p.is_public, p.created_at, p.updated_at, u.username
-       FROM portfolios p LEFT JOIN users u ON p.owner_id = u.id
-       WHERE p.slug = ? OR p.id = ?`,
-    )
-    .get(id, Number(id)) as Row | undefined;
+  const numericId = Number(id);
 
-  if (!row) return NextResponse.json({ error: "not found" }, { status: 404 });
+  const rows = await query<Row>(
+    `SELECT p.id, p.owner_id, p.slug, p.name, p.description, p.initial_value, p.is_public, p.created_at, p.updated_at, u.username, ph.symbol, ph.weight
+     FROM portfolios p
+     LEFT JOIN users u ON p.owner_id = u.id
+     LEFT JOIN portfolio_holdings ph ON ph.portfolio_id = p.id
+     WHERE p.slug = ? OR p.id = ?`,
+    [id, numericId],
+  );
 
-  // Check access
+  if (rows.length === 0) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  const r = rows[0];
   const user = await getCurrentUser();
-  if (row.is_public === 0 && row.owner_id !== user?.userId) {
+  if (r.is_public === 0 && r.owner_id !== user?.userId) {
     return NextResponse.json({ error: "private" }, { status: 403 });
   }
 
-  const holdings = db
-    .prepare("SELECT symbol, weight FROM portfolio_holdings WHERE portfolio_id = ?")
-    .all(row.id) as { symbol: string; weight: number }[];
-
   return NextResponse.json({
-    id: row.id,
-    slug: row.slug,
-    name: row.name,
-    description: row.description,
-    initialValue: row.initial_value,
-    isPublic: row.is_public === 1,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    owner: row.username,
-    ownerId: row.owner_id,
-    holdings,
+    id: r.id,
+    slug: r.slug,
+    name: r.name,
+    description: r.description,
+    initialValue: r.initial_value,
+    isPublic: r.is_public === 1,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+    owner: r.username,
+    ownerId: r.owner_id,
+    holdings: rows
+      .filter((x) => x.symbol && x.weight != null)
+      .map((x) => ({ symbol: x.symbol!, weight: x.weight! })),
   });
 }
 
@@ -65,17 +67,15 @@ export async function DELETE(
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "login necessário" }, { status: 401 });
   const { id } = await params;
-  const db = getDb();
-  const row = db
-    .prepare("SELECT owner_id FROM portfolios WHERE slug = ? OR id = ?")
-    .get(id, Number(id)) as { owner_id: number | null } | undefined;
-  if (!row) return NextResponse.json({ error: "not found" }, { status: 404 });
-  if (row.owner_id !== user.userId) {
+  const numericId = Number(id);
+  const row = (await query(
+    "SELECT id, owner_id FROM portfolios WHERE slug = ? OR id = ?",
+    [id, numericId],
+  )) as { id: number; owner_id: number | null }[];
+  if (row.length === 0) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (row[0].owner_id !== user.userId) {
     return NextResponse.json({ error: "not your portfolio" }, { status: 403 });
   }
-  db.prepare("DELETE FROM portfolios WHERE id = ?").run(row.owner_id);
-  // re-delete by id
-  const r = db.prepare("SELECT id FROM portfolios WHERE slug = ? OR id = ?").get(id, Number(id)) as { id: number } | undefined;
-  if (r) db.prepare("DELETE FROM portfolios WHERE id = ?").run(r.id);
+  await exec("DELETE FROM portfolios WHERE id = ?", [row[0].id]);
   return NextResponse.json({ ok: true });
 }

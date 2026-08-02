@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { query } from "@/lib/db";
 import { computeConstituents } from "@/lib/index-calculator";
 import type { Universe, IndexFilters, IndexRanking } from "@/lib/index-calculator";
 
@@ -21,14 +21,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const db = getDb();
-  const row = db
-    .prepare(
-      "SELECT id, owner_id, universe, filters, ranking, top_n, is_public FROM indices WHERE slug = ? OR id = ?",
-    )
-    .get(id, Number(id)) as Row | undefined;
-
-  if (!row) return NextResponse.json({ error: "not found" }, { status: 404 });
+  const numericId = Number(id);
+  const rows = await query<Row>(
+    "SELECT id, owner_id, universe, filters, ranking, top_n, is_public FROM indices WHERE slug = ? OR id = ?",
+    [id, numericId],
+  );
+  if (rows.length === 0) return NextResponse.json({ error: "not found" }, { status: 404 });
+  const row = rows[0];
 
   const constituents = await computeConstituents(
     row.universe as Universe,

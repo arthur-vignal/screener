@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getDb } from "@/lib/db";
-import type { Universe, IndexFilters, IndexRanking } from "@/lib/index-calculator";
+import { query, exec } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -25,26 +24,22 @@ export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
   const scope = req.nextUrl.searchParams.get("scope") ?? "public";
 
-  const db = getDb();
   let rows: Row[];
   if (user && scope === "mine") {
-    rows = db
-      .prepare(
-        `SELECT i.id, i.owner_id, i.slug, i.name, i.description, i.universe, i.filters, i.ranking, i.top_n, i.is_public, i.created_at, i.updated_at, u.username
-         FROM indices i LEFT JOIN users u ON i.owner_id = u.id
-         WHERE i.owner_id = ?
-         ORDER BY i.created_at DESC`,
-      )
-      .all(user.userId) as Row[];
+    rows = await query<Row>(
+      `SELECT i.id, i.owner_id, i.slug, i.name, i.description, i.universe, i.filters, i.ranking, i.top_n, i.is_public, i.created_at, i.updated_at, u.username
+       FROM indices i LEFT JOIN users u ON i.owner_id = u.id
+       WHERE i.owner_id = ?
+       ORDER BY i.created_at DESC`,
+      [user.userId],
+    );
   } else {
-    rows = db
-      .prepare(
-        `SELECT i.id, i.owner_id, i.slug, i.name, i.description, i.universe, i.filters, i.ranking, i.top_n, i.is_public, i.created_at, i.updated_at, u.username
-         FROM indices i LEFT JOIN users u ON i.owner_id = u.id
-         WHERE i.is_public = 1
-         ORDER BY i.created_at DESC`,
-      )
-      .all() as Row[];
+    rows = await query<Row>(
+      `SELECT i.id, i.owner_id, i.slug, i.name, i.description, i.universe, i.filters, i.ranking, i.top_n, i.is_public, i.created_at, i.updated_at, u.username
+       FROM indices i LEFT JOIN users u ON i.owner_id = u.id
+       WHERE i.is_public = 1
+       ORDER BY i.created_at DESC`,
+    );
   }
 
   const result = rows.map((r) => ({
@@ -74,9 +69,9 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as {
       name?: string;
       description?: string;
-      universe?: Universe;
-      filters?: IndexFilters;
-      ranking?: IndexRanking;
+      universe?: string;
+      filters?: Record<string, unknown>;
+      ranking?: string;
       topN?: number;
       isPublic?: boolean;
       createdAt?: number;
@@ -94,16 +89,15 @@ export async function POST(req: NextRequest) {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "")
-        .slice(0, 40) + "-" + Math.random().toString(36).slice(2, 6);
+        .slice(0, 40) +
+      "-" +
+      Math.random().toString(36).slice(2, 6);
 
-    const db = getDb();
     const createdAt = body.createdAt ?? Math.floor(Date.now() / 1000);
-    const r = db
-      .prepare(
-        `INSERT INTO indices (owner_id, slug, name, description, universe, filters, ranking, top_n, is_public, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .run(
+    const r = await exec(
+      `INSERT INTO indices (owner_id, slug, name, description, universe, filters, ranking, top_n, is_public, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
         user.userId,
         slug,
         body.name.trim(),
@@ -115,7 +109,8 @@ export async function POST(req: NextRequest) {
         body.isPublic ? 1 : 0,
         createdAt,
         Math.floor(Date.now() / 1000),
-      );
+      ],
+    );
 
     return NextResponse.json({ ok: true, id: Number(r.lastInsertRowid), slug });
   } catch (err) {

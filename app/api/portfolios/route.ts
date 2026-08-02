@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { query, exec, batch } from "@/lib/db";
+import type { InValue } from "@libsql/client";
 
 export const dynamic = "force-dynamic";
 
@@ -14,49 +15,56 @@ type Row = {
   created_at: number;
   updated_at: number;
   username: string | null;
+  symbol: string | null;
+  weight: number | null;
 };
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
   const scope = req.nextUrl.searchParams.get("scope") ?? "public";
 
-  const db = getDb();
   let rows: Row[];
   if (user && scope === "mine") {
-    rows = db
-      .prepare(
-        `SELECT p.id, p.slug, p.name, p.description, p.initial_value, p.is_public, p.created_at, p.updated_at, u.username
-         FROM portfolios p LEFT JOIN users u ON p.owner_id = u.id
-         WHERE p.owner_id = ?
-         ORDER BY p.created_at DESC`,
-      )
-      .all(user.userId) as Row[];
+    rows = await query<Row>(
+      `SELECT p.id, p.slug, p.name, p.description, p.initial_value, p.is_public, p.created_at, p.updated_at, u.username, ph.symbol, ph.weight
+       FROM portfolios p
+       LEFT JOIN users u ON p.owner_id = u.id
+       LEFT JOIN portfolio_holdings ph ON ph.portfolio_id = p.id
+       WHERE p.owner_id = ?
+       ORDER BY p.created_at DESC`,
+      [user.userId],
+    );
   } else {
-    rows = db
-      .prepare(
-        `SELECT p.id, p.slug, p.name, p.description, p.initial_value, p.is_public, p.created_at, p.updated_at, u.username
-         FROM portfolios p LEFT JOIN users u ON p.owner_id = u.id
-         WHERE p.is_public = 1
-         ORDER BY p.created_at DESC`,
-      )
-      .all() as Row[];
+    rows = await query<Row>(
+      `SELECT p.id, p.slug, p.name, p.description, p.initial_value, p.is_public, p.created_at, p.updated_at, u.username, ph.symbol, ph.weight
+       FROM portfolios p
+       LEFT JOIN users u ON p.owner_id = u.id
+       LEFT JOIN portfolio_holdings ph ON ph.portfolio_id = p.id
+       WHERE p.is_public = 1
+       ORDER BY p.created_at DESC`,
+    );
   }
 
-  // Attach constituents summary
-  const stmt = db.prepare(
-    "SELECT symbol, weight FROM portfolio_holdings WHERE portfolio_id = ?",
-  );
-  const result = rows.map((r) => ({
-    id: r.id,
-    slug: r.slug,
-    name: r.name,
-    description: r.description,
-    initialValue: r.initial_value,
-    isPublic: r.is_public === 1,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
-    owner: r.username,
-    constituents: stmt.all(r.id) as { symbol: string; weight: number }[],
+  // Group holdings by portfolio
+  const byPortfolio = new Map<number, typeof rows>();
+  for (const r of rows) {
+    if (!byPortfolio.has(r.id)) byPortfolio.set(r.id, []);
+    byPortfolio.get(r.id)!.push(r);
+  }
+
+  const result = Array.from(byPortfolio.entries()).map(([id, ps]) => ({
+    id,
+    slug: ps[0].slug,
+    name: ps[0].name,
+    description: ps[0].description,
+    initialValue: ps[0].initial_value,
+    isPublic: ps[0].is_public === 1,
+    createdAt: ps[0].created_at,
+    updatedAt: ps[0].updated_at,
+    owner: ps[0].username,
+    constituents: ps
+      .filter((p) => p.symbol && p.weight != null)
+      .map((p) => ({ symbol: p.symbol!, weight: p.weight! })),
   }));
 
   return NextResponse.json({ portfolios: result });
@@ -74,7 +82,7 @@ export async function POST(req: NextRequest) {
       isPublic?: boolean;
       initialValue?: number;
       holdings?: { symbol: string; weight: number }[];
-      createdAt?: number; // optional backdate (unix seconds)
+      createdAt?: number;
     };
 
     if (!body.name || !body.holdings || body.holdings.length === 0) {
@@ -84,7 +92,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate weights sum
     const totalW = body.holdings.reduce((a, h) => a + (h.weight ?? 0), 0);
     if (totalW < 0.99 || totalW > 1.01) {
       return NextResponse.json(
@@ -93,41 +100,45 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const slug = body.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 40) + "-" + Math.random().toString(36).slice(2, 6);
+    const slug =
+      body.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 40) +
+      "-" +
+      Math.random().toString(36).slice(2, 6);
 
-    const db = getDb();
     const createdAt = body.createdAt ?? Math.floor(Date.now() / 1000);
-    const insert = db.transaction(() => {
-      const r = db
-        .prepare(
-          `INSERT INTO portfolios (owner_id, slug, name, description, initial_value, is_public, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        )
-        .run(
-          user.userId,
-          slug,
-          (body.name ?? "").trim(),
-          (body.description ?? "").trim(),
-          body.initialValue ?? 10000,
-          body.isPublic ? 1 : 0,
-          createdAt,
-          Math.floor(Date.now() / 1000),
-        );
-      const id = Number(r.lastInsertRowid);
-      const insertHold = db.prepare(
-        "INSERT INTO portfolio_holdings (portfolio_id, symbol, weight) VALUES (?, ?, ?)",
-      );
-      for (const h of (body.holdings ?? [])) {
-        insertHold.run(id, h.symbol.toUpperCase(), h.weight);
-      }
-      return id;
-    });
 
-    const id = insert();
+    // Insert portfolio + holdings in a batch
+    const result = await exec(
+      `INSERT INTO portfolios (owner_id, slug, name, description, initial_value, is_public, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        user.userId,
+        slug,
+        body.name.trim(),
+        (body.description ?? "").trim(),
+        body.initialValue ?? 10000,
+        body.isPublic ? 1 : 0,
+        createdAt,
+        Math.floor(Date.now() / 1000),
+      ],
+    );
+    const id = Number(result.lastInsertRowid);
+
+    const statements: Array<{ sql: string; args?: InValue[] }> = [];
+    for (const h of body.holdings!) {
+      statements.push({
+        sql: "INSERT INTO portfolio_holdings (portfolio_id, symbol, weight) VALUES (?, ?, ?)",
+        args: [id, h.symbol.toUpperCase(), h.weight],
+      });
+    }
+    if (statements.length > 0) {
+      await batch(statements, "write");
+    }
+
     return NextResponse.json({ ok: true, id, slug });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

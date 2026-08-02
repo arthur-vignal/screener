@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { query, exec } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -25,34 +25,33 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const db = getDb();
-  const row = db
-    .prepare(
-      `SELECT i.id, i.owner_id, i.slug, i.name, i.description, i.universe, i.filters, i.ranking, i.top_n, i.is_public, i.created_at, i.updated_at, u.username
-       FROM indices i LEFT JOIN users u ON i.owner_id = u.id
-       WHERE i.slug = ? OR i.id = ?`,
-    )
-    .get(id, Number(id)) as Row | undefined;
-
-  if (!row) return NextResponse.json({ error: "not found" }, { status: 404 });
+  const numericId = Number(id);
+  const rows = await query<Row>(
+    `SELECT i.id, i.owner_id, i.slug, i.name, i.description, i.universe, i.filters, i.ranking, i.top_n, i.is_public, i.created_at, i.updated_at, u.username
+     FROM indices i LEFT JOIN users u ON i.owner_id = u.id
+     WHERE i.slug = ? OR i.id = ?`,
+    [id, numericId],
+  );
+  if (rows.length === 0) return NextResponse.json({ error: "not found" }, { status: 404 });
+  const r = rows[0];
   const user = await getCurrentUser();
-  if (row.is_public === 0 && row.owner_id !== user?.userId) {
+  if (r.is_public === 0 && r.owner_id !== user?.userId) {
     return NextResponse.json({ error: "private" }, { status: 403 });
   }
 
   return NextResponse.json({
-    id: row.id,
-    slug: row.slug,
-    name: row.name,
-    description: row.description,
-    universe: row.universe,
-    filters: JSON.parse(row.filters),
-    ranking: row.ranking,
-    topN: row.top_n,
-    isPublic: row.is_public === 1,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    owner: row.username,
+    id: r.id,
+    slug: r.slug,
+    name: r.name,
+    description: r.description,
+    universe: r.universe,
+    filters: JSON.parse(r.filters),
+    ranking: r.ranking,
+    topN: r.top_n,
+    isPublic: r.is_public === 1,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+    owner: r.username,
   });
 }
 
@@ -63,14 +62,15 @@ export async function DELETE(
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "login necessário" }, { status: 401 });
   const { id } = await params;
-  const db = getDb();
-  const row = db
-    .prepare("SELECT id, owner_id FROM indices WHERE slug = ? OR id = ?")
-    .get(id, Number(id)) as { id: number; owner_id: number | null } | undefined;
-  if (!row) return NextResponse.json({ error: "not found" }, { status: 404 });
-  if (row.owner_id !== user.userId) {
+  const numericId = Number(id);
+  const rows = (await query(
+    "SELECT id, owner_id FROM indices WHERE slug = ? OR id = ?",
+    [id, numericId],
+  )) as { id: number; owner_id: number | null }[];
+  if (rows.length === 0) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (rows[0].owner_id !== user.userId) {
     return NextResponse.json({ error: "not your index" }, { status: 403 });
   }
-  db.prepare("DELETE FROM indices WHERE id = ?").run(row.id);
+  await exec("DELETE FROM indices WHERE id = ?", [rows[0].id]);
   return NextResponse.json({ ok: true });
 }
