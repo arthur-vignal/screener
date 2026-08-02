@@ -6,12 +6,12 @@ export const dynamic = "force-dynamic";
 
 type Row = {
   id: number;
-  owner_id: number | null;
+  owner_id: string | null;
   slug: string;
   name: string;
   description: string;
   initial_value: number;
-  is_public: number;
+  is_public: boolean;
   created_at: number;
   updated_at: number;
   username: string | null;
@@ -25,13 +25,12 @@ export async function GET(
 ) {
   const { id } = await params;
   const numericId = Number(id);
-
   const rows = await query<Row>(
-    `SELECT p.id, p.owner_id, p.slug, p.name, p.description, p.initial_value, p.is_public, p.created_at, p.updated_at, u.username, ph.symbol, ph.weight
+    `SELECT p.id, p.owner_id, p.slug, p.name, p.description, p.initial_value, p.is_public, p.created_at, p.updated_at, pr.username, ph.symbol, ph.weight
      FROM portfolios p
-     LEFT JOIN users u ON p.owner_id = u.id
+     LEFT JOIN profiles pr ON p.owner_id = pr.id
      LEFT JOIN portfolio_holdings ph ON ph.portfolio_id = p.id
-     WHERE p.slug = ? OR p.id = ?`,
+     WHERE p.slug = $1 OR p.id = $2`,
     [id, numericId],
   );
 
@@ -39,7 +38,7 @@ export async function GET(
 
   const r = rows[0];
   const user = await getCurrentUser();
-  if (r.is_public === 0 && r.owner_id !== user?.userId) {
+  if (!r.is_public && r.owner_id !== user?.userId) {
     return NextResponse.json({ error: "private" }, { status: 403 });
   }
 
@@ -49,7 +48,7 @@ export async function GET(
     name: r.name,
     description: r.description,
     initialValue: r.initial_value,
-    isPublic: r.is_public === 1,
+    isPublic: r.is_public,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     owner: r.username,
@@ -68,14 +67,14 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: "login necessário" }, { status: 401 });
   const { id } = await params;
   const numericId = Number(id);
-  const row = (await query(
-    "SELECT id, owner_id FROM portfolios WHERE slug = ? OR id = ?",
+  const rows = await query<{ id: number; owner_id: string | null }>(
+    "SELECT id, owner_id FROM portfolios WHERE slug = $1 OR id = $2",
     [id, numericId],
-  )) as { id: number; owner_id: number | null }[];
-  if (row.length === 0) return NextResponse.json({ error: "not found" }, { status: 404 });
-  if (row[0].owner_id !== user.userId) {
+  );
+  if (rows.length === 0) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (rows[0].owner_id !== user.userId) {
     return NextResponse.json({ error: "not your portfolio" }, { status: 403 });
   }
-  await exec("DELETE FROM portfolios WHERE id = ?", [row[0].id]);
+  await exec("DELETE FROM portfolios WHERE id = $1", [rows[0].id]);
   return NextResponse.json({ ok: true });
 }

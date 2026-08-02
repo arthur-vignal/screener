@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 type Row = {
   id: number;
-  owner_id: number | null;
+  owner_id: string | null;
   slug: string;
   name: string;
   description: string;
@@ -14,7 +14,7 @@ type Row = {
   filters: string;
   ranking: string;
   top_n: number;
-  is_public: number;
+  is_public: boolean;
   created_at: number;
   updated_at: number;
   username: string | null;
@@ -27,17 +27,17 @@ export async function GET(req: NextRequest) {
   let rows: Row[];
   if (user && scope === "mine") {
     rows = await query<Row>(
-      `SELECT i.id, i.owner_id, i.slug, i.name, i.description, i.universe, i.filters, i.ranking, i.top_n, i.is_public, i.created_at, i.updated_at, u.username
-       FROM indices i LEFT JOIN users u ON i.owner_id = u.id
-       WHERE i.owner_id = ?
+      `SELECT i.id, i.owner_id, i.slug, i.name, i.description, i.universe, i.filters::text, i.ranking, i.top_n, i.is_public, i.created_at, i.updated_at, pr.username
+       FROM indices i LEFT JOIN profiles pr ON i.owner_id = pr.id
+       WHERE i.owner_id = $1
        ORDER BY i.created_at DESC`,
       [user.userId],
     );
   } else {
     rows = await query<Row>(
-      `SELECT i.id, i.owner_id, i.slug, i.name, i.description, i.universe, i.filters, i.ranking, i.top_n, i.is_public, i.created_at, i.updated_at, u.username
-       FROM indices i LEFT JOIN users u ON i.owner_id = u.id
-       WHERE i.is_public = 1
+      `SELECT i.id, i.owner_id, i.slug, i.name, i.description, i.universe, i.filters::text, i.ranking, i.top_n, i.is_public, i.created_at, i.updated_at, pr.username
+       FROM indices i LEFT JOIN profiles pr ON i.owner_id = pr.id
+       WHERE i.is_public = TRUE
        ORDER BY i.created_at DESC`,
     );
   }
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
     filters: JSON.parse(r.filters),
     ranking: r.ranking,
     topN: r.top_n,
-    isPublic: r.is_public === 1,
+    isPublic: r.is_public,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     owner: r.username,
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     const createdAt = body.createdAt ?? Math.floor(Date.now() / 1000);
     const r = await exec(
       `INSERT INTO indices (owner_id, slug, name, description, universe, filters, ranking, top_n, is_public, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10, $11) RETURNING id`,
       [
         user.userId,
         slug,
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
         JSON.stringify(body.filters ?? {}),
         body.ranking,
         body.topN,
-        body.isPublic ? 1 : 0,
+        body.isPublic ?? false,
         createdAt,
         Math.floor(Date.now() / 1000),
       ],
