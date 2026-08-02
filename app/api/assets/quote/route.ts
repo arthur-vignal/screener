@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAssetQuote, getAssetType, getSectorsFor } from "@/lib/assets";
+import { getAssetQuotes, getAssetType, getSectorsFor } from "@/lib/assets";
 
 export const dynamic = "force-dynamic";
 
@@ -16,18 +16,19 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const [quotes, sectors] = await Promise.all([
-      Promise.all(symbols.map((s) => getAssetQuote(s).then((q) => ({ symbol: s.toUpperCase(), quote: q })))),
+    // Single batch request via Spark endpoint (was N parallel requests before)
+    const [quoteMap, sectors] = await Promise.all([
+      getAssetQuotes(symbols),
       getSectorsFor(symbols),
     ]);
 
-    const rows = quotes.map((q) => {
-      const upper = q.symbol;
+    const rows = symbols.map((sym) => {
+      const upper = sym.toUpperCase();
       return {
         symbol: upper,
         type: getAssetType(upper),
         sector: sectors.get(upper) ?? "—",
-        quote: q.quote,
+        quote: quoteMap.get(upper) ?? null,
       };
     });
 

@@ -296,7 +296,7 @@ export default function AssetsPage() {
   const [trendFilter, setTrendFilter] = useState<"bullish" | "bearish" | "neutral" | "all">("all");
   const [volRange, setVolRange] = useState<[number, number]>([0, 100]);
   const [rsiRange, setRsiRange] = useState<[number, number]>([0, 100]);
-  const [sharpeRange, setSharpeRange] = useState<[number, number]>([-10, 10]);
+  const [sharpeRange, setSharpeRange] = useState<[number, number]>([-5, 5]);
   const [adxRange, setAdxRange] = useState<[number, number]>([0, 100]);
 
   // Column visibility (persisted to localStorage) — lazy init to avoid SSR mismatch
@@ -390,7 +390,7 @@ export default function AssetsPage() {
     trendFilter !== "all" ||
     volRange[0] !== 0 || volRange[1] !== 100 ||
     rsiRange[0] !== 0 || rsiRange[1] !== 100 ||
-    sharpeRange[0] !== -10 || sharpeRange[1] !== 10 ||
+    sharpeRange[0] !== -5 || sharpeRange[1] !== 5 ||
     adxRange[0] !== 0 || adxRange[1] !== 100;
 
   const symbolsKey = symbols.join(",");
@@ -813,9 +813,11 @@ function RangeSlider({
   zone: { label: string; tone: "good" | "bad" | "neutral" };
 }) {
   const [lo, hi] = value;
+  const clampedLo = Math.max(min, Math.min(lo, max));
+  const clampedHi = Math.max(min, Math.min(hi, max));
   const span = max - min || 1;
-  const loPct = ((lo - min) / span) * 100;
-  const hiPct = ((hi - min) / span) * 100;
+  const loPct = ((clampedLo - min) / span) * 100;
+  const hiPct = ((clampedHi - min) / span) * 100;
 
   return (
     <div className="rounded-lg bg-surface-elevated/40 border border-border-subtle p-3">
