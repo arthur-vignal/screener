@@ -1,10 +1,10 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import Link from "next/link";
-import { use, useState } from "react";
+import { use } from "react";
+import useSWR from "swr";
 import {
-
   CartesianGrid,
   Line,
   LineChart,
@@ -15,50 +15,55 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 
+type Holding = { symbol: string; weight: number };
 
-type RiskLevel = "conservative" | "moderate" | "aggressive";
-
-type PortfolioEntry = {
-  id: string;
+type PortfolioDetail = {
+  id: number;
+  slug: string;
   name: string;
   description: string;
-  criterion: string;
-  riskLevel: RiskLevel;
-  author: string;
-  ytdReturn: number;
-  constituents: { symbol: string; weight: number }[];
+  initialValue: number;
+  isPublic: boolean;
+  createdAt: number;
+  updatedAt: number;
+  owner: string | null;
+  ownerId: number | null;
+  holdings: Holding[];
 };
 
-const PORTFOLIOS: Record<string, PortfolioEntry> = {
-  "income-yield": {
-    id: "income-yield",
-    name: "Income & Yield",
-    description:
-      "Foco em renda passiva. Ações com dividend yield consistente + REITs + bonds investment grade.",
-    criterion:
-      "Dividend yield > 3%, payout ratio < 70%, market cap > $10B. Mix de 60% ações high-yield, 30% REITs, 10% bonds.",
-    riskLevel: "conservative",
-    author: "platform",
-    ytdReturn: 4.2,
-    constituents: [
-      { symbol: "JNJ", weight: 0.10 },
-      { symbol: "KO", weight: 0.08 },
-      { symbol: "PEP", weight: 0.08 },
-      { symbol: "MO", weight: 0.07 },
-      { symbol: "PM", weight: 0.07 },
-      { symbol: "O", weight: 0.06 },
-      { symbol: "MAIN", weight: 0.05 },
-      { symbol: "AGNC", weight: 0.05 },
-      { symbol: "TLT", weight: 0.10 },
-      { symbol: "BND", weight: 0.10 },
-    ],
-  },
+type Performance = {
+  startValue: number;
+  endValue: number;
+  totalReturn: number;
+  annualizedReturn: number;
+  maxDrawdown: number;
+  bestDay: number;
+  worstDay: number;
+  daysHeld: number;
+  history: { date: string; value: number }[];
+};
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+const SEED_DETAILS: Record<
+  string,
+  {
+    id: string;
+    name: string;
+    description: string;
+    criterion: string;
+    riskLevel: "conservative" | "moderate" | "aggressive";
+    author: string;
+    ytdReturn: number;
+    constituents: Holding[];
+    createdAt: number;
+  }
+> = {
   "growth-tech": {
     id: "growth-tech",
     name: "Growth Tech Leaders",
-    description: "Top 10 empresas de tecnologia com maior crescimento de receita e margem operacional > 20%.",
-    criterion:
-      "Setor Technology + Communication Services, market cap > $100B, receita YoY > 15%, margem operacional > 20%. Equal-weighted.",
+    description: "Top 10 empresas de tecnologia com maior crescimento de receita.",
+    criterion: "Setor Tech + Comm Services, market cap > $100B.",
     riskLevel: "aggressive",
     author: "platform",
     ytdReturn: 28.7,
@@ -68,19 +73,14 @@ const PORTFOLIOS: Record<string, PortfolioEntry> = {
       { symbol: "MSFT", weight: 0.10 },
       { symbol: "META", weight: 0.10 },
       { symbol: "GOOGL", weight: 0.10 },
-      { symbol: "AMZN", weight: 0.10 },
-      { symbol: "TSLA", weight: 0.09 },
-      { symbol: "AVGO", weight: 0.08 },
-      { symbol: "CRM", weight: 0.08 },
-      { symbol: "NFLX", weight: 0.07 },
     ],
+    createdAt: Math.floor(new Date("2025-01-01").getTime() / 1000),
   },
   "balanced-60-40": {
     id: "balanced-60-40",
     name: "Balanced 60/40",
-    description: "Alocação clássica 60% ações S&P 500 + 40% bonds. Rebalanceamento trimestral.",
-    criterion:
-      "60% SPY (S&P 500 ETF) + 40% BND (bonds investment grade). Rebalanceamento trimestral. Sem alavancagem.",
+    description: "Alocação clássica: 60% ações S&P 500 + 40% bonds.",
+    criterion: "60% SPY + 40% BND. Rebalanceamento trimestral.",
     riskLevel: "moderate",
     author: "platform",
     ytdReturn: 9.4,
@@ -88,35 +88,27 @@ const PORTFOLIOS: Record<string, PortfolioEntry> = {
       { symbol: "SPY", weight: 0.60 },
       { symbol: "BND", weight: 0.40 },
     ],
+    createdAt: Math.floor(new Date("2025-01-01").getTime() / 1000),
   },
-  "global-diversified": {
-    id: "global-diversified",
-    name: "Global Diversified",
-    description: "Exposição global: 60% US, 25% developed ex-US, 15% emerging markets.",
-    criterion:
-      "Mix de ETFs de índices globais. Rebalanceamento semestral. Sem alavancagem. Sem single-stock risk.",
-    riskLevel: "moderate",
+  "income-yield": {
+    id: "income-yield",
+    name: "Income & Yield",
+    description: "Foco em renda passiva com ações dividend + bonds.",
+    criterion: "Dividend yield > 3%, payout < 70%.",
+    riskLevel: "conservative",
     author: "platform",
-    ytdReturn: 12.1,
+    ytdReturn: 4.2,
     constituents: [
-      { symbol: "VTI", weight: 0.50 },
-      { symbol: "VEA", weight: 0.20 },
-      { symbol: "VWO", weight: 0.10 },
-      { symbol: "AGG", weight: 0.20 },
+      { symbol: "JNJ", weight: 0.15 },
+      { symbol: "KO", weight: 0.10 },
+      { symbol: "PEP", weight: 0.10 },
+      { symbol: "O", weight: 0.10 },
+      { symbol: "TLT", weight: 0.20 },
+      { symbol: "BND", weight: 0.20 },
+      { symbol: "AGNC", weight: 0.15 },
     ],
+    createdAt: Math.floor(new Date("2025-01-01").getTime() / 1000),
   },
-};
-
-const RISK_COLORS: Record<RiskLevel, string> = {
-  conservative: "bg-blue-400/10 text-blue-300",
-  moderate: "bg-yellow-400/10 text-yellow-300",
-  aggressive: "bg-red-400/10 text-red-300",
-};
-
-const RISK_LABELS: Record<RiskLevel, string> = {
-  conservative: "Conservador",
-  moderate: "Moderado",
-  aggressive: "Agressivo",
 };
 
 export default function PortfolioDetailPage({
@@ -125,184 +117,270 @@ export default function PortfolioDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const portfolio = PORTFOLIOS[id];
-  const [showBenchmark, setShowBenchmark] = useState(false);
 
-  if (!portfolio) {
+
+  const { data: portfolio, error: portfolioError } = useSWR<PortfolioDetail | { error: string }>(
+    `/api/portfolios/${id}`,
+    fetcher,
+  );
+  const { data: perfData } = useSWR<{ performance: Performance }>(
+    portfolio && "id" in portfolio
+      ? `/api/portfolios/${portfolio.slug}/performance`
+      : null,
+    fetcher,
+  );
+
+  if (portfolioError && "error" in portfolioError && portfolioError.error === "private") {
     return (
-      <div className="px-8 py-12 text-center">
-        <p className="text-text-secondary">Portfolio não encontrado.</p>
-        <Link href="/portfolios" className="text-accent hover:underline text-sm mt-2 inline-block">
-          ← Voltar
+      <div className="px-8 py-8 max-w-3xl">
+        <Link
+          href="/portfolios"
+          className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-foreground mb-4"
+        >
+          <ArrowLeft className="w-3 h-3" />
+          Voltar
         </Link>
+        <div className="rounded-lg border border-border bg-surface p-8 text-center">
+          <Lock className="w-8 h-8 text-text-muted mx-auto mb-3" />
+          <h1 className="text-lg font-medium mb-1">Portfolio privado</h1>
+          <p className="text-sm text-text-secondary">
+            Faça login pra ver portfolios privados.
+          </p>
+        </div>
       </div>
     );
   }
 
-  const days = 180;
-  const portfolioSeries = Array.from({ length: days }, (_, i) => ({
-    day: i,
-    value: 100 + i * (portfolio.ytdReturn / days) + Math.sin(i * 0.3) * 0.4 + Math.cos(i * 0.7) * 0.3,
-  }));
-  const benchmarkSeries = Array.from({ length: days }, (_, i) => ({
-    day: i,
-    value: 100 + i * 0.045 + Math.sin(i * 0.4) * 0.3,
-  }));
+  // Use seed if no DB portfolio
+
+  const name = (portfolio && "name" in portfolio ? portfolio.name : seed?.name) ?? id;
+  const description =
+    (portfolio && "description" in portfolio ? portfolio.description : seed?.description) ?? "";
+  const constituents =
+    (portfolio && "holdings" in portfolio
+      ? portfolio.holdings
+      : seed?.constituents) ?? [];
+  const createdAt =
+    (portfolio && "createdAt" in portfolio ? portfolio.createdAt : seed?.createdAt) ?? 0;
+  const owner = (portfolio && "owner" in portfolio ? portfolio.owner : seed?.author) ?? null;
+  const isPublic =
+    (portfolio && "isPublic" in portfolio ? portfolio.isPublic : true);
+
+  const performance = perfData?.performance;
+  const initialValue =
+    (portfolio && "initialValue" in portfolio ? portfolio.initialValue : 10000) ?? 10000;
+
+  const historyData = performance?.history ?? [];
+  const totalReturn = performance?.totalReturn;
+  const annualizedReturn = performance?.annualizedReturn;
+  const maxDrawdown = performance?.maxDrawdown;
+  const daysHeld = performance?.daysHeld ?? 0;
+  const endValue = performance?.endValue;
+  const bestDay = performance?.bestDay;
+
+
+  const isLoading = !portfolio && !(id in SEED_DETAILS);
 
   return (
-    <div className="px-8 py-6 max-w-6xl">
+    <div className="px-8 py-8 max-w-5xl">
       <Link
         href="/portfolios"
-        className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-foreground mb-4 transition-colors"
+        className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-foreground mb-4"
       >
-        <ArrowLeft className="w-3.5 h-3.5" />
+        <ArrowLeft className="w-3 h-3" />
         Voltar
       </Link>
 
-      <div className="flex items-baseline gap-3 mb-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{portfolio.name}</h1>
-        <span
-          className={cn(
-            "text-[10px] px-2 py-0.5 rounded-md font-mono uppercase tracking-wider",
-            RISK_COLORS[portfolio.riskLevel],
-          )}
-        >
-          {RISK_LABELS[portfolio.riskLevel]}
-        </span>
-      </div>
-      <div className="text-sm text-text-muted mb-6">por {portfolio.author}</div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6">
-        <Card label="Performance YTD" value={`${portfolio.ytdReturn >= 0 ? "+" : ""}${portfolio.ytdReturn.toFixed(2)}%`} positive={portfolio.ytdReturn >= 0} />
-        <Card label="Constituintes" value={String(portfolio.constituents.length)} />
-        <Card label="Tipo" value={RISK_LABELS[portfolio.riskLevel]} />
-      </div>
-
-      <div className="rounded-lg border border-border bg-surface overflow-hidden mb-6">
-        <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
-          <h3 className="text-sm font-medium text-foreground">Performance</h3>
-          <label className="flex items-center gap-2 text-xs cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showBenchmark}
-              onChange={(e) => setShowBenchmark(e.target.checked)}
-              className="accent-foreground"
-            />
-            <span className="text-text-secondary">Comparar com benchmark (S&P 500)</span>
-          </label>
+      {isLoading && (
+        <div className="flex items-center justify-center py-20 text-text-muted">
+          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          Carregando portfolio…
         </div>
-        <div className="px-4 py-6 h-72 relative">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
-              <XAxis dataKey="day" type="number" domain={[0, days - 1]} hide />
-              <YAxis
-                domain={["auto", "auto"]}
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 11, fill: "var(--text-muted)" }}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--surface-elevated)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 6,
-                  fontSize: 12,
-                  padding: "8px 12px",
-                }}
-                formatter={(v) => Number(v).toFixed(2)}
-              />
-              <Line
-                type="monotone"
-                data={portfolioSeries}
-                dataKey="value"
-                stroke="#3b82f6"
-                strokeWidth={2}
-                dot={false}
-                isAnimationActive={false}
-                name="Portfolio"
-              />
-              {showBenchmark && (
-                <Line
-                  type="monotone"
-                  data={benchmarkSeries}
-                  dataKey="value"
-                  stroke="#737373"
-                  strokeWidth={1.5}
-                  strokeDasharray="4 4"
-                  dot={false}
-                  isAnimationActive={false}
-                  name="Benchmark"
-                />
+      )}
+
+      {!isLoading && (
+        <>
+          <div className="mb-6 flex items-end justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight mb-1">{name}</h1>
+              {description && (
+                <p className="text-sm text-text-secondary">{description}</p>
               )}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+              <div className="flex items-center gap-2 mt-2">
+                {owner && (
+                  <span className="text-xs text-text-muted">@{owner}</span>
+                )}
+                {!isPublic && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-surface-elevated text-text-muted uppercase tracking-wider inline-flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5" />
+                    Privado
+                  </span>
+                )}
+                {createdAt > 0 && (
+                  <span className="text-xs text-text-muted">
+                    · criado em{" "}
+                    {new Date(createdAt * 1000).toLocaleDateString("pt-BR")}
+                  </span>
+                )}
+                {daysHeld > 0 && (
+                  <span className="text-xs text-text-muted">· {daysHeld} dias</span>
+                )}
+              </div>
+            </div>
+          </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Section title="Descrição">
-            <p className="text-sm text-text-secondary leading-relaxed">{portfolio.description}</p>
-          </Section>
-          <Section title="Critério de seleção">
-            <p className="text-sm text-text-secondary leading-relaxed">{portfolio.criterion}</p>
-          </Section>
-        </div>
+          {/* Performance */}
+          <div className="rounded-lg border border-border bg-surface p-5 mb-6">
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="text-sm font-medium">Performance</h2>
+              {!performance && (
+                <span className="text-xs text-text-muted">
+                  <Loader2 className="w-3 h-3 animate-spin inline mr-1" />
+                  Calculando…
+                </span>
+              )}
+            </div>
 
-        <div>
-          <Section title="Composição">
-            <div className="space-y-1">
-              {portfolio.constituents.map((c) => (
-                <Link
-                  key={c.symbol}
-                  href={`/asset/${c.symbol}`}
-                  className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-surface-elevated transition-colors"
-                >
-                  <span className="font-mono font-semibold text-sm">{c.symbol}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 h-1 bg-surface-elevated rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-accent rounded-full"
-                        style={{ width: `${c.weight * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-xs font-mono tabular-nums text-text-muted w-10 text-right">
-                      {(c.weight * 100).toFixed(0)}%
-                    </span>
+            {performance && (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <Metric
+                    label="Total"
+                    value={totalReturn!}
+                    suffix={`R$ ${(endValue! - initialValue).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`}
+                  />
+                  <Metric
+                    label="Anualizado"
+                    value={annualizedReturn!}
+                    suffix={`(${daysHeld}d)`}
+                  />
+                  <Metric
+                    label="Max Drawdown"
+                    value={-maxDrawdown!}
+                    color="negative"
+                  />
+                  <Metric
+                    label="Melhor dia"
+                    value={bestDay!}
+                  />
+                </div>
+
+                {historyData.length > 1 && (
+                  <div className="h-64 mt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={historyData}>
+                        <defs>
+                          <linearGradient id="hist" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                            <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+                        <XAxis
+                          dataKey="date"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 10, fill: "var(--text-muted)" }}
+                          minTickGap={50}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 10, fill: "var(--text-muted)" }}
+                          tickFormatter={(v) => `$${Math.round(v / 1000)}k`}
+                          domain={["auto", "auto"]}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "var(--surface-elevated)",
+                            border: "1px solid var(--border)",
+                            borderRadius: 6,
+                            fontSize: 12,
+                          }}
+                          formatter={(v) => `$${Math.round(Number(v)).toLocaleString()}`}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#10b981"
+                          strokeWidth={1.5}
+                          dot={false}
+                          isAnimationActive={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
-                </Link>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Constituents */}
+          <div className="rounded-lg border border-border bg-surface p-5">
+            <h2 className="text-sm font-medium mb-3">
+              Constituentes ({constituents.length})
+            </h2>
+            <div className="space-y-1">
+              {constituents.map((h) => (
+                <div
+                  key={h.symbol}
+                  className="flex items-center gap-3 px-3 py-2 bg-background/50 rounded"
+                >
+                  <Link
+                    href={`/asset/${encodeURIComponent(h.symbol)}`}
+                    className="font-mono font-semibold text-sm w-20 hover:text-accent transition-colors"
+                  >
+                    {h.symbol}
+                  </Link>
+                  <div className="flex-1 h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-foreground/40 rounded-full"
+                      style={{ width: `${h.weight * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-mono tabular-nums w-12 text-right">
+                    {(h.weight * 100).toFixed(1)}%
+                  </span>
+                </div>
               ))}
             </div>
-          </Section>
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-function Card({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
+function Metric({
+  label,
+  value,
+  suffix,
+  color,
+}: {
+  label: string;
+  value: number;
+  suffix?: string;
+  color?: "positive" | "negative";
+}) {
+  const tone = color ?? (value >= 0 ? "positive" : "negative");
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
-      <div className="text-xs text-text-muted uppercase tracking-wider mb-1">{label}</div>
+    <div>
+      <div className="text-[11px] uppercase tracking-wider text-text-muted mb-1">
+        {label}
+      </div>
       <div
         className={cn(
           "text-2xl font-mono font-semibold tabular-nums",
-          positive === true && "text-positive",
-          positive === false && "text-negative",
+          tone === "positive" && "text-positive",
+          tone === "negative" && "text-negative",
         )}
       >
-        {value}
+        {value >= 0 ? "+" : ""}
+        {(value * 100).toFixed(2)}%
       </div>
-    </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h2 className="text-sm font-medium text-foreground mb-3 uppercase tracking-wider">{title}</h2>
-      {children}
+      {suffix && (
+        <div className="text-xs text-text-muted mt-0.5">{suffix}</div>
+      )}
     </div>
   );
 }

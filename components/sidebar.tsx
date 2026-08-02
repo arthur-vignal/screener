@@ -49,6 +49,21 @@ export function Sidebar() {
     }
   }, [collapsed]);
 
+  // Current user state
+  const [user, setUser] = useState<{ userId: number; username: string } | null>(null);
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => setUser(d.user ?? null))
+      .catch(() => setUser(null));
+  }, []);
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
+    window.location.href = "/";
+  }
+
   return (
     <aside
       className={cn(
@@ -114,6 +129,36 @@ export function Sidebar() {
           collapsed ? "p-2" : "px-3 py-2",
         )}
       >
+        {!collapsed && (
+          <div className="mb-2 flex items-center justify-between">
+            {user ? (
+              <div className="flex items-center justify-between w-full">
+                <Link
+                  href="/portfolios"
+                  className="text-xs text-text-secondary hover:text-foreground truncate"
+                >
+                  @{user.username}
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-xs text-text-muted hover:text-negative"
+                >
+                  sair
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between w-full">
+                <Link href="/login" className="text-xs text-accent hover:underline">
+                  Entrar
+                </Link>
+                <Link href="/signup" className="text-xs text-text-muted hover:text-foreground">
+                  Criar conta
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
         <button
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? "Expandir menu" : "Recolher menu"}

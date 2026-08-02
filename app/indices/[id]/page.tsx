@@ -1,316 +1,307 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { LineChart, Line, ResponsiveContainer, YAxis, XAxis, Tooltip, CartesianGrid } from "recharts";
+import { use, useState } from "react";
+import useSWR from "swr";
 import { cn } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
+type Constituent = {
+  symbol: string;
+  name: string;
+  sector: string;
+  price: number;
+  changePercent: number;
+  rank: number;
+};
 
-
-
-// Mock index data — in a future version, fetch from API
-const INDEXES_DATA: Record<string, {
+type IndexDetail = {
+  id: number;
+  slug: string;
   name: string;
   description: string;
-  author: string;
-  methodology: string;
-  constituents: { symbol: string; weight: number }[];
-  series: { date: string; value: number }[];
-}> = {
+  universe: string;
+  topN: number;
+  isPublic: boolean;
+  createdAt: number;
+  owner: string | null;
+};
+
+type IndexPerformance = {
+  performance: {
+    totalReturn: number;
+    annualizedReturn: number;
+    maxDrawdown: number;
+    daysHeld: number;
+    history: { date: string; value: number }[];
+  };
+  constituents: Constituent[];
+};
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+// Seed details (shown when DB doesn't have the index)
+const SEED_DETAILS: Record<
+  string,
+  {
+    name: string;
+    description: string;
+    methodology: string;
+    author: string;
+    createdAt: number;
+    constituents: string[];
+  }
+> = {
   "sp500-momentum": {
     name: "S&P 500 Momentum Score",
-    description:
-      "Top 50 ações do S&P 500 rankeadas por momentum 12-1 (performance excluindo o último mês). Equal-weighted, rebalanceamento mensal.",
-    author: "platform",
+    description: "Top 50 ações do S&P 500 rankeadas por momentum 12-1.",
     methodology:
-      "O índice usa momentum cross-sectional de 12 meses excluindo o último mês (evita reversal). A cada mês, selecionamos as 50 ações do S&P 500 com maior retorno 11-1. Pesos iguais. Sem alavancagem. Sem custos de transação no backtest (real-world seria ~0.1% mensal). O índice tem alta exposição a setores cíclicos.",
-    constituents: [
-      { symbol: "NVDA", weight: 0.025 },
-      { symbol: "AAPL", weight: 0.023 },
-      { symbol: "MSFT", weight: 0.022 },
-      { symbol: "META", weight: 0.022 },
-      { symbol: "AMZN", weight: 0.021 },
-      { symbol: "TSLA", weight: 0.021 },
-      { symbol: "GOOGL", weight: 0.020 },
-      { symbol: "AVGO", weight: 0.020 },
-      { symbol: "NFLX", weight: 0.020 },
-      { symbol: "CRM", weight: 0.020 },
-    ],
-    series: generateMockSeries(180, 0.5, 8),
+      "Universo: S&P 500. Critério: retorno 12 meses excluindo último mês. Top 50. Equal-weighted. Rebalanceamento mensal.",
+    author: "platform",
+    createdAt: Math.floor(new Date("2024-01-01").getTime() / 1000),
+    constituents: ["NVDA", "MSFT", "AAPL", "AMZN", "META", "GOOGL", "AVGO", "TSLA", "BRK.B", "LLY"],
   },
   "quality-value": {
     name: "Quality-Value Composite",
-    description: "Ações com ROE > 15% e P/E < 20, excluindo financials. Foco em qualidade operacional + valuation.",
+    description: "Ações com ROE > 15% e P/E < 20.",
+    methodology: "Universo: S&P 500. ROE > 15%, P/E < 20. Top 30.",
     author: "platform",
-    methodology:
-      "Universo: S&P 500 (excluindo Financials e REITs). Critérios: ROE TTM > 15%, P/E TTM < 20. Top 30 por ordem de menor P/E. Equal-weighted. Rebalanceamento trimestral. Captura o value premium histórico e a qualidade operacional superior (fator Q de Asness).",
-    constituents: [
-      { symbol: "META", weight: 0.034 },
-      { symbol: "JNJ", weight: 0.034 },
-      { symbol: "KO", weight: 0.034 },
-      { symbol: "PG", weight: 0.034 },
-      { symbol: "ABBV", weight: 0.034 },
-      { symbol: "PEP", weight: 0.034 },
-      { symbol: "WMT", weight: 0.034 },
-      { symbol: "MO", weight: 0.033 },
-      { symbol: "PM", weight: 0.033 },
-      { symbol: "HD", weight: 0.033 },
-    ],
-    series: generateMockSeries(180, 0.3, 5),
+    createdAt: Math.floor(new Date("2024-01-01").getTime() / 1000),
+    constituents: ["JNJ", "PG", "KO", "PEP", "WMT", "HD", "AXP", "BLK", "MA", "V"],
   },
   "low-vol-defensive": {
-    name: "Low-Vol Defensive",
-    description: "Bottom 20% por volatilidade 60d, com filtro de dividend yield mínimo de 1%.",
+    name: "Low-Volatility Defensive",
+    description: "Ações com baixa volatilidade histórica.",
+    methodology: "Top 30 com menor volatilidade anualizada.",
     author: "platform",
-    methodology:
-      "Universo: Russell 1000. Filtros: volatilidade realizada 60d no bottom 20%, dividend yield > 1%. Top 50. Equal-weighted. Rebalanceamento mensal. Baseado no low-volatility anomaly (Ang, Hodrick, Xing 2006). Defensivo em drawdowns.",
-    constituents: [
-      { symbol: "KO", weight: 0.025 },
-      { symbol: "PEP", weight: 0.024 },
-      { symbol: "JNJ", weight: 0.024 },
-      { symbol: "PG", weight: 0.024 },
-      { symbol: "VZ", weight: 0.023 },
-      { symbol: "T", weight: 0.023 },
-      { symbol: "MO", weight: 0.023 },
-      { symbol: "PM", weight: 0.022 },
-      { symbol: "CL", weight: 0.022 },
-      { symbol: "XOM", weight: 0.022 },
-    ],
-    series: generateMockSeries(180, 0.2, 4),
+    createdAt: Math.floor(new Date("2024-01-01").getTime() / 1000),
+    constituents: ["JNJ", "PG", "KO", "PEP", "WMT", "VZ", "T", "XOM", "CVX", "NEE"],
   },
   "global-momentum": {
-    name: "Global Equity Momentum",
-    description: "Ações de mercados desenvolvidos (US, EU, JP) com maior momentum 6-12m. FX-hedged.",
+    name: "Global Momentum",
+    description: "ETFs globais com momentum positivo em 6 meses.",
+    methodology: "Mix de ETFs globais. Rebalanceamento mensal.",
     author: "platform",
-    methodology:
-      "Universo: MSCI World (~1.500 ações). Filtros: momentum 6-12m. Top 50. FX-hedged via forwards 1m. Equal-weighted. Rebalanceamento mensal. Captura prêmio global de momentum (Asness 2013 'Value and Momentum Everywhere').",
-    constituents: [
-      { symbol: "NVDA", weight: 0.022 },
-      { symbol: "AAPL", weight: 0.020 },
-      { symbol: "MSFT", weight: 0.020 },
-      { symbol: "META", weight: 0.020 },
-      { symbol: "ASML", weight: 0.020 },
-      { symbol: "SAP", weight: 0.020 },
-      { symbol: "TM", weight: 0.020 },
-      { symbol: "MITSUB", weight: 0.020 },
-      { symbol: "TSLA", weight: 0.020 },
-      { symbol: "AMZN", weight: 0.020 },
-    ],
-    series: generateMockSeries(180, 0.4, 10),
-  },
-  "crypto-top10": {
-    name: "Crypto Top 10 Equal Weight",
-    description: "Top 10 criptomoedas por market cap, equal-weighted, rebalanceamento semanal.",
-    author: "platform",
-    methodology:
-      "Universo: top 10 criptomoedas por market cap (CoinPaprika/CMC). Equal-weighted (10% cada). Exclui stablecoins (USDT, USDC, BUSD, DAI, TUSD). Rebalanceamento semanal. Sem alavancagem. Alta volatilidade (50-100% anualizado).",
-    constituents: [
-      { symbol: "BTC", weight: 0.10 },
-      { symbol: "ETH", weight: 0.10 },
-      { symbol: "BNB", weight: 0.10 },
-      { symbol: "SOL", weight: 0.10 },
-      { symbol: "XRP", weight: 0.10 },
-      { symbol: "ADA", weight: 0.10 },
-      { symbol: "AVAX", weight: 0.10 },
-      { symbol: "DOGE", weight: 0.10 },
-      { symbol: "TRX", weight: 0.10 },
-      { symbol: "LINK", weight: 0.10 },
-    ],
-    series: generateMockSeries(180, 1.2, 18),
+    createdAt: Math.floor(new Date("2024-01-01").getTime() / 1000),
+    constituents: ["SPY", "QQQ", "VEA", "VWO", "EFA", "IEMG"],
   },
 };
 
-function generateMockSeries(days: number, drift: number, vol: number) {
-  // Deterministic pseudo-random based on index
-  const out: { date: string; value: number }[] = [];
-  let v = 100;
-  const start = Date.now() - days * 24 * 60 * 60 * 1000;
-  for (let i = 0; i < days; i++) {
-    // deterministic noise
-    const noise = (Math.sin(i * 0.3) + Math.cos(i * 0.7)) * vol * 0.3;
-    v = v + drift + noise * 0.1;
-    out.push({
-      date: new Date(start + i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-      value: v,
-    });
-  }
-  return out;
-}
+export default function IndexDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  const seed = SEED_DETAILS[id];
 
+  const { data: index, error: indexError } = useSWR<IndexDetail | { error: string }>(
+    `/api/indices/${id}`,
+    fetcher,
+  );
+  const { data: perfData } = useSWR<IndexPerformance>(
+    index && "id" in index
+      ? `/api/indices/${index.slug}/performance`
+      : null,
+    fetcher,
+  );
 
-export default function IndexDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const [id, setId] = useState<string | null>(null);
-
-  useEffect(() => {
-    params.then((p) => setId(p.id));
-  }, [params]);
-
-  const data = useMemo(() => (id ? INDEXES_DATA[id] : null), [id]);
-
-  if (!id) {
+  if (indexError && "error" in indexError && indexError.error === "private") {
     return (
-      <div className="px-8 py-12 text-center text-text-muted">Carregando…</div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="px-8 py-12 text-center">
-        <p className="text-text-secondary">Índice não encontrado.</p>
-        <Link href="/index-detail" className="text-accent hover:underline text-sm mt-2 inline-block">
-          ← Voltar para Index
+      <div className="px-8 py-8 max-w-3xl">
+        <Link
+          href="/indices"
+          className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-foreground mb-4"
+        >
+          <ArrowLeft className="w-3 h-3" />
+          Voltar
         </Link>
+        <div className="rounded-lg border border-border bg-surface p-8 text-center">
+          <Lock className="w-8 h-8 text-text-muted mx-auto mb-3" />
+          <h1 className="text-lg font-medium mb-1">Índice privado</h1>
+          <p className="text-sm text-text-secondary">
+            Faça login pra ver índices privados.
+          </p>
+        </div>
       </div>
     );
   }
 
-  const first = data.series[0]?.value ?? 100;
-  const last = data.series[data.series.length - 1]?.value ?? 100;
-  const change = ((last / first) - 1) * 100;
-  const max = Math.max(...data.series.map((p) => p.value));
-  const min = Math.min(...data.series.map((p) => p.value));
-  const padding = (max - min) * 0.05 || 1;
+  const name = (index && "name" in index ? index.name : seed?.name) ?? id;
+  const description =
+    (index && "description" in index ? index.description : seed?.description) ?? "";
+  const methodology =
+    (index && "description" in index ? index.description : seed?.methodology) ?? "";
+  const owner = (index && "owner" in index ? index.owner : seed?.author) ?? null;
+  const isPublic =
+    (index && "isPublic" in index ? index.isPublic : true);
+  const createdAt =
+    (index && "createdAt" in index ? index.createdAt : seed?.createdAt) ?? 0;
+
+  const constituents =
+    perfData?.constituents ??
+    (seed?.constituents.map((s, i) => ({
+      symbol: s,
+      name: s,
+      sector: "—",
+      price: 0,
+      changePercent: 0,
+      rank: i + 1,
+    })) ?? []);
+
+  const performance = perfData?.performance;
+  const isLoading = !index && !seed;
 
   return (
-    <div className="px-8 py-6 max-w-6xl">
+    <div className="px-8 py-8 max-w-5xl">
       <Link
-        href="/index-detail"
-        className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-foreground mb-4 transition-colors"
+        href="/indices"
+        className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-foreground mb-4"
       >
-        <ArrowLeft className="w-3.5 h-3.5" />
+        <ArrowLeft className="w-3 h-3" />
         Voltar
       </Link>
 
-      <div className="flex items-baseline gap-3 mb-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{data.name}</h1>
-      </div>
-      <div className="text-sm text-text-muted mb-6">
-        por <span className="text-text-secondary font-medium">{data.author}</span>
-      </div>
+      {isLoading && (
+        <div className="flex items-center justify-center py-20 text-text-muted">
+          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          Carregando índice…
+        </div>
+      )}
 
-      <div className="rounded-lg border border-border bg-surface overflow-hidden mb-6">
-        <div className="px-6 py-4 border-b border-border-subtle flex items-baseline justify-between">
-          <div>
-            <div className="text-3xl font-mono font-semibold tabular-nums">
-              {last.toFixed(2)}
-            </div>
-            <div className={cn(
-              "text-sm font-mono tabular-nums",
-              change >= 0 ? "text-positive" : "text-negative",
-            )}>
-              {change >= 0 ? "+" : ""}{change.toFixed(2)}% (período)
+      {!isLoading && (
+        <>
+          <div className="mb-6">
+            <h1 className="text-2xl font-semibold tracking-tight mb-1">{name}</h1>
+            {description && <p className="text-sm text-text-secondary">{description}</p>}
+            <div className="flex items-center gap-2 mt-2">
+              {owner && <span className="text-xs text-text-muted">@{owner}</span>}
+              {!isPublic && (
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-surface-elevated text-text-muted uppercase tracking-wider inline-flex items-center gap-1">
+                  <Lock className="w-2.5 h-2.5" />
+                  Privado
+                </span>
+              )}
+              {createdAt > 0 && (
+                <span className="text-xs text-text-muted">
+                  · criado em{" "}
+                  {new Date(createdAt * 1000).toLocaleDateString("pt-BR")}
+                </span>
+              )}
+              {performance && (
+                <span className="text-xs text-text-muted">
+                  · {performance.daysHeld} dias
+                </span>
+              )}
             </div>
           </div>
-          <div className="text-xs text-text-muted">
-            {data.series.length} dias de histórico
-          </div>
-        </div>
-        <div className="px-4 py-6 h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data.series}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
-              <XAxis
-                dataKey="date"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 11, fill: "var(--text-muted)" }}
-                minTickGap={50}
-              />
-              <YAxis
-                domain={[min - padding, max + padding]}
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 11, fill: "var(--text-muted)" }}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--surface-elevated)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 6,
-                  fontSize: 12,
-                  padding: "8px 12px",
-                }}
-                formatter={(v) => Number(v).toFixed(2)}
-              />
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke={change >= 0 ? "var(--positive)" : "var(--negative)"}
-                strokeWidth={2}
-                dot={false}
-                isAnimationActive={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Section title="O que mede">
-            <p className="text-sm text-text-secondary leading-relaxed">{data.description}</p>
-          </Section>
+          {performance && performance.history.length > 1 && (
+            <div className="rounded-lg border border-border bg-surface p-5 mb-6">
+              <div className="flex items-baseline justify-between mb-3">
+                <h2 className="text-sm font-medium">Performance</h2>
+                {!performance && (
+                  <Loader2 className="w-4 h-4 animate-spin text-text-muted" />
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-4 mb-3">
+                <Metric
+                  label="Total"
+                  value={performance.totalReturn}
+                />
+                <Metric
+                  label="Anualizado"
+                  value={performance.annualizedReturn}
+                />
+                <Metric
+                  label="Max Drawdown"
+                  value={-performance.maxDrawdown}
+                />
+              </div>
+            </div>
+          )}
 
-          <Section title="Metodologia (cálculo matemático)">
-            <p className="text-sm text-text-secondary leading-relaxed">{data.methodology}</p>
-          </Section>
+          {/* Methodology */}
+          {methodology && (
+            <div className="rounded-lg border border-border bg-surface p-5 mb-6">
+              <h2 className="text-sm font-medium mb-2">Metodologia</h2>
+              <p className="text-sm text-text-secondary">{methodology}</p>
+            </div>
+          )}
 
-          <Section title="Em quais cenários se aplica">
-            <ul className="text-sm text-text-secondary leading-relaxed space-y-2 list-disc pl-5">
-              <li>
-                Mercados com momentum persistente (tendências claras de 6-12 meses).
-              </li>
-              <li>
-                Períodos de baixa correlação cross-asset (ex: rotação setorial).
-              </li>
-              <li>
-                Fase de mercado com dispersão alta (alguns ativos performam muito melhor que outros).
-              </li>
-            </ul>
-            <p className="text-sm text-text-muted mt-3">
-              <strong className="text-text-secondary">Quando não se aplica:</strong> mercados em
-              regime de reversão rápida (ex: crashes de 1-2 semanas), crises de liquidez,
-              períodos pré-mercado-emergente.
-            </p>
-          </Section>
-        </div>
-
-        <div>
-          <Section title="Top constituintes">
-            <div className="space-y-2">
-              {data.constituents.map((c) => (
-                <Link
+          {/* Constituents */}
+          <div className="rounded-lg border border-border bg-surface p-5">
+            <h2 className="text-sm font-medium mb-3">
+              Constituentes ({constituents.length})
+            </h2>
+            <div className="space-y-1">
+              {constituents.map((c) => (
+                <div
                   key={c.symbol}
-                  href={`/asset/${c.symbol}`}
-                  className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-surface-elevated transition-colors group"
+                  className="flex items-center gap-3 px-3 py-2 bg-background/50 rounded"
                 >
-                  <span className="font-mono font-semibold text-sm group-hover:text-accent transition-colors">
+                  <span className="text-xs text-text-muted w-8 text-right font-mono">
+                    #{c.rank}
+                  </span>
+                  <Link
+                    href={`/asset/${encodeURIComponent(c.symbol)}`}
+                    className="font-mono font-semibold text-sm w-20 hover:text-accent transition-colors"
+                  >
                     {c.symbol}
+                  </Link>
+                  <span className="flex-1 text-xs text-text-muted truncate">
+                    {c.name}
                   </span>
-                  <span className="font-mono tabular-nums text-xs text-text-muted">
-                    {(c.weight * 100).toFixed(1)}%
+                  <span className="text-xs text-text-muted hidden md:inline">
+                    {c.sector}
                   </span>
-                </Link>
+                  {c.price > 0 && (
+                    <>
+                      <span className="text-xs font-mono tabular-nums">
+                        ${c.price.toFixed(2)}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-xs font-mono tabular-nums w-16 text-right",
+                          c.changePercent >= 0 ? "text-positive" : "text-negative",
+                        )}
+                      >
+                        {c.changePercent >= 0 ? "+" : ""}
+                        {c.changePercent.toFixed(2)}%
+                      </span>
+                    </>
+                  )}
+                </div>
               ))}
             </div>
-            <div className="mt-3 pt-3 border-t border-border-subtle text-xs text-text-muted">
-              {data.constituents.length} de {data.constituents.length} mostrados. Pesos
-              indicativos; atualizados por rebalanceamento.
-            </div>
-          </Section>
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Metric({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
   return (
     <div>
-      <h2 className="text-sm font-medium text-foreground mb-3 uppercase tracking-wider">{title}</h2>
-      {children}
+      <div className="text-[11px] uppercase tracking-wider text-text-muted mb-1">
+        {label}
+      </div>
+      <div
+        className={cn(
+          "text-2xl font-mono font-semibold tabular-nums",
+          value >= 0 ? "text-positive" : "text-negative",
+        )}
+      >
+        {value >= 0 ? "+" : ""}
+        {(value * 100).toFixed(2)}%
+      </div>
     </div>
   );
 }
