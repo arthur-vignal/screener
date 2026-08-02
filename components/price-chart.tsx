@@ -74,7 +74,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
   const lastRsi = rsiData.length > 0 ? rsiData[rsiData.length - 1].rsi : null;
 
   return (
-    <div className="flex flex-col gap-3 h-[600px]">
+    <div className="space-y-3">
       <div className="rounded-lg border border-border bg-surface overflow-hidden">
         <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
           <h3 className="text-sm font-medium text-foreground">Preço</h3>
@@ -96,7 +96,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
           </div>
         </div>
 
-        <div className="px-4 py-6 flex-1 relative min-h-[280px]">
+        <div className={cn("px-4 py-6 relative transition-all duration-300", showRSI ? "h-72" : "h-96")}>
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-sm text-text-muted">Carregando…</div>

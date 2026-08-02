@@ -7,6 +7,7 @@ export const maxDuration = 15;
 const ALLOWED_DOMAINS = [
   "yahoo.com",
   "finance.yahoo.com",
+  "news.google.com",  // Google News redirect URLs
   "reuters.com",
   "bloomberg.com",
   "wsj.com",
@@ -111,9 +112,11 @@ export async function GET(req: NextRequest) {
           Accept: "text/html,application/xhtml+xml",
           "Accept-Language": "en-US,en;q=0.9",
         },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(12000),
         redirect: "follow",
       });
+      // For Google News, the final URL is what we should report
+      // (but we keep using the original URL for the "open in source" link)
       if (!r.ok) return null;
       const html = await r.text();
       return extractContent(html);
