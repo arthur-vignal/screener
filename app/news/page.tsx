@@ -2,28 +2,56 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { ExternalLink, Newspaper, Search, Loader2 } from "lucide-react";
+import {
+  ExternalLink,
+  Newspaper,
+  Search,
+  Loader2,
+  Star,
+  StarOff,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type NewsItem = {
-  id: number;
+  id: string;
   headline: string;
   summary: string;
   source: string;
   url: string;
   datetime: number;
+  category?: "yahoo" | "google" | "sec";
   relatedTickers?: string[];
 };
 
-// Feed principal: 30 tickers top (top US + crypto + ETFs)
+// Tier 1 sources (renowned financial press)
+const TIER1_SOURCES = new Set([
+  "reuters",
+  "bloomberg",
+  "associated press",
+  "wall street journal",
+  "wsj",
+  "financial times",
+  "ft.com",
+  "new york times",
+  "nytimes",
+  "barron's",
+  "cnbc",
+  "marketwatch",
+  "forbes",
+  "morningstar",
+  "investopedia",
+  "business insider",
+  "yahoo finance",
+]);
+
 const FEED_TICKERS = [
   "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "JPM",
   "WMT", "HD", "PG", "JNJ", "XOM", "CVX", "UNH", "LLY",
   "AVGO", "MA", "COST", "ABBV", "BAC", "NFLX", "CRM", "AMD",
-  "BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "ADA-USD",
+  "BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD",
   "SPY", "QQQ", "IWM", "GLD", "TLT",
 ];
 
-// Mapeamento ticker -> setor
 const SECTOR_MAP: Record<string, string> = {
   AAPL: "Technology", MSFT: "Technology", GOOGL: "Technology", AMZN: "Retail",
   NVDA: "Semiconductors", META: "Technology", TSLA: "Automobiles", JPM: "Banking",
@@ -32,9 +60,15 @@ const SECTOR_MAP: Record<string, string> = {
   AVGO: "Semiconductors", MA: "Financial Services", COST: "Retail", ABBV: "Pharmaceuticals",
   BAC: "Banking", NFLX: "Media", CRM: "Technology", AMD: "Semiconductors",
   "BTC-USD": "Cryptocurrency", "ETH-USD": "Cryptocurrency", "SOL-USD": "Cryptocurrency",
-  "BNB-USD": "Cryptocurrency", "ADA-USD": "Cryptocurrency",
+  "BNB-USD": "Cryptocurrency",
   SPY: "ETF", QQQ: "ETF", IWM: "ETF", GLD: "Commodity ETF", TLT: "Bond ETF",
 };
+
+function sourceTier(source: string): 1 | 2 | 3 {
+  const s = source.toLowerCase();
+  if (Array.from(TIER1_SOURCES).some((t1) => s.includes(t1))) return 1;
+  return 2;
+}
 
 export default function NewsPage() {
   const [news, setNews] = useState<(NewsItem & { ticker: string })[]>([]);
@@ -42,25 +76,18 @@ export default function NewsPage() {
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState<string>("all");
   const [tickerFilter, setTickerFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [tierOnly, setTierOnly] = useState(false);
 
-  // Carrega news
   useEffect(() => {
-    Promise.all(
-      FEED_TICKERS.map((t) =>
-        fetch(`/api/news/${encodeURIComponent(t)}`)
-          .then((r) => r.json())
-          .then((d) => ({
-            ticker: t,
-            news: ((d.news ?? []) as NewsItem[]).map((n) => ({ ...n, ticker: t })),
-          }))
-          .catch(() => ({ ticker: t, news: [] })),
-      ),
-    ).then((results) => {
-      const all = results.flatMap((r) => r.news);
-      all.sort((a, b) => b.datetime - a.datetime);
-      setNews(all);
-      setLoading(false);
-    });
+    const tickersParam = FEED_TICKERS.slice(0, 25).join(",");
+    fetch(`/api/news/multi/${tickersParam}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setNews(d.news ?? []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   const filtered = useMemo(() => {
@@ -74,34 +101,60 @@ export default function NewsPage() {
       if (tickerFilter !== "all" && n.ticker !== tickerFilter) {
         return false;
       }
+      if (sourceFilter !== "all" && n.source !== sourceFilter) {
+        return false;
+      }
+      if (tierOnly && sourceTier(n.source) !== 1) {
+        return false;
+      }
       return true;
     });
-  }, [news, search, sectorFilter, tickerFilter]);
+  }, [news, search, sectorFilter, tickerFilter, sourceFilter, tierOnly]);
 
-  // Setores únicos
   const sectors = useMemo(() => {
     const s = new Set<string>();
     news.forEach((n) => {
-      const sector = SECTOR_MAP[n.ticker];
-      if (sector) s.add(sector);
+      const sec = SECTOR_MAP[n.ticker];
+      if (sec) s.add(sec);
     });
     return Array.from(s).sort();
   }, [news]);
 
-  // Tickers únicos
   const tickersInFeed = useMemo(() => {
     const t = new Set<string>();
     news.forEach((n) => t.add(n.ticker));
     return Array.from(t).sort();
   }, [news]);
 
+  const sources = useMemo(() => {
+    const s = new Set<string>();
+    news.forEach((n) => s.add(n.source));
+    return Array.from(s).sort();
+  }, [news]);
+
+  // Counts per source for stats
+  const sourceCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    news.forEach((n) => {
+      counts[n.source] = (counts[n.source] ?? 0) + 1;
+    });
+    return counts;
+  }, [news]);
+
   return (
     <div className="px-8 py-8 max-w-5xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight mb-1">News</h1>
-        <p className="text-sm text-text-secondary">
-          Feed consolidado de {FEED_TICKERS.length}+ ativos. Filtre por ticker, setor ou busque por palavra-chave.
-        </p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight mb-1">News</h1>
+          <p className="text-sm text-text-secondary">
+            Feed consolidado de {FEED_TICKERS.length} ativos via Yahoo Finance + Google News + SEC EDGAR.
+          </p>
+        </div>
+        {!loading && (
+          <div className="text-xs text-text-muted text-right">
+            <div>{news.length} artigos · {sources.length} fontes</div>
+          </div>
+        )}
       </div>
 
       {/* Filtros */}
@@ -114,12 +167,12 @@ export default function NewsPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por palavra-chave no título ou resumo..."
+            placeholder="Buscar por palavra-chave..."
             className="w-full bg-background border border-border rounded-md pl-10 pr-4 py-2 text-sm placeholder:text-text-muted focus:outline-none focus:border-foreground/30 transition-colors"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <label className="text-xs uppercase tracking-wider text-text-muted font-medium block mb-2">
               Setor
@@ -152,6 +205,38 @@ export default function NewsPage() {
               ))}
             </select>
           </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-text-muted font-medium block mb-2">
+              Fonte
+            </label>
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value)}
+              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-foreground/30"
+            >
+              <option value="all">Todas as fontes</option>
+              {sources.map((s) => (
+                <option key={s} value={s}>
+                  {s} ({sourceCounts[s] ?? 0})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            onClick={() => setTierOnly(!tierOnly)}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 text-xs rounded border transition-colors",
+              tierOnly
+                ? "border-amber-400/50 bg-amber-400/10 text-amber-300"
+                : "border-border text-text-muted hover:text-foreground"
+            )}
+          >
+            {tierOnly ? <Star className="w-3 h-3 fill-current" /> : <StarOff className="w-3 h-3" />}
+            Apenas fontes premium (Reuters, Bloomberg, WSJ, FT, CNBC...)
+          </button>
         </div>
       </div>
 
@@ -159,10 +244,10 @@ export default function NewsPage() {
         {loading ? (
           <span className="inline-flex items-center gap-1.5">
             <Loader2 className="w-3 h-3 animate-spin" />
-            Carregando feed...
+            Carregando feed de {FEED_TICKERS.slice(0, 25).length} tickers (3 fontes)...
           </span>
         ) : (
-          <span>{filtered.length} notícias · {tickersInFeed.length} tickers</span>
+          <span>{filtered.length} de {news.length} notícias · {tickersInFeed.length} tickers · {sources.length} fontes</span>
         )}
       </div>
 
@@ -176,51 +261,62 @@ export default function NewsPage() {
       )}
 
       <div className="space-y-2">
-        {filtered.slice(0, 50).map((n) => (
-          <a
-            key={`${n.ticker}-${n.id}`}
-            href={n.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block rounded-lg border border-border bg-surface p-4 hover:bg-surface-elevated transition-colors group"
-          >
-            <div className="flex items-start gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <Link
-                    href={`/asset/${encodeURIComponent(n.ticker)}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="font-mono font-semibold text-xs text-accent hover:underline"
-                  >
-                    {n.ticker}
-                  </Link>
-                  {SECTOR_MAP[n.ticker] && (
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-surface-elevated text-text-muted">
-                      {SECTOR_MAP[n.ticker]}
+        {filtered.slice(0, 50).map((n) => {
+          const tier = sourceTier(n.source);
+          return (
+            <a
+              key={n.id}
+              href={n.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-lg border border-border bg-surface p-4 hover:bg-surface-elevated transition-colors group"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <Link
+                      href={`/asset/${encodeURIComponent(n.ticker)}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-mono font-semibold text-xs text-accent hover:underline"
+                    >
+                      {n.ticker}
+                    </Link>
+                    {SECTOR_MAP[n.ticker] && (
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-surface-elevated text-text-muted">
+                        {SECTOR_MAP[n.ticker]}
+                      </span>
+                    )}
+                    <span
+                      className={cn(
+                        "text-xs font-medium",
+                        tier === 1 ? "text-amber-300" : "text-text-muted"
+                      )}
+                    >
+                      {n.source}
                     </span>
+                    {tier === 1 && <Star className="w-3 h-3 fill-amber-300 text-amber-300" />}
+                    <span className="text-xs text-text-muted">·</span>
+                    <span className="text-xs text-text-muted">
+                      {new Date(n.datetime * 1000).toLocaleString("pt-BR", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                  <h4 className="font-medium text-foreground group-hover:text-accent transition-colors mb-1">
+                    {n.headline}
+                  </h4>
+                  {n.summary && (
+                    <p className="text-sm text-text-secondary line-clamp-2">{n.summary}</p>
                   )}
-                  <span className="text-xs text-text-muted">{n.source}</span>
-                  <span className="text-xs text-text-muted">·</span>
-                  <span className="text-xs text-text-muted">
-                    {new Date(n.datetime * 1000).toLocaleString("pt-BR", {
-                      day: "2-digit",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
                 </div>
-                <h4 className="font-medium text-foreground group-hover:text-accent transition-colors mb-1">
-                  {n.headline}
-                </h4>
-                {n.summary && (
-                  <p className="text-sm text-text-secondary line-clamp-2">{n.summary}</p>
-                )}
+                <ExternalLink className="w-3.5 h-3.5 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </div>
-              <ExternalLink className="w-3.5 h-3.5 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-            </div>
-          </a>
-        ))}
+            </a>
+          );
+        })}
       </div>
     </div>
   );

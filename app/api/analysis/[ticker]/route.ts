@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getYahooCandles } from "@/lib/yahoo";
+import { rsi, sma } from "@/lib/indicators";
 import { cached } from "@/lib/cache";
 import { vwap } from "@/lib/vwap";
 import {
@@ -49,9 +50,18 @@ export async function GET(
 
       // Trend
       const adxSeries = adx(highs, lows, closes, 14);
+      // SMA 20 vs SMA 50 pra determinar direção
+      const sma20Arr = sma(closes, 20);
+      const sma50Arr = sma(closes, 50);
+      const last20 = sma20Arr[sma20Arr.length - 1];
+      const last50 = sma50Arr[sma50Arr.length - 1];
+      const smaTrend = last20 != null && last50 != null
+        ? (last20 > last50 ? "up" : "down")
+        : "unknown";
       const { aroonUp, aroonDown } = aroon(closes, 14);
 
       // Momentum
+      const rsiSeries = rsi(closes, 14);
       const { k: stochK, d: stochD } = stochastic(highs, lows, closes, 14, 3);
       const williams = williamsR(highs, lows, closes, 14);
       const cciSeries = cci(highs, lows, closes, 20);
@@ -84,6 +94,8 @@ export async function GET(
         // Latest values
         latest: {
           adx: adxSeries[adxSeries.length - 1],
+          smaTrend,
+          rsi: rsiSeries[rsiSeries.length - 1],
           aroonUp: aroonUp[aroonUp.length - 1],
           aroonDown: aroonDown[aroonDown.length - 1],
           stochK: stochK[stochK.length - 1],

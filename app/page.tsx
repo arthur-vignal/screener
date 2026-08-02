@@ -229,7 +229,7 @@ export default function DashboardPage() {
               Índices
             </h2>
             <Link
-              href="/index"
+              href="/indices"
               className="text-xs text-text-muted hover:text-foreground inline-flex items-center gap-1"
             >
               Ver todos
@@ -317,7 +317,7 @@ export default function DashboardPage() {
             description="Indicadores técnicos profundos"
           />
           <NavCard
-            href="/index"
+            href="/indices"
             icon={PieChart}
             title="Index"
             description="Índices customizados"

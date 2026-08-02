@@ -124,7 +124,7 @@ export default function IndexListPage() {
         {filtered.map((idx) => (
           <Link
             key={idx.id}
-            href={`/index/${idx.id}`}
+            href={`/indices/${idx.id}`}
             className="rounded-lg border border-border bg-surface p-5 hover:border-foreground/30 hover:bg-surface-elevated transition-all group"
           >
             <div className="flex items-start justify-between mb-2">
