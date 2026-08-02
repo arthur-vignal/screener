@@ -2,8 +2,8 @@
 
 import useSWR from "swr";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { ArrowLeft, ExternalLink, Newspaper, Calendar } from "lucide-react";
-import { useState } from "react";
 import { PriceChart } from "@/components/price-chart";
 import { AssetScores } from "@/components/asset-scores";
 import { EtfHoldings } from "@/components/etf-holdings";
@@ -279,7 +279,7 @@ function StatisticsGroup({
 }
 
 type NewsItem = {
-  id: number;
+  id: string;
   headline: string;
   summary: string;
   source: string;
@@ -290,9 +290,10 @@ type NewsItem = {
 
 function NewsTab({ ticker }: { ticker: string }) {
   const { data, isLoading } = useSWR<{ news: NewsItem[] }>(
-    `/api/news/${ticker}`,
+    `/api/news/multi/${ticker}`,
     fetcher,
   );
+  const [openArticle, setOpenArticle] = useState<NewsItem | null>(null);
 
   if (isLoading) {
     return (
@@ -320,28 +321,116 @@ function NewsTab({ ticker }: { ticker: string }) {
   return (
     <div className="space-y-2">
       {news.slice(0, 30).map((n) => (
-        <a
+        <button
           key={n.id}
-          href={n.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block rounded-lg border border-border bg-surface p-4 hover:bg-surface-elevated transition-colors group"
+          onClick={() => setOpenArticle(n)}
+          className="w-full text-left block rounded-lg border border-border bg-surface p-4 hover:bg-surface-elevated transition-colors group"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span
+                  className={cn(
+                    "text-xs font-medium",
+                    (n.source || "").toLowerCase().includes("reuters") ||
+                    (n.source || "").toLowerCase().includes("bloomberg") ||
+                    (n.source || "").toLowerCase().includes("wsj")
+                      ? "text-amber-300"
+                      : "text-text-muted",
+                  )}
+                >
+                  {n.source}
+                </span>
+                <span className="text-xs text-text-muted">·</span>
+                <span className="text-xs text-text-muted">
+                  {new Date(n.datetime * 1000).toLocaleString("pt-BR", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
               <h4 className="font-medium text-foreground group-hover:text-accent transition-colors mb-1">
                 {n.headline}
               </h4>
-              <p className="text-sm text-text-secondary line-clamp-2">{n.summary}</p>
-              <div className="flex items-center gap-3 mt-2 text-xs text-text-muted">
-                <span className="font-medium">{n.source}</span>
-                <span>{new Date(n.datetime * 1000).toLocaleDateString("pt-BR")}</span>
-              </div>
+              {n.summary && (
+                <p className="text-sm text-text-secondary line-clamp-2">{n.summary}</p>
+              )}
             </div>
             <ExternalLink className="w-3.5 h-3.5 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
           </div>
-        </a>
+        </button>
       ))}
+
+      {/* Modal inline */}
+      {openArticle && <NewsModal article={openArticle} onClose={() => setOpenArticle(null)} />}
+    </div>
+  );
+}
+
+function NewsModal({ article, onClose }: { article: NewsItem; onClose: () => void }) {
+  const [content, setContent] = useState<{ text: string | null; status: "loading" | "ready" | "unavailable" }>(
+    { text: null, status: "loading" },
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setContent({ text: null, status: "loading" });
+    fetch(`/api/news/article?url=${encodeURIComponent(article.url)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        if (d.content) setContent({ text: d.content, status: "ready" });
+        else setContent({ text: null, status: "unavailable" });
+      })
+      .catch(() => { if (!cancelled) setContent({ text: null, status: "unavailable" }); });
+    /* eslint-enable react-hooks/set-state-in-effect */
+    return () => { cancelled = true; };
+  }, [article.url]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 sm:p-8"
+      onClick={onClose}
+    >
+      <div
+        className="bg-surface border border-border rounded-lg max-w-3xl w-full my-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 p-6 border-b border-border-subtle">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2 flex-wrap text-xs text-text-muted">
+              <span>{article.source}</span>
+              <span>·</span>
+              <span>{new Date(article.datetime * 1000).toLocaleString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
+            </div>
+            <h2 className="text-xl font-semibold leading-tight">{article.headline}</h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-surface-elevated rounded-md shrink-0">✕</button>
+        </div>
+        <div className="p-6 max-h-[60vh] overflow-y-auto">
+          {content.status === "loading" && (
+            <div className="flex items-center justify-center py-12 text-text-muted text-sm">Carregando conteúdo...</div>
+          )}
+          {content.status === "unavailable" && (
+            <div className="text-center py-8">
+              <p className="text-text-secondary text-sm mb-4">Não conseguimos extrair o conteúdo completo desta notícia.</p>
+              <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline text-sm">Abrir no portal original</a>
+            </div>
+          )}
+          {content.status === "ready" && content.text && (
+            <div className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
+              {article.summary && <p className="text-base text-foreground font-medium mb-4">{article.summary}</p>}
+              {content.text}
+            </div>
+          )}
+        </div>
+        <div className="border-t border-border-subtle p-4 text-right">
+          <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline text-xs">Abrir original</a>
+        </div>
+      </div>
     </div>
   );
 }

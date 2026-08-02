@@ -9,11 +9,15 @@ import {
   Loader2,
   Star,
   StarOff,
+  X,
+  Calendar,
+  Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type NewsItem = {
   id: string;
+  ticker?: string;
   headline: string;
   summary: string;
   source: string;
@@ -23,7 +27,6 @@ type NewsItem = {
   relatedTickers?: string[];
 };
 
-// Tier 1 sources (renowned financial press)
 const TIER1_SOURCES = new Set([
   "reuters",
   "bloomberg",
@@ -71,13 +74,16 @@ function sourceTier(source: string): 1 | 2 | 3 {
 }
 
 export default function NewsPage() {
-  const [news, setNews] = useState<(NewsItem & { ticker: string })[]>([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState<string>("all");
   const [tickerFilter, setTickerFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [tierOnly, setTierOnly] = useState(false);
+
+  // Modal state
+  const [openArticle, setOpenArticle] = useState<NewsItem | null>(null);
 
   useEffect(() => {
     const tickersParam = FEED_TICKERS.slice(0, 25).join(",");
@@ -90,12 +96,22 @@ export default function NewsPage() {
       .catch(() => setLoading(false));
   }, []);
 
+  // Close modal on Escape
+  useEffect(() => {
+    if (!openArticle) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenArticle(null);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [openArticle]);
+
   const filtered = useMemo(() => {
     return news.filter((n) => {
       if (search && !`${n.headline} ${n.summary}`.toLowerCase().includes(search.toLowerCase())) {
         return false;
       }
-      if (sectorFilter !== "all" && SECTOR_MAP[n.ticker] !== sectorFilter) {
+      if (sectorFilter !== "all" && (!n.ticker || (n.ticker ? SECTOR_MAP[n.ticker] : undefined) !== sectorFilter)) {
         return false;
       }
       if (tickerFilter !== "all" && n.ticker !== tickerFilter) {
@@ -114,7 +130,7 @@ export default function NewsPage() {
   const sectors = useMemo(() => {
     const s = new Set<string>();
     news.forEach((n) => {
-      const sec = SECTOR_MAP[n.ticker];
+      const sec = n.ticker ? (n.ticker ? SECTOR_MAP[n.ticker] : undefined) : undefined;
       if (sec) s.add(sec);
     });
     return Array.from(s).sort();
@@ -122,7 +138,7 @@ export default function NewsPage() {
 
   const tickersInFeed = useMemo(() => {
     const t = new Set<string>();
-    news.forEach((n) => t.add(n.ticker));
+    news.forEach((n) => { if (n.ticker) t.add(n.ticker); });
     return Array.from(t).sort();
   }, [news]);
 
@@ -132,7 +148,6 @@ export default function NewsPage() {
     return Array.from(s).sort();
   }, [news]);
 
-  // Counts per source for stats
   const sourceCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     news.forEach((n) => {
@@ -264,26 +279,22 @@ export default function NewsPage() {
         {filtered.slice(0, 50).map((n) => {
           const tier = sourceTier(n.source);
           return (
-            <a
+            <button
               key={n.id}
-              href={n.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block rounded-lg border border-border bg-surface p-4 hover:bg-surface-elevated transition-colors group"
+              onClick={() => setOpenArticle(n)}
+              className="w-full text-left block rounded-lg border border-border bg-surface p-4 hover:bg-surface-elevated transition-colors group"
             >
               <div className="flex items-start gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <Link
-                      href={`/asset/${encodeURIComponent(n.ticker)}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="font-mono font-semibold text-xs text-accent hover:underline"
-                    >
-                      {n.ticker}
-                    </Link>
-                    {SECTOR_MAP[n.ticker] && (
+                    {n.ticker && (
+                      <span className="font-mono font-semibold text-xs text-accent">
+                        {n.ticker}
+                      </span>
+                    )}
+                    {(n.ticker ? SECTOR_MAP[n.ticker] : undefined) && (
                       <span className="text-xs px-1.5 py-0.5 rounded bg-surface-elevated text-text-muted">
-                        {SECTOR_MAP[n.ticker]}
+                        {(n.ticker ? SECTOR_MAP[n.ticker] : undefined)}
                       </span>
                     )}
                     <span
@@ -314,9 +325,160 @@ export default function NewsPage() {
                 </div>
                 <ExternalLink className="w-3.5 h-3.5 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </div>
-            </a>
+            </button>
           );
         })}
+      </div>
+
+      {/* Modal */}
+      {openArticle && (
+        <ArticleModal article={openArticle} onClose={() => setOpenArticle(null)} />
+      )}
+    </div>
+  );
+}
+
+function ArticleModal({ article, onClose }: { article: NewsItem; onClose: () => void }) {
+  const [content, setContent] = useState<{ text: string | null; status: "loading" | "ready" | "unavailable" }>(
+    { text: null, status: "loading" },
+  );
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    let cancelled = false;
+    setContent({ text: null, status: "loading" });
+    fetch(`/api/news/article?url=${encodeURIComponent(article.url)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        if (d.content) {
+          setContent({ text: d.content, status: "ready" });
+        } else {
+          setContent({ text: null, status: "unavailable" });
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setContent({ text: null, status: "unavailable" });
+      });
+    /* eslint-enable react-hooks/set-state-in-effect */
+    return () => {
+      cancelled = true;
+    };
+  }, [article.url]);
+
+  const tier = sourceTier(article.source);
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 sm:p-8"
+      onClick={onClose}
+    >
+      <div
+        className="bg-surface border border-border rounded-lg max-w-3xl w-full my-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 p-6 border-b border-border-subtle">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              {article.ticker && (
+                <Link
+                  href={`/asset/${encodeURIComponent(article.ticker)}`}
+                  className="font-mono font-semibold text-xs text-accent hover:underline"
+                  onClick={onClose}
+                >
+                  {article.ticker}
+                </Link>
+              )}
+              {(article.ticker ? SECTOR_MAP[article.ticker] : undefined) && (
+                <span className="text-xs px-1.5 py-0.5 rounded bg-surface-elevated text-text-muted">
+                  {(article.ticker ? SECTOR_MAP[article.ticker] : undefined)}
+                </span>
+              )}
+              <span
+                className={cn(
+                  "text-xs font-medium",
+                  tier === 1 ? "text-amber-300" : "text-text-muted"
+                )}
+              >
+                {article.source}
+              </span>
+              {tier === 1 && <Star className="w-3 h-3 fill-amber-300 text-amber-300" />}
+              <span className="text-xs text-text-muted">·</span>
+              <span className="text-xs text-text-muted inline-flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {new Date(article.datetime * 1000).toLocaleString("pt-BR", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
+            <h2 className="text-xl font-semibold leading-tight">{article.headline}</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 hover:bg-surface-elevated rounded-md transition-colors shrink-0"
+            aria-label="Fechar"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-6 max-h-[60vh] overflow-y-auto">
+          {content.status === "loading" && (
+            <div className="flex items-center justify-center py-12 text-text-muted">
+              <Loader2 className="w-5 h-5 animate-spin mr-2" />
+              Carregando conteúdo...
+            </div>
+          )}
+          {content.status === "unavailable" && (
+            <div className="text-center py-8">
+              <Globe className="w-10 h-10 text-text-muted mx-auto mb-3" strokeWidth={1.5} />
+              <p className="text-text-secondary text-sm mb-4">
+                Não conseguimos extrair o conteúdo completo desta notícia.
+              </p>
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Abrir no portal original
+              </a>
+            </div>
+          )}
+          {content.status === "ready" && content.text && (
+            <div className="prose prose-invert max-w-none">
+              {article.summary && (
+                <p className="text-base text-foreground font-medium mb-4 leading-relaxed">
+                  {article.summary}
+                </p>
+              )}
+              <div className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
+                {content.text}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-border-subtle p-4 flex items-center justify-between text-xs text-text-muted">
+          <span className="truncate flex-1 mr-4">{article.url}</span>
+          <a
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-accent hover:underline shrink-0"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            Abrir no {article.source}
+          </a>
+        </div>
       </div>
     </div>
   );

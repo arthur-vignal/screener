@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import {
   Search as SearchIcon,
   Loader2,
   Filter,
-  ChevronDown,
 } from "lucide-react";
 import { cn, formatPercent } from "@/lib/utils";
 
@@ -118,24 +117,22 @@ export default function AssetsPage() {
   const [sharpeRange, setSharpeRange] = useState<[number, number]>([-10, 10]);
   const [adxRange, setAdxRange] = useState<[number, number]>([0, 100]);
 
-  // Pagination state
-  const [page, setPage] = useState(0); // page number, increments per load-more
-  const [accumulated, setAccumulated] = useState<ListItem[]>([]);
+  // Pagination state (1-indexed page)
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), 250);
     return () => clearTimeout(t);
   }, [debouncedQuery, query]);
 
-  // Reset when filters change — needed to clear pagination state
+  // Reset to page 1 when filters change
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    setPage(0);
-    setAccumulated([]);
+    setPage(1);
   }, [exchangeFilter, sectorFilter, debouncedQuery]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const offset = page * PAGE_SIZE;
+  const offset = (page - 1) * PAGE_SIZE;
 
   const listUrl = useMemo(() => {
     const sp = new URLSearchParams({
@@ -152,28 +149,31 @@ export default function AssetsPage() {
     keepPreviousData: true,
   });
 
-  // Append new page to accumulated list
-  const lastUrlRef = useRef<string>("");
-  useEffect(() => {
-    if (!listData) return;
-    if (lastUrlRef.current === listUrl) return;
-    lastUrlRef.current = listUrl;
-    setAccumulated((prev) => {
-      // If resetting, replace. Otherwise append only new items.
-      if (page === 0) return listData.items;
-      // Filter out duplicates
-      const existing = new Set(prev.map((i) => i.symbol));
-      const fresh = listData.items.filter((i) => !existing.has(i.symbol));
-      return [...prev, ...fresh];
-    });
-  }, [listData, listUrl, page]);
+  // Items = current page items (no accumulation; replacing on page change)
+  const allItems = useMemo(() => listData?.items ?? [], [listData]);
+  const totalPages = Math.max(1, Math.ceil((listData?.total ?? 0) / PAGE_SIZE));
+  const hasPrev = page > 1;
+  const hasNext = (listData?.hasMore ?? false) || page < totalPages;
 
-  const loadMore = () => {
-    if (listData?.hasMore && !loadingList) setPage((p) => p + 1);
-  };
+  // Build visible page numbers: first 2, current ±1, last 2 (with ellipsis)
+  const pageNumbers = useMemo(() => {
+    const cur = page;
+    const last = totalPages;
+    if (last <= 7) return Array.from({ length: last }, (_, i) => i + 1);
+    const set = new Set<number>([1, 2, last - 1, last, cur - 1, cur, cur + 1]);
+    const sorted = Array.from(set).filter((p) => p >= 1 && p <= last).sort((a, b) => a - b);
+    const result: (number | "...")[] = [];
+    let prev = 0;
+    for (const p of sorted) {
+      if (prev && p - prev > 1) result.push("...");
+      result.push(p);
+      prev = p;
+    }
+    return result;
+  }, [page, totalPages]);
 
   // Quotes for accumulated items
-  const symbols = useMemo(() => accumulated.map((it) => it.symbol), [accumulated]);
+  const symbols = useMemo(() => allItems.map((it) => it.symbol), [allItems]);
   const quotes = useSWR<{ rows: Row[] }>(
     symbols.length > 0 ? `/api/assets/quote?symbols=${symbols.join(",")}` : null,
     fetcher,
@@ -278,8 +278,6 @@ export default function AssetsPage() {
     filtersActive && symbols.length > 0 && Object.keys(analysisMap).length === 0 && !loadingList;
 
   const total = listData?.total ?? 0;
-  const hasMore = listData?.hasMore ?? false;
-
   return (
     <div className="px-8 py-8 max-w-7xl">
       <div className="mb-6 flex items-end justify-between">
@@ -492,22 +490,47 @@ export default function AssetsPage() {
         </table>
       </div>
 
-      {hasMore && (
-        <div className="mt-6 flex justify-center">
+      {/* Pagination */}
+      {(totalPages > 1 || hasPrev) && (
+        <div className="mt-6 flex items-center justify-center gap-1">
           <button
-            onClick={loadMore}
-            disabled={loadingList}
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-surface border border-border rounded-md hover:bg-surface-elevated transition-colors disabled:opacity-50"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={!hasPrev || loadingList}
+            className="px-3 py-1.5 text-sm rounded-md border border-border text-text-secondary hover:text-foreground hover:bg-surface-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {loadingList ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+            ← Anterior
+          </button>
+          {pageNumbers.map((p, i) =>
+            p === "..." ? (
+              <span key={`ellipsis-${i}`} className="px-2 text-text-muted text-sm">…</span>
             ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
-            Carregar mais 50 ({total - accumulated.length} restantes)
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                disabled={loadingList}
+                className={cn(
+                  "min-w-[36px] px-2 py-1.5 text-sm font-mono tabular-nums rounded-md border transition-colors disabled:opacity-50",
+                  p === page
+                    ? "bg-foreground text-background border-foreground"
+                    : "border-border text-text-secondary hover:text-foreground hover:bg-surface-elevated",
+                )}
+              >
+                {p}
+              </button>
+            ),
+          )}
+          <button
+            onClick={() => setPage((p) => p + 1)}
+            disabled={!hasNext || loadingList}
+            className="px-3 py-1.5 text-sm rounded-md border border-border text-text-secondary hover:text-foreground hover:bg-surface-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Próxima →
           </button>
         </div>
       )}
+      <div className="mt-2 text-center text-xs text-text-muted">
+        Página {page} de {totalPages} · {total} ativos
+      </div>
     </div>
   );
 }

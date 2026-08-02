@@ -217,8 +217,15 @@ export function PriceChart({ ticker }: { ticker: string }) {
         </div>
       </div>
 
-      {rsiData.length > 0 && showRSI && (
-        <div className="rounded-lg border border-border bg-surface overflow-hidden">
+      <div
+        className={cn(
+          "grid transition-all duration-500 ease-out",
+          showRSI && rsiData.length > 0 ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+        )}
+        style={{ transitionProperty: "grid-template-rows, opacity" }}
+      >
+        <div className="overflow-hidden">
+          <div className="rounded-lg border border-border bg-surface overflow-hidden">
           <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
             <h3 className="text-sm font-medium text-foreground">RSI (14)</h3>
             {lastRsi !== null && (
@@ -280,7 +287,8 @@ export function PriceChart({ ticker }: { ticker: string }) {
             </ResponsiveContainer>
           </div>
         </div>
-      )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -20,39 +20,46 @@ type Metrics = {
   priceToBook: number | null;
 };
 
-type Recommendation = {
-  period: string;
-  strongBuy: number;
-  buy: number;
-  hold: number;
-  sell: number;
-  strongSell: number;
+type QuantRecommendation = {
+  score: number;
+  band: "STRONG BUY" | "BUY" | "HOLD" | "SELL" | "STRONG SELL";
+  components: {
+    trend: number;
+    momentum: number;
+    volatility: number;
+    sharpe: number;
+    drawdown: number;
+  };
+  rationale: string[];
 };
 
 type ScoresData = {
   metrics: Metrics;
-  recommendation: Recommendation | null;
+  recommendation: QuantRecommendation | null;
 };
 
-function recommendationKey(r: Recommendation): { key: string; buyPct: number } {
-  const total = r.strongBuy + r.buy + r.hold + r.sell + r.strongSell;
-  if (total === 0) return { key: "—", buyPct: 0 };
-  const buyPct = ((r.strongBuy + r.buy) / total) * 100;
-  let key = "HOLD";
-  if (buyPct >= 70) key = "BUY";
-  else if (buyPct >= 50) key = "BUY";
-  else if (buyPct >= 30) key = "HOLD";
-  else if (buyPct >= 10) key = "SELL";
-  else key = "SELL";
-  if (r.strongBuy >= total * 0.4) key = "STRONG BUY";
-  if (r.strongSell >= total * 0.4) key = "STRONG SELL";
-  return { key, buyPct };
-}
+const BAND_STYLE: Record<
+  QuantRecommendation["band"],
+  { bg: string; text: string }
+> = {
+  "STRONG BUY": { bg: "bg-positive/15", text: "text-positive" },
+  BUY: { bg: "bg-positive/10", text: "text-positive" },
+  HOLD: { bg: "bg-yellow-400/10", text: "text-yellow-400" },
+  SELL: { bg: "bg-negative/10", text: "text-negative" },
+  "STRONG SELL": { bg: "bg-negative/15", text: "text-negative" },
+};
 
 export function AssetScores({ ticker }: { ticker: string }) {
-  const { data, isLoading } = useSWR<ScoresData>(`/api/scores/${ticker}`, fetcher, {
-    revalidateOnFocus: false,
-  });
+  const { data: scoresData, isLoading } = useSWR<ScoresData>(
+    `/api/scores/${ticker}`,
+    fetcher,
+    { revalidateOnFocus: false },
+  );
+  const { data: recData } = useSWR<{ recommendation: QuantRecommendation | null }>(
+    `/api/recommendation/${ticker}`,
+    fetcher,
+    { revalidateOnFocus: false },
+  );
 
   if (isLoading) {
     return (
@@ -63,7 +70,7 @@ export function AssetScores({ ticker }: { ticker: string }) {
     );
   }
 
-  if (!data) {
+  if (!scoresData) {
     return (
       <div className="rounded-lg border border-border bg-surface p-6 text-text-muted text-sm text-center">
         Scores indisponíveis pra esse ticker.
@@ -71,9 +78,10 @@ export function AssetScores({ ticker }: { ticker: string }) {
     );
   }
 
-  const m = data.metrics;
+  const m = scoresData.metrics;
   const f = piotroskiF(m);
   const z = altmanZ(m);
+  const rec = recData?.recommendation ?? null;
 
   const scorePct = f.max > 0 ? f.score / f.max : 0;
   const scoreColor =
@@ -83,47 +91,70 @@ export function AssetScores({ ticker }: { ticker: string }) {
         ? "text-yellow-400"
         : "text-negative";
 
-  const rec = data.recommendation;
-  const recInfo = rec ? recommendationKey(rec) : null;
-
   return (
     <div className="space-y-3">
-      {/* Analyst recommendation + Piotroski */}
+      {/* Quant recommendation + Piotroski */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Recommendation card */}
+        {/* Quant recommendation card */}
         <div className="rounded-lg border border-border bg-surface p-4">
           <div className="flex items-baseline justify-between mb-3">
-            <h3 className="text-sm font-medium text-foreground">Recomendação analistas</h3>
-            {recInfo && (
+            <h3 className="text-sm font-medium text-foreground">Recomendação quantitativa</h3>
+            {rec && (
               <span
                 className={cn(
                   "text-xs px-2 py-0.5 rounded-md font-mono uppercase tracking-wider",
-                  recInfo.key === "STRONG BUY" || recInfo.key === "BUY"
-                    ? "bg-positive/10 text-positive"
-                    : recInfo.key === "SELL" || recInfo.key === "STRONG SELL"
-                      ? "bg-negative/10 text-negative"
-                      : "bg-yellow-400/10 text-yellow-400",
+                  BAND_STYLE[rec.band].bg,
+                  BAND_STYLE[rec.band].text,
                 )}
               >
-                {recInfo.key}
+                {rec.band}
               </span>
             )}
           </div>
           {rec ? (
             <>
-              <div className="space-y-1.5 text-xs">
-                <Bar label="Compra forte" value={rec.strongBuy} max={Math.max(rec.strongBuy + rec.buy + rec.hold + rec.sell + rec.strongSell, 1)} color="bg-positive" />
-                <Bar label="Compra" value={rec.buy} max={Math.max(rec.strongBuy + rec.buy + rec.hold + rec.sell + rec.strongSell, 1)} color="bg-positive/60" />
-                <Bar label="Mantém" value={rec.hold} max={Math.max(rec.strongBuy + rec.buy + rec.hold + rec.sell + rec.strongSell, 1)} color="bg-yellow-400/60" />
-                <Bar label="Venda" value={rec.sell} max={Math.max(rec.strongBuy + rec.buy + rec.hold + rec.sell + rec.strongSell, 1)} color="bg-negative/60" />
-                <Bar label="Venda forte" value={rec.strongSell} max={Math.max(rec.strongBuy + rec.buy + rec.hold + rec.sell + rec.strongSell, 1)} color="bg-negative" />
+              {/* Score bar */}
+              <div className="mb-3">
+                <div className="flex items-baseline justify-between mb-1">
+                  <span className="text-xs text-text-muted">Score</span>
+                  <span className="text-lg font-mono font-semibold tabular-nums">
+                    {rec.score}
+                    <span className="text-text-muted text-sm">/100</span>
+                  </span>
+                </div>
+                <div className="h-2 bg-surface-elevated rounded-full overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full transition-all",
+                      rec.score >= 60
+                        ? "bg-positive"
+                        : rec.score >= 45
+                          ? "bg-yellow-400"
+                          : "bg-negative",
+                    )}
+                    style={{ width: `${rec.score}%` }}
+                  />
+                </div>
               </div>
-              <div className="text-xs text-text-muted text-center pt-2 mt-2 border-t border-border-subtle">
-                {rec.period} · {rec.strongBuy + rec.buy + rec.hold + rec.sell + rec.strongSell} analistas
+
+              {/* Component breakdown */}
+              <div className="space-y-1 text-xs">
+                <CompBar label="Tendência" value={rec.components.trend} />
+                <CompBar label="Momentum" value={rec.components.momentum} />
+                <CompBar label="Volatilidade" value={rec.components.volatility} />
+                <CompBar label="Sharpe" value={rec.components.sharpe} />
+                <CompBar label="Drawdown" value={rec.components.drawdown} />
+              </div>
+
+              {/* Rationale */}
+              <div className="mt-3 pt-3 border-t border-border-subtle text-xs text-text-muted space-y-0.5">
+                {rec.rationale.map((r, i) => (
+                  <div key={i}>· {r}</div>
+                ))}
               </div>
             </>
           ) : (
-            <p className="text-xs text-text-muted">Sem cobertura</p>
+            <p className="text-xs text-text-muted">Calculando...</p>
           )}
         </div>
 
@@ -236,18 +267,20 @@ export function AssetScores({ ticker }: { ticker: string }) {
   );
 }
 
-function Bar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
-  const pct = max > 0 ? (value / max) * 100 : 0;
+function CompBar({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-text-secondary w-24 shrink-0">{label}</span>
-      <div className="flex-1 h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+      <span className="text-text-secondary w-20 shrink-0 text-[11px]">{label}</span>
+      <div className="flex-1 h-1 bg-surface-elevated rounded-full overflow-hidden">
         <div
-          className={cn("h-full rounded-full", color)}
-          style={{ width: `${pct}%` }}
+          className={cn(
+            "h-full rounded-full",
+            value >= 60 ? "bg-positive" : value >= 45 ? "bg-yellow-400" : "bg-negative",
+          )}
+          style={{ width: `${value}%` }}
         />
       </div>
-      <span className="text-text-muted font-mono w-6 text-right">{value}</span>
+      <span className="text-text-muted font-mono w-6 text-right text-[11px]">{value}</span>
     </div>
   );
 }
