@@ -1,5 +1,9 @@
 /**
  * Asset universe constants — safe to import in client components.
+ * For S&P 500 constituents, see lib/snp500.ts.
+ */
+/**
+ * Asset universe constants — safe to import in client components.
  * For server-side Yahoo fetching, see lib/assets.ts.
  */
 
@@ -38,3 +42,7 @@ export const CRYPTOS: readonly string[] = [
   "ZRX-USD", "BAT-USD", "ENJ-USD", "CHZ-USD", "FLOW-USD", "ICP-USD",
   "GRASS-USD", "HONEY-USD", "PEPE-USD", "WIF-USD",
 ];
+
+// Re-export S&P 500 from dedicated module
+export { SP500, SP500_SECTORS, SP500_BY_SECTOR } from "./snp500";
+export type { SP500Entry } from "./snp500";
