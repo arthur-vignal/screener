@@ -38,7 +38,7 @@ async function getClosesSince(
 ): Promise<Candle[]> {
   return cached(
     `cl:${symbol}:${sinceUnix}`,
-    6 * 3600, // 6h cache
+    24 * 3600, // 24h cache (daily data is stable)
     async () => {
       try {
         // Always fetch 5Y to ensure we cover sinceDate even for old portfolios
@@ -169,6 +169,9 @@ export async function computePortfolioPerformance(
       ? Math.pow(endValue / startValue, 1 / years) - 1
       : 0;
 
+  // Resample history to at most 180 points (downsample if needed)
+  const resampled = resampleHistory(history, 180);
+
   return {
     startValue,
     endValue,
@@ -178,8 +181,22 @@ export async function computePortfolioPerformance(
     bestDay: isFinite(bestDay) ? bestDay : 0,
     worstDay: isFinite(worstDay) ? worstDay : 0,
     daysHeld,
-    history,
+    history: resampled,
   };
+}
+
+/**
+ * Downsample history to N points (uniform sampling).
+ * Always keeps first and last.
+ */
+function resampleHistory<T>(items: T[], target: number): T[] {
+  if (items.length <= target) return items;
+  const step = (items.length - 1) / (target - 1);
+  const result: T[] = [];
+  for (let i = 0; i < target; i++) {
+    result.push(items[Math.round(i * step)]);
+  }
+  return result;
 }
 
 /**

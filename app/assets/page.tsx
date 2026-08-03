@@ -487,10 +487,12 @@ export default function AssetsPage() {
   }, [rows, trendFilter, volRange, rsiRange, sharpeRange, adxRange]);
 
   // Only show columns that have values in any visible row
-  const visibleCols = useMemo(() => {
-    const cols = COLUMNS.filter((c) => activeCols.has(c.key));
-    return cols.filter((c) => filteredRows.some((r) => c.hasValue(r)));
-  }, [activeCols, filteredRows]);
+  // Visible cols: todas as colunas ativas pelo usuario.
+  // Colunas sem valor nas rows filtradas mostram placeholder "—".
+  const visibleCols = useMemo(
+    () => COLUMNS.filter((c) => activeCols.has(c.key)),
+    [activeCols],
+  );
 
   const volZone = classifyValue((volRange[0] + volRange[1]) / 2, VOL_BANDS);
   const rsiZone = classifyValue((rsiRange[0] + rsiRange[1]) / 2, RSI_BANDS);
@@ -608,7 +610,7 @@ export default function AssetsPage() {
             ))}
           </div>
           <p className="text-xs text-text-muted mt-3">
-            Colunas sem valor nos resultados visíveis são escondidas automaticamente.
+            Colunas ativas ficam visíveis mesmo sem valor (mostram —). Use os filtros pra gerar dados de análise.
           </p>
         </div>
       )}
