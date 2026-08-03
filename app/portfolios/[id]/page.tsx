@@ -3,6 +3,7 @@
 import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
+import { RichFundamentalsTable } from "@/components/rich-fundamentals-table";
 import useSWR from "swr";
 import {
   CartesianGrid,
@@ -321,30 +322,9 @@ export default function PortfolioDetailPage({
             <h2 className="text-sm font-medium mb-3">
               Constituentes ({constituents.length})
             </h2>
-            <div className="space-y-1">
-              {constituents.map((h) => (
-                <div
-                  key={h.symbol}
-                  className="flex items-center gap-3 px-3 py-2 bg-background/50 rounded"
-                >
-                  <Link
-                    href={`/asset/${encodeURIComponent(h.symbol)}`}
-                    className="font-mono font-semibold text-sm w-20 hover:text-accent transition-colors"
-                  >
-                    {h.symbol}
-                  </Link>
-                  <div className="flex-1 h-1.5 bg-surface-elevated rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-foreground/40 rounded-full"
-                      style={{ width: `${h.weight * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-xs font-mono tabular-nums w-12 text-right">
-                    {(h.weight * 100).toFixed(1)}%
-                  </span>
-                </div>
-              ))}
-            </div>
+            <RichFundamentalsTable
+              rows={constituents.map((h) => ({ symbol: h.symbol, weight: h.weight }))}
+            />
           </div>
         </>
       )}
