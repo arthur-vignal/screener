@@ -312,6 +312,24 @@ export default function AssetsPage() {
     return DEFAULT_COLS;
   });
 
+  // Sincroniza com localStorage depois da hidratacao
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(COLS_KEY);
+      if (stored) {
+        const arr = JSON.parse(stored) as string[];
+        if (Array.isArray(arr)) {
+          const newSet = new Set(arr);
+          // So atualiza se mudou
+          if (newSet.size !== activeCols.size || ![...newSet].every(k => activeCols.has(k))) {
+            setActiveCols(newSet);
+          }
+        }
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const toggleCol = (key: string) => {
     setActiveCols((prev) => {
       const next = new Set(prev);
@@ -330,15 +348,9 @@ export default function AssetsPage() {
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), 250);
     return () => clearTimeout(t);
-  }, [debouncedQuery, query]);
-
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
+  }, [debouncedQuery, query]);useEffect(() => {
     setPage(1);
-  }, [exchangeFilter, sectorFilter, debouncedQuery]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  const offset = (page - 1) * PAGE_SIZE;
+  }, [exchangeFilter, sectorFilter, debouncedQuery]);const offset = (page - 1) * PAGE_SIZE;
   const listUrl = useMemo(() => {
     const sp = new URLSearchParams({
       exchange: exchangeFilter,

@@ -343,9 +343,7 @@ function ArticleModal({ article, onClose }: { article: NewsItem; onClose: () => 
     { text: null, status: "loading" },
   );
 
-  useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
-    let cancelled = false;
+  useEffect(() => {let cancelled = false;
     setContent({ text: null, status: "loading" });
     fetch(`/api/news/article?url=${encodeURIComponent(article.url)}`)
       .then((r) => r.json())
@@ -360,9 +358,7 @@ function ArticleModal({ article, onClose }: { article: NewsItem; onClose: () => 
       .catch(() => {
         if (cancelled) return;
         setContent({ text: null, status: "unavailable" });
-      });
-    /* eslint-enable react-hooks/set-state-in-effect */
-    return () => {
+      });return () => {
       cancelled = true;
     };
   }, [article.url]);
