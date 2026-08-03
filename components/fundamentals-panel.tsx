@@ -66,14 +66,27 @@ const CATEGORY_META: Record<ConceptCategory, { label: string; icon: typeof Trend
 
 type MetricValue = { key: string; label: string; value: number | null; suffix?: string };
 
-export function FundamentalsPanel({ metrics }: { metrics: MetricValue[] }) {
-  const grouped = metrics.reduce<Record<ConceptCategory, MetricValue[]>>((acc, m) => {
+export function FundamentalsPanel({
+  metrics,
+}: {
+  metrics: Array<{
+    key: string;
+    label: string;
+    value: number | null;
+    suffix?: string;
+  }>;
+}) {
+  // Filter out null values
+  const valid = metrics.filter((m): m is MetricValue => m.value != null);
+
+  // Group by category
+  const grouped: Record<ConceptCategory, MetricValue[]> = {} as Record<ConceptCategory, MetricValue[]>;
+  for (const m of valid) {
     const conceptKey = KNOWN_CONCEPTS[m.key];
     const cat = (conceptKey ? getConcept(conceptKey)?.category : "valuation") as ConceptCategory;
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(m);
-    return acc;
-  }, {} as Record<ConceptCategory, MetricValue[]>);
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(m);
+  }
 
   const present = Object.entries(grouped).filter(([, ms]) => ms.length > 0);
 

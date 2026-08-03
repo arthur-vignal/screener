@@ -8,6 +8,7 @@ import { PriceChart } from "@/components/price-chart";
 import { AssetScores } from "@/components/asset-scores";
 import { EtfHoldings } from "@/components/etf-holdings";
 import { cn, formatCompact } from "@/lib/utils";
+import { FundamentalsPanel } from "@/components/fundamentals-panel";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -178,36 +179,35 @@ export function AssetDetail({ ticker }: { ticker: string }) {
       {tab === "statistics" && (
         <div className="space-y-6">
           <AssetScores ticker={data.ticker} />
-          <StatisticsGroup title="Valuation" metrics={[
+          <FundamentalsPanel
+          metrics={[
             { label: "P/E", key: "peRatio", suffix: "" },
             { label: "P/VP", key: "priceToBook", suffix: "" },
             { label: "PEG", key: "pegRatio", suffix: "" },
             { label: "EV/EBITDA", key: "evEbitda", suffix: "" },
             { label: "EV/Receita", key: "evRevenue", suffix: "" },
-          ]} m={data.metrics} />
-          <StatisticsGroup title="Rentabilidade" metrics={[
-            { label: "ROE", key: "roe", suffix: "%", isPercent: true },
-            { label: "ROA", key: "roa", suffix: "%", isPercent: true },
-            { label: "ROIC", key: "roic", suffix: "%", isPercent: true },
-            { label: "Margem bruta", key: "grossMargin", suffix: "%", isPercent: true },
-            { label: "Margem operacional", key: "operatingMargin", suffix: "%", isPercent: true },
-            { label: "Margem líquida", key: "profitMargin", suffix: "%", isPercent: true },
-            { label: "FCF Yield", key: "freeCashFlowYield", suffix: "%", isPercent: true },
-          ]} m={data.metrics} />
-          <StatisticsGroup title="Crescimento & Dividendos" metrics={[
-            { label: "EPS", key: "eps", prefix: "$" },
-            { label: "Receita / ação", key: "revenuePerShare", prefix: "$" },
-            { label: "Book value / ação", key: "bookValuePerShare", prefix: "$" },
-            { label: "Dividend yield", key: "dividendYield", suffix: "%", isPercent: true },
-            { label: "Payout ratio", key: "payoutRatio", suffix: "%", isPercent: true },
-          ]} m={data.metrics} />
-          <StatisticsGroup title="Risco & Volatilidade" metrics={[
+            { label: "ROE", key: "roe", suffix: "%" },
+            { label: "ROA", key: "roa", suffix: "%" },
+            { label: "ROIC", key: "roic", suffix: "%" },
+            { label: "Margem bruta", key: "grossMargin", suffix: "%" },
+            { label: "Margem operacional", key: "operatingMargin", suffix: "%" },
+            { label: "Margem líquida", key: "profitMargin", suffix: "%" },
+            { label: "FCF Yield", key: "freeCashFlowYield", suffix: "%" },
+            { label: "EPS", key: "eps", suffix: "", prefix: "$" },
+            { label: "Receita / ação", key: "revenuePerShare", suffix: "", prefix: "$" },
+            { label: "Book value / ação", key: "bookValuePerShare", suffix: "", prefix: "$" },
+            { label: "Dividend yield", key: "dividendYield", suffix: "%" },
+            { label: "Payout ratio", key: "payoutRatio", suffix: "%" },
             { label: "Beta", key: "beta", suffix: "" },
             { label: "52w high", key: "yearHigh", prefix: "$" },
             { label: "52w low", key: "yearLow", prefix: "$" },
-            { label: "Debt / Equity", key: "debtEquity", suffix: "" },
-            { label: "Current ratio", key: "currentRatio", suffix: "" },
-          ]} m={data.metrics} />
+          ].map((m) => {
+            const raw = (data.metrics as Record<string, number | null>)[m.key];
+            if (raw == null) return null;
+            const value = (m.suffix === "%") ? raw * 100 : raw;
+            return { label: m.label, key: m.key, value, suffix: m.suffix };
+          }).filter((m): m is { label: string; key: string; value: number; suffix: string } => m !== null)}
+        />
         </div>
       )}
 
@@ -242,41 +242,6 @@ function StatRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StatisticsGroup({
-  title,
-  metrics,
-  m,
-}: {
-  title: string;
-  metrics: { label: string; key: string; prefix?: string; suffix?: string; isPercent?: boolean }[];
-  m: Record<string, number | null>;
-}) {
-  const present = metrics.filter((x) => m[x.key] != null);
-  if (present.length === 0) return null;
-  return (
-    <div className="rounded-lg border border-border bg-surface overflow-hidden">
-      <div className="border-b border-border-subtle px-4 py-2.5">
-        <h3 className="text-sm font-medium text-foreground">{title}</h3>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-4">
-        {present.map((x) => {
-          const v = m[x.key]!;
-          const display = x.isPercent
-            ? `${v.toFixed(2)}%`
-            : `${x.prefix ?? ""}${v.toLocaleString("en-US", { maximumFractionDigits: 2 })}${x.suffix ?? ""}`;
-          return (
-            <div key={x.key} className="rounded-md bg-surface-elevated/40 p-3">
-              <div className="text-xs text-text-muted uppercase tracking-wider mb-1">
-                {x.label}
-              </div>
-              <div className="text-sm font-mono tabular-nums">{display}</div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 type NewsItem = {
   id: string;
