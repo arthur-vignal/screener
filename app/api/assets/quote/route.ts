@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAssetQuotes, getAssetType, getSectorsFor } from "@/lib/assets";
+import { getFundamentalsBatch } from "@/lib/fundamentals";
+import { getAssetType } from "@/lib/assets";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const symbols = (searchParams.get("symbols") ?? "")
+  const symbols = (req.nextUrl.searchParams.get("symbols") ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)
@@ -16,19 +17,46 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Single batch request via Spark endpoint (was N parallel requests before)
-    const [quoteMap, sectors] = await Promise.all([
-      getAssetQuotes(symbols),
-      getSectorsFor(symbols),
-    ]);
+    const fundMap = await getFundamentalsBatch(symbols);
 
     const rows = symbols.map((sym) => {
       const upper = sym.toUpperCase();
+      const f = fundMap.get(upper);
       return {
         symbol: upper,
         type: getAssetType(upper),
-        sector: sectors.get(upper) ?? "—",
-        quote: quoteMap.get(upper) ?? null,
+        sector: f?.sector ?? "—",
+        quote: f
+          ? {
+              symbol: upper,
+              price: f.price,
+              prevClose: f.prevClose,
+              change: f.change,
+              changePercent: f.changePercent,
+              currency: "USD",
+              dayHigh: f.dayHigh,
+              dayLow: f.dayLow,
+              dayOpen: 0,
+              volume: f.volume,
+              fiftyTwoWeekHigh: f.fiftyTwoWeekHigh,
+              fiftyTwoWeekLow: f.fiftyTwoWeekLow,
+            }
+          : null,
+        // Also include metrics for /assets to display
+        metrics: f
+          ? {
+              pe: f.pe,
+              pb: f.pb,
+              roe: f.roe,
+              roic: f.roic,
+              netMargin: f.netMargin,
+              operatingMargin: f.operatingMargin,
+              marketCap: f.marketCap,
+              eps: f.eps,
+              bookValuePerShare: f.bookValuePerShare,
+              dividendYield: f.ps ? null : null, // SEC doesn't have this
+            }
+          : null,
       };
     });
 

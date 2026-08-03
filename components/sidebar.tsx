@@ -21,8 +21,8 @@ import {
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/assets", label: "Assets", icon: TrendingUp },
-  { href: "/analysis", label: "Analysis", icon: BarChart3 },
-  { href: "/analysis/stats", label: "Mercado", icon: BarChart3 },
+  { href: "/analysis", label: "Analysis", icon: BarChart3, exact: true },
+  { href: "/analysis/stats", label: "Mercado", icon: BarChart3, exact: true },
   { href: "/indices", label: "Indices", icon: PieChart },
   { href: "/news", label: "News", icon: Newspaper },
   { href: "/portfolios", label: "Portfolios", icon: Briefcase },
