@@ -3,6 +3,7 @@
 import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
+import { RichFundamentalsTable } from "@/components/rich-fundamentals-table";
 import useSWR from "swr";
 import { cn } from "@/lib/utils";
 
@@ -234,46 +235,12 @@ export default function IndexDetailPage({
             <h2 className="text-sm font-medium mb-3">
               Constituentes ({constituents.length})
             </h2>
-            <div className="space-y-1">
-              {constituents.map((c) => (
-                <div
-                  key={c.symbol}
-                  className="flex items-center gap-3 px-3 py-2 bg-background/50 rounded"
-                >
-                  <span className="text-xs text-text-muted w-8 text-right font-mono">
-                    #{c.rank}
-                  </span>
-                  <Link
-                    href={`/asset/${encodeURIComponent(c.symbol)}`}
-                    className="font-mono font-semibold text-sm w-20 hover:text-accent transition-colors"
-                  >
-                    {c.symbol}
-                  </Link>
-                  <span className="flex-1 text-xs text-text-muted truncate">
-                    {c.name}
-                  </span>
-                  <span className="text-xs text-text-muted hidden md:inline">
-                    {c.sector}
-                  </span>
-                  {c.price > 0 && (
-                    <>
-                      <span className="text-xs font-mono tabular-nums">
-                        ${c.price.toFixed(2)}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-xs font-mono tabular-nums w-16 text-right",
-                          c.changePercent >= 0 ? "text-positive" : "text-negative",
-                        )}
-                      >
-                        {c.changePercent >= 0 ? "+" : ""}
-                        {c.changePercent.toFixed(2)}%
-                      </span>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
+            <RichFundamentalsTable
+              rows={constituents.map((c) => ({
+                symbol: c.symbol,
+                weight: 1 / constituents.length,
+              }))}
+            />
           </div>
         </>
       )}

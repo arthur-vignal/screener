@@ -80,34 +80,28 @@ export default function MarketStatsPage() {
               <StatCard
                 label="Market Cap Total"
                 value={formatCompact(data.overall.totalMarketCap)}
-                icon="dollar"
               />
               <StatCard
                 label="P/L Mediano"
                 value={data.overall.peMedian.toFixed(2)}
                 sub={`Média ${data.overall.peMean.toFixed(2)}`}
-                icon="chart"
               />
               <StatCard
                 label="P/VP Mediano"
                 value={data.overall.pbMedian.toFixed(2)}
                 sub={`Média ${data.overall.pbMean.toFixed(2)}`}
-                icon="chart"
               />
               <StatCard
                 label="EV/EBITDA Med."
                 value={data.overall.evEbitdaMedian.toFixed(2)}
-                icon="chart"
               />
               <StatCard
                 label="DY Mediano"
                 value={`${(data.overall.dividendYieldMedian * 100).toFixed(2)}%`}
-                icon="dollar"
               />
               <StatCard
                 label="ROE Mediano"
                 value={`${(data.overall.roeMedian * 100).toFixed(1)}%`}
-                icon="trending"
               />
             </div>
             <div className="text-xs text-text-muted mt-2">
