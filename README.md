@@ -1,47 +1,84 @@
-# Screener
+# Screener v2
 
-Stock screener + asset analyzer. Next.js 16 + React 19 + Tailwind 4 + TypeScript.
+Stock screener and portfolio analyzer. Built with Next.js 16, Supabase, and Yahoo Finance.
 
-## Features
+## Stack
 
-- **Ações**: lista de ~100 tickers do S&P 500 (Wikipedia) com filtros de mcap, dividend yield e setor
-- **Asset detail**: gráfico de preço com SMA 20/50 + RSI 14, métricas fundamentalistas (P/E, P/VP, ROE, dividend yield, etc)
-- **Crypto**: top 50 cryptos via CoinPaprika
-- **ETFs**: top 50 ETFs via Alpha Vantage
-- **Watchlist**: salvar tickers (localStorage, sem DB)
-- **Buscar**: filtros estruturados por mcap, yield, setor
+- **Next.js 16** (App Router, Turbopack)
+- **TypeScript** strict
+- **Tailwind CSS v4**
+- **Supabase** (Postgres + Auth)
+- **Yahoo Finance** (quotes, candles, fundamentals)
+- **Finnhub** (recommendations, scores)
+- **Recharts** (charts)
+- **libsql-style async DB** via Supabase RPC
 
-## Fontes de dados
+## Setup
 
-- **Finnhub** (grátis, 60 req/min): `/stock/profile2`, `/stock/metric`, `/quote`
-- **Yahoo Finance** (não oficial, sem rate limit claro): candles históricos (`/v8/finance/chart`)
-- **CoinPaprika** (grátis): top cryptos
-- **Alpha Vantage** (grátis, 25 req/dia): ETF profiles
-- **Wikipedia**: lista S&P 500 constituents
+### 1. Supabase project
 
-## Setup local
+Create a new project at https://supabase.com.
+
+1. Settings → API → copy:
+   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
+   - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `service_role` (secret) → `SUPABASE_SERVICE_ROLE_KEY`
+
+2. SQL Editor → run migration:
+   ```bash
+   # In Supabase SQL Editor, paste and run:
+   # supabase/migrations/0001_initial.sql
+   ```
+
+   This creates tables: `profiles`, `sessions`, `indices`, `portfolios`, `portfolio_holdings`, `portfolio_history`, and the `exec_sql` RPC function.
+
+### 2. Environment variables
+
+Create `.env.local` (not committed):
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+AUTH_SECRET=any-random-string-for-jwt-signing
+FINNHUB_API_KEY=your-finnhub-key  # optional
+```
+
+### 3. Run
 
 ```bash
 npm install
-```
-
-Crie `.env.local`:
-```
-FINNHUB_API_KEY=...
-ALPHAVANTAGE_API_KEY=...
-```
-
-```bash
 npm run dev
 ```
 
-Abre http://localhost:3000.
+Open http://localhost:3000.
 
-## Deploy na Vercel
+## Deploy
 
-1. Vai em https://vercel.com/new
-2. Importa `arthur-vignal/screener`
-3. Em **Environment Variables**, adiciona:
-   - `FINNHUB_API_KEY`
-   - `ALPHAVANTAGE_API_KEY`
-4. Deploy (~3min)
+Deployed on Railway. Set env vars in Railway dashboard and push to `main` — auto-deploys.
+
+## Features
+
+- **Assets**: 503 S&P 500 + 35 ETFs + 50 cryptos, with filters (volatility, RSI, ADX, Sharpe) and column picker
+- **Asset detail**: price chart with toggleable SMA/RSI, fundamentals, quantitative recommendation score
+- **News**: aggregated from Yahoo Finance + Google News + SEC EDGAR, opens inline
+- **Indices**: community-created indices with backtesting
+- **Portfolios**: manual portfolios with historical performance tracking
+- **Auth**: username + email + password (Supabase Auth)
+- **Private/public**: choose visibility per index/portfolio
+
+## Roadmap
+
+- Market statistics dashboard (CoinMarketCap-style)
+- Backtesting strategy engine
+- Quantitative recommendation model
+- Custom index/portfolio detail pages
+
+## Scripts
+
+```bash
+npm run dev      # dev server
+npm run build    # production build
+npm run start    # production server
+npm run lint     # eslint
+```

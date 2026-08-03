@@ -70,11 +70,11 @@ export async function signup(opts: {
   const userId = authData.user.id;
 
   // Create profile (username + display info)
-  const { error: profErr } = await sb.from("profiles").insert({
-    id: userId,
-    username,
-    email,
-  });
+  // Use upsert to be idempotent in case a trigger already created a row
+  const { error: profErr } = await sb.from("profiles").upsert(
+    { id: userId, username, email },
+    { onConflict: "id" },
+  );
   if (profErr) {
     // Rollback: delete auth user
     await sb.auth.admin.deleteUser(userId);
