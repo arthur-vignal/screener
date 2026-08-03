@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -243,7 +244,7 @@ export function Sidebar() {
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
           className={cn(
-            "w-full mt-1 flex items-center gap-2 text-xs text-muted hover:text-ink hover:bg-surface-elevated rounded-md transition-colors press",
+            "w-full mt-1 flex items-center gap-2 text-xs text-muted hover:text-ink hover:bg-surface-elevated/60 rounded-md transition-colors press",
             collapsed ? "justify-center px-2 py-2" : "px-3 py-2",
           )}
         >
@@ -256,6 +257,11 @@ export function Sidebar() {
             </>
           )}
         </button>
+
+        {/* Theme toggle */}
+        <div className={cn("mt-1", collapsed ? "flex justify-center" : "px-2")}>
+          <ThemeToggle />
+        </div>
       </div>
     </aside>
   );

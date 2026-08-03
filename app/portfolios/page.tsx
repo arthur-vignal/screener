@@ -226,7 +226,7 @@ export default function PortfoliosPage() {
         )}
         {tab === "platform" && (
           <PortfolioGrid
-            portfolios={PLATFORM_PORTFOLIOS}
+            portfolios={PLATFORM_PORTFOLIOS as unknown as PortfolioWithMeta[]}
             emptyMessage=""
             showOwner={false}
             platformOwned

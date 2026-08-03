@@ -2,11 +2,13 @@
 
 /* ============================================================================
  * DESIGN SYSTEM — Hybrid (Revolut canvas + Kraken radius + Coinbase typography)
- * Single mode: dark canvas. Cobalt-violet #494fdf brand. 12px radius. Inter.
- * Mono on every number. 96px section rhythm. One shadow tier.
+ * Dark canvas default. Light mode via .light class on <html>.
+ * Cobalt-violet brand. 12px radius. Inter. Mono on every number.
+ * 96px section rhythm. One shadow tier.
  * ============================================================================ */
 
-:root {
+:root,
+:root.dark {
   /* Canvas (Revolut: true black story + white catalog) */
   --canvas: #000000;
   --canvas-soft: #0a0a0a;
@@ -51,6 +53,42 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
+}
+
+:root.light {
+  /* Surface ladder (Coinbase-style: white + soft gray elevation) */
+  --canvas: #ffffff;
+  --canvas-soft: #fafafa;
+  --surface: #ffffff;
+  --surface-elevated: #f7f7f7;
+  --surface-strong: #eef0f3;
+  --hairline: rgba(10, 10, 10, 0.08);
+  --hairline-strong: rgba(10, 10, 10, 0.14);
+
+  /* Brand — slightly deeper on white for AA contrast */
+  --brand: #3a40c4;
+  --brand-bright: #494fdf;
+  --brand-deep: #2e339f;
+  --brand-soft: rgba(73, 79, 223, 0.10);
+  --brand-glow: rgba(73, 79, 223, 0.22);
+
+  /* Text */
+  --ink: #0a0b0d;
+  --body: rgba(10, 11, 13, 0.74);
+  --muted: rgba(10, 11, 13, 0.52);
+  --faint: rgba(10, 11, 13, 0.32);
+  --on-brand: #ffffff;
+
+  /* Semantic — slightly deeper for white bg readability */
+  --positive: #038a52;
+  --positive-soft: rgba(3, 138, 82, 0.10);
+  --negative: #b5192a;
+  --negative-soft: rgba(181, 25, 42, 0.10);
+  --warning: #c66a00;
+
+  /* Shadows go lighter on white surfaces */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.10);
 }
 
 @theme inline {

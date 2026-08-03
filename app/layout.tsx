@@ -4,6 +4,7 @@ import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { PageFade } from "@/components/page-fade";
+import { ThemeProvider } from "@/components/theme-provider";
 
 // Inter loaded locally (no external CDN)
 const inter = localFont({
@@ -37,12 +38,14 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-canvas text-ink">
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <main className="flex-1 min-w-0">
-            <PageFade>{children}</PageFade>
-          </main>
-        </div>
+        <ThemeProvider>
+          <div className="flex min-h-screen">
+            <Sidebar />
+            <main className="flex-1 min-w-0">
+              <PageFade>{children}</PageFade>
+            </main>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

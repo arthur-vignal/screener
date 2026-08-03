@@ -16,6 +16,8 @@ import { PageHeader, SectionHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { LiveDot } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SectorHeatmap } from "@/components/sector-heatmap";
+import { MacroPanel } from "@/components/macro-panel";
 
 type AssetType = "stock" | "etf" | "crypto";
 type AssetRow = {
@@ -120,6 +122,16 @@ export default function DashboardPage() {
       </form>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Heatmap setorial (full width) */}
+        <div className="lg:col-span-3">
+          <SectorHeatmap />
+        </div>
+
+        {/* Macro panel (full width) */}
+        <div className="lg:col-span-3">
+          <MacroPanel />
+        </div>
+
         {/* Top movers */}
         <Card className="lg:col-span-2 animate-fade-up">
           <SectionHeader
