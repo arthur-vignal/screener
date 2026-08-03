@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { query, exec } from "@/lib/db";
+import { query, remove } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +75,6 @@ export async function DELETE(
   if (rows[0].owner_id !== user.userId) {
     return NextResponse.json({ error: "not your portfolio" }, { status: 403 });
   }
-  await exec("DELETE FROM portfolios WHERE id = $1", [rows[0].id]);
+  await remove("portfolios", { id: rows[0].id });
   return NextResponse.json({ ok: true });
 }

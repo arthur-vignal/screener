@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { query, exec } from "@/lib/db";
+import { query, insert } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -94,25 +94,24 @@ export async function POST(req: NextRequest) {
       Math.random().toString(36).slice(2, 6);
 
     const createdAt = body.createdAt ?? Math.floor(Date.now() / 1000);
-    const r = await exec(
-      `INSERT INTO indices (owner_id, slug, name, description, universe, filters, ranking, top_n, is_public, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10, $11) RETURNING id`,
-      [
-        user.userId,
-        slug,
-        body.name.trim(),
-        (body.description ?? "").trim(),
-        body.universe,
-        JSON.stringify(body.filters ?? {}),
-        body.ranking,
-        body.topN,
-        body.isPublic ?? false,
-        createdAt,
-        Math.floor(Date.now() / 1000),
-      ],
-    );
-
-    return NextResponse.json({ ok: true, id: Number(r.lastInsertRowid), slug });
+    const inserted = await insert("indices", {
+      owner_id: user.userId,
+      slug,
+      name: body.name.trim(),
+      description: (body.description ?? "").trim(),
+      universe: body.universe,
+      filters: body.filters ?? {},
+      ranking: body.ranking,
+      top_n: body.topN,
+      is_public: body.isPublic ?? false,
+      created_at: createdAt,
+      updated_at: Math.floor(Date.now() / 1000),
+    });
+    const id = (inserted[0] as { id?: number })?.id;
+    if (!id) {
+      return NextResponse.json({ error: "insert failed" }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, id, slug });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

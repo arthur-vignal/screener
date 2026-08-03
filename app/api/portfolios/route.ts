@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { query, exec, batch } from "@/lib/db";
+import { query, insert } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -109,32 +109,27 @@ export async function POST(req: NextRequest) {
 
     const createdAt = body.createdAt ?? Math.floor(Date.now() / 1000);
 
-    const result = await exec(
-      `INSERT INTO portfolios (owner_id, slug, name, description, initial_value, is_public, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-      [
-        user.userId,
-        slug,
-        body.name.trim(),
-        (body.description ?? "").trim(),
-        body.initialValue ?? 10000,
-        body.isPublic ?? false,
-        createdAt,
-        Math.floor(Date.now() / 1000),
-      ],
-    );
-    const id = Number(result.lastInsertRowid);
+    const inserted = await insert("portfolios", {
+      owner_id: user.userId,
+      slug,
+      name: body.name.trim(),
+      description: (body.description ?? "").trim(),
+      initial_value: body.initialValue ?? 10000,
+      is_public: body.isPublic ?? false,
+      created_at: createdAt,
+      updated_at: Math.floor(Date.now() / 1000),
+    });
+    const id = (inserted[0] as { id?: number })?.id;
+    if (!id) {
+      return NextResponse.json({ error: "insert failed" }, { status: 500 });
+    }
 
-    const statements: Array<{ sql: string; args?: unknown[] }> = [];
-    for (const h of body.holdings!) {
-      statements.push({
-        sql: "INSERT INTO portfolio_holdings (portfolio_id, symbol, weight) VALUES ($1, $2, $3)",
-        args: [id, h.symbol.toUpperCase(), h.weight],
-      });
-    }
-    if (statements.length > 0) {
-      await batch(statements);
-    }
+    const holdings = body.holdings.map((h) => ({
+      portfolio_id: id,
+      symbol: h.symbol.toUpperCase(),
+      weight: h.weight,
+    }));
+    await insert("portfolio_holdings", holdings);
 
     return NextResponse.json({ ok: true, id, slug });
   } catch (err) {

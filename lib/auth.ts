@@ -8,7 +8,7 @@
  */
 
 import { supabaseAdmin } from "./supabase";
-import { queryOne, exec } from "./db";
+import { queryOne, insert, remove } from "./db";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
@@ -66,15 +66,13 @@ export async function signup(opts: {
 
   const userId = authData.user.id;
 
-  // Create profile via exec_sql RPC (bypasses RLS, allows upsert)
-  const profileRes = await exec(
-    `INSERT INTO profiles (id, username, email)
-     VALUES ($1, $2, $3)
-     ON CONFLICT (id) DO UPDATE SET username = EXCLUDED.username, email = EXCLUDED.email
-     RETURNING id`,
-    [userId, username, email],
-  );
-  if (!profileRes.lastInsertRowid) {
+  // Create profile via REST API
+  const inserted = await insert("profiles", {
+    id: userId,
+    username,
+    email,
+  });
+  if (!inserted[0]) {
     await sb.auth.admin.deleteUser(userId);
     return { ok: false, error: "falha ao criar perfil" };
   }
@@ -117,11 +115,12 @@ async function createSession(userId: string): Promise<void> {
   const sessionId = newSessionId();
   const expiresAt = Math.floor(Date.now() / 1000) + COOKIE_MAX_AGE;
 
-  // Persist session via exec_sql (bypasses RLS)
-  await exec(
-    "INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, $3)",
-    [sessionId, userId, expiresAt],
-  );
+  // Persist session via REST API
+  await insert("sessions", {
+    id: sessionId,
+    user_id: userId,
+    expires_at: expiresAt,
+  });
 
   const token = jwt.sign({ sid: sessionId, uid: userId }, SECRET, {
     expiresIn: "30d",
@@ -141,7 +140,7 @@ export async function logout(): Promise<void> {
   if (token) {
     try {
       const decoded = jwt.verify(token, SECRET) as { sid: string };
-      await exec("DELETE FROM sessions WHERE id = $1", [decoded.sid]);
+      await remove("sessions", { id: decoded.sid });
     } catch {
       // ignore
     }
