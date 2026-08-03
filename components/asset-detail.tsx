@@ -61,7 +61,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
         <p className="text-negative">{String(error)}</p>
         <Link
           href="/assets"
-          className="text-sm text-accent hover:underline mt-2 inline-block"
+          className="text-sm text-brand-bright hover:underline mt-2 inline-block"
         >
           ← Voltar para Assets
         </Link>
@@ -96,7 +96,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
     <div className="px-8 py-6 max-w-7xl">
       <Link
         href="/assets"
-        className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-foreground mb-4 transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-body hover:text-ink mb-4 transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         Voltar
@@ -106,7 +106,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
         <h1 className="text-2xl font-semibold tracking-tight font-mono">
           {data.ticker}
         </h1>
-        <span className="text-text-secondary">{profile?.name ?? ticker}</span>
+        <span className="text-body">{profile?.name ?? ticker}</span>
       </div>
 
       {/* Layout 2/3 esquerda + 1/3 direita */}
@@ -118,7 +118,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
 
         {/* Coluna direita (1/3): info rápida */}
         <div className="space-y-4">
-          <div className="rounded-lg border border-border bg-surface p-5">
+          <div className="rounded-lg border border-hairline bg-surface p-5">
             <div className="text-3xl font-semibold tabular-nums tracking-tight">
               {formatPrice(price)}
             </div>
@@ -134,7 +134,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
             </div>
           </div>
 
-          <div className="rounded-lg border border-border bg-surface divide-y divide-border-subtle">
+          <div className="rounded-lg border border-hairline bg-surface divide-y divide-border-subtle">
             <StatRow label="Volume 24h" value={`$${formatCompact(quote?.volume ?? 0)}`} />
             <StatRow label="Variação 24h" value={`$${change.toFixed(2)}`} />
             <StatRow label="Máxima 24h" value={formatPrice(quote?.dayHigh ?? quote?.h ?? 0)} />
@@ -160,7 +160,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
       )}
 
       {/* Tabs: Estatísticas / Notícias / Eventos */}
-      <div className="border-b border-border mb-6">
+      <div className="border-b border-hairline mb-6">
         <div className="flex items-center gap-1">
           <TabButton active={tab === "statistics"} onClick={() => setTab("statistics")}>
             Estatísticas
@@ -243,8 +243,8 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
       className={cn(
         "inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
         active
-          ? "border-foreground text-foreground"
-          : "border-transparent text-text-secondary hover:text-foreground",
+          ? "border-ink text-ink"
+          : "border-transparent text-body hover:text-ink",
       )}
     >
       {children}
@@ -255,7 +255,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 function StatRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between px-4 py-2.5">
-      <span className="text-xs text-text-muted uppercase tracking-wider">{label}</span>
+      <span className="text-xs text-muted uppercase tracking-wider">{label}</span>
       <span className="font-mono tabular-nums text-sm">{value}</span>
     </div>
   );
@@ -293,9 +293,9 @@ function NewsTab({ ticker }: { ticker: string }) {
 
   if (news.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-surface p-12 text-center">
-        <Newspaper className="w-8 h-8 text-text-muted mx-auto mb-3" strokeWidth={1.5} />
-        <p className="text-text-secondary text-sm">
+      <div className="rounded-lg border border-hairline bg-surface p-12 text-center">
+        <Newspaper className="w-8 h-8 text-muted mx-auto mb-3" strokeWidth={1.5} />
+        <p className="text-body text-sm">
           Sem notícias recentes pra esse ticker.
         </p>
       </div>
@@ -308,7 +308,7 @@ function NewsTab({ ticker }: { ticker: string }) {
         <button
           key={n.id}
           onClick={() => setOpenArticle(n)}
-          className="w-full text-left block rounded-lg border border-border bg-surface p-4 hover:bg-surface-elevated transition-colors group"
+          className="w-full text-left block rounded-lg border border-hairline bg-surface p-4 hover:bg-surface-elevated/60 transition-colors group"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
@@ -320,13 +320,13 @@ function NewsTab({ ticker }: { ticker: string }) {
                     (n.source || "").toLowerCase().includes("bloomberg") ||
                     (n.source || "").toLowerCase().includes("wsj")
                       ? "text-amber-300"
-                      : "text-text-muted",
+                      : "text-muted",
                   )}
                 >
                   {n.source}
                 </span>
-                <span className="text-xs text-text-muted">·</span>
-                <span className="text-xs text-text-muted">
+                <span className="text-xs text-muted">·</span>
+                <span className="text-xs text-muted">
                   {new Date(n.datetime * 1000).toLocaleString("pt-BR", {
                     day: "2-digit",
                     month: "short",
@@ -335,14 +335,14 @@ function NewsTab({ ticker }: { ticker: string }) {
                   })}
                 </span>
               </div>
-              <h4 className="font-medium text-foreground group-hover:text-accent transition-colors mb-1">
+              <h4 className="font-medium text-ink group-hover:text-brand-bright transition-colors mb-1">
                 {n.headline}
               </h4>
               {n.summary && (
-                <p className="text-sm text-text-secondary line-clamp-2">{n.summary}</p>
+                <p className="text-sm text-body line-clamp-2">{n.summary}</p>
               )}
             </div>
-            <ExternalLink className="w-3.5 h-3.5 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+            <ExternalLink className="w-3.5 h-3.5 text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
           </div>
         </button>
       ))}
@@ -376,39 +376,39 @@ function NewsModal({ article, onClose }: { article: NewsItem; onClose: () => voi
       onClick={onClose}
     >
       <div
-        className="bg-surface border border-border rounded-lg max-w-3xl w-full my-8"
+        className="bg-surface border border-hairline rounded-lg max-w-3xl w-full my-8"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 p-6 border-b border-border-subtle">
+        <div className="flex items-start justify-between gap-4 p-6 border-b border-hairline">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2 flex-wrap text-xs text-text-muted">
+            <div className="flex items-center gap-2 mb-2 flex-wrap text-xs text-muted">
               <span>{article.source}</span>
               <span>·</span>
               <span>{new Date(article.datetime * 1000).toLocaleString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
             </div>
             <h2 className="text-xl font-semibold leading-tight">{article.headline}</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-surface-elevated rounded-md shrink-0">✕</button>
+          <button onClick={onClose} className="p-1.5 hover:bg-surface-elevated/60 rounded-md shrink-0">✕</button>
         </div>
         <div className="p-6 max-h-[60vh] overflow-y-auto">
           {content.status === "loading" && (
-            <div className="flex items-center justify-center py-12 text-text-muted text-sm">Carregando conteúdo...</div>
+            <div className="flex items-center justify-center py-12 text-muted text-sm">Carregando conteúdo...</div>
           )}
           {content.status === "unavailable" && (
             <div className="text-center py-8">
-              <p className="text-text-secondary text-sm mb-4">Não conseguimos extrair o conteúdo completo desta notícia.</p>
-              <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline text-sm">Abrir no portal original</a>
+              <p className="text-body text-sm mb-4">Não conseguimos extrair o conteúdo completo desta notícia.</p>
+              <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-brand-bright hover:underline text-sm">Abrir no portal original</a>
             </div>
           )}
           {content.status === "ready" && content.text && (
-            <div className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
-              {article.summary && <p className="text-base text-foreground font-medium mb-4">{article.summary}</p>}
+            <div className="text-sm text-body leading-relaxed whitespace-pre-line">
+              {article.summary && <p className="text-base text-ink font-medium mb-4">{article.summary}</p>}
               {content.text}
             </div>
           )}
         </div>
-        <div className="border-t border-border-subtle p-4 text-right">
-          <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline text-xs">Abrir original</a>
+        <div className="border-t border-hairline p-4 text-right">
+          <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-brand-bright hover:underline text-xs">Abrir original</a>
         </div>
       </div>
     </div>
@@ -435,9 +435,9 @@ function EventsTab({ ticker }: { ticker: string }) {
 
   if (events.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-surface p-12 text-center">
-        <Calendar className="w-8 h-8 text-text-muted mx-auto mb-3" strokeWidth={1.5} />
-        <p className="text-text-secondary text-sm">
+      <div className="rounded-lg border border-hairline bg-surface p-12 text-center">
+        <Calendar className="w-8 h-8 text-muted mx-auto mb-3" strokeWidth={1.5} />
+        <p className="text-body text-sm">
           Sem eventos próximos.
         </p>
       </div>
@@ -445,16 +445,16 @@ function EventsTab({ ticker }: { ticker: string }) {
   }
 
   return (
-    <div className="rounded-lg border border-border bg-surface divide-y divide-border-subtle">
+    <div className="rounded-lg border border-hairline bg-surface divide-y divide-border-subtle">
       {events.map((e, i) => (
         <div key={i} className="px-4 py-3 flex items-center gap-4">
-          <div className="text-xs uppercase tracking-wider text-text-muted font-mono w-24 shrink-0">
+          <div className="text-xs uppercase tracking-wider text-muted font-mono w-24 shrink-0">
             {e.date}
           </div>
-          <div className="text-xs font-medium text-text-secondary uppercase tracking-wider w-24 shrink-0">
+          <div className="text-xs font-medium text-body uppercase tracking-wider w-24 shrink-0">
             {e.type}
           </div>
-          <div className="flex-1 text-sm text-foreground">{e.description}</div>
+          <div className="flex-1 text-sm text-ink">{e.description}</div>
         </div>
       ))}
     </div>

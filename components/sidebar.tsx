@@ -85,35 +85,42 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "shrink-0 border-r border-border bg-surface flex flex-col transition-[width] duration-200",
+        "shrink-0 border-r border-hairline bg-canvas-soft flex flex-col transition-[width] duration-250 ease-out",
         collapsed ? "w-16" : "w-60",
       )}
     >
       {/* Header / Logo */}
       <div
         className={cn(
-          "px-6 py-5 border-b border-border-subtle flex items-center",
+          "px-5 py-5 border-b border-hairline flex items-center",
           collapsed ? "justify-center px-0" : "justify-between",
         )}
       >
         {!collapsed ? (
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-accent flex items-center justify-center">
-              <span className="text-white font-bold text-sm">S</span>
+          <Link
+            href="/"
+            className="flex items-center gap-2 group press transition-transform"
+          >
+            <div className="w-7 h-7 rounded-md bg-brand flex items-center justify-center shadow-[0_0_0_0_var(--brand-glow)] group-hover:shadow-[0_0_0_4px_var(--brand-soft)] transition-shadow duration-200">
+              <span className="text-on-brand font-bold text-sm">S</span>
             </div>
-            <span className="font-semibold text-foreground tracking-tight">
+            <span className="font-semibold text-ink tracking-tight">
               Screener
             </span>
           </Link>
         ) : (
-          <Link href="/" className="w-7 h-7 rounded-md bg-accent flex items-center justify-center">
-            <span className="text-white font-bold text-sm">S</span>
+          <Link
+            href="/"
+            className="w-7 h-7 rounded-md bg-brand flex items-center justify-center press"
+            aria-label="Home"
+          >
+            <span className="text-on-brand font-bold text-sm">S</span>
           </Link>
         )}
       </div>
 
       {/* Main nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-0.5">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = item.exact
@@ -125,14 +132,26 @@ export function Sidebar() {
               href={item.href}
               title={collapsed ? item.label : undefined}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+                "group relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-150 ease-out press",
                 collapsed && "justify-center",
                 active
-                  ? "bg-foreground text-background font-medium"
-                  : "text-text-secondary hover:text-foreground hover:bg-surface-elevated",
+                  ? "bg-brand-soft text-brand-bright font-medium"
+                  : "text-body hover:text-ink hover:bg-surface-elevated",
               )}
             >
-              <Icon className="w-4 h-4 shrink-0" strokeWidth={2} />
+              {active && (
+                <span
+                  className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r-full bg-brand animate-fade-in"
+                  aria-hidden
+                />
+              )}
+              <Icon
+                className={cn(
+                  "w-4 h-4 shrink-0 transition-colors",
+                  active ? "text-brand-bright" : "text-muted group-hover:text-ink",
+                )}
+                strokeWidth={2}
+              />
               {!collapsed && item.label}
             </Link>
           );
@@ -142,7 +161,7 @@ export function Sidebar() {
       {/* Footer: collapse button + user menu */}
       <div
         className={cn(
-          "border-t border-border-subtle",
+          "border-t border-hairline",
           collapsed ? "p-2" : "px-3 py-2",
         )}
       >
@@ -152,22 +171,22 @@ export function Sidebar() {
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               className={cn(
-                "w-full flex items-center gap-2 rounded-md transition-colors hover:bg-surface-elevated",
+                "w-full flex items-center gap-2 rounded-md transition-colors hover:bg-surface-elevated press",
                 collapsed ? "justify-center p-2" : "px-2 py-2",
               )}
               aria-label="User menu"
             >
-              <div className="w-7 h-7 rounded-full bg-accent/20 text-accent flex items-center justify-center text-xs font-semibold shrink-0">
+              <div className="w-7 h-7 rounded-full bg-brand-soft text-brand-bright flex items-center justify-center text-xs font-semibold shrink-0 border border-brand/20">
                 {user.username[0]?.toUpperCase()}
               </div>
               {!collapsed && (
                 <>
-                  <span className="text-sm font-medium flex-1 truncate text-left">
+                  <span className="text-sm font-medium flex-1 truncate text-left text-ink">
                     {user.username}
                   </span>
                   <ChevronUp
                     className={cn(
-                      "w-3.5 h-3.5 text-text-muted transition-transform",
+                      "w-3.5 h-3.5 text-muted transition-transform duration-200",
                       !menuOpen && "rotate-180",
                     )}
                   />
@@ -178,7 +197,7 @@ export function Sidebar() {
             <Link
               href="/login"
               className={cn(
-                "w-full flex items-center gap-2 px-3 py-2 rounded-md bg-foreground text-background hover:opacity-90 transition-opacity",
+                "w-full flex items-center gap-2 px-3 py-2 rounded-md bg-brand text-on-brand hover:bg-brand-bright transition-colors press",
                 collapsed && "justify-center",
               )}
               title={collapsed ? "Entrar / Criar conta" : undefined}
@@ -190,31 +209,27 @@ export function Sidebar() {
 
           {/* Dropdown */}
           {menuOpen && user && !collapsed && (
-            <div className="absolute bottom-full left-0 right-0 mb-1 bg-surface border border-border rounded-md shadow-lg overflow-hidden">
+            <div className="absolute bottom-full left-0 right-0 mb-1 bg-surface-elevated border border-hairline-strong rounded-md shadow-2xl overflow-hidden animate-slide-up">
               <Link
                 href="/portfolios"
                 onClick={() => setMenuOpen(false)}
-                className="block px-3 py-2 text-sm hover:bg-surface-elevated"
+                className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-surface-strong transition-colors"
               >
-                <div className="flex items-center gap-2">
-                  <Briefcase className="w-3.5 h-3.5" />
-                  Meus portfolios
-                </div>
+                <Briefcase className="w-3.5 h-3.5 text-muted" />
+                Meus portfolios
               </Link>
               <Link
                 href="/indices"
                 onClick={() => setMenuOpen(false)}
-                className="block px-3 py-2 text-sm hover:bg-surface-elevated"
+                className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-surface-strong transition-colors"
               >
-                <div className="flex items-center gap-2">
-                  <PieChart className="w-3.5 h-3.5" />
-                  Meus índices
-                </div>
+                <PieChart className="w-3.5 h-3.5 text-muted" />
+                Meus índices
               </Link>
-              <div className="border-t border-border-subtle" />
+              <div className="border-t border-hairline" />
               <button
                 onClick={handleLogout}
-                className="w-full text-left px-3 py-2 text-sm text-text-secondary hover:bg-surface-elevated hover:text-negative transition-colors flex items-center gap-2"
+                className="w-full text-left px-3 py-2 text-sm text-negative hover:bg-negative-soft transition-colors flex items-center gap-2"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 Sair
@@ -228,7 +243,7 @@ export function Sidebar() {
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
           className={cn(
-            "w-full mt-1 flex items-center gap-2 text-xs text-text-muted hover:text-foreground hover:bg-surface-elevated rounded-md transition-colors",
+            "w-full mt-1 flex items-center gap-2 text-xs text-muted hover:text-ink hover:bg-surface-elevated rounded-md transition-colors press",
             collapsed ? "justify-center px-2 py-2" : "px-3 py-2",
           )}
         >

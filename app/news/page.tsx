@@ -161,41 +161,41 @@ export default function NewsPage() {
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight mb-1">News</h1>
-          <p className="text-sm text-text-secondary">
+          <p className="text-sm text-body">
             Feed consolidado de {FEED_TICKERS.length} ativos via Yahoo Finance + Google News + SEC EDGAR.
           </p>
         </div>
         {!loading && (
-          <div className="text-xs text-text-muted text-right">
+          <div className="text-xs text-muted text-right">
             <div>{news.length} artigos · {sources.length} fontes</div>
           </div>
         )}
       </div>
 
       {/* Filtros */}
-      <div className="rounded-lg border border-border bg-surface p-4 mb-6">
+      <div className="rounded-lg border border-hairline bg-surface p-4 mb-6">
         <div className="relative mb-3">
           <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted"
             strokeWidth={2}
           />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por palavra-chave..."
-            className="w-full bg-background border border-border rounded-md pl-10 pr-4 py-2 text-sm placeholder:text-text-muted focus:outline-none focus:border-foreground/30 transition-colors"
+            className="w-full bg-canvas-soft border border-hairline rounded-md pl-10 pr-4 py-2 text-sm placeholder:text-muted focus:outline-none focus:border-brand transition-colors"
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label className="text-xs uppercase tracking-wider text-text-muted font-medium block mb-2">
+            <label className="text-xs uppercase tracking-wider text-muted font-medium block mb-2">
               Setor
             </label>
             <select
               value={sectorFilter}
               onChange={(e) => setSectorFilter(e.target.value)}
-              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-foreground/30"
+              className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm focus:outline-none focus:border-brand"
             >
               <option value="all">Todos os setores</option>
               {sectors.map((s) => (
@@ -204,13 +204,13 @@ export default function NewsPage() {
             </select>
           </div>
           <div>
-            <label className="text-xs uppercase tracking-wider text-text-muted font-medium block mb-2">
+            <label className="text-xs uppercase tracking-wider text-muted font-medium block mb-2">
               Ticker
             </label>
             <select
               value={tickerFilter}
               onChange={(e) => setTickerFilter(e.target.value)}
-              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-foreground/30"
+              className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm focus:outline-none focus:border-brand"
             >
               <option value="all">Todos os tickers</option>
               {tickersInFeed.map((t) => (
@@ -221,13 +221,13 @@ export default function NewsPage() {
             </select>
           </div>
           <div>
-            <label className="text-xs uppercase tracking-wider text-text-muted font-medium block mb-2">
+            <label className="text-xs uppercase tracking-wider text-muted font-medium block mb-2">
               Fonte
             </label>
             <select
               value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value)}
-              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-foreground/30"
+              className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm focus:outline-none focus:border-brand"
             >
               <option value="all">Todas as fontes</option>
               {sources.map((s) => (
@@ -246,7 +246,7 @@ export default function NewsPage() {
               "flex items-center gap-1.5 px-2.5 py-1 text-xs rounded border transition-colors",
               tierOnly
                 ? "border-amber-400/50 bg-amber-400/10 text-amber-300"
-                : "border-border text-text-muted hover:text-foreground"
+                : "border-hairline text-muted hover:text-ink"
             )}
           >
             {tierOnly ? <Star className="w-3 h-3 fill-current" /> : <StarOff className="w-3 h-3" />}
@@ -255,7 +255,7 @@ export default function NewsPage() {
         </div>
       </div>
 
-      <div className="text-xs text-text-muted mb-3">
+      <div className="text-xs text-muted mb-3">
         {loading ? (
           <span className="inline-flex items-center gap-1.5">
             <Loader2 className="w-3 h-3 animate-spin" />
@@ -267,9 +267,9 @@ export default function NewsPage() {
       </div>
 
       {!loading && filtered.length === 0 && (
-        <div className="rounded-lg border border-border bg-surface p-12 text-center">
-          <Newspaper className="w-8 h-8 text-text-muted mx-auto mb-3" strokeWidth={1.5} />
-          <p className="text-text-secondary text-sm">
+        <div className="rounded-lg border border-hairline bg-surface p-12 text-center">
+          <Newspaper className="w-8 h-8 text-muted mx-auto mb-3" strokeWidth={1.5} />
+          <p className="text-body text-sm">
             Sem notícias pra esses filtros. Tente outro ticker ou setor.
           </p>
         </div>
@@ -282,32 +282,32 @@ export default function NewsPage() {
             <button
               key={n.id}
               onClick={() => setOpenArticle(n)}
-              className="w-full text-left block rounded-lg border border-border bg-surface p-4 hover:bg-surface-elevated transition-colors group"
+              className="w-full text-left block rounded-lg border border-hairline bg-surface p-4 hover:bg-surface-elevated/60 transition-colors group"
             >
               <div className="flex items-start gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     {n.ticker && (
-                      <span className="font-mono font-semibold text-xs text-accent">
+                      <span className="font-mono font-semibold text-xs text-brand-bright">
                         {n.ticker}
                       </span>
                     )}
                     {(n.ticker ? SECTOR_MAP[n.ticker] : undefined) && (
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-surface-elevated text-text-muted">
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-surface-elevated/60 text-muted">
                         {(n.ticker ? SECTOR_MAP[n.ticker] : undefined)}
                       </span>
                     )}
                     <span
                       className={cn(
                         "text-xs font-medium",
-                        tier === 1 ? "text-amber-300" : "text-text-muted"
+                        tier === 1 ? "text-amber-300" : "text-muted"
                       )}
                     >
                       {n.source}
                     </span>
                     {tier === 1 && <Star className="w-3 h-3 fill-amber-300 text-amber-300" />}
-                    <span className="text-xs text-text-muted">·</span>
-                    <span className="text-xs text-text-muted">
+                    <span className="text-xs text-muted">·</span>
+                    <span className="text-xs text-muted">
                       {new Date(n.datetime * 1000).toLocaleString("pt-BR", {
                         day: "2-digit",
                         month: "short",
@@ -316,14 +316,14 @@ export default function NewsPage() {
                       })}
                     </span>
                   </div>
-                  <h4 className="font-medium text-foreground group-hover:text-accent transition-colors mb-1">
+                  <h4 className="font-medium text-ink group-hover:text-brand-bright transition-colors mb-1">
                     {n.headline}
                   </h4>
                   {n.summary && (
-                    <p className="text-sm text-text-secondary line-clamp-2">{n.summary}</p>
+                    <p className="text-sm text-body line-clamp-2">{n.summary}</p>
                   )}
                 </div>
-                <ExternalLink className="w-3.5 h-3.5 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                <ExternalLink className="w-3.5 h-3.5 text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </div>
             </button>
           );
@@ -370,38 +370,38 @@ function ArticleModal({ article, onClose }: { article: NewsItem; onClose: () => 
       onClick={onClose}
     >
       <div
-        className="bg-surface border border-border rounded-lg max-w-3xl w-full my-8"
+        className="bg-surface border border-hairline rounded-lg max-w-3xl w-full my-8"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 p-6 border-b border-border-subtle">
+        <div className="flex items-start justify-between gap-4 p-6 border-b border-hairline">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               {article.ticker && (
                 <Link
                   href={`/asset/${encodeURIComponent(article.ticker)}`}
-                  className="font-mono font-semibold text-xs text-accent hover:underline"
+                  className="font-mono font-semibold text-xs text-brand-bright hover:underline"
                   onClick={onClose}
                 >
                   {article.ticker}
                 </Link>
               )}
               {(article.ticker ? SECTOR_MAP[article.ticker] : undefined) && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-surface-elevated text-text-muted">
+                <span className="text-xs px-1.5 py-0.5 rounded bg-surface-elevated/60 text-muted">
                   {(article.ticker ? SECTOR_MAP[article.ticker] : undefined)}
                 </span>
               )}
               <span
                 className={cn(
                   "text-xs font-medium",
-                  tier === 1 ? "text-amber-300" : "text-text-muted"
+                  tier === 1 ? "text-amber-300" : "text-muted"
                 )}
               >
                 {article.source}
               </span>
               {tier === 1 && <Star className="w-3 h-3 fill-amber-300 text-amber-300" />}
-              <span className="text-xs text-text-muted">·</span>
-              <span className="text-xs text-text-muted inline-flex items-center gap-1">
+              <span className="text-xs text-muted">·</span>
+              <span className="text-xs text-muted inline-flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
                 {new Date(article.datetime * 1000).toLocaleString("pt-BR", {
                   day: "2-digit",
@@ -416,7 +416,7 @@ function ArticleModal({ article, onClose }: { article: NewsItem; onClose: () => 
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-surface-elevated rounded-md transition-colors shrink-0"
+            className="p-1.5 hover:bg-surface-elevated/60 rounded-md transition-colors shrink-0"
             aria-label="Fechar"
           >
             <X className="w-5 h-5" />
@@ -426,22 +426,22 @@ function ArticleModal({ article, onClose }: { article: NewsItem; onClose: () => 
         {/* Body */}
         <div className="p-6 max-h-[60vh] overflow-y-auto">
           {content.status === "loading" && (
-            <div className="flex items-center justify-center py-12 text-text-muted">
+            <div className="flex items-center justify-center py-12 text-muted">
               <Loader2 className="w-5 h-5 animate-spin mr-2" />
               Carregando conteúdo...
             </div>
           )}
           {content.status === "unavailable" && (
             <div className="text-center py-8">
-              <Globe className="w-10 h-10 text-text-muted mx-auto mb-3" strokeWidth={1.5} />
-              <p className="text-text-secondary text-sm mb-4">
+              <Globe className="w-10 h-10 text-muted mx-auto mb-3" strokeWidth={1.5} />
+              <p className="text-body text-sm mb-4">
                 Não conseguimos extrair o conteúdo completo desta notícia.
               </p>
               <a
                 href={article.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline"
+                className="inline-flex items-center gap-1.5 text-sm text-brand-bright hover:underline"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 Abrir no portal original
@@ -451,11 +451,11 @@ function ArticleModal({ article, onClose }: { article: NewsItem; onClose: () => 
           {content.status === "ready" && content.text && (
             <div className="prose prose-invert max-w-none">
               {article.summary && (
-                <p className="text-base text-foreground font-medium mb-4 leading-relaxed">
+                <p className="text-base text-ink font-medium mb-4 leading-relaxed">
                   {article.summary}
                 </p>
               )}
-              <div className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
+              <div className="text-sm text-body leading-relaxed whitespace-pre-line">
                 {content.text}
               </div>
             </div>
@@ -463,13 +463,13 @@ function ArticleModal({ article, onClose }: { article: NewsItem; onClose: () => 
         </div>
 
         {/* Footer */}
-        <div className="border-t border-border-subtle p-4 flex items-center justify-between text-xs text-text-muted">
+        <div className="border-t border-hairline p-4 flex items-center justify-between text-xs text-muted">
           <span className="truncate flex-1 mr-4">{article.url}</span>
           <a
             href={article.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-accent hover:underline shrink-0"
+            className="inline-flex items-center gap-1.5 text-brand-bright hover:underline shrink-0"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             Abrir no {article.source}

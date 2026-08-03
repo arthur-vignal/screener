@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 
 type Holding = { symbol: string; weight: number };
 
@@ -121,7 +122,6 @@ export default function PortfolioDetailPage({
   const { id } = use(params);
   const seed = SEED_DETAILS[id];
 
-
   const { data: portfolio, error: portfolioError } = useSWR<PortfolioDetail | { error: string }>(
     `/api/portfolios/${id}`,
     fetcher,
@@ -150,29 +150,26 @@ export default function PortfolioDetailPage({
     fetcher,
   );
 
-
   if (portfolioError && "error" in portfolioError && portfolioError.error === "private") {
     return (
-      <div className="px-8 py-8 max-w-3xl">
+      <div className="px-6 md:px-10 py-8 max-w-3xl">
         <Link
           href="/portfolios"
-          className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-foreground mb-4"
+          className="inline-flex items-center gap-1 text-xs text-muted hover:text-ink mb-4 transition-colors"
         >
           <ArrowLeft className="w-3 h-3" />
           Voltar
         </Link>
-        <div className="rounded-lg border border-border bg-surface p-8 text-center">
-          <Lock className="w-8 h-8 text-text-muted mx-auto mb-3" />
-          <h1 className="text-lg font-medium mb-1">Portfolio privado</h1>
-          <p className="text-sm text-text-secondary">
+        <div className="panel p-10 text-center animate-fade-up">
+          <Lock className="w-8 h-8 text-muted mx-auto mb-3" />
+          <h1 className="font-display text-xl text-ink mb-1">Portfolio privado</h1>
+          <p className="text-sm text-muted">
             Faça login pra ver portfolios privados.
           </p>
         </div>
       </div>
     );
   }
-
-  // Use seed if no DB portfolio
 
   const name = (portfolio && "name" in portfolio ? portfolio.name : seed?.name) ?? id;
   const description =
@@ -199,21 +196,20 @@ export default function PortfolioDetailPage({
   const endValue = performance?.endValue;
   const bestDay = performance?.bestDay;
 
-
   const isLoading = !portfolio && !(id in SEED_DETAILS);
 
   return (
-    <div className="px-8 py-8 max-w-5xl">
+    <div className="px-6 md:px-10 py-8 md:py-12 max-w-5xl">
       <Link
         href="/portfolios"
-        className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-foreground mb-4"
+        className="inline-flex items-center gap-1 text-xs text-muted hover:text-ink mb-6 transition-colors link-underline"
       >
         <ArrowLeft className="w-3 h-3" />
         Voltar
       </Link>
 
       {isLoading && (
-        <div className="flex items-center justify-center py-20 text-text-muted">
+        <div className="flex items-center justify-center py-20 text-muted">
           <Loader2 className="w-4 h-4 animate-spin mr-2" />
           Carregando portfolio…
         </div>
@@ -221,41 +217,36 @@ export default function PortfolioDetailPage({
 
       {!isLoading && (
         <>
-          <div className="mb-6 flex items-end justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight mb-1">{name}</h1>
-              {description && (
-                <p className="text-sm text-text-secondary">{description}</p>
+          <div className="mb-8 animate-fade-up">
+            <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight mb-2">
+              {name}
+            </h1>
+            {description && (
+              <p className="text-body text-base max-w-2xl">{description}</p>
+            )}
+            <div className="flex items-center gap-2 mt-3 text-xs text-muted flex-wrap">
+              {owner && <span>@{owner}</span>}
+              {!isPublic && (
+                <span className="chip">
+                  <Lock className="w-2.5 h-2.5 mr-1" />
+                  Privado
+                </span>
               )}
-              <div className="flex items-center gap-2 mt-2">
-                {owner && (
-                  <span className="text-xs text-text-muted">@{owner}</span>
-                )}
-                {!isPublic && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-surface-elevated text-text-muted uppercase tracking-wider inline-flex items-center gap-1">
-                    <Lock className="w-2.5 h-2.5" />
-                    Privado
-                  </span>
-                )}
-                {createdAt > 0 && (
-                  <span className="text-xs text-text-muted">
-                    · criado em{" "}
-                    {new Date(createdAt * 1000).toLocaleDateString("pt-BR")}
-                  </span>
-                )}
-                {daysHeld > 0 && (
-                  <span className="text-xs text-text-muted">· {daysHeld} dias</span>
-                )}
-              </div>
+              {createdAt > 0 && (
+                <span>· criado em {new Date(createdAt * 1000).toLocaleDateString("pt-BR")}</span>
+              )}
+              {daysHeld > 0 && <span>· {daysHeld} dias</span>}
             </div>
           </div>
 
           {/* Performance */}
-          <div className="rounded-lg border border-border bg-surface p-5 mb-6">
-            <div className="flex items-baseline justify-between mb-3">
-              <h2 className="text-sm font-medium">Performance</h2>
+          <div className="panel p-6 mb-6 animate-fade-up stagger-1">
+            <div className="flex items-baseline justify-between mb-5">
+              <h2 className="text-sm font-medium text-ink uppercase tracking-wider">
+                Performance
+              </h2>
               {!performance && (
-                <span className="text-xs text-text-muted">
+                <span className="text-xs text-muted">
                   <Loader2 className="w-3 h-3 animate-spin inline mr-1" />
                   Calculando…
                 </span>
@@ -264,7 +255,7 @@ export default function PortfolioDetailPage({
 
             {performance && (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-6">
                   <Metric
                     label="Total"
                     value={totalReturn!}
@@ -280,14 +271,11 @@ export default function PortfolioDetailPage({
                     value={-maxDrawdown!}
                     color="negative"
                   />
-                  <Metric
-                    label="Melhor dia"
-                    value={bestDay!}
-                  />
+                  <Metric label="Melhor dia" value={bestDay!} />
                 </div>
 
                 {historyData.length > 1 && (
-                  <div className="h-64 mt-4">
+                  <div className="h-64 mt-4 -mx-2">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={historyData}>
                         <defs>
@@ -296,26 +284,26 @@ export default function PortfolioDetailPage({
                             <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                         <XAxis
                           dataKey="date"
                           axisLine={false}
                           tickLine={false}
-                          tick={{ fontSize: 10, fill: "var(--text-muted)" }}
+                          tick={{ fontSize: 10, fill: "rgba(255,255,255,0.42)" }}
                           minTickGap={50}
                         />
                         <YAxis
                           axisLine={false}
                           tickLine={false}
-                          tick={{ fontSize: 10, fill: "var(--text-muted)" }}
+                          tick={{ fontSize: 10, fill: "rgba(255,255,255,0.42)" }}
                           tickFormatter={(v) => `$${Math.round(v / 1000)}k`}
                           domain={["auto", "auto"]}
                         />
                         <Tooltip
                           contentStyle={{
                             backgroundColor: "var(--surface-elevated)",
-                            border: "1px solid var(--border)",
-                            borderRadius: 6,
+                            border: "1px solid var(--hairline-strong)",
+                            borderRadius: 8,
                             fontSize: 12,
                           }}
                           formatter={(v) => `$${Math.round(Number(v)).toLocaleString()}`}
@@ -326,7 +314,8 @@ export default function PortfolioDetailPage({
                           stroke="#10b981"
                           strokeWidth={1.5}
                           dot={false}
-                          isAnimationActive={false}
+                          isAnimationActive={true}
+                          animationDuration={800}
                         />
                       </LineChart>
                     </ResponsiveContainer>
@@ -337,8 +326,8 @@ export default function PortfolioDetailPage({
           </div>
 
           {/* Constituents */}
-          <div className="rounded-lg border border-border bg-surface p-5">
-            <h2 className="text-sm font-medium mb-3">
+          <div className="panel p-6 animate-fade-up stagger-2">
+            <h2 className="text-sm font-medium text-ink uppercase tracking-wider mb-4">
               Constituentes ({constituents.length})
             </h2>
             <RichFundamentalsTable
@@ -365,21 +354,20 @@ function Metric({
   const tone = color ?? (value >= 0 ? "positive" : "negative");
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wider text-text-muted mb-1">
+      <div className="text-[11px] uppercase tracking-wider text-muted mb-1.5 font-medium">
         {label}
       </div>
       <div
         className={cn(
-          "text-2xl font-mono font-semibold tabular-nums",
+          "text-2xl font-tabular font-semibold",
           tone === "positive" && "text-positive",
           tone === "negative" && "text-negative",
         )}
       >
-        {value >= 0 ? "+" : ""}
-        {(value * 100).toFixed(2)}%
+        <AnimatedNumber value={value * 100} signed decimals={2} suffix="%" />
       </div>
       {suffix && (
-        <div className="text-xs text-text-muted mt-0.5">{suffix}</div>
+        <div className="text-xs text-muted mt-0.5">{suffix}</div>
       )}
     </div>
   );

@@ -6,6 +6,8 @@ import { use } from "react";
 import { RichFundamentalsTable } from "@/components/rich-fundamentals-table";
 import useSWR from "swr";
 import { cn } from "@/lib/utils";
+import { AnimatedNumber } from "@/components/ui/animated-number";
+import { Badge } from "@/components/ui/badge";
 
 type Constituent = {
   symbol: string;
@@ -41,7 +43,6 @@ type IndexPerformance = {
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-// Seed details (shown when DB doesn't have the index)
 const SEED_DETAILS: Record<
   string,
   {
@@ -109,18 +110,18 @@ export default function IndexDetailPage({
 
   if (indexError && "error" in indexError && indexError.error === "private") {
     return (
-      <div className="px-8 py-8 max-w-3xl">
+      <div className="px-6 md:px-10 py-8 max-w-3xl">
         <Link
           href="/indices"
-          className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-foreground mb-4"
+          className="inline-flex items-center gap-1 text-xs text-muted hover:text-ink mb-4 transition-colors link-underline"
         >
           <ArrowLeft className="w-3 h-3" />
           Voltar
         </Link>
-        <div className="rounded-lg border border-border bg-surface p-8 text-center">
-          <Lock className="w-8 h-8 text-text-muted mx-auto mb-3" />
-          <h1 className="text-lg font-medium mb-1">Índice privado</h1>
-          <p className="text-sm text-text-secondary">
+        <div className="panel p-10 text-center animate-fade-up">
+          <Lock className="w-8 h-8 text-muted mx-auto mb-3" />
+          <h1 className="font-display text-xl text-ink mb-1">Índice privado</h1>
+          <p className="text-sm text-muted">
             Faça login pra ver índices privados.
           </p>
         </div>
@@ -154,17 +155,17 @@ export default function IndexDetailPage({
   const isLoading = !index && !seed;
 
   return (
-    <div className="px-8 py-8 max-w-5xl">
+    <div className="px-6 md:px-10 py-8 md:py-12 max-w-5xl">
       <Link
         href="/indices"
-        className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-foreground mb-4"
+        className="inline-flex items-center gap-1 text-xs text-muted hover:text-ink mb-6 transition-colors link-underline"
       >
         <ArrowLeft className="w-3 h-3" />
         Voltar
       </Link>
 
       {isLoading && (
-        <div className="flex items-center justify-center py-20 text-text-muted">
+        <div className="flex items-center justify-center py-20 text-muted">
           <Loader2 className="w-4 h-4 animate-spin mr-2" />
           Carregando índice…
         </div>
@@ -172,67 +173,54 @@ export default function IndexDetailPage({
 
       {!isLoading && (
         <>
-          <div className="mb-6">
-            <h1 className="text-2xl font-semibold tracking-tight mb-1">{name}</h1>
-            {description && <p className="text-sm text-text-secondary">{description}</p>}
-            <div className="flex items-center gap-2 mt-2">
-              {owner && <span className="text-xs text-text-muted">@{owner}</span>}
+          <div className="mb-8 animate-fade-up">
+            <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight mb-2">
+              {name}
+            </h1>
+            {description && <p className="text-body text-base max-w-2xl">{description}</p>}
+            <div className="flex items-center gap-2 mt-3 text-xs text-muted flex-wrap">
+              {owner && <span>@{owner}</span>}
               {!isPublic && (
-                <span className="text-[10px] px-2 py-0.5 rounded-md bg-surface-elevated text-text-muted uppercase tracking-wider inline-flex items-center gap-1">
-                  <Lock className="w-2.5 h-2.5" />
+                <Badge tone="neutral">
+                  <Lock className="w-2.5 h-2.5 mr-1" />
                   Privado
-                </span>
+                </Badge>
               )}
               {createdAt > 0 && (
-                <span className="text-xs text-text-muted">
-                  · criado em{" "}
-                  {new Date(createdAt * 1000).toLocaleDateString("pt-BR")}
-                </span>
+                <span>· criado em {new Date(createdAt * 1000).toLocaleDateString("pt-BR")}</span>
               )}
               {performance && (
-                <span className="text-xs text-text-muted">
-                  · {performance.daysHeld} dias
-                </span>
+                <span>· {performance.daysHeld} dias</span>
               )}
             </div>
           </div>
 
           {performance && performance.history.length > 1 && (
-            <div className="rounded-lg border border-border bg-surface p-5 mb-6">
-              <div className="flex items-baseline justify-between mb-3">
-                <h2 className="text-sm font-medium">Performance</h2>
-                {!performance && (
-                  <Loader2 className="w-4 h-4 animate-spin text-text-muted" />
-                )}
+            <div className="panel p-6 mb-6 animate-fade-up stagger-1">
+              <div className="flex items-baseline justify-between mb-5">
+                <h2 className="text-sm font-medium text-ink uppercase tracking-wider">
+                  Performance
+                </h2>
               </div>
-              <div className="grid grid-cols-3 gap-4 mb-3">
-                <Metric
-                  label="Total"
-                  value={performance.totalReturn}
-                />
-                <Metric
-                  label="Anualizado"
-                  value={performance.annualizedReturn}
-                />
-                <Metric
-                  label="Max Drawdown"
-                  value={-performance.maxDrawdown}
-                />
+              <div className="grid grid-cols-3 gap-5 mb-3">
+                <Metric label="Total" value={performance.totalReturn} />
+                <Metric label="Anualizado" value={performance.annualizedReturn} />
+                <Metric label="Max Drawdown" value={-performance.maxDrawdown} />
               </div>
             </div>
           )}
 
-          {/* Methodology */}
           {methodology && (
-            <div className="rounded-lg border border-border bg-surface p-5 mb-6">
-              <h2 className="text-sm font-medium mb-2">Metodologia</h2>
-              <p className="text-sm text-text-secondary">{methodology}</p>
+            <div className="panel p-6 mb-6 animate-fade-up stagger-2">
+              <h2 className="text-sm font-medium text-ink uppercase tracking-wider mb-2">
+                Metodologia
+              </h2>
+              <p className="text-sm text-body">{methodology}</p>
             </div>
           )}
 
-          {/* Constituents */}
-          <div className="rounded-lg border border-border bg-surface p-5">
-            <h2 className="text-sm font-medium mb-3">
+          <div className="panel p-6 animate-fade-up stagger-3">
+            <h2 className="text-sm font-medium text-ink uppercase tracking-wider mb-4">
               Constituentes ({constituents.length})
             </h2>
             <RichFundamentalsTable
@@ -248,26 +236,19 @@ export default function IndexDetailPage({
   );
 }
 
-function Metric({
-  label,
-  value,
-}: {
-  label: string;
-  value: number;
-}) {
+function Metric({ label, value }: { label: string; value: number }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wider text-text-muted mb-1">
+      <div className="text-[11px] uppercase tracking-wider text-muted mb-1.5 font-medium">
         {label}
       </div>
       <div
         className={cn(
-          "text-2xl font-mono font-semibold tabular-nums",
+          "text-2xl font-tabular font-semibold",
           value >= 0 ? "text-positive" : "text-negative",
         )}
       >
-        {value >= 0 ? "+" : ""}
-        {(value * 100).toFixed(2)}%
+        <AnimatedNumber value={value * 100} signed decimals={2} suffix="%" />
       </div>
     </div>
   );

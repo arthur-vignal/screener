@@ -42,14 +42,14 @@ export function StrategyMemo({
   daysHeld: number;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-surface p-5 mb-6">
+    <div className="rounded-lg border border-hairline bg-surface p-5 mb-6">
       <div className="flex items-start gap-3 mb-4">
-        <div className="w-9 h-9 rounded-md bg-accent/20 text-accent flex items-center justify-center shrink-0">
+        <div className="w-9 h-9 rounded-md bg-brand-soft text-brand-bright flex items-center justify-center shrink-0">
           <Lightbulb className="w-4 h-4" />
         </div>
         <div>
           <h2 className="text-base font-semibold">Estratégia &amp; Lógica</h2>
-          <p className="text-xs text-text-muted">
+          <p className="text-xs text-muted">
             Por que estas ações foram escolhidas e o que esperar.
           </p>
         </div>
@@ -103,25 +103,25 @@ export function StrategyMemo({
 
       {/* Thesis */}
       <section className="mb-5">
-        <h3 className="text-[11px] uppercase tracking-wider text-text-muted font-medium mb-2">
+        <h3 className="text-[11px] uppercase tracking-wider text-muted font-medium mb-2">
           Tese de Investimento
         </h3>
-        <p className="text-sm text-foreground leading-relaxed">{spec.thesis}</p>
+        <p className="text-sm text-ink leading-relaxed">{spec.thesis}</p>
       </section>
 
       {/* Criteria */}
       <section className="mb-5">
-        <h3 className="text-[11px] uppercase tracking-wider text-text-muted font-medium mb-2 flex items-center gap-1.5">
+        <h3 className="text-[11px] uppercase tracking-wider text-muted font-medium mb-2 flex items-center gap-1.5">
           <Layers className="w-3 h-3" />
           Critérios de Seleção
         </h3>
         <ul className="space-y-1.5">
           {spec.criteria.map((c, i) => (
             <li key={i} className="flex items-start gap-2 text-sm">
-              <span className="text-text-muted font-mono text-xs mt-1 shrink-0">
+              <span className="text-muted font-mono text-xs mt-1 shrink-0">
                 {i + 1}.
               </span>
-              <span className="text-foreground">{c}</span>
+              <span className="text-ink">{c}</span>
             </li>
           ))}
         </ul>
@@ -129,7 +129,7 @@ export function StrategyMemo({
 
       {/* Sector exposure */}
       <section className="mb-5">
-        <h3 className="text-[11px] uppercase tracking-wider text-text-muted font-medium mb-2">
+        <h3 className="text-[11px] uppercase tracking-wider text-muted font-medium mb-2">
           Exposição Setorial
         </h3>
         <div className="space-y-1.5">
@@ -139,10 +139,10 @@ export function StrategyMemo({
               const pct = Math.min(weight * 100, 100);
               return (
                 <div key={sector} className="flex items-center gap-3">
-                  <div className="w-32 text-xs text-text-secondary">
+                  <div className="w-32 text-xs text-body">
                     {sector}
                   </div>
-                  <div className="flex-1 h-4 bg-surface-elevated rounded relative overflow-hidden">
+                  <div className="flex-1 h-4 bg-surface-elevated/60 rounded relative overflow-hidden">
                     <div
                       className="absolute inset-y-0 left-0 bg-gradient-to-r from-accent/60 to-accent"
                       style={{ width: `${pct}%` }}
@@ -160,10 +160,10 @@ export function StrategyMemo({
       {/* Expected behavior */}
       {spec.expectedBehavior && (
         <section className="mb-5">
-          <h3 className="text-[11px] uppercase tracking-wider text-text-muted font-medium mb-2">
+          <h3 className="text-[11px] uppercase tracking-wider text-muted font-medium mb-2">
             Comportamento Esperado
           </h3>
-          <p className="text-sm text-foreground leading-relaxed">
+          <p className="text-sm text-ink leading-relaxed">
             {spec.expectedBehavior}
           </p>
         </section>
@@ -172,7 +172,7 @@ export function StrategyMemo({
       {/* Risks */}
       {spec.risks && spec.risks.length > 0 && (
         <section>
-          <h3 className="text-[11px] uppercase tracking-wider text-text-muted font-medium mb-2 flex items-center gap-1.5">
+          <h3 className="text-[11px] uppercase tracking-wider text-muted font-medium mb-2 flex items-center gap-1.5">
             <AlertTriangle className="w-3 h-3 text-yellow-500" />
             Riscos Conhecidos
           </h3>
@@ -180,7 +180,7 @@ export function StrategyMemo({
             {spec.risks.map((r, i) => (
               <li key={i} className="flex items-start gap-2 text-sm">
                 <AlertTriangle className="w-3.5 h-3.5 text-yellow-500 mt-0.5 shrink-0" />
-                <span className="text-foreground">{r}</span>
+                <span className="text-ink">{r}</span>
               </li>
             ))}
           </ul>
@@ -203,12 +203,12 @@ function SummaryCard({
     positive: "text-positive",
     negative: "text-negative",
     warning: "text-yellow-500",
-    neutral: "text-foreground",
+    neutral: "text-ink",
   }[tone];
 
   return (
-    <div className="rounded-md bg-background/40 p-3 border border-border-subtle">
-      <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1">
+    <div className="rounded-md bg-background/40 p-3 border border-hairline">
+      <div className="text-[10px] uppercase tracking-wider text-muted mb-1">
         {label}
       </div>
       <div className={`text-base font-mono font-semibold ${toneClass}`}>

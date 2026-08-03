@@ -5,6 +5,9 @@ import useSWR from "swr";
 import Link from "next/link";
 import { ArrowRight, Plus, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 type Index = {
   id: number;
@@ -77,36 +80,36 @@ export default function IndicesPage() {
   const showingUserIndices = userIndices.length > 0;
 
   return (
-    <div className="px-8 py-8 max-w-7xl">
-      <div className="mb-6 flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight mb-1">Indices</h1>
-          <p className="text-sm text-text-secondary">
-            {user
-              ? "Seus índices + índices públicos da plataforma"
-              : "Índices pré-definidos pela plataforma"}
-          </p>
-        </div>
-        {user && (
-          <Link
-            href="/indices/new"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-foreground text-background hover:opacity-90 transition-opacity"
-          >
-            <Plus className="w-4 h-4" />
-            Novo índice
-          </Link>
-        )}
-      </div>
+    <div className="px-6 md:px-10 py-8 md:py-12 max-w-7xl">
+      <PageHeader
+        title="Indices"
+        description={
+          user
+            ? "Seus índices + índices públicos da plataforma"
+            : "Índices pré-definidos pela plataforma"
+        }
+        actions={
+          user && (
+            <Link
+              href="/indices/new"
+              className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-md bg-brand text-on-brand hover:bg-brand-bright transition-colors press text-sm font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              Novo índice
+            </Link>
+          )
+        }
+      />
 
       {!user && (
-        <div className="mb-6 rounded-lg border border-accent/30 bg-accent/5 p-4 flex items-center justify-between">
-          <div className="text-sm">
-            <strong className="text-foreground">Crie sua conta</strong> pra criar
+        <div className="mb-6 panel p-4 flex items-center justify-between border-brand/30 anime-fade-up">
+          <div className="text-sm text-body">
+            <strong className="text-ink">Crie sua conta</strong> pra criar
             índices custom e ver performance real.
           </div>
           <Link
             href="/signup"
-            className="text-xs px-3 py-1.5 rounded-md bg-foreground text-background"
+            className="inline-flex items-center h-8 px-3 rounded-md bg-brand text-on-brand hover:bg-brand-bright transition-colors press text-xs font-medium"
           >
             Criar agora
           </Link>
@@ -115,38 +118,37 @@ export default function IndicesPage() {
 
       {showingUserIndices ? (
         <>
-          <h2 className="text-sm uppercase tracking-wider text-text-muted font-medium mb-3">
+          <h2 className="text-xs uppercase tracking-wider text-muted font-medium mb-3">
             {user ? "Meus índices" : "Índices da plataforma"}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            {userIndices.map((idx) => (
+            {userIndices.map((idx, i) => (
               <Link
                 key={idx.id}
                 href={`/indices/${idx.slug}`}
-                className="rounded-lg border border-border bg-surface p-5 hover:border-foreground/30 hover:bg-surface-elevated transition-all group"
+                className="panel p-5 hover-lift group animate-fade-up"
+                style={{ animationDelay: `${i * 60}ms` }}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-medium text-foreground group-hover:text-accent transition-colors">
+                <div className="flex items-start justify-between mb-2.5">
+                  <h3 className="font-medium text-ink group-hover:text-brand-bright transition-colors duration-150">
                     {idx.name}
                   </h3>
-                  <ArrowRight className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  <ArrowRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 shrink-0" />
                 </div>
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
                   {idx.isPublic ? (
-                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-surface-elevated text-text-muted uppercase tracking-wider">
-                      Público
-                    </span>
+                    <Badge tone="neutral">Público</Badge>
                   ) : (
-                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-surface-elevated text-text-muted uppercase tracking-wider inline-flex items-center gap-1">
-                      <Lock className="w-2.5 h-2.5" />
+                    <Badge tone="neutral">
+                      <Lock className="w-2.5 h-2.5 mr-1" />
                       Privado
-                    </span>
+                    </Badge>
                   )}
-                  <span className="text-xs text-text-muted">@{idx.owner ?? "anon"}</span>
-                  <span className="text-xs text-text-muted">· {idx.topN} ativos</span>
+                  <span className="text-xs text-muted">@{idx.owner ?? "anon"}</span>
+                  <span className="text-xs text-muted">· {idx.topN} ativos</span>
                 </div>
                 {idx.description && (
-                  <p className="text-sm text-text-secondary line-clamp-2">
+                  <p className="text-sm text-body line-clamp-2">
                     {idx.description}
                   </p>
                 )}
@@ -158,33 +160,34 @@ export default function IndicesPage() {
 
       {!showingUserIndices && (
         <>
-          <h2 className="text-sm uppercase tracking-wider text-text-muted font-medium mb-3">
+          <h2 className="text-xs uppercase tracking-wider text-muted font-medium mb-3">
             Pré-definidos
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {SEED_INDICES.map((idx) => (
+            {SEED_INDICES.map((idx, i) => (
               <Link
                 key={idx.id}
                 href={`/indices/${idx.slug}`}
-                className="rounded-lg border border-border bg-surface p-5 hover:border-foreground/30 hover:bg-surface-elevated transition-all group"
+                className="panel p-5 hover-lift group animate-fade-up"
+                style={{ animationDelay: `${i * 60}ms` }}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-medium text-foreground group-hover:text-accent transition-colors">
+                <div className="flex items-start justify-between mb-2.5">
+                  <h3 className="font-medium text-ink group-hover:text-brand-bright transition-colors duration-150">
                     {idx.name}
                   </h3>
-                  <ArrowRight className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  <ArrowRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 shrink-0" />
                 </div>
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs text-text-muted">por {idx.author}</span>
+                  <span className="text-xs text-muted">por {idx.author}</span>
                 </div>
-                <p className="text-sm text-text-secondary mb-3 line-clamp-2">
+                <p className="text-sm text-body mb-3 line-clamp-2">
                   {idx.description}
                 </p>
-                <div className="flex items-baseline justify-between pt-3 border-t border-border-subtle">
-                  <span className="text-xs text-text-muted">{idx.methodology.slice(0, 60)}…</span>
+                <div className="flex items-baseline justify-between pt-3 border-t border-hairline">
+                  <span className="text-xs text-muted">{idx.methodology.slice(0, 60)}…</span>
                   <span
                     className={cn(
-                      "text-sm font-mono font-semibold tabular-nums",
+                      "text-sm font-tabular font-semibold",
                       idx.change24h >= 0 ? "text-positive" : "text-negative",
                     )}
                   >

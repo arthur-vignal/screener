@@ -22,7 +22,7 @@ export function EtfHoldings({ ticker }: { ticker: string }) {
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-border bg-surface p-6 flex items-center justify-center gap-2 text-text-muted text-sm">
+      <div className="rounded-lg border border-hairline bg-surface p-6 flex items-center justify-center gap-2 text-muted text-sm">
         <Loader2 className="w-4 h-4 animate-spin" />
         Carregando holdings...
       </div>
@@ -34,10 +34,10 @@ export function EtfHoldings({ ticker }: { ticker: string }) {
   }
 
   return (
-    <div className="rounded-lg border border-border bg-surface overflow-hidden">
-      <div className="border-b border-border-subtle px-4 py-3 flex items-center justify-between">
-        <h3 className="text-sm font-medium text-foreground">Top 10 holdings</h3>
-        <span className="text-xs text-text-muted font-mono">
+    <div className="rounded-lg border border-hairline bg-surface overflow-hidden">
+      <div className="border-b border-hairline px-4 py-3 flex items-center justify-between">
+        <h3 className="text-sm font-medium text-ink">Top 10 holdings</h3>
+        <span className="text-xs text-muted font-mono">
           {formatPercent(data.holdings.reduce((s, h) => s + h.pctHeld, 0))} total
         </span>
       </div>
@@ -46,21 +46,21 @@ export function EtfHoldings({ ticker }: { ticker: string }) {
           <Link
             key={h.symbol}
             href={`/asset/${h.symbol}`}
-            className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-elevated transition-colors group"
+            className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-elevated/60 transition-colors group"
           >
-            <span className="text-xs text-text-muted font-mono w-5 shrink-0 text-right">
+            <span className="text-xs text-muted font-mono w-5 shrink-0 text-right">
               {i + 1}
             </span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-mono font-semibold text-sm text-foreground group-hover:text-accent transition-colors">
+                <span className="font-mono font-semibold text-sm text-ink group-hover:text-brand-bright transition-colors">
                   {h.symbol}
                 </span>
-                <span className="text-xs text-text-muted truncate">
+                <span className="text-xs text-muted truncate">
                   {h.name}
                 </span>
               </div>
-              <div className="mt-1 h-1 bg-surface-elevated rounded-full overflow-hidden">
+              <div className="mt-1 h-1 bg-surface-elevated/60 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-accent/60 rounded-full"
                   style={{
@@ -72,7 +72,7 @@ export function EtfHoldings({ ticker }: { ticker: string }) {
             <span className="font-mono tabular-nums text-sm shrink-0 w-16 text-right">
               {h.pctHeld.toFixed(2)}%
             </span>
-            <ExternalLink className="w-3 h-3 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+            <ExternalLink className="w-3 h-3 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>
         ))}
       </div>

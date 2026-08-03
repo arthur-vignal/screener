@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { cn, formatCompact, formatPercent } from "@/lib/utils";
 import { RichFundamentalsTable } from "@/components/rich-fundamentals-table";
+import { PageHeader } from "@/components/page-header";
+import { Badge } from "@/components/ui/badge";
 
 type AssetType = "stock" | "etf" | "crypto";
 
@@ -80,7 +82,6 @@ type ColumnDef = {
   label: string;
   align: "left" | "right";
   defaultOn: boolean;
-  // Returns true if column has a meaningful value for this row
   hasValue: (row: Row) => boolean;
   render: (row: Row) => React.ReactNode;
 };
@@ -92,7 +93,7 @@ const COLUMNS: ColumnDef[] = [
     align: "left",
     defaultOn: true,
     hasValue: (r) => !!r.sector && r.sector !== "—",
-    render: (r) => <span className="text-text-muted text-xs">{r.sector || "—"}</span>,
+    render: (r) => <span className="text-muted text-xs">{r.sector || "—"}</span>,
   },
   {
     key: "preco",
@@ -101,7 +102,7 @@ const COLUMNS: ColumnDef[] = [
     defaultOn: true,
     hasValue: (r) => r.quote != null,
     render: (r) =>
-      r.quote ? <span>${r.quote.price.toFixed(2)}</span> : <span className="text-text-muted">—</span>,
+      r.quote ? <span className="font-tabular">${r.quote.price.toFixed(2)}</span> : <span className="text-muted">—</span>,
   },
   {
     key: "24h",
@@ -111,11 +112,11 @@ const COLUMNS: ColumnDef[] = [
     hasValue: (r) => r.quote != null,
     render: (r) =>
       r.quote ? (
-        <span className={cn(r.quote.changePercent >= 0 ? "text-positive" : "text-negative")}>
+        <span className={cn("font-tabular", r.quote.changePercent >= 0 ? "text-positive" : "text-negative")}>
           {formatPercent(r.quote.changePercent)}
         </span>
       ) : (
-        <span className="text-text-muted">—</span>
+        <span className="text-muted">—</span>
       ),
   },
   {
@@ -126,9 +127,9 @@ const COLUMNS: ColumnDef[] = [
     hasValue: (r) => r.quote != null && r.quote.volume > 0,
     render: (r) =>
       r.quote && r.quote.volume > 0 ? (
-        <span className="text-text-muted">{formatCompact(r.quote.volume)}</span>
+        <span className="text-muted font-tabular">{formatCompact(r.quote.volume)}</span>
       ) : (
-        <span className="text-text-muted">—</span>
+        <span className="text-muted">—</span>
       ),
   },
   {
@@ -140,11 +141,11 @@ const COLUMNS: ColumnDef[] = [
       r.quote != null && r.quote.dayLow > 0 && r.quote.dayHigh > r.quote.dayLow,
     render: (r) =>
       r.quote && r.quote.dayLow > 0 ? (
-        <span className="text-text-muted text-xs tabular-nums">
+        <span className="text-muted text-xs font-tabular">
           ${r.quote.dayLow.toFixed(2)} – ${r.quote.dayHigh.toFixed(2)}
         </span>
       ) : (
-        <span className="text-text-muted">—</span>
+        <span className="text-muted">—</span>
       ),
   },
   {
@@ -155,9 +156,9 @@ const COLUMNS: ColumnDef[] = [
     hasValue: (r) => r.analysis?.adx != null,
     render: (r) =>
       r.analysis?.adx != null ? (
-        <span className="text-text-muted">{r.analysis.adx.toFixed(0)}</span>
+        <span className="text-muted font-tabular">{r.analysis.adx.toFixed(0)}</span>
       ) : (
-        <span className="text-text-muted">—</span>
+        <span className="text-muted">—</span>
       ),
   },
   {
@@ -170,17 +171,18 @@ const COLUMNS: ColumnDef[] = [
       r.analysis?.rsi != null ? (
         <span
           className={cn(
+            "font-tabular",
             r.analysis.rsi < 30
               ? "text-positive"
               : r.analysis.rsi > 70
                 ? "text-negative"
-                : "text-text-muted",
+                : "text-muted",
           )}
         >
           {r.analysis.rsi.toFixed(0)}
         </span>
       ) : (
-        <span className="text-text-muted">—</span>
+        <span className="text-muted">—</span>
       ),
   },
   {
@@ -191,9 +193,9 @@ const COLUMNS: ColumnDef[] = [
     hasValue: (r) => r.analysis?.volatility != null,
     render: (r) =>
       r.analysis?.volatility != null ? (
-        <span className="text-text-muted">{r.analysis.volatility.toFixed(0)}%</span>
+        <span className="text-muted font-tabular">{r.analysis.volatility.toFixed(0)}%</span>
       ) : (
-        <span className="text-text-muted">—</span>
+        <span className="text-muted">—</span>
       ),
   },
   {
@@ -204,9 +206,9 @@ const COLUMNS: ColumnDef[] = [
     hasValue: (r) => r.analysis?.atrPct != null,
     render: (r) =>
       r.analysis?.atrPct != null ? (
-        <span className="text-text-muted">{r.analysis.atrPct.toFixed(1)}%</span>
+        <span className="text-muted font-tabular">{r.analysis.atrPct.toFixed(1)}%</span>
       ) : (
-        <span className="text-text-muted">—</span>
+        <span className="text-muted">—</span>
       ),
   },
   {
@@ -219,17 +221,18 @@ const COLUMNS: ColumnDef[] = [
       r.analysis?.mfi != null ? (
         <span
           className={cn(
+            "font-tabular",
             r.analysis.mfi < 20
               ? "text-positive"
               : r.analysis.mfi > 80
                 ? "text-negative"
-                : "text-text-muted",
+                : "text-muted",
           )}
         >
           {r.analysis.mfi.toFixed(0)}
         </span>
       ) : (
-        <span className="text-text-muted">—</span>
+        <span className="text-muted">—</span>
       ),
   },
   {
@@ -240,9 +243,9 @@ const COLUMNS: ColumnDef[] = [
     hasValue: (r) => r.analysis?.sharpe != null,
     render: (r) =>
       r.analysis?.sharpe != null ? (
-        <span className="text-text-muted tabular-nums">{r.analysis.sharpe.toFixed(2)}</span>
+        <span className="text-muted font-tabular">{r.analysis.sharpe.toFixed(2)}</span>
       ) : (
-        <span className="text-text-muted">—</span>
+        <span className="text-muted">—</span>
       ),
   },
 ];
@@ -315,7 +318,7 @@ export default function AssetsPage() {
   const [sharpeRange, setSharpeRange] = useState<[number, number]>([-5, 5]);
   const [adxRange, setAdxRange] = useState<[number, number]>([0, 100]);
 
-  // Column visibility (persisted to localStorage) — lazy init to avoid SSR mismatch
+  // Column visibility (persisted to localStorage)
   const [activeCols, setActiveCols] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return DEFAULT_COLS;
     try {
@@ -328,7 +331,6 @@ export default function AssetsPage() {
     return DEFAULT_COLS;
   });
 
-  // Sincroniza com localStorage depois da hidratacao
   useEffect(() => {
     try {
       const stored = localStorage.getItem(COLS_KEY);
@@ -336,8 +338,7 @@ export default function AssetsPage() {
         const arr = JSON.parse(stored) as string[];
         if (Array.isArray(arr)) {
           const newSet = new Set(arr);
-          // So atualiza se mudou
-          if (newSet.size !== activeCols.size || ![...newSet].every(k => activeCols.has(k))) {
+          if (newSet.size !== activeCols.size || ![...newSet].every((k) => activeCols.has(k))) {
             setActiveCols(newSet);
           }
         }
@@ -358,15 +359,18 @@ export default function AssetsPage() {
     });
   };
 
-  // Pagination
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), 250);
     return () => clearTimeout(t);
-  }, [debouncedQuery, query]);useEffect(() => {
+  }, [debouncedQuery, query]);
+
+  useEffect(() => {
     setPage(1);
-  }, [exchangeFilter, sectorFilter, debouncedQuery]);const offset = (page - 1) * PAGE_SIZE;
+  }, [exchangeFilter, sectorFilter, debouncedQuery]);
+
+  const offset = (page - 1) * PAGE_SIZE;
   const listUrl = useMemo(() => {
     const sp = new URLSearchParams({
       exchange: exchangeFilter,
@@ -502,9 +506,6 @@ export default function AssetsPage() {
     return out;
   }, [rows, trendFilter, volRange, rsiRange, sharpeRange, adxRange]);
 
-  // Only show columns that have values in any visible row
-  // Visible cols: todas as colunas ativas pelo usuario.
-  // Colunas sem valor nas rows filtradas mostram placeholder "—".
   const visibleCols = useMemo(
     () => COLUMNS.filter((c) => activeCols.has(c.key)),
     [activeCols],
@@ -520,7 +521,6 @@ export default function AssetsPage() {
 
   const total = listData?.total ?? 0;
 
-  // Foundation batch for rich mode
   const symbolsForBatch = filteredRows.map((r) => r.symbol);
   const { data: richData } = useSWR<Record<string, unknown>>(
     richTable && symbolsForBatch.length > 0
@@ -531,58 +531,60 @@ export default function AssetsPage() {
   );
 
   return (
-    <div className="px-8 py-8 max-w-7xl">
-      <div className="mb-6 flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight mb-1">Assets</h1>
-          <p className="text-sm text-text-secondary">
-            <span className="font-mono text-foreground">{total}</span> ativos · {filteredRows.length} mostrados · {visibleCols.length} colunas
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setRichTable(!richTable)}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1 text-xs rounded-md border transition-colors",
-              richTable
-                ? "bg-foreground text-background border-foreground"
-                : "border-border text-text-secondary hover:text-foreground",
-            )}
-          >
-            {richTable ? <Sparkles className="w-3 h-3" /> : <BarChart3 className="w-3 h-3" />}
-            {richTable ? "Modo rico" : "Modo rico"}
-          </button>
-          <button
-            onClick={() => setShowColumnPicker(!showColumnPicker)}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1 text-xs rounded-md border transition-colors",
-              showColumnPicker
-                ? "bg-foreground text-background border-foreground"
-                : "border-border text-text-secondary hover:text-foreground",
-            )}
-          >
-            <Settings2 className="w-3 h-3" />
-            Colunas
-          </button>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1 text-xs rounded-md border transition-colors",
-              showFilters
-                ? "bg-foreground text-background border-foreground"
-                : "border-border text-text-secondary hover:text-foreground",
-            )}
-          >
-            <Filter className="w-3 h-3" />
-            Filtros
-          </button>
-        </div>
-      </div>
+    <div className="px-6 md:px-10 py-8 md:py-12 max-w-7xl">
+      <PageHeader
+        title="Assets"
+        description={
+          <>
+            <span className="font-mono text-ink">{total}</span> ativos · {filteredRows.length} mostrados · {visibleCols.length} colunas
+          </>
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setRichTable(!richTable)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-all duration-150 press",
+                richTable
+                  ? "bg-brand text-on-brand border-brand"
+                  : "border-hairline text-muted hover:text-ink hover:border-hairline-strong",
+              )}
+            >
+              {richTable ? <Sparkles className="w-3 h-3" /> : <BarChart3 className="w-3 h-3" />}
+              Modo rico
+            </button>
+            <button
+              onClick={() => setShowColumnPicker(!showColumnPicker)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-all duration-150 press",
+                showColumnPicker
+                  ? "bg-brand text-on-brand border-brand"
+                  : "border-hairline text-muted hover:text-ink hover:border-hairline-strong",
+              )}
+            >
+              <Settings2 className="w-3 h-3" />
+              Colunas
+            </button>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-all duration-150 press",
+                showFilters
+                  ? "bg-brand text-on-brand border-brand"
+                  : "border-hairline text-muted hover:text-ink hover:border-hairline-strong",
+              )}
+            >
+              <Filter className="w-3 h-3" />
+              Filtros
+            </button>
+          </div>
+        }
+      />
 
-      <div className="flex gap-2 mb-4">
-        <div className="relative flex-1">
+      <div className="flex gap-2 mb-5">
+        <div className="relative flex-1 group">
           <SearchIcon
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-brand-bright transition-colors duration-150"
             strokeWidth={2}
           />
           <input
@@ -590,16 +592,16 @@ export default function AssetsPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar ticker ou nome (ex: AAPL, Apple, Microsoft)"
-            className="w-full bg-surface border border-border rounded-md pl-10 pr-4 py-2.5 text-sm placeholder:text-text-muted focus:outline-none focus:border-foreground/30 transition-colors"
+            className="w-full bg-surface border border-hairline rounded-md pl-10 pr-4 py-2.5 text-sm text-ink placeholder:text-faint transition-all duration-200 focus:outline-none focus:border-brand focus:bg-surface-elevated focus:shadow-[0_0_0_4px_var(--brand-soft)]"
           />
           {loadingList && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted animate-spin" />
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted animate-spin" />
           )}
         </div>
         <select
           value={exchangeFilter}
           onChange={(e) => setExchangeFilter(e.target.value)}
-          className="bg-surface border border-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:border-foreground/30"
+          className="bg-surface border border-hairline rounded-md px-3 py-2.5 text-sm text-ink transition-colors duration-150 focus:outline-none focus:border-brand"
         >
           {EXCHANGES.map((ex) => (
             <option key={ex.value} value={ex.value}>{ex.label}</option>
@@ -609,7 +611,7 @@ export default function AssetsPage() {
           <select
             value={sectorFilter}
             onChange={(e) => setSectorFilter(e.target.value)}
-            className="bg-surface border border-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:border-foreground/30 max-w-[220px]"
+            className="bg-surface border border-hairline rounded-md px-3 py-2.5 text-sm text-ink transition-colors duration-150 focus:outline-none focus:border-brand max-w-[220px]"
           >
             <option value="all">Todos os setores</option>
             {sectors.map((s) => (
@@ -620,12 +622,12 @@ export default function AssetsPage() {
       </div>
 
       {showColumnPicker && (
-        <div className="rounded-lg border border-border bg-surface p-4 mb-6">
+        <div className="panel p-4 mb-5 animate-slide-down">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-foreground">Colunas visíveis</h3>
+            <h3 className="text-sm font-medium text-ink">Colunas visíveis</h3>
             <button
               onClick={() => setShowColumnPicker(false)}
-              className="p-1 hover:bg-surface-elevated rounded"
+              className="p-1 hover:bg-surface-elevated rounded transition-colors"
               aria-label="Fechar"
             >
               <X className="w-3.5 h-3.5" />
@@ -637,24 +639,24 @@ export default function AssetsPage() {
                 key={c.key}
                 onClick={() => toggleCol(c.key)}
                 className={cn(
-                  "px-2.5 py-1 text-xs rounded border transition-colors",
+                  "px-2.5 py-1 text-xs rounded-md border transition-all duration-150 press",
                   activeCols.has(c.key)
-                    ? "bg-foreground text-background border-foreground"
-                    : "border-border text-text-muted hover:text-foreground",
+                    ? "bg-brand text-on-brand border-brand"
+                    : "border-hairline text-muted hover:text-ink hover:border-hairline-strong",
                 )}
               >
                 {c.label}
               </button>
             ))}
           </div>
-          <p className="text-xs text-text-muted mt-3">
+          <p className="text-xs text-muted mt-3">
             Colunas ativas ficam visíveis mesmo sem valor (mostram —). Use os filtros pra gerar dados de análise.
           </p>
         </div>
       )}
 
       {showFilters && (
-        <div className="rounded-lg border border-border bg-surface p-4 mb-6">
+        <div className="panel p-4 mb-5 animate-slide-down">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <RangeSlider
               label="Volatilidade %"
@@ -694,7 +696,7 @@ export default function AssetsPage() {
             />
           </div>
           <div className="mt-4 flex items-center gap-2 flex-wrap">
-            <span className="text-xs uppercase tracking-wider text-text-muted">Tendência:</span>
+            <span className="text-xs uppercase tracking-wider text-muted">Tendência:</span>
             <div className="flex gap-1">
               {[
                 { value: "all" as const, label: "Qualquer" },
@@ -706,10 +708,10 @@ export default function AssetsPage() {
                   key={opt.value}
                   onClick={() => setTrendFilter(opt.value)}
                   className={cn(
-                    "px-2.5 py-1 text-xs rounded transition-colors",
+                    "px-2.5 py-1 text-xs rounded-md transition-all duration-150 press",
                     trendFilter === opt.value
-                      ? "bg-foreground text-background"
-                      : "border border-border text-text-secondary hover:text-foreground",
+                      ? "bg-brand text-on-brand"
+                      : "border border-hairline text-muted hover:text-ink hover:border-hairline-strong",
                   )}
                 >
                   {opt.label}
@@ -718,7 +720,7 @@ export default function AssetsPage() {
             </div>
           </div>
           {filtersActive && (
-            <div className="mt-3 text-xs text-text-muted">
+            <div className="mt-3 text-xs text-muted">
               {analysisLoading ? (
                 <span className="inline-flex items-center gap-1.5">
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -733,19 +735,19 @@ export default function AssetsPage() {
       )}
 
       {filteredRows.length === 0 && !loadingList && (
-        <div className="rounded-lg border border-border bg-surface p-12 text-center">
-          <p className="text-text-secondary text-sm">
+        <div className="panel p-12 text-center animate-fade-up">
+          <p className="text-muted text-sm">
             Nenhum resultado. Tente outro ticker ou nome.
           </p>
         </div>
       )}
 
       {visibleCols.length > 0 && (
-        <div className="rounded-lg border border-border bg-surface overflow-hidden">
+        <div className="panel overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-text-muted text-xs uppercase tracking-wider">
+                <tr className="border-b border-hairline text-muted text-xs uppercase tracking-wider">
                   <th className="text-left px-4 py-3 font-medium sticky left-0 bg-surface">
                     Ativo
                   </th>
@@ -765,7 +767,7 @@ export default function AssetsPage() {
               {richTable && richData ? (
                 <tbody>
                   {filteredRows.map((r) => (
-                    <tr key={r.symbol} className="border-b border-border-subtle hover:bg-surface-elevated transition-colors">
+                    <tr key={r.symbol} className="border-b border-hairline hover:bg-surface-elevated transition-colors">
                       <td colSpan={visibleCols.length + 1} className="p-2">
                         <RichFundamentalsTable
                           rows={[{ symbol: r.symbol, weight: 1 / filteredRows.length }]}
@@ -775,42 +777,42 @@ export default function AssetsPage() {
                   ))}
                 </tbody>
               ) : (
-              <tbody>
-                {filteredRows.map((r, i) => (
-                  <tr
-                    key={`${r.symbol}-${r.type}`}
-                    className={cn(
-                      "border-b border-border-subtle last:border-0 hover:bg-surface-elevated transition-colors",
-                      i % 2 === 0 ? "bg-transparent" : "bg-surface-elevated/30",
-                    )}
-                  >
-                    <td className="px-4 py-3 sticky left-0 bg-inherit">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-surface-elevated text-text-muted uppercase">
-                          {r.type === "stock" ? "ação" : r.type === "etf" ? "etf" : "crypto"}
-                        </span>
-                        <Link
-                          href={`/asset/${encodeURIComponent(r.symbol)}`}
-                          className="font-mono font-semibold text-foreground hover:text-accent transition-colors"
-                        >
-                          {r.symbol}
-                        </Link>
-                      </div>
-                    </td>
-                    {visibleCols.map((c) => (
-                      <td
-                        key={c.key}
-                        className={cn(
-                          "px-4 py-3 font-mono tabular-nums",
-                          c.align === "right" ? "text-right" : "text-left",
-                        )}
-                      >
-                        {c.render(r)}
+                <tbody>
+                  {filteredRows.map((r, i) => (
+                    <tr
+                      key={`${r.symbol}-${r.type}`}
+                      className={cn(
+                        "border-b border-hairline last:border-0 hover-row transition-colors animate-fade-up",
+                      )}
+                      style={{ animationDelay: `${Math.min(i * 20, 400)}ms` }}
+                    >
+                      <td className="px-4 py-3 sticky left-0 bg-inherit">
+                        <div className="flex items-center gap-2">
+                          <span className="chip">
+                            {r.type === "stock" ? "ação" : r.type === "etf" ? "etf" : "crypto"}
+                          </span>
+                          <Link
+                            href={`/asset/${encodeURIComponent(r.symbol)}`}
+                            className="font-mono font-semibold text-ink hover:text-brand-bright transition-colors duration-150"
+                          >
+                            {r.symbol}
+                          </Link>
+                        </div>
                       </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
+                      {visibleCols.map((c) => (
+                        <td
+                          key={c.key}
+                          className={cn(
+                            "px-4 py-3 font-tabular",
+                            c.align === "right" ? "text-right" : "text-left",
+                          )}
+                        >
+                          {c.render(r)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
               )}
             </table>
           </div>
@@ -822,23 +824,23 @@ export default function AssetsPage() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={!hasPrev || loadingList}
-            className="px-3 py-1.5 text-sm rounded-md border border-border text-text-secondary hover:text-foreground hover:bg-surface-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1.5 text-sm rounded-md border border-hairline text-muted hover:text-ink hover:bg-surface-elevated hover:border-hairline-strong disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 press"
           >
             ← Anterior
           </button>
           {pageNumbers.map((p, i) =>
             p === "..." ? (
-              <span key={`ellipsis-${i}`} className="px-2 text-text-muted text-sm">…</span>
+              <span key={`ellipsis-${i}`} className="px-2 text-muted text-sm">…</span>
             ) : (
               <button
                 key={p}
                 onClick={() => setPage(p)}
                 disabled={loadingList}
                 className={cn(
-                  "min-w-[36px] px-2 py-1.5 text-sm font-mono tabular-nums rounded-md border transition-colors disabled:opacity-50",
+                  "min-w-[36px] px-2.5 py-1.5 text-sm font-tabular rounded-md border transition-all duration-150 press disabled:opacity-50",
                   p === page
-                    ? "bg-foreground text-background border-foreground"
-                    : "border-border text-text-secondary hover:text-foreground hover:bg-surface-elevated",
+                    ? "bg-brand text-on-brand border-brand"
+                    : "border-hairline text-muted hover:text-ink hover:bg-surface-elevated hover:border-hairline-strong",
                 )}
               >
                 {p}
@@ -848,13 +850,13 @@ export default function AssetsPage() {
           <button
             onClick={() => setPage((p) => p + 1)}
             disabled={!hasNext || loadingList}
-            className="px-3 py-1.5 text-sm rounded-md border border-border text-text-secondary hover:text-foreground hover:bg-surface-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1.5 text-sm rounded-md border border-hairline text-muted hover:text-ink hover:bg-surface-elevated hover:border-hairline-strong disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 press"
           >
             Próxima →
           </button>
         </div>
       )}
-      <div className="mt-2 text-center text-xs text-text-muted">
+      <div className="mt-2 text-center text-xs text-muted">
         Página {page} de {totalPages} · {total} ativos
       </div>
     </div>
@@ -886,32 +888,28 @@ function RangeSlider({
   const hiPct = ((clampedHi - min) / span) * 100;
 
   return (
-    <div className="rounded-lg bg-surface-elevated/40 border border-border-subtle p-3">
+    <div className="rounded-md bg-surface-elevated/40 border border-hairline p-3.5">
       <div className="flex items-center justify-between mb-2">
-        <label className="text-[11px] uppercase tracking-wider text-text-muted font-medium">
+        <label className="text-[11px] uppercase tracking-wider text-muted font-medium">
           {label}
         </label>
-        <span
-          className={cn(
-            "text-[11px] font-medium px-1.5 py-0.5 rounded",
-            zone.tone === "good" && "bg-positive/10 text-positive",
-            zone.tone === "bad" && "bg-negative/10 text-negative",
-            zone.tone === "neutral" && "bg-surface text-text-secondary",
-          )}
+        <Badge
+          tone={
+            zone.tone === "good" ? "positive" : zone.tone === "bad" ? "negative" : "neutral"
+          }
         >
           {zone.label}
-        </span>
+        </Badge>
       </div>
-      <div className="flex items-baseline gap-1 mb-2 font-mono tabular-nums text-sm">
-        <span className="text-foreground font-medium">{lo}</span>
-        <span className="text-text-muted">–</span>
-        <span className="text-foreground font-medium">{hi}</span>
+      <div className="flex items-baseline gap-1 mb-2 font-tabular text-sm">
+        <span className="text-ink font-medium">{lo}</span>
+        <span className="text-muted">–</span>
+        <span className="text-ink font-medium">{hi}</span>
       </div>
-      {/* Dual range */}
       <div className="relative h-6 flex items-center">
-        <div className="absolute inset-x-0 h-1.5 bg-surface rounded-full" />
+        <div className="absolute inset-x-0 h-1.5 bg-surface-elevated rounded-full" />
         <div
-          className="absolute h-1.5 bg-foreground/60 rounded-full"
+          className="absolute h-1.5 bg-brand rounded-full transition-[left,right] duration-150"
           style={{ left: `${loPct}%`, right: `${100 - hiPct}%` }}
         />
         <input
@@ -924,7 +922,7 @@ function RangeSlider({
             const v = parseFloat(e.target.value);
             onChange([Math.min(v, hi), hi]);
           }}
-          className="absolute inset-x-0 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-background [&::-webkit-slider-thumb]:cursor-grab [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-foreground [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-background [&::-moz-range-thumb]:cursor-grab"
+          className="absolute inset-x-0 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-ink [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-canvas [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-ink [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-canvas [&::-moz-range-thumb]:cursor-grab"
         />
         <input
           type="range"
@@ -936,7 +934,7 @@ function RangeSlider({
             const v = parseFloat(e.target.value);
             onChange([lo, Math.max(v, lo)]);
           }}
-          className="absolute inset-x-0 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-background [&::-webkit-slider-thumb]:cursor-grab [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-foreground [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-background [&::-moz-range-thumb]:cursor-grab"
+          className="absolute inset-x-0 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-ink [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-canvas [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-ink [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-canvas [&::-moz-range-thumb]:cursor-grab"
         />
       </div>
     </div>

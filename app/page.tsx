@@ -12,7 +12,10 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { cn, formatPercent } from "@/lib/utils";
-
+import { PageHeader, SectionHeader } from "@/components/page-header";
+import { Card } from "@/components/ui/card";
+import { LiveDot } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type AssetType = "stock" | "etf" | "crypto";
 type AssetRow = {
@@ -91,73 +94,80 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="px-8 py-8 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight mb-2">Dashboard</h1>
-        <p className="text-text-secondary">
-          Hub central. Acompanhe mercados, índices, portfolios e notícias em um só lugar.
-        </p>
-      </div>
+    <div className="px-6 md:px-10 py-8 md:py-12 max-w-7xl">
+      <PageHeader
+        title={
+          <span className="flex items-center gap-3">
+            Dashboard
+            <LiveDot />
+          </span>
+        }
+        description="Hub central. Acompanhe mercados, índices, portfolios e notícias em um só lugar."
+      />
 
       {/* Quick search */}
-      <form onSubmit={handleQuickSearch} className="relative mb-8">
+      <form onSubmit={handleQuickSearch} className="relative mb-10 group">
         <Search
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted"
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-brand-bright transition-colors duration-150"
           strokeWidth={2}
         />
         <input
           value={quickSearch}
           onChange={(e) => setQuickSearch(e.target.value)}
           placeholder="Buscar ação, ETF ou cripto (ex: AAPL, Apple, Microsoft)"
-          className="w-full bg-surface border border-border rounded-md pl-10 pr-4 py-2.5 text-sm placeholder:text-text-muted focus:outline-none focus:border-foreground/30 transition-colors"
+          className="w-full bg-surface border border-hairline rounded-md pl-11 pr-4 py-3.5 text-sm text-ink placeholder:text-faint transition-all duration-200 focus:outline-none focus:border-brand focus:bg-surface-elevated focus:shadow-[0_0_0_4px_var(--brand-soft)]"
         />
       </form>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Top movers */}
-        <section className="lg:col-span-2 rounded-lg border border-border bg-surface p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="flex items-center gap-2 font-medium text-foreground">
-              <TrendingUp className="w-4 h-4" />
-              Top movers
-            </h2>
-            <Link
-              href="/assets"
-              className="text-xs text-text-muted hover:text-foreground inline-flex items-center gap-1"
-            >
-              Ver todos
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
+        <Card className="lg:col-span-2 animate-fade-up">
+          <SectionHeader
+            icon={TrendingUp}
+            title="Top movers"
+            action={
+              <Link
+                href="/assets"
+                className="text-xs text-muted hover:text-ink inline-flex items-center gap-1 link-underline"
+              >
+                Ver todos
+                <ArrowRight className="w-3 h-3 icon-rotate-hover" />
+              </Link>
+            }
+          />
           {loading ? (
             <div className="space-y-2">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-10 rounded shimmer" />
+                <Skeleton key={i} className="h-10" />
               ))}
             </div>
           ) : (
-            <div className="space-y-2">
-              {topAssets.map((r) => (
+            <div className="space-y-1">
+              {topAssets.map((r, i) => (
                 <Link
                   key={`${r.symbol}-${r.type}`}
                   href={`/asset/${encodeURIComponent(r.symbol)}`}
-                  className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-surface-elevated transition-colors"
+                  className={cn(
+                    "flex items-center justify-between px-3 py-2.5 rounded-md hover-row press group",
+                    "animate-fade-up",
+                  )}
+                  style={{ animationDelay: `${i * 40}ms` }}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono font-semibold text-sm w-20">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="font-mono font-semibold text-sm w-20 text-ink">
                       {r.symbol}
                     </span>
-                    <span className="text-xs text-text-muted truncate w-32 hidden sm:block">
+                    <span className="text-xs text-muted truncate w-32 hidden sm:block">
                       {r.sector}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm font-mono tabular-nums">
+                  <div className="flex items-center gap-3 text-sm font-tabular shrink-0">
                     {r.quote ? (
                       <>
-                        <span>${r.quote.price.toFixed(2)}</span>
+                        <span className="text-ink">${r.quote.price.toFixed(2)}</span>
                         <span
                           className={cn(
-                            "min-w-[60px] text-right",
+                            "min-w-[64px] text-right font-medium",
                             r.quote.changePercent >= 0 ? "text-positive" : "text-negative",
                           )}
                         >
@@ -165,46 +175,47 @@ export default function DashboardPage() {
                         </span>
                       </>
                     ) : (
-                      <span className="text-text-muted">—</span>
+                      <span className="text-muted">—</span>
                     )}
                   </div>
                 </Link>
               ))}
             </div>
           )}
-        </section>
+        </Card>
 
         {/* News */}
-        <section className="rounded-lg border border-border bg-surface p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="flex items-center gap-2 font-medium text-foreground">
-              <Newspaper className="w-4 h-4" />
-              Últimas notícias
-            </h2>
-            <Link
-              href="/news"
-              className="text-xs text-text-muted hover:text-foreground inline-flex items-center gap-1"
-            >
-              Ver tudo
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
+        <Card className="animate-fade-up stagger-2">
+          <SectionHeader
+            icon={Newspaper}
+            title="Últimas notícias"
+            action={
+              <Link
+                href="/news"
+                className="text-xs text-muted hover:text-ink inline-flex items-center gap-1 link-underline"
+              >
+                Ver tudo
+                <ArrowRight className="w-3 h-3 icon-rotate-hover" />
+              </Link>
+            }
+          />
           {news.length === 0 ? (
-            <p className="text-sm text-text-muted">Sem notícias disponíveis agora.</p>
+            <p className="text-sm text-muted">Sem notícias disponíveis agora.</p>
           ) : (
-            <div className="space-y-3">
-              {news.map((n) => (
+            <div className="space-y-3.5">
+              {news.map((n, i) => (
                 <a
                   key={`${n.id}-${n.url}`}
                   href={n.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block group"
+                  className="block group animate-fade-up"
+                  style={{ animationDelay: `${i * 60}ms` }}
                 >
-                  <div className="text-sm text-foreground group-hover:text-accent transition-colors line-clamp-2">
+                  <div className="text-sm text-ink group-hover:text-brand-bright transition-colors duration-150 line-clamp-2 leading-relaxed">
                     {n.headline}
                   </div>
-                  <div className="text-xs text-text-muted mt-1">
+                  <div className="text-xs text-muted mt-1">
                     {n.source} ·{" "}
                     {new Date(n.datetime * 1000).toLocaleDateString("pt-BR", {
                       day: "2-digit",
@@ -215,36 +226,37 @@ export default function DashboardPage() {
               ))}
             </div>
           )}
-        </section>
+        </Card>
 
         {/* Indices */}
-        <section className="lg:col-span-2 rounded-lg border border-border bg-surface p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="flex items-center gap-2 font-medium text-foreground">
-              <PieChart className="w-4 h-4" />
-              Índices
-            </h2>
-            <Link
-              href="/indices"
-              className="text-xs text-text-muted hover:text-foreground inline-flex items-center gap-1"
-            >
-              Ver todos
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {indices.map((idx) => (
+        <Card className="lg:col-span-2 animate-fade-up stagger-3">
+          <SectionHeader
+            icon={PieChart}
+            title="Índices"
+            action={
+              <Link
+                href="/indices"
+                className="text-xs text-muted hover:text-ink inline-flex items-center gap-1 link-underline"
+              >
+                Ver todos
+                <ArrowRight className="w-3 h-3 icon-rotate-hover" />
+              </Link>
+            }
+          />
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {indices.map((idx, i) => (
               <Link
                 key={idx.id}
                 href={idx.href}
-                className="rounded-md border border-border-subtle bg-surface-elevated/30 px-3 py-3 hover:border-foreground/30 transition-colors"
+                className="rounded-md border border-hairline bg-surface-elevated px-3.5 py-3 hover-lift group animate-fade-up"
+                style={{ animationDelay: `${i * 50}ms` }}
               >
-                <div className="text-xs text-text-muted mb-1 truncate">
+                <div className="text-xs text-muted mb-1 truncate group-hover:text-body transition-colors">
                   {idx.name}
                 </div>
                 <div
                   className={cn(
-                    "text-lg font-mono font-semibold tabular-nums",
+                    "text-lg font-tabular font-semibold",
                     idx.change >= 0 ? "text-positive" : "text-negative",
                   )}
                 >
@@ -254,34 +266,35 @@ export default function DashboardPage() {
               </Link>
             ))}
           </div>
-        </section>
+        </Card>
 
         {/* Portfolios */}
-        <section className="rounded-lg border border-border bg-surface p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="flex items-center gap-2 font-medium text-foreground">
-              <Briefcase className="w-4 h-4" />
-              Portfolios
-            </h2>
-            <Link
-              href="/portfolios"
-              className="text-xs text-text-muted hover:text-foreground inline-flex items-center gap-1"
-            >
-              Ver todos
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-          <div className="space-y-2">
-            {portfolios.map((p) => (
+        <Card className="animate-fade-up stagger-4">
+          <SectionHeader
+            icon={Briefcase}
+            title="Portfolios"
+            action={
+              <Link
+                href="/portfolios"
+                className="text-xs text-muted hover:text-ink inline-flex items-center gap-1 link-underline"
+              >
+                Ver todos
+                <ArrowRight className="w-3 h-3 icon-rotate-hover" />
+              </Link>
+            }
+          />
+          <div className="space-y-1">
+            {portfolios.map((p, i) => (
               <Link
                 key={p.id}
                 href={p.href}
-                className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-surface-elevated transition-colors"
+                className="flex items-center justify-between px-3 py-2.5 rounded-md hover-row press animate-fade-up"
+                style={{ animationDelay: `${i * 40}ms` }}
               >
-                <span className="text-sm">{p.name}</span>
+                <span className="text-sm text-ink">{p.name}</span>
                 <span
                   className={cn(
-                    "text-sm font-mono font-semibold tabular-nums",
+                    "text-sm font-tabular font-semibold",
                     p.ytd >= 0 ? "text-positive" : "text-negative",
                   )}
                 >
@@ -291,12 +304,12 @@ export default function DashboardPage() {
               </Link>
             ))}
           </div>
-        </section>
+        </Card>
       </div>
 
       {/* Quick navigation cards */}
-      <section className="mt-8">
-        <h2 className="text-sm font-medium text-foreground mb-3 uppercase tracking-wider">
+      <section className="mt-10">
+        <h2 className="text-xs font-medium text-muted mb-4 uppercase tracking-wider">
           Acesso rápido
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -350,11 +363,11 @@ function NavCard({
   return (
     <Link
       href={href}
-      className="rounded-lg border border-border bg-surface p-4 hover:border-foreground/30 hover:bg-surface-elevated transition-all group"
+      className="panel p-4 hover-lift group animate-fade-up"
     >
-      <Icon className="w-5 h-5 text-text-secondary group-hover:text-foreground mb-2 transition-colors" />
-      <div className="font-medium text-foreground mb-1">{title}</div>
-      <div className="text-xs text-text-muted line-clamp-2">{description}</div>
+      <Icon className="w-5 h-5 text-muted group-hover:text-brand-bright transition-colors duration-150 mb-2.5" />
+      <div className="font-medium text-ink mb-1">{title}</div>
+      <div className="text-xs text-muted line-clamp-2">{description}</div>
     </Link>
   );
 }

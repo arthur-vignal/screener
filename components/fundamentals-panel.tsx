@@ -37,19 +37,19 @@ export function ConceptTooltip({
           e.stopPropagation();
           setOpen(!open);
         }}
-        className="text-text-muted hover:text-accent transition-colors"
+        className="text-muted hover:text-brand-bright transition-colors"
         aria-label={`Info sobre ${concept.label}`}
       >
         <Info className="w-3 h-3" />
       </button>
       {open && (
-        <div className="absolute z-50 left-0 bottom-full mb-1 w-72 bg-surface border border-border rounded-md shadow-lg p-3 text-xs">
-          <div className="font-medium text-foreground mb-1">{concept.label}</div>
-          <div className="text-text-secondary mb-2 leading-relaxed">
+        <div className="absolute z-50 left-0 bottom-full mb-1 w-72 bg-surface border border-hairline rounded-md shadow-lg p-3 text-xs">
+          <div className="font-medium text-ink mb-1">{concept.label}</div>
+          <div className="text-body mb-2 leading-relaxed">
             {concept.short}
           </div>
           {concept.formula && (
-            <div className="font-mono text-[10px] text-text-muted mb-2 bg-background/50 rounded px-2 py-1">
+            <div className="font-mono text-[10px] text-muted mb-2 bg-background/50 rounded px-2 py-1">
               {concept.formula}
             </div>
           )}
@@ -64,8 +64,8 @@ export function ConceptTooltip({
                     b.tone === "neutral" && "bg-text-muted",
                   )}
                 />
-                <span className="text-text-secondary">
-                  <span className="font-mono text-foreground">{b.range}:</span>{" "}
+                <span className="text-body">
+                  <span className="font-mono text-ink">{b.range}:</span>{" "}
                   {b.meaning}
                 </span>
               </div>
@@ -108,7 +108,7 @@ const CATEGORY_META: Record<
   quality: {
     label: "Qualidade",
     icon: Brain,
-    color: "text-yellow-400",
+    color: "text-warning",
     border: "border-l-yellow-500/40",
   },
   dividends: {
@@ -207,7 +207,7 @@ function MetricHistoryPopup({
       onClick={onClose}
     >
       <div
-        className="bg-surface border border-border rounded-lg p-6 max-w-3xl w-full"
+        className="bg-surface border border-hairline rounded-lg p-6 max-w-3xl w-full"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
@@ -215,7 +215,7 @@ function MetricHistoryPopup({
             <h2 className="text-lg font-semibold">
               {ticker} — {metricLabel}
             </h2>
-            <p className="text-sm text-text-muted">
+            <p className="text-sm text-muted">
               {value != null
                 ? `Atual: ${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`
                 : "Sem dado"}
@@ -223,20 +223,20 @@ function MetricHistoryPopup({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded hover:bg-surface-elevated"
+            className="p-1.5 rounded hover:bg-surface-elevated/60"
             aria-label="Fechar"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="relative h-[220px] bg-background/50 rounded border border-border-subtle">
+        <div className="relative h-[220px] bg-background/50 rounded border border-hairline">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-5 h-5 animate-spin text-text-muted" />
+              <Loader2 className="w-5 h-5 animate-spin text-muted" />
             </div>
           ) : vals.length < 2 ? (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-text-muted">
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-muted">
               Sem dados históricos suficientes
             </div>
           ) : (
@@ -258,7 +258,7 @@ function MetricHistoryPopup({
         </div>
 
         {series.length >= 2 && (
-          <div className="flex justify-between text-xs text-text-muted mt-2 font-mono">
+          <div className="flex justify-between text-xs text-muted mt-2 font-mono">
             <span>{series[0].date}</span>
             <span>{series[series.length - 1].date}</span>
           </div>
@@ -292,12 +292,12 @@ function MetricRow({
       {/* Label + info tooltip */}
       {concept ? (
         <ConceptTooltip concept={concept}>
-          <span className="text-xs text-text-secondary flex-1 truncate">
+          <span className="text-xs text-body flex-1 truncate">
             {metric.label}
           </span>
         </ConceptTooltip>
       ) : (
-        <span className="text-xs text-text-secondary flex-1 truncate">
+        <span className="text-xs text-body flex-1 truncate">
           {metric.label}
         </span>
       )}
@@ -306,7 +306,7 @@ function MetricRow({
       <span
         className={cn(
           "font-mono text-xs tabular-nums min-w-[60px] text-right",
-          metric.value == null && "text-text-muted",
+          metric.value == null && "text-muted",
         )}
       >
         {display}
@@ -320,7 +320,7 @@ function MetricRow({
           onOpenChart(metric.key, metric.label, metric.value);
         }}
         disabled={!ticker}
-        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-background text-text-muted hover:text-accent disabled:opacity-0"
+        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-canvas-soft text-muted hover:text-brand-bright disabled:opacity-0"
         title="Ver histórico"
         aria-label={`Ver histórico de ${metric.label}`}
       >
@@ -368,7 +368,7 @@ export function FundamentalsPanel({
 
   return (
     <>
-      <div className="rounded-lg border border-border bg-surface divide-y divide-border-subtle">
+      <div className="rounded-lg border border-hairline bg-surface divide-y divide-border-subtle">
         {present.map(([catKey, ms]) => {
           const cat = CATEGORY_META[catKey as ConceptCategory];
           if (!cat) return null;
@@ -377,7 +377,7 @@ export function FundamentalsPanel({
             <div key={catKey} className={`p-2 border-l-2 ${cat.border}`}>
               <div className="flex items-center gap-1.5 mb-1 px-2">
                 <Icon className={cn("w-3.5 h-3.5", cat.color)} />
-                <h3 className="text-[11px] uppercase tracking-wider text-text-muted font-semibold">
+                <h3 className="text-[11px] uppercase tracking-wider text-muted font-semibold">
                   {cat.label}
                 </h3>
               </div>

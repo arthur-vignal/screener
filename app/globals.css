@@ -1,82 +1,406 @@
 @import "tailwindcss";
 
+/* ============================================================================
+ * DESIGN SYSTEM — Hybrid (Revolut canvas + Kraken radius + Coinbase typography)
+ * Single mode: dark canvas. Cobalt-violet #494fdf brand. 12px radius. Inter.
+ * Mono on every number. 96px section rhythm. One shadow tier.
+ * ============================================================================ */
+
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --surface: #141414;
-  --surface-elevated: #1c1c1c;
-  --border: #262626;
-  --border-subtle: #1f1f1f;
-  --text-secondary: #a3a3a3;
-  --text-muted: #737373;
-  --accent: #3b82f6;
-  --accent-hover: #60a5fa;
-  --positive: #22c55e;
-  --negative: #ef4444;
+  /* Canvas (Revolut: true black story + white catalog) */
+  --canvas: #000000;
+  --canvas-soft: #0a0a0a;
+  --surface: #101114;
+  --surface-elevated: #16181a;
+  --surface-strong: #1c1e22;
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-strong: rgba(255, 255, 255, 0.14);
+
+  /* Brand — Cobalt Violet (Revolut) */
+  --brand: #494fdf;
+  --brand-bright: #4f55f1;
+  --brand-deep: #3a40c4;
+  --brand-soft: rgba(73, 79, 223, 0.14);
+  --brand-glow: rgba(73, 79, 223, 0.32);
+
+  /* Text */
+  --ink: #ffffff;
+  --body: rgba(255, 255, 255, 0.78);
+  --muted: rgba(255, 255, 255, 0.52);
+  --faint: rgba(255, 255, 255, 0.32);
+  --on-brand: #ffffff;
+
+  /* Semantic (Coinbase: text-only, never bg) */
+  --positive: #05b169;
+  --positive-soft: rgba(5, 177, 105, 0.12);
+  --negative: #cf202f;
+  --negative-soft: rgba(207, 32, 47, 0.12);
+  --warning: #ec7e00;
+
+  /* Accent (Revolut: in illustrations only, never bg) */
+  --accent-teal: #00a87e;
+  --accent-pink: #e61e49;
+  --accent-yellow: #b09000;
+
+  /* Shadows (one tier) */
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.18);
+  --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.28);
+
+  /* Radii (Kraken: 12px max) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-canvas: var(--canvas);
+  --color-canvas-soft: var(--canvas-soft);
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-elevated);
-  --color-border: var(--border);
-  --color-border-subtle: var(--border-subtle);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-muted: var(--text-muted);
-  --color-accent: var(--accent);
-  --color-accent-hover: var(--accent-hover);
-  --color-positive: var(--positive);
-  --color-negative: var(--negative);
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-inter);
-}
+  --color-surface-strong: var(--surface-strong);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-feature-settings: "rlig" 1, "calt" 1;
-  -webkit-font-smoothing: antialiased;
+  --color-brand: var(--brand);
+  --color-brand-bright: var(--brand-bright);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-soft: var(--brand-soft);
+
+  --color-ink: var(--ink);
+  --color-body: var(--body);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-on-brand: var(--on-brand);
+
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+  --color-warning: var(--warning);
+
+  --color-accent-teal: var(--accent-teal);
+  --color-accent-pink: var(--accent-pink);
+  --color-accent-yellow: var(--accent-yellow);
+
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: var(--font-mono-font), "JetBrains Mono", "Geist Mono", "SF Mono", Menlo, monospace;
 }
 
 * {
-  border-color: var(--border);
+  border-color: var(--hairline);
 }
 
-/* Scrollbar */
+html, body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+}
+
+/* ============================================================================
+ * TYPOGRAPHY — Coinbase display weight 400 (institutional calm)
+ * ============================================================================ */
+.font-display {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.0;
+}
+
+.font-display-md {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+}
+
+.font-tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+/* ============================================================================
+ * SCROLLBAR — minimal, dark
+ * ============================================================================ */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
+  background: var(--hairline-strong);
+  border-radius: 9999px;
+  border: 2px solid var(--canvas);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: var(--brand);
 }
 
-/* Animations */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(4px); }
+/* ============================================================================
+ * ANIMATIONS — Library
+ * ============================================================================ */
+
+/* Fade + slide up (page blocks, cards) */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-.animate-fade-in {
-  animation: fade-in 0.2s ease-out;
+.animate-fade-up {
+  animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Fade in (simple appear) */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out both;
+}
+
+/* Slide down (dropdowns, sheets) */
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-down {
+  animation: slide-down 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Slide up (modals, popovers) */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Scale in (popovers, badges) */
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in {
+  animation: scale-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Shimmer (skeleton loaders) */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-
 .shimmer {
-  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-elevated) 50%, var(--surface) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--surface) 0%,
+    var(--surface-elevated) 50%,
+    var(--surface) 100%
+  );
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Pulse (live indicators, badges) */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Pulse ring (live dot) */
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 currentColor; opacity: 0.6; }
+  100% { box-shadow: 0 0 0 8px transparent; opacity: 0; }
+}
+.animate-pulse-ring {
+  animation: pulse-ring 1.6s ease-out infinite;
+}
+
+/* Stagger helpers — combine with animate-fade-up */
+.stagger-1 { animation-delay: 40ms; }
+.stagger-2 { animation-delay: 80ms; }
+.stagger-3 { animation-delay: 120ms; }
+.stagger-4 { animation-delay: 160ms; }
+.stagger-5 { animation-delay: 200ms; }
+.stagger-6 { animation-delay: 240ms; }
+.stagger-7 { animation-delay: 280ms; }
+.stagger-8 { animation-delay: 320ms; }
+
+/* Stroke draw (sparklines) */
+@keyframes stroke-draw {
+  from { stroke-dashoffset: var(--draw-length, 1000); }
+  to { stroke-dashoffset: 0; }
+}
+.animate-stroke-draw {
+  stroke-dasharray: var(--draw-length, 1000);
+  stroke-dashoffset: var(--draw-length, 1000);
+  animation: stroke-draw 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ============================================================================
+ * INTERACTIVE — Hover effects
+ * ============================================================================ */
+
+/* Card hover lift */
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease;
+  will-change: transform;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--hairline-strong);
+}
+
+/* Row hover (table rows, list items) */
+.hover-row {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.hover-row:hover {
+  background-color: var(--surface-elevated);
+}
+
+/* Button press */
+.press {
+  transition: transform 0.1s ease, background-color 0.15s ease, color 0.15s ease;
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* Icon rotate on hover */
+.icon-rotate-hover {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.group:hover .icon-rotate-hover {
+  transform: translateX(2px);
+}
+
+/* Underline grow on hover */
+.link-underline {
+  position: relative;
+  transition: color 0.15s ease;
+}
+.link-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.link-underline:hover::after {
+  transform: scaleX(1);
+}
+
+/* Tab indicator (animated underline) */
+.tab-indicator {
+  position: absolute;
+  bottom: 0;
+  height: 2px;
+  background: var(--brand);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ============================================================================
+ * FOCUS — keyboard-only brand ring
+ * ============================================================================ */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+button:focus-visible,
+a:focus-visible {
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+ * REDUCED MOTION — respect user preference
+ * ============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================================
+ * UTILITIES — reused across pages
+ * ============================================================================ */
+
+/* Card surface (panel) */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+}
+
+/* Inset surface (deeper) */
+.panel-inset {
+  background: var(--surface-elevated);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+}
+
+/* Hairline divider */
+.divider {
+  height: 1px;
+  background: var(--hairline);
+}
+
+/* Number chip — used for tickers, IDs */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--hairline);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+/* Status dot — pulse for "live" */
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--positive);
+  position: relative;
+}
+.status-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: inherit;
+  color: inherit;
+  animation: pulse-ring 1.6s ease-out infinite;
 }

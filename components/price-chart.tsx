@@ -75,10 +75,10 @@ export function PriceChart({ ticker }: { ticker: string }) {
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-border bg-surface overflow-hidden">
-        <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
-          <h3 className="text-sm font-medium text-foreground">Preço</h3>
-          <div className="flex items-center gap-1 bg-surface-elevated rounded-md p-0.5">
+      <div className="rounded-lg border border-hairline bg-surface overflow-hidden">
+        <div className="flex items-center justify-between border-b border-hairline px-4 py-3">
+          <h3 className="text-sm font-medium text-ink">Preço</h3>
+          <div className="flex items-center gap-1 bg-surface-elevated/60 rounded-md p-0.5">
             {RANGES.map((r) => (
               <button
                 key={r}
@@ -86,8 +86,8 @@ export function PriceChart({ ticker }: { ticker: string }) {
                 className={cn(
                   "px-2.5 py-1 text-xs font-medium rounded transition-colors",
                   range === r
-                    ? "bg-foreground text-background"
-                    : "text-text-secondary hover:text-foreground",
+                    ? "bg-ink text-canvas"
+                    : "text-body hover:text-ink",
                 )}
               >
                 {r}
@@ -99,12 +99,12 @@ export function PriceChart({ ticker }: { ticker: string }) {
         <div className={cn("px-4 py-6 relative transition-all duration-300", showRSI ? "h-[260px]" : "h-[420px]")}>
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-sm text-text-muted">Carregando…</div>
+              <div className="text-sm text-muted">Carregando…</div>
             </div>
           )}
           {!isLoading && points.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-sm text-text-muted">Sem dados</div>
+              <div className="text-sm text-muted">Sem dados</div>
             </div>
           )}
           {points.length > 0 && (
@@ -180,15 +180,15 @@ export function PriceChart({ ticker }: { ticker: string }) {
           )}
         </div>
 
-        <div className="flex items-center gap-3 border-t border-border-subtle px-4 py-2.5 text-xs">
-          <span className="text-text-muted uppercase tracking-wider font-medium">
+        <div className="flex items-center gap-3 border-t border-hairline px-4 py-2.5 text-xs">
+          <span className="text-muted uppercase tracking-wider font-medium">
             Indicadores
           </span>
           <button
             onClick={() => setShowSMA20(!showSMA20)}
             className={cn(
               "flex items-center gap-1.5 px-2 py-1 rounded transition-colors",
-              showSMA20 ? "text-foreground" : "text-text-muted hover:text-foreground",
+              showSMA20 ? "text-ink" : "text-muted hover:text-ink",
             )}
           >
             <span className="w-3 h-0.5 bg-yellow-400" />
@@ -198,7 +198,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
             onClick={() => setShowSMA50(!showSMA50)}
             className={cn(
               "flex items-center gap-1.5 px-2 py-1 rounded transition-colors",
-              showSMA50 ? "text-foreground" : "text-text-muted hover:text-foreground",
+              showSMA50 ? "text-ink" : "text-muted hover:text-ink",
             )}
           >
             <span className="w-3 h-0.5 bg-violet-400" />
@@ -208,7 +208,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
             onClick={() => setShowRSI(!showRSI)}
             className={cn(
               "flex items-center gap-1.5 px-2 py-1 rounded transition-colors",
-              showRSI ? "text-foreground" : "text-text-muted hover:text-foreground",
+              showRSI ? "text-ink" : "text-muted hover:text-ink",
             )}
           >
             <span className="w-3 h-0.5 bg-blue-400" />
@@ -225,9 +225,9 @@ export function PriceChart({ ticker }: { ticker: string }) {
         style={{ transitionProperty: "grid-template-rows, opacity" }}
       >
         <div className="overflow-hidden">
-          <div className="rounded-lg border border-border bg-surface overflow-hidden">
-          <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
-            <h3 className="text-sm font-medium text-foreground">RSI (14)</h3>
+          <div className="rounded-lg border border-hairline bg-surface overflow-hidden">
+          <div className="flex items-center justify-between border-b border-hairline px-4 py-3">
+            <h3 className="text-sm font-medium text-ink">RSI (14)</h3>
             {lastRsi !== null && (
               <span
                 className={cn(
@@ -236,7 +236,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
                     ? "text-negative"
                     : lastRsi < 30
                       ? "text-positive"
-                      : "text-text-secondary",
+                      : "text-body",
                 )}
               >
                 {lastRsi.toFixed(1)}

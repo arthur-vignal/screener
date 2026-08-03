@@ -100,7 +100,7 @@ export default function NewPortfolioPage() {
 
   if (authed === null) {
     return (
-      <div className="flex items-center justify-center py-20 text-text-muted">
+      <div className="flex items-center justify-center py-20 text-muted">
         <Loader2 className="w-4 h-4 animate-spin mr-2" />
         Carregando…
       </div>
@@ -111,7 +111,7 @@ export default function NewPortfolioPage() {
     <div className="px-8 py-8 max-w-3xl">
       <Link
         href="/portfolios"
-        className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-foreground mb-4"
+        className="inline-flex items-center gap-1 text-xs text-muted hover:text-ink mb-4"
       >
         <ArrowLeft className="w-3 h-3" />
         Voltar
@@ -120,35 +120,35 @@ export default function NewPortfolioPage() {
       <h1 className="text-2xl font-semibold tracking-tight mb-1">
         Novo portfolio
       </h1>
-      <p className="text-sm text-text-secondary mb-6">
+      <p className="text-sm text-body mb-6">
         Crie um portfolio manual. Pode usar data retroativa pra simular performance.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-lg border border-border bg-surface p-5 space-y-4">
+        <div className="rounded-lg border border-hairline bg-surface p-5 space-y-4">
           <div>
-            <label className="text-xs uppercase tracking-wider text-text-muted font-medium block mb-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted font-medium block mb-1.5">
               Nome
             </label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="ex: Growth Tech 2025"
-              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-foreground/30"
+              className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm focus:outline-none focus:border-brand"
               required
               maxLength={60}
             />
           </div>
 
           <div>
-            <label className="text-xs uppercase tracking-wider text-text-muted font-medium block mb-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted font-medium block mb-1.5">
               Descrição
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="estratégia, tese, observações…"
-              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-foreground/30 resize-none"
+              className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm focus:outline-none focus:border-brand resize-none"
               rows={2}
               maxLength={300}
             />
@@ -156,7 +156,7 @@ export default function NewPortfolioPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs uppercase tracking-wider text-text-muted font-medium block mb-1.5">
+              <label className="text-xs uppercase tracking-wider text-muted font-medium block mb-1.5">
                 Valor inicial
               </label>
               <input
@@ -164,11 +164,11 @@ export default function NewPortfolioPage() {
                 value={initialValue}
                 onChange={(e) => setInitialValue(Number(e.target.value))}
                 min={1}
-                className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:border-foreground/30"
+                className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:border-brand"
               />
             </div>
             <div>
-              <label className="text-xs uppercase tracking-wider text-text-muted font-medium block mb-1.5 inline-flex items-center gap-1">
+              <label className="text-xs uppercase tracking-wider text-muted font-medium block mb-1.5 inline-flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
                 Data de criação
               </label>
@@ -177,9 +177,9 @@ export default function NewPortfolioPage() {
                 value={createdAt}
                 onChange={(e) => setCreatedAt(e.target.value)}
                 max={new Date().toISOString().slice(0, 10)}
-                className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:border-foreground/30"
+                className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:border-brand"
               />
-              <p className="text-[11px] text-text-muted mt-1">
+              <p className="text-[11px] text-muted mt-1">
                 Retroativa simula performance desde essa data
               </p>
             </div>
@@ -197,7 +197,7 @@ export default function NewPortfolioPage() {
         </div>
 
         {/* Holdings */}
-        <div className="rounded-lg border border-border bg-surface p-5">
+        <div className="rounded-lg border border-hairline bg-surface p-5">
           <div className="flex items-baseline justify-between mb-3">
             <h2 className="text-sm font-medium">Ativos</h2>
             <span
@@ -216,20 +216,20 @@ export default function NewPortfolioPage() {
               onChange={(e) => setNewSymbol(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addHolding())}
               placeholder="ticker (ex: AAPL)"
-              className="flex-1 bg-background border border-border rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:border-foreground/30"
+              className="flex-1 bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:border-brand"
             />
             <button
               type="button"
               onClick={addHolding}
               disabled={!newSymbol.trim()}
-              className="px-3 py-2 text-sm rounded-md bg-foreground text-background disabled:opacity-40"
+              className="px-3 py-2 text-sm rounded-md bg-ink text-canvas disabled:opacity-40"
             >
               <Plus className="w-4 h-4" />
             </button>
           </div>
 
           {holdings.length === 0 ? (
-            <p className="text-sm text-text-muted text-center py-6">
+            <p className="text-sm text-muted text-center py-6">
               Adicione pelo menos 1 ativo
             </p>
           ) : (
@@ -251,13 +251,13 @@ export default function NewPortfolioPage() {
                     onChange={(e) =>
                       updateWeight(h.symbol, Number(e.target.value) / 100)
                     }
-                    className="flex-1 bg-transparent border border-border-subtle rounded px-2 py-1 text-sm font-mono tabular-nums text-right"
+                    className="flex-1 bg-transparent border border-hairline rounded px-2 py-1 text-sm font-mono tabular-nums text-right"
                   />
-                  <span className="text-xs text-text-muted">%</span>
+                  <span className="text-xs text-muted">%</span>
                   <button
                     type="button"
                     onClick={() => removeHolding(h.symbol)}
-                    className="p-1 text-text-muted hover:text-negative"
+                    className="p-1 text-muted hover:text-negative"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -268,7 +268,7 @@ export default function NewPortfolioPage() {
         </div>
 
         {error && (
-          <div className="text-sm text-negative bg-negative/10 border border-negative/30 rounded-md px-4 py-3">
+          <div className="text-sm text-negative bg-negative-soft border border-negative/30 rounded-md px-4 py-3">
             {error}
           </div>
         )}
@@ -276,14 +276,14 @@ export default function NewPortfolioPage() {
         <div className="flex items-center justify-end gap-3">
           <Link
             href="/portfolios"
-            className="px-4 py-2 text-sm rounded-md border border-border text-text-secondary hover:text-foreground"
+            className="px-4 py-2 text-sm rounded-md border border-hairline text-body hover:text-ink"
           >
             Cancelar
           </Link>
           <button
             type="submit"
             disabled={loading || !weightsValid || !name.trim()}
-            className="px-4 py-2 text-sm rounded-md bg-foreground text-background disabled:opacity-40"
+            className="px-4 py-2 text-sm rounded-md bg-ink text-canvas disabled:opacity-40"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Criar portfolio"}
           </button>

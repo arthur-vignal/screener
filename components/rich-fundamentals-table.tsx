@@ -92,7 +92,7 @@ function MetricPopup({
       onClick={onClose}
     >
       <div
-        className="bg-surface border border-border rounded-lg p-6 max-w-3xl w-full"
+        className="bg-surface border border-hairline rounded-lg p-6 max-w-3xl w-full"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
@@ -100,7 +100,7 @@ function MetricPopup({
             <h2 className="text-lg font-semibold">
               {ticker} — {metricLabel}
             </h2>
-            <p className="text-sm text-text-muted">
+            <p className="text-sm text-muted">
               {currentValue != null ? `Atual: ${currentValue.toFixed(2)}` : "Sem dado"}
               {sectorAvg != null && (
                 <> · Média setor ({sector}): {sectorAvg.toFixed(2)}</>
@@ -109,7 +109,7 @@ function MetricPopup({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded hover:bg-surface-elevated"
+            className="p-1.5 rounded hover:bg-surface-elevated/60"
             aria-label="Fechar"
           >
             <X className="w-4 h-4" />
@@ -124,8 +124,8 @@ function MetricPopup({
               className={cn(
                 "flex items-center gap-2 px-3 py-1 text-xs rounded border transition-colors",
                 showAvg
-                  ? "bg-foreground text-background border-foreground"
-                  : "border-border text-text-muted",
+                  ? "bg-ink text-canvas border-ink"
+                  : "border-hairline text-muted",
               )}
             >
               <div className="w-3 h-px bg-current" />
@@ -138,10 +138,10 @@ function MetricPopup({
         <div className="relative h-[200px] bg-background/50 rounded">
           {data == null ? (
             <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-5 h-5 animate-spin text-text-muted" />
+              <Loader2 className="w-5 h-5 animate-spin text-muted" />
             </div>
           ) : series.length < 2 ? (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-text-muted">
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-muted">
               Sem dados históricos suficientes
             </div>
           ) : (
@@ -171,7 +171,7 @@ function MetricPopup({
 
         {/* Axis labels */}
         {series.length >= 2 && (
-          <div className="flex justify-between text-xs text-text-muted mt-2 font-mono">
+          <div className="flex justify-between text-xs text-muted mt-2 font-mono">
             <span>{series[0].date}</span>
             <span>{series[series.length - 1].date}</span>
           </div>
@@ -263,25 +263,25 @@ export function RichFundamentalsTable({ rows }: { rows: Row[] }) {
   );
 
   if (rows.length === 0) {
-    return <div className="text-sm text-text-muted py-8 text-center">Sem ativos.</div>;
+    return <div className="text-sm text-muted py-8 text-center">Sem ativos.</div>;
   }
 
   return (
     <>
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+      <div className="overflow-x-auto rounded-lg border border-hairline bg-surface">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border-subtle bg-background/30">
-              <th className="text-left px-3 py-2.5 text-[11px] uppercase tracking-wider text-text-muted font-medium">
+            <tr className="border-b border-hairline bg-background/30">
+              <th className="text-left px-3 py-2.5 text-[11px] uppercase tracking-wider text-muted font-medium">
                 Ativo
               </th>
-              <th className="text-right px-3 py-2.5 text-[11px] uppercase tracking-wider text-text-muted font-medium">
+              <th className="text-right px-3 py-2.5 text-[11px] uppercase tracking-wider text-muted font-medium">
                 Peso
               </th>
               {METRIC_DEFS.map((m) => (
                 <th
                   key={m.key}
-                  className="text-right px-3 py-2.5 text-[11px] uppercase tracking-wider text-text-muted font-medium"
+                  className="text-right px-3 py-2.5 text-[11px] uppercase tracking-wider text-muted font-medium"
                 >
                   {m.label}
                 </th>
@@ -294,22 +294,22 @@ export function RichFundamentalsTable({ rows }: { rows: Row[] }) {
               return (
                 <tr
                   key={row.symbol}
-                  className="border-b border-border-subtle/50 hover:bg-surface-elevated/40 transition-colors"
+                  className="border-b border-hairline-subtle/50 hover:bg-surface-elevated/40 transition-colors"
                 >
                   <td className="px-3 py-2">
                     <Link
                       href={`/asset/${row.symbol}`}
-                      className="flex items-center gap-2 hover:text-accent"
+                      className="flex items-center gap-2 hover:text-brand-bright"
                     >
                       <span className="font-mono font-semibold">{row.symbol}</span>
                       {fund?.targetMeanPrice && (
-                        <span className="text-[10px] text-text-muted">
+                        <span className="text-[10px] text-muted">
                           →
                         </span>
                       )}
                     </Link>
                   </td>
-                  <td className="text-right px-3 py-2 font-mono tabular-nums text-text-secondary">
+                  <td className="text-right px-3 py-2 font-mono tabular-nums text-body">
                     {(row.weight * 100).toFixed(1)}%
                   </td>
                   {METRIC_DEFS.map((m) => {
@@ -318,7 +318,7 @@ export function RichFundamentalsTable({ rows }: { rows: Row[] }) {
                     return (
                       <td
                         key={m.key}
-                        className="text-right px-3 py-2 font-mono tabular-nums text-xs cursor-pointer hover:bg-surface-elevated"
+                        className="text-right px-3 py-2 font-mono tabular-nums text-xs cursor-pointer hover:bg-surface-elevated/60"
                         onClick={() =>
                           setPopup({
                             ticker: row.symbol,
@@ -331,7 +331,7 @@ export function RichFundamentalsTable({ rows }: { rows: Row[] }) {
                         title="Clique para ver histórico"
                       >
                         {isLoading ? (
-                          <span className="text-text-muted">…</span>
+                          <span className="text-muted">…</span>
                         ) : value != null ? (
                           <span
                             className={cn(
@@ -345,7 +345,7 @@ export function RichFundamentalsTable({ rows }: { rows: Row[] }) {
                             {isGood === false && <ArrowDownRight className="w-3 h-3" />}
                           </span>
                         ) : (
-                          <span className="text-text-muted">—</span>
+                          <span className="text-muted">—</span>
                         )}
                       </td>
                     );

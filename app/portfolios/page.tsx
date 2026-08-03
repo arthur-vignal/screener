@@ -5,6 +5,10 @@ import useSWR from "swr";
 import Link from "next/link";
 import { ArrowRight, Plus, Lock, Globe, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/page-header";
+import { Tabs } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 type Portfolio = {
   id: number;
@@ -138,7 +142,7 @@ const PLATFORM_PORTFOLIOS: PortfolioWithMeta[] = [
       { symbol: "EXPO", weight: 0.08 },
       { symbol: "UFPI", weight: 0.07 },
       { symbol: "ASO", weight: 0.07 },
-      { symbol: "THR...", weight: 0.06 },
+      { symbol: "THR", weight: 0.06 },
     ],
   },
 ];
@@ -170,75 +174,129 @@ export default function PortfoliosPage() {
     if (!user && tab === "mine") setTab("platform");
   }, [user, tab]);
 
-  const tabs: { id: Tab; label: string; count: number; icon: typeof UserIcon }[] = [
-    { id: "mine", label: "Meus portfolios", count: mine.length, icon: UserIcon },
-    { id: "library", label: "Biblioteca", count: library.length, icon: Globe },
-    { id: "platform", label: "Plataforma", count: PLATFORM_PORTFOLIOS.length, icon: Lock },
+  const tabs: { id: Tab; label: string; count: number }[] = [
+    { id: "mine", label: "Meus portfolios", count: mine.length },
+    { id: "library", label: "Biblioteca", count: library.length },
+    { id: "platform", label: "Plataforma", count: PLATFORM_PORTFOLIOS.length },
   ];
 
   return (
-    <div className="px-8 py-8 max-w-7xl">
-      {/* Header */}
-      <div className="mb-6 flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight mb-1">Portfolios</h1>
-          <p className="text-sm text-text-secondary">
-            Crie portfolios com data retroativa e veja performance histórica real.
-          </p>
-        </div>
-        {user && (
-          <Link
-            href="/portfolios/new"
-            className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
-          >
-            <Plus className="w-4 h-4" />
-            Novo portfolio
-          </Link>
+    <div className="px-6 md:px-10 py-8 md:py-12 max-w-7xl">
+      <PageHeader
+        title="Portfolios"
+        description="Crie portfolios com data retroativa e veja performance histórica real."
+        actions={
+          user && (
+            <ButtonLink href="/portfolios/new" className="hidden md:inline-flex">
+              <Plus className="w-4 h-4" />
+              Novo portfolio
+            </ButtonLink>
+          )
+        }
+      />
+
+      {/* Mobile floating action — keep visible on small screens */}
+      {user && (
+        <Link
+          href="/portfolios/new"
+          className="md:hidden flex items-center justify-center gap-2 mb-4 w-full bg-brand text-on-brand rounded-md py-2.5 text-sm font-medium press hover:bg-brand-bright transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Novo portfolio
+        </Link>
+      )}
+
+      {/* Custom tabs to keep icon support */}
+      <TabBar tabs={tabs} tab={tab} setTab={setTab} user={user} />
+
+      <div className="mt-6">
+        {tab === "mine" && (
+          <PortfolioGrid
+            portfolios={mine}
+            emptyMessage={user ? "Você ainda não criou portfolios." : "Faça login para criar portfolios."}
+            showOwner={false}
+          />
+        )}
+        {tab === "library" && (
+          <PortfolioGrid
+            portfolios={library}
+            emptyMessage="Nenhum portfolio público na biblioteca ainda."
+            showOwner
+          />
+        )}
+        {tab === "platform" && (
+          <PortfolioGrid
+            portfolios={PLATFORM_PORTFOLIOS}
+            emptyMessage=""
+            showOwner={false}
+            platformOwned
+          />
         )}
       </div>
+    </div>
+  );
+}
 
-      {/* Tabs */}
-      <div className="border-b border-border-subtle mb-6">
-        <div className="flex gap-1">
-          {tabs.map((t) => {
-            const Icon = t.icon;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                disabled={t.id === "mine" && !user}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px",
-                  tab === t.id
-                    ? "border-foreground text-foreground"
-                    : "border-transparent text-text-muted hover:text-foreground",
-                  t.id === "mine" && !user && "opacity-50 cursor-not-allowed",
-                )}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {t.label}
-                <span className="ml-1 text-xs text-text-muted">({t.count})</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+function ButtonLink({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link href={href} className={className}>
+      <span className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-md bg-brand text-on-brand hover:bg-brand-bright transition-colors press text-sm font-medium">
+        {children}
+      </span>
+    </Link>
+  );
+}
 
-      {/* Tab content */}
-      {tab === "mine" && (
-        <PortfolioGrid portfolios={mine} emptyMessage={user ? "Você ainda não criou portfolios." : "Faça login para criar portfolios."} showOwner={false} />
-      )}
-      {tab === "library" && (
-        <PortfolioGrid portfolios={library} emptyMessage="Nenhum portfolio público na biblioteca ainda." showOwner />
-      )}
-      {tab === "platform" && (
-        <PortfolioGrid
-          portfolios={PLATFORM_PORTFOLIOS}
-          emptyMessage=""
-          showOwner={false}
-          platformOwned
-        />
-      )}
+function TabBar({
+  tabs,
+  tab,
+  setTab,
+  user,
+}: {
+  tabs: { id: Tab; label: string; count: number }[];
+  tab: Tab;
+  setTab: (t: Tab) => void;
+  user: { userId: string; username: string } | null;
+}) {
+  const icons: Record<Tab, typeof UserIcon> = {
+    mine: UserIcon,
+    library: Globe,
+    platform: Lock,
+  };
+  return (
+    <div className="relative border-b border-hairline">
+      <nav className="flex gap-1 overflow-x-auto">
+        {tabs.map((t) => {
+          const Icon = icons[t.id];
+          const active = tab === t.id;
+          const disabled = t.id === "mine" && !user;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              disabled={disabled}
+              className={cn(
+                "relative flex items-center gap-2 px-4 py-2.5 text-sm whitespace-nowrap transition-colors duration-150 press",
+                active ? "text-ink font-medium" : "text-muted hover:text-ink",
+                disabled && "opacity-40 cursor-not-allowed",
+              )}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {t.label}
+              <span className="text-xs text-muted">({t.count})</span>
+              {active && <span className="tab-indicator left-0 right-0" />}
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 }
@@ -256,7 +314,7 @@ function PortfolioGrid({
 }) {
   if (portfolios.length === 0) {
     return (
-      <div className="text-center py-12 text-sm text-text-muted">
+      <div className="text-center py-16 text-sm text-muted animate-fade-up">
         {emptyMessage || "Nenhum portfolio encontrado."}
       </div>
     );
@@ -264,54 +322,56 @@ function PortfolioGrid({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {portfolios.map((p) => (
+      {portfolios.map((p, i) => (
         <Link
           key={p.id}
           href={`/portfolios/${p.slug}`}
-          className="rounded-lg border border-border bg-surface p-5 hover:border-foreground transition-colors group"
+          className="panel p-5 hover-lift group animate-fade-up"
+          style={{ animationDelay: `${i * 60}ms` }}
         >
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="font-semibold text-foreground group-hover:text-accent transition-colors">
+          <div className="flex items-start justify-between mb-2.5">
+            <h3 className="font-semibold text-ink group-hover:text-brand-bright transition-colors duration-150">
               {p.name}
             </h3>
             {showOwner && p.owner && (
-              <span className="text-xs text-text-muted">@{p.owner}</span>
+              <span className="text-xs text-muted">@{p.owner}</span>
             )}
             {platformOwned && (
-              <span className="text-xs px-2 py-0.5 rounded bg-accent/20 text-accent">
-                Platform
-              </span>
+              <Badge tone="brand">Platform</Badge>
             )}
           </div>
-          <p className="text-sm text-text-secondary mb-3 line-clamp-2">{p.description}</p>
+          <p className="text-sm text-body mb-3 line-clamp-2 leading-relaxed">
+            {p.description}
+          </p>
           {p.criterion && (
-            <p className="text-xs text-text-muted mb-3 italic">{p.criterion}</p>
+            <p className="text-xs text-muted mb-3 italic">{p.criterion}</p>
           )}
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               {p.riskLevel && (
-                <span
-                  className={cn(
-                    "px-2 py-0.5 rounded text-[10px] font-medium uppercase",
-                    p.riskLevel === "conservative" && "bg-positive/20 text-positive",
-                    p.riskLevel === "moderate" && "bg-yellow-500/20 text-yellow-400",
-                    p.riskLevel === "aggressive" && "bg-negative/20 text-negative",
-                  )}
+                <Badge
+                  tone={
+                    p.riskLevel === "conservative"
+                      ? "positive"
+                      : p.riskLevel === "moderate"
+                      ? "warning"
+                      : "negative"
+                  }
                 >
                   {p.riskLevel}
-                </span>
+                </Badge>
               )}
-              <span className="text-text-muted">{p.constituents.length} ativos</span>
+              <span className="text-muted">{p.constituents.length} ativos</span>
             </div>
             {p.ytdReturn != null && (
-              <span className="font-mono tabular-nums text-positive">
+              <span className="font-tabular text-positive font-semibold">
                 +{p.ytdReturn.toFixed(1)}%
               </span>
             )}
           </div>
-          <div className="mt-4 flex items-center justify-end text-xs text-text-muted group-hover:text-foreground transition-colors">
+          <div className="mt-4 flex items-center justify-end text-xs text-muted group-hover:text-ink transition-colors duration-150">
             Ver detalhes
-            <ArrowRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-3 h-3 ml-1 icon-rotate-hover" />
           </div>
         </Link>
       ))}
