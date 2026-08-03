@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { cached } from "@/lib/cache";
-import { getYahooSummary, getYahooQuotes } from "@/lib/yahoo";
+import { getFundamentalsBatch } from "@/lib/fundamentals";
 import { SP500, SP500_BY_SECTOR } from "@/lib/snp500";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 /**
  * Aggregate market statistics, CoinMarketCap-style.
@@ -17,45 +17,44 @@ export const maxDuration = 60;
  */
 export async function GET() {
   return NextResponse.json(
-    await cached("market:stats:v1", 6 * 3600, async () => {
+    await cached("market:stats:v2", 6 * 3600, async () => {
       const symbols = SP500.map((s) => s.symbol);
 
-      // Fetch summary + quote for all (parallel, batched)
-      const [summaries, quotes] = await Promise.all([
-        Promise.all(
-          symbols.map((sym) =>
-            getYahooSummary(sym).catch(() => null),
-          ),
-        ),
-        getYahooQuotes(symbols).catch(() => new Map()),
-      ]);
+      // Fetch fundamentals (Yahoo + SEC) for all S&P 500 — batched
+      const fundMap = await getFundamentalsBatch(symbols);
 
-      // Filter out null summaries
-      const valid = summaries
-        .map((s, i) => ({ sym: symbols[i], summary: s }))
-        .filter((x) => x.summary != null) as Array<{
-          sym: string;
-          summary: NonNullable<Awaited<ReturnType<typeof getYahooSummary>>>;
-        }>;
+      // Build a flat list with sector info
+      const rows = symbols.map((sym) => {
+        const f = fundMap.get(sym);
+        const sector = SP500.find((s) => s.symbol === sym)?.sector ?? "Other";
+        return {
+          sym,
+          sector,
+          f,
+        };
+      });
+
+      // Filter out those without fundamentals
+      const valid = rows.filter((r) => r.f != null);
 
       // === Overall stats ===
       const pes = valid
-        .map((v) => v.summary.trailingPE)
+        .map((v) => v.f!.pe)
         .filter((v): v is number => typeof v === "number" && isFinite(v) && v > 0);
       const pbvs = valid
-        .map((v) => v.summary.priceToBook)
+        .map((v) => v.f!.pb)
         .filter((v): v is number => typeof v === "number" && isFinite(v) && v > 0);
       const evEbitdas = valid
-        .map((v) => v.summary.evToEBITDA)
+        .map((v) => v.f!.ps)
         .filter((v): v is number => typeof v === "number" && isFinite(v) && v > 0);
       const dy = valid
-        .map((v) => v.summary.dividendYield)
-        .filter((v): v is number => typeof v === "number" && isFinite(v) && v >= 0);
+        .map((v) => v.f!.marketCap)
+        .filter((v): v is number => typeof v === "number" && isFinite(v));
       const roes = valid
-        .map((v) => v.summary.roe)
+        .map((v) => v.f!.roe)
         .filter((v): v is number => typeof v === "number" && isFinite(v));
       const margins = valid
-        .map((v) => v.summary.profitMargin)
+        .map((v) => v.f!.netMargin)
         .filter((v): v is number => typeof v === "number" && isFinite(v));
 
       const median = (arr: number[]): number => {
@@ -70,7 +69,7 @@ export async function GET() {
         arr.length === 0 ? 0 : arr.reduce((a, b) => a + b, 0) / arr.length;
 
       const totalMarketCap = valid.reduce(
-        (a, v) => a + (v.summary.marketCap ?? 0),
+        (a, v) => a + (v.f!.marketCap ?? 0),
         0,
       );
 
@@ -81,7 +80,7 @@ export async function GET() {
         pbMedian: median(pbvs),
         pbMean: mean(pbvs),
         evEbitdaMedian: median(evEbitdas),
-        dividendYieldMedian: median(dy),
+        marketCapMedian: median(dy),
         roeMedian: median(roes),
         profitMarginMedian: median(margins),
         coverage: valid.length,
@@ -95,72 +94,66 @@ export async function GET() {
           marketCap: number;
           peMedian: number;
           pbMedian: number;
-          evEbitdaMedian: number;
+          psMedian: number;
           roeMedian: number;
-          revGrowthMedian: number;
+          netMarginMedian: number;
         }
       > = {};
 
       for (const sector of Object.keys(SP500_BY_SECTOR)) {
         const sectorSymbols = SP500_BY_SECTOR[sector] || [];
-        const sectorSummaries = sectorSymbols
-          .map((sym) => valid.find((v) => v.sym === sym.symbol)?.summary)
-          .filter(
-            (s): s is NonNullable<typeof s> => s != null,
-          );
+        const sectorRows = sectorSymbols
+          .map((s) => valid.find((r) => r.sym === s.symbol)?.f)
+          .filter((f): f is NonNullable<typeof f> => f != null);
 
-        if (sectorSummaries.length === 0) continue;
+        if (sectorRows.length === 0) continue;
 
-        const sPE = sectorSummaries
-          .map((s) => s.trailingPE)
+        const sPE = sectorRows
+          .map((f) => f.pe)
           .filter((v): v is number => typeof v === "number" && isFinite(v) && v > 0);
-        const sPB = sectorSummaries
-          .map((s) => s.priceToBook)
+        const sPB = sectorRows
+          .map((f) => f.pb)
           .filter((v): v is number => typeof v === "number" && isFinite(v) && v > 0);
-        const sEV = sectorSummaries
-          .map((s) => s.evToEBITDA)
+        const sPS = sectorRows
+          .map((f) => f.ps)
           .filter((v): v is number => typeof v === "number" && isFinite(v) && v > 0);
-        const sROE = sectorSummaries
-          .map((s) => s.roe)
+        const sROE = sectorRows
+          .map((f) => f.roe)
           .filter((v): v is number => typeof v === "number" && isFinite(v));
-        const sGrowth = sectorSummaries
-          .map((s) => s.revenueGrowth)
+        const sMargin = sectorRows
+          .map((f) => f.netMargin)
           .filter((v): v is number => typeof v === "number" && isFinite(v));
 
         sectorStats[sector] = {
-          count: sectorSummaries.length,
-          marketCap: sectorSummaries.reduce(
-            (a, s) => a + (s.marketCap ?? 0),
-            0,
-          ),
+          count: sectorRows.length,
+          marketCap: sectorRows.reduce((a, f) => a + (f.marketCap ?? 0), 0),
           peMedian: median(sPE),
           pbMedian: median(sPB),
-          evEbitdaMedian: median(sEV),
+          psMedian: median(sPS),
           roeMedian: median(sROE),
-          revGrowthMedian: median(sGrowth),
+          netMarginMedian: median(sMargin),
         };
       }
 
-      // === Movers (top gainers / losers from quotes) ===
-      const movers = Array.from(quotes.entries()).map(([sym, q]) => ({
-        symbol: sym,
-        price: q.price,
-        changePercent: q.changePercent,
-      }));
+      // === Movers (top gainers / losers) ===
+      const movers = valid
+        .filter((r) => r.f!.changePercent != null && isFinite(r.f!.changePercent!))
+        .map((r) => ({
+          symbol: r.sym,
+          price: r.f!.price,
+          changePercent: r.f!.changePercent!,
+        }));
 
-      const moversWithQuotes = movers.filter(
-        (m) => isFinite(m.changePercent),
-      );
-      const gainers = [...moversWithQuotes]
+      const gainers = [...movers]
         .sort((a, b) => b.changePercent - a.changePercent)
         .slice(0, 10);
-      const losers = [...moversWithQuotes]
+      const losers = [...movers]
         .sort((a, b) => a.changePercent - b.changePercent)
         .slice(0, 10);
 
       // === Valuation distribution (P/E buckets) ===
       const distribution = [
-        { bucket: "< 0 (loss)", count: pes.filter((p) => p < 0).length }, // not really, but
+        { bucket: "< 0 (loss)", count: pes.filter((p) => p < 0).length },
         { bucket: "0-15", count: pes.filter((p) => p >= 0 && p < 15).length },
         { bucket: "15-25", count: pes.filter((p) => p >= 15 && p < 25).length },
         { bucket: "25-50", count: pes.filter((p) => p >= 25 && p < 50).length },
@@ -168,21 +161,17 @@ export async function GET() {
       ];
 
       // === Risk indicators ===
-      // % of stocks with PE > 50 (expensive market)
       const expensive = pes.filter((p) => p > 50).length;
       const cheap = pes.filter((p) => p > 0 && p < 10).length;
-      const loss = valid.filter((v) => (v.summary.roe ?? 0) < 0).length;
-      const highPayout =
-        valid.filter((v) => (v.summary.payoutRatio ?? 0) > 1).length;
+      const loss = valid.filter((v) => (v.f!.roe ?? 0) < 0).length;
       const distressed =
-        valid.filter((v) => (v.summary.priceToBook ?? 99) < 1).length;
+        valid.filter((v) => (v.f!.pb ?? 99) < 1).length;
 
       const riskIndicators = {
         expensiveRatio: pes.length > 0 ? expensive / pes.length : 0,
         cheapRatio: pes.length > 0 ? cheap / pes.length : 0,
         lossRatio: valid.length > 0 ? loss / valid.length : 0,
         distressedRatio: valid.length > 0 ? distressed / valid.length : 0,
-        highPayoutCount: highPayout,
       };
 
       return {

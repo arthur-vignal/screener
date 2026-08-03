@@ -27,7 +27,7 @@ export async function GET(
     `SELECT p.id, p.owner_id, p.is_public, p.initial_value, p.created_at, p.name, ph.symbol, ph.weight
      FROM portfolios p
      LEFT JOIN portfolio_holdings ph ON ph.portfolio_id = p.id
-     WHERE p.slug = ? OR p.id = ?`,
+     WHERE p.slug = $1 OR p.id = $2`,
     [id, numericId],
   );
   if (rows.length === 0) return NextResponse.json({ error: "not found" }, { status: 404 });
