@@ -134,6 +134,44 @@ export async function getYahooCandles(
 }
 
 export async function getYahooSummary(ticker: string): Promise<YahooSummary | null> {
+  // Delegate to fundamentals (Yahoo chart + SEC EDGAR)
+  const { getFundamentals } = await import("./fundamentals");
+  const f = await getFundamentals(ticker);
+  if (!f) return null;
+  return {
+    symbol: f.symbol,
+    marketCap: f.marketCap,
+    trailingPE: f.pe,
+    forwardPE: null,
+    priceToBook: f.pb,
+    priceToSales: f.ps,
+    enterpriseValue: null,
+    evToRevenue: null,
+    evToEBITDA: null,
+    profitMargin: f.netMargin,
+    operatingMargin: f.operatingMargin,
+    grossMargin: null,
+    roe: f.roe,
+    roa: null,
+    earningsGrowth: null,
+    revenueGrowth: null,
+    dividendRate: null,
+    dividendYield: null,
+    payoutRatio: null,
+    targetMeanPrice: null,
+    targetHighPrice: null,
+    targetLowPrice: null,
+    analystCount: null,
+    recommendation: null,
+    fiftyTwoWeekHigh: f.fiftyTwoWeekHigh,
+    fiftyTwoWeekLow: f.fiftyTwoWeekLow,
+    esgScore: null,
+    beta: null,
+  };
+}
+
+/** @deprecated Use getFundamentals directly */
+async function _legacySummary(ticker: string): Promise<YahooSummary | null> {
   return cached("yahoo:summary:" + ticker, 3600, async () => {
     // Use /v8/finance/chart which works without auth — has price + 52w range.
     // Fundamentals (P/E, P/VP, etc) need /quoteSummary which requires crumb cookie.
