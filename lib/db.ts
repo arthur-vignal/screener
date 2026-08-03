@@ -1,8 +1,8 @@
 /**
  * Supabase Postgres database helpers.
  *
- * Uses a stored function `exec_sql(text, jsonb)` defined in the migration.
- * Run that migration in Supabase SQL Editor before using this.
+ * Uses @supabase/supabase-js client with the `exec_sql` RPC function.
+ * Run the migrations in supabase/migrations/ before using.
  *
  * Usage: only in server-side code (API routes, server components).
  */
@@ -13,6 +13,7 @@ export type Row = Record<string, unknown>;
 
 /**
  * Run SQL and return rows as array of objects.
+ * Uses the `exec_sql` RPC function defined in the migration.
  */
 export async function query<T = Row>(
   sql: string,
@@ -21,10 +22,10 @@ export async function query<T = Row>(
   const sb = supabaseAdmin();
   const { data, error } = await sb.rpc("exec_sql", {
     sql_text: sql,
-    sql_args: JSON.stringify(args),
+    sql_args: args, // pass as array, NOT as JSON string
   });
   if (error) throw new Error(`query failed: ${error.message}`);
-  if (data && typeof data === "object" && "error" in data) {
+  if (data && typeof data === "object" && "error" in data && !Array.isArray(data)) {
     throw new Error(`query failed: ${(data as { error: string }).error}`);
   }
   if (!Array.isArray(data)) return [];
@@ -44,28 +45,25 @@ export async function queryOne<T = Row>(
 
 /**
  * Run an INSERT/UPDATE/DELETE.
- * For RETURNING, use `query` instead (exec_sql supports it).
+ * Returns rows + lastInsertRowid.
  */
 export async function exec(
   sql: string,
   args: unknown[] = [],
 ): Promise<{ lastInsertRowid: number | string | null; changes: number; rows?: Row[] }> {
-  // Use query() so we can get the rows back (whether RETURNING or not)
   const rows = await query(sql, args);
   const lastRow = rows[rows.length - 1];
   return {
     lastInsertRowid:
-      (lastRow?.id as number | string | undefined) ??
-      (lastRow?.id as number | string | undefined) ??
-      null,
+      (lastRow?.id as number | string | undefined) ?? null,
     changes: rows.length,
     rows,
   };
 }
 
 /**
- * Run multiple statements (sequential, not atomic).
- * For atomicity, create a single SQL function.
+ * Run multiple statements sequentially.
+ * Not atomic — wrap in a Postgres function for atomicity.
  */
 export async function batch(
   statements: Array<{ sql: string; args?: unknown[] }>,

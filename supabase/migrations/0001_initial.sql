@@ -120,20 +120,29 @@ SET search_path = public
 AS $$
 DECLARE
   result JSONB;
+  sql_with_args TEXT;
+  arg_count INT;
   i INT;
   arg_value TEXT;
-  sql_with_args TEXT;
 BEGIN
-  -- Replace positional $1, $2, ... with quoted args
   sql_with_args := sql_text;
-  FOR i IN REVERSE 0..jsonb_array_length(sql_args) - 1 LOOP
-    arg_value := jsonb_extract_path_text(sql_args, (i + 1)::text);
+  arg_count := jsonb_array_length(sql_args);
+
+  -- Iterate backwards from N to 1 (replace $N first, then $N-1, etc.)
+  FOR i IN REVERSE arg_count .. 1 LOOP
+    arg_value := jsonb_extract_path_text(sql_args, i::text);
+
+    -- If key has spaces or special chars, look up by numeric string
+    IF arg_value IS NULL AND jsonb_typeof(sql_args -> (i - 1)::text) IS NOT NULL THEN
+      arg_value := jsonb_extract_path_text(sql_args, (i - 1)::text);
+    END IF;
+
     IF arg_value IS NULL OR arg_value = '' THEN
-      sql_with_args := REPLACE(sql_with_args, '$' || (i + 1)::text, 'NULL');
+      sql_with_args := REPLACE(sql_with_args, '$' || i::text, 'NULL');
     ELSIF arg_value ~ '^-?[0-9]+(\.[0-9]+)?$' THEN
-      sql_with_args := REPLACE(sql_with_args, '$' || (i + 1)::text, arg_value);
+      sql_with_args := REPLACE(sql_with_args, '$' || i::text, arg_value);
     ELSE
-      sql_with_args := REPLACE(sql_with_args, '$' || (i + 1)::text, '''' || REPLACE(arg_value, '''', '''''') || '''');
+      sql_with_args := REPLACE(sql_with_args, '$' || i::text, '''' || REPLACE(arg_value, '''', '''''') || '''');
     END IF;
   END LOOP;
 
