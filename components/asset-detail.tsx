@@ -180,27 +180,46 @@ export function AssetDetail({ ticker }: { ticker: string }) {
         <div className="space-y-6">
           <AssetScores ticker={data.ticker} />
           <FundamentalsPanel
+          ticker={data.ticker}
           metrics={[
-            { label: "P/E", key: "peRatio", suffix: "" },
-            { label: "P/VP", key: "priceToBook", suffix: "" },
-            { label: "PEG", key: "pegRatio", suffix: "" },
-            { label: "EV/EBITDA", key: "evEbitda", suffix: "" },
-            { label: "EV/Receita", key: "evRevenue", suffix: "" },
+            // Valuation
+            { label: "P/L (P/E)", key: "peRatio" },
+            { label: "P/VP (P/B)", key: "priceToBook" },
+            { label: "P/Receita (PSR)", key: "priceToSales" },
+            { label: "EV/EBITDA", key: "evEbitda" },
+            { label: "EV/EBIT", key: "evEbit" },
+            { label: "EV/Receita", key: "evRevenue" },
+            { label: "P/EBITDA", key: "pebitda" },
+            { label: "P/EBIT", key: "pebit" },
+            { label: "P/Ativo", key: "priceToAssets" },
+            { label: "P/Ativo Circ. Liq.", key: "priceToCurrentAssets" },
+            { label: "P/Cap.Giro", key: "priceToWorkingCapital" },
+            { label: "LPA", key: "eps", prefix: "$" },
+            { label: "VPA", key: "bookValuePerShare", prefix: "$" },
+            // Efficiency
+            { label: "Margem Bruta", key: "grossMargin", suffix: "%" },
+            { label: "Margem EBITDA", key: "ebitdaMargin", suffix: "%" },
+            { label: "Margem EBIT", key: "operatingMargin", suffix: "%" },
+            { label: "Margem Líquida", key: "profitMargin", suffix: "%" },
+            { label: "Giro Ativos", key: "assetTurnover" },
+            // Profitability
             { label: "ROE", key: "roe", suffix: "%" },
-            { label: "ROA", key: "roa", suffix: "%" },
             { label: "ROIC", key: "roic", suffix: "%" },
-            { label: "Margem bruta", key: "grossMargin", suffix: "%" },
-            { label: "Margem operacional", key: "operatingMargin", suffix: "%" },
-            { label: "Margem líquida", key: "profitMargin", suffix: "%" },
-            { label: "FCF Yield", key: "freeCashFlowYield", suffix: "%" },
-            { label: "EPS", key: "eps", suffix: "", prefix: "$" },
-            { label: "Receita / ação", key: "revenuePerShare", suffix: "", prefix: "$" },
-            { label: "Book value / ação", key: "bookValuePerShare", suffix: "", prefix: "$" },
-            { label: "Dividend yield", key: "dividendYield", suffix: "%" },
-            { label: "Payout ratio", key: "payoutRatio", suffix: "%" },
-            { label: "Beta", key: "beta", suffix: "" },
-            { label: "52w high", key: "yearHigh", prefix: "$" },
-            { label: "52w low", key: "yearLow", prefix: "$" },
+            { label: "ROA", key: "roa", suffix: "%" },
+            // Risk
+            { label: "Dívida/EBITDA", key: "debtToEbitda" },
+            { label: "Dívida/PL", key: "debtToEquity" },
+            { label: "Liquidez Corrente", key: "currentRatio" },
+            { label: "Beta", key: "beta" },
+            // Growth
+            { label: "CAGR Receita", key: "revenueGrowth", suffix: "%" },
+            { label: "CAGR Lucros", key: "earningsGrowth", suffix: "%" },
+            // Dividends
+            { label: "Dividend Yield", key: "dividendYield", suffix: "%" },
+            { label: "Payout", key: "payoutRatio", suffix: "%" },
+            // Quality scores
+            { label: "Piotroski F-Score", key: "piotroskiF" },
+            { label: "Altman Z-Score", key: "altmanZ" },
           ].map((m) => {
             const raw = (data.metrics as Record<string, number | null>)[m.key];
             if (raw == null) return null;

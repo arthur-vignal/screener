@@ -75,6 +75,13 @@ type YahooChartMeta = {
   symbol: string;
   chartPreviousClose?: number;
   previousClose?: number;
+  fiftyTwoWeekHigh?: number;
+  fiftyTwoWeekLow?: number;
+  regularMarketVolume?: number;
+  regularMarketDayHigh?: number;
+  regularMarketDayLow?: number;
+  longName?: string;
+  shortName?: string;
 };
 
 type YahooChartResponse = {
@@ -109,10 +116,8 @@ export async function getYahooCandles(
     const r = await fetchYahoo(`/v8/finance/chart/${encodeURIComponent(ticker)}`, { range, interval });
     if (!r.ok) throw new Error("yahoo " + r.status);
     const data = (await r.json()) as YahooChartResponse;
-    if (data.chart.error) throw new Error("yahoo: " + data.chart.error.description);
     const result = data.chart.result?.[0];
     if (!result) throw new Error("yahoo: no data");
-
     const q = result.indicators.quote[0];
     const a = result.indicators.adjclose?.[0]?.adjclose ?? q.close;
     return result.timestamp.map((ts, i) => ({
@@ -128,98 +133,54 @@ export async function getYahooCandles(
   });
 }
 
-export async function getYahooQuote(ticker: string): Promise<YahooQuote | null> {
-  return cached("yahoo:quote:" + ticker, 60, async () => {
-    const r = await fetchYahoo("/v8/finance/chart/" + encodeURIComponent(ticker), { range: "1d", interval: "1d" });
-    if (!r.ok) return null;
-    const data = (await r.json()) as YahooChartResponse;
-    const result = data.chart.result?.[0];
-    if (!result) return null;
-    const meta = result.meta;
-    const last = result.timestamp.length - 1;
-    const q = result.indicators.quote[0];
-    const price = meta.regularMarketPrice ?? q.close[last] ?? 0;
-    const prevClose = q.close[last - 1] ?? meta.chartPreviousClose ?? price;
-    return {
-      symbol: meta.symbol,
-      price,
-      change: price - prevClose,
-      changePercent: ((price - prevClose) / prevClose) * 100,
-      currency: meta.currency,
-      marketState: meta.regularMarketPrice ? "REGULAR" : "CLOSED",
-      dayHigh: q.high[last] ?? 0,
-      dayLow: q.low[last] ?? 0,
-      dayOpen: q.open[last] ?? 0,
-      prevClose,
-      volume: q.volume[last] ?? 0,
-    };
-  });
-}
-
 export async function getYahooSummary(ticker: string): Promise<YahooSummary | null> {
   return cached("yahoo:summary:" + ticker, 3600, async () => {
-    const r = await fetchYahoo("/v10/finance/quoteSummary/" + encodeURIComponent(ticker), {
-      modules: "defaultKeyStatistics,financialData,summaryDetail,recommendationTrend,esgScores",
-    });
-    if (!r.ok) return null;
-    const data = (await r.json()) as {
-      quoteSummary?: {
-        result?: Array<Record<string, unknown>>;
+    // Use /v8/finance/chart which works without auth — has price + 52w range.
+    // Fundamentals (P/E, P/VP, etc) need /quoteSummary which requires crumb cookie.
+    // For now we approximate from chart meta + return null for ratios.
+    try {
+      const r = await fetchYahoo("/v8/finance/chart/" + encodeURIComponent(ticker), {
+        range: "1d",
+        interval: "1d",
+      });
+      if (!r.ok) return null;
+      const data = (await r.json()) as YahooChartResponse;
+      const result = data.chart.result?.[0];
+      if (!result) return null;
+      const meta = result.meta;
+      return {
+        symbol: ticker,
+        marketCap: null,
+        trailingPE: null,
+        forwardPE: null,
+        priceToBook: null,
+        priceToSales: null,
+        enterpriseValue: null,
+        evToRevenue: null,
+        evToEBITDA: null,
+        profitMargin: null,
+        operatingMargin: null,
+        grossMargin: null,
+        roe: null,
+        roa: null,
+        earningsGrowth: null,
+        revenueGrowth: null,
+        dividendRate: null,
+        dividendYield: null,
+        payoutRatio: null,
+        targetMeanPrice: null,
+        targetHighPrice: null,
+        targetLowPrice: null,
+        analystCount: null,
+        recommendation: null,
+        fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh ?? null,
+        fiftyTwoWeekLow: meta.fiftyTwoWeekLow ?? null,
+        esgScore: null,
+        beta: null,
       };
-    };
-    const result = data.quoteSummary?.result?.[0];
-    if (!result) return null;
-
-    const num = (v: unknown): number | null => {
-      if (v && typeof v === "object" && "raw" in v) {
-        const raw = (v as { raw: number }).raw;
-        return typeof raw === "number" ? raw : null;
-      }
+    } catch {
       return null;
-    };
-    const str = (v: unknown): string | null => {
-      if (v && typeof v === "object" && "fmt" in v) {
-        const fmt = (v as { fmt: string }).fmt;
-        return typeof fmt === "string" ? fmt : null;
-      }
-      return null;
-    };
-
-    const defaultKey = (result.defaultKeyStatistics ?? {}) as Record<string, unknown>;
-    const financial = (result.financialData ?? {}) as Record<string, unknown>;
-    const summary = (result.summaryDetail ?? {}) as Record<string, unknown>;
-    const esg = (result.esgScores ?? {}) as Record<string, unknown>;
-
-    return {
-      symbol: ticker,
-      marketCap: num(defaultKey.marketCap) ?? num(summary.marketCap),
-      trailingPE: num(summary.trailingPE),
-      forwardPE: num(defaultKey.forwardPE),
-      priceToBook: num(defaultKey.priceToBook),
-      priceToSales: num(summary.priceToSalesTrailing12Months),
-      enterpriseValue: num(defaultKey.enterpriseValue),
-      evToRevenue: num(defaultKey.evToRevenue),
-      evToEBITDA: num(defaultKey.enterpriseToEbitda),
-      profitMargin: num(financial.profitMargins),
-      operatingMargin: num(financial.operatingMargins),
-      grossMargin: num(financial.grossMargins),
-      roe: num(financial.returnOnEquity),
-      roa: num(financial.returnOnAssets),
-      earningsGrowth: num(financial.earningsGrowth),
-      revenueGrowth: num(financial.revenueGrowth),
-      dividendRate: num(summary.dividendRate),
-      dividendYield: num(summary.dividendYield),
-      payoutRatio: num(summary.payoutRatio),
-      targetMeanPrice: num(financial.targetMeanPrice),
-      targetHighPrice: num(financial.targetHighPrice),
-      targetLowPrice: num(financial.targetLowPrice),
-      analystCount: num(financial.numberOfAnalystOpinions),
-      recommendation: str(financial.recommendationKey),
-      fiftyTwoWeekHigh: num(summary.fiftyTwoWeekHigh),
-      fiftyTwoWeekLow: num(summary.fiftyTwoWeekLow),
-      esgScore: num(esg.totalEsg),
-      beta: num(defaultKey.beta),
-    };
+    }
   });
 }
 

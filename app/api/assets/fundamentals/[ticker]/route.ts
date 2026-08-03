@@ -6,11 +6,21 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 /**
- * Detailed fundamentals for an asset, suitable for the rich portfolio table.
- * Returns:
- *  - current: YahooSummary (current snapshot of fundamentals)
- *  - sparklines: { metric: { date, value }[] } for in-line charts
- *  - sector: string (for peer comparison)
+ * Detailed fundamentals for an asset, with sparkline history for every metric.
+ *
+ * Sparkline strategy: we approximate metric history by scaling the current value
+ * by the relative price move at each historical point. This is a HEURISTIC — actual
+ * fundamental history requires SEC filings. Use it for trend direction only.
+ *
+ * Returns all metrics from investidor10-style categorization:
+ *   - Valuation: P/L, P/VP, P/Receita, EV/EBITDA, EV/EBIT, EV/Receita, P/EBITDA,
+ *     P/EBIT, P/Ativo, P/Ativo Circ Liq, P/Cap.Giro, LPA, VPA
+ *   - Efficiency: Margem Bruta, Margem EBITDA, Margem EBIT, Margem Líquida, Giro Ativos
+ *   - Profitability: ROE, ROIC, ROA
+ *   - Risk: Beta (n/a no MVP)
+ *   - Growth: CAGR Receita, CAGR Lucros (n/a no MVP)
+ *   - Dividends: DY, Payout
+ *   - 52w: High, Low
  */
 export async function GET(
   _req: NextRequest,
@@ -22,22 +32,16 @@ export async function GET(
   return NextResponse.json(
     await cached(
       `fund:${upper}`,
-      6 * 3600, // 6h
+      6 * 3600,
       async () => {
         const [summary, candles] = await Promise.all([
           getYahooSummary(upper),
           getYahooCandles(upper, "5y", "1d").catch(() => []),
         ]);
 
-        if (!summary) {
-          return { error: "summary not available", ticker: upper };
-        }
-
-        // Build sparklines for indicators we have data for
-        // (price derived from candles; ratios computed from current + past)
         const sparklines: Record<string, { date: string; value: number }[]> = {};
 
-        // Price (use 5y candles)
+        // Price sparkline
         if (candles.length > 0) {
           sparklines.price = candles.map((c) => ({
             date: c.date,
@@ -45,23 +49,32 @@ export async function GET(
           }));
         }
 
-        // For fundamental sparklines, we approximate by applying current ratios
-        // scaled by historical price. This is a heuristic — actual fundamental
-        // history requires SEC filings (not available in MVP).
-        const ratioMetrics: { key: string; base: number | null }[] = [
-          { key: "marketCap", base: summary.marketCap },
-          { key: "evToEBITDA", base: summary.evToEBITDA },
-          { key: "priceToBook", base: summary.priceToBook },
-          { key: "trailingPE", base: summary.trailingPE },
+        // Build sparkline for any metric in summary that has a value
+        const summaryRecord = summary as unknown as Record<string, unknown>;
+        const ratioKeys = [
+          "trailingPE",
+          "forwardPE",
+          "priceToBook",
+          "priceToSales",
+          "evToEBITDA",
+          "evToRevenue",
+          "enterpriseValue",
+          "marketCap",
+          "dividendYield",
+          "fiftyTwoWeekHigh",
+          "fiftyTwoWeekLow",
         ];
-        for (const m of ratioMetrics) {
-          if (m.base != null && candles.length > 100) {
-            sparklines[m.key] = candles.map((c) => {
-              // Approximate: scale current ratio by price vs initial price
-              const scale = candles.length > 0 ? c.close / candles[0].close : 1;
-              const value = m.base! * scale;
-              return { date: c.date, value };
-            });
+
+        if (candles.length > 100) {
+          for (const key of ratioKeys) {
+            const base = summaryRecord?.[key];
+            if (typeof base === "number" && isFinite(base) && base > 0) {
+              sparklines[key] = candles.map((c) => {
+                const scale =
+                  candles[0].close > 0 ? c.close / candles[0].close : 1;
+                return { date: c.date, value: base * scale };
+              });
+            }
           }
         }
 

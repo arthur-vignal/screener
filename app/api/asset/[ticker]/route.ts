@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFinancials, getProfile, getQuote } from "@/lib/finnhub";
-import { getYahooQuote } from "@/lib/yahoo";
+import { getYahooQuotes } from "@/lib/yahoo";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -13,12 +13,13 @@ export async function GET(
   const ticker = rawTicker.toUpperCase();
 
   try {
-    const [quote, profile, fins, yahoo] = await Promise.all([
+    const [quote, profile, fins, quoteMap] = await Promise.all([
       getQuote(ticker),
       getProfile(ticker),
       getFinancials(ticker),
-      getYahooQuote(ticker),
+      getYahooQuotes([ticker]),
     ]);
+    const yahoo = quoteMap.get(ticker);
 
     if (!quote || !profile) {
       return NextResponse.json(

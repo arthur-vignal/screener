@@ -68,6 +68,18 @@ export default function MarketStatsPage() {
 
       {isLoading || !data ? (
         <div className="text-sm text-text-muted">Carregando…</div>
+      ) : data.overall.coverage === 0 ? (
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-6 text-center">
+          <ShieldAlert className="w-8 h-8 text-yellow-500 mx-auto mb-3" />
+          <h3 className="text-base font-semibold mb-2">Yahoo Finance está limitando as requisições</h3>
+          <p className="text-sm text-text-muted mb-4">
+            Os endpoints que retornam fundamentals completos (P/L, P/VP, ROE, etc) requerem
+            autenticação (crumb cookie). Estamos coletando apenas dados públicos (preço, volume, 52w).
+          </p>
+          <p className="text-xs text-text-muted">
+            As estatísticas serão populadas quando o serviço estiver disponível.
+          </p>
+        </div>
       ) : (
         <div className="space-y-8">
           {/* Overall stats grid */}

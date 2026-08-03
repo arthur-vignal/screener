@@ -1,7 +1,9 @@
 /**
  * Simple in-memory cache with TTL.
  * Per-process; lost on cold start.
- * For shared/persistent cache across instances, use a real database.
+ *
+ * Negative caching: errors/empty results are NOT cached, so transient failures
+ * retry on the next request instead of propagating.
  */
 
 type CacheEntry<T> = {
@@ -10,6 +12,8 @@ type CacheEntry<T> = {
 };
 
 const memStore = new Map<string, CacheEntry<unknown>>();
+
+const EMPTY_MARKER = Symbol("empty");
 
 export async function cached<T>(
   key: string,
@@ -23,6 +27,26 @@ export async function cached<T>(
   }
 
   const value = await fetcher();
+
+  // Don't cache if value is "empty" (null/undefined/empty array/object)
+  const isEmpty =
+    value === null ||
+    value === undefined ||
+    (typeof value === "object" &&
+      !(value instanceof Date) &&
+      Object.keys(value as object).length === 0);
+
+  if (isEmpty) {
+    return value;
+  }
+
+  // Don't cache empty maps where all values are null (Yahoo rate limit case)
+  if (value instanceof Map) {
+    const allNull = Array.from(value.values()).every((v) => v === null);
+    if (allNull && value.size > 0) {
+      return value;
+    }
+  }
 
   memStore.set(key, { value, expiresAt: now + ttlSeconds * 1000 });
   return value;
