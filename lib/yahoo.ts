@@ -261,3 +261,69 @@ export async function getYahooHoldings(ticker: string): Promise<YahooHolding[]> 
       .slice(0, 10);
   });
 }
+
+
+/**
+ * Batch quote via Yahoo Spark (1 request for many symbols).
+ * Returns Map<symbol, YahooQuote>.
+ */
+export async function getYahooQuotes(
+  symbols: string[],
+): Promise<Map<string, YahooQuote>> {
+  const result = new Map<string, YahooQuote>();
+  if (symbols.length === 0) return result;
+  const key = `yahoo:quotes:${symbols.sort().join(",")}`;
+  return cached(key, 60, async () => {
+    // Yahoo Spark supports up to ~50 symbols per request
+    const batches: string[][] = [];
+    for (let i = 0; i < symbols.length; i += 50) {
+      batches.push(symbols.slice(i, i + 50));
+    }
+    const all = new Map<string, YahooQuote>();
+    for (const batch of batches) {
+      try {
+        const url = `https://query1.finance.yahoo.com/v7/finance/spark?symbols=${encodeURIComponent(batch.join(","))}&range=1d&interval=1d`;
+        const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+        if (!r.ok) continue;
+        const data = (await r.json()) as {
+          spark?: {
+            result?: Array<{
+              symbol: string;
+              response?: Array<{
+                meta?: {
+                  regularMarketPrice?: number;
+                  chartPreviousClose?: number;
+                  currency?: string;
+                  regularMarketTime?: number;
+                };
+              }>;
+            }>;
+          };
+        };
+        for (const entry of data.spark?.result ?? []) {
+          const sym = entry.symbol;
+          const meta = entry.response?.[0]?.meta;
+          if (!meta) continue;
+          const price = meta.regularMarketPrice ?? 0;
+          const prev = meta.chartPreviousClose ?? price;
+          all.set(sym, {
+            symbol: sym,
+            price,
+            change: price - prev,
+            changePercent: prev === 0 ? 0 : ((price - prev) / prev) * 100,
+            currency: meta.currency ?? "USD",
+            marketState: meta.regularMarketPrice ? "REGULAR" : "CLOSED",
+            dayHigh: 0,
+            dayLow: 0,
+            dayOpen: 0,
+            prevClose: prev,
+            volume: 0,
+          });
+        }
+      } catch {
+        // ignore batch
+      }
+    }
+    return all;
+  });
+}
