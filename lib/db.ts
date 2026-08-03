@@ -49,25 +49,17 @@ export async function queryOne<T = Row>(
 export async function exec(
   sql: string,
   args: unknown[] = [],
-): Promise<{ lastInsertRowid: number | string | null; changes: number }> {
-  // Insert statements return rows when using RETURNING
-  if (/^\s*INSERT\s+/i.test(sql) && /RETURNING/i.test(sql)) {
-    const rows = await query(sql, args);
-    const lastRow = rows[0];
-    return {
-      lastInsertRowid: (lastRow?.id as number | string) ?? null,
-      changes: rows.length,
-    };
-  }
-  // Otherwise just run (exec_sql still returns array)
-  const sb = supabaseAdmin();
-  const { data } = await sb.rpc("exec_sql", {
-    sql_text: sql,
-    sql_args: JSON.stringify(args),
-  });
+): Promise<{ lastInsertRowid: number | string | null; changes: number; rows?: Row[] }> {
+  // Use query() so we can get the rows back (whether RETURNING or not)
+  const rows = await query(sql, args);
+  const lastRow = rows[rows.length - 1];
   return {
-    lastInsertRowid: null,
-    changes: Array.isArray(data) ? data.length : 0,
+    lastInsertRowid:
+      (lastRow?.id as number | string | undefined) ??
+      (lastRow?.id as number | string | undefined) ??
+      null,
+    changes: rows.length,
+    rows,
   };
 }
 

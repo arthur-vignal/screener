@@ -5,12 +5,10 @@
  *  - Use Supabase Auth for the underlying user identity (email + password)
  *  - Store our own `profiles` table (linked to auth.users.id) for username + extra fields
  *  - Issue our own JWT in HttpOnly cookie so the rest of the app doesn't need to know about Supabase
- *
- * Tables required:
- *  - profiles (id UUID PK references auth.users, username UNIQUE, created_at)
  */
 
 import { supabaseAdmin } from "./supabase";
+import { queryOne, exec } from "./db";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
@@ -48,20 +46,19 @@ export async function signup(opts: {
   const sb = supabaseAdmin();
 
   // Check username uniqueness
-  const { data: existing } = await sb
-    .from("profiles")
-    .select("username")
-    .eq("username", username)
-    .maybeSingle();
+  const existing = await queryOne(
+    "SELECT username FROM profiles WHERE username = $1",
+    [username],
+  );
   if (existing) {
     return { ok: false, error: "username já cadastrado" };
   }
 
-  // Create user via Supabase Auth (handles password hashing with bcrypt)
+  // Create user via Supabase Auth
   const { data: authData, error: authErr } = await sb.auth.admin.createUser({
     email,
     password: opts.password,
-    email_confirm: true, // skip email verification (set false if you want magic link)
+    email_confirm: true,
   });
   if (authErr || !authData.user) {
     return { ok: false, error: authErr?.message ?? "erro ao criar usuário" };
@@ -69,16 +66,17 @@ export async function signup(opts: {
 
   const userId = authData.user.id;
 
-  // Create profile (username + display info)
-  // Use upsert to be idempotent in case a trigger already created a row
-  const { error: profErr } = await sb.from("profiles").upsert(
-    { id: userId, username, email },
-    { onConflict: "id" },
+  // Create profile via exec_sql RPC (bypasses RLS, allows upsert)
+  const profileRes = await exec(
+    `INSERT INTO profiles (id, username, email)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (id) DO UPDATE SET username = EXCLUDED.username, email = EXCLUDED.email
+     RETURNING id`,
+    [userId, username, email],
   );
-  if (profErr) {
-    // Rollback: delete auth user
+  if (!profileRes.lastInsertRowid) {
     await sb.auth.admin.deleteUser(userId);
-    return { ok: false, error: profErr.message };
+    return { ok: false, error: "falha ao criar perfil" };
   }
 
   await createSession(userId);
@@ -93,18 +91,16 @@ export async function login(opts: {
   const sb = supabaseAdmin();
 
   // Find user by username (via profile) or email
-  const { data: profile } = await sb
-    .from("profiles")
-    .select("id, email, username")
-    .or(`username.eq.${username},email.eq.${username}`)
-    .maybeSingle();
+  const profile = await queryOne<{ id: string; email: string; username: string }>(
+    "SELECT id, email, username FROM profiles WHERE username = $1 OR email = $1",
+    [username],
+  );
 
   if (!profile) {
     return { ok: false, error: "usuário ou senha inválidos" };
   }
 
-  // Verify password via Supabase Auth (signInWithPassword uses anon key normally,
-  // but admin API can also generate a session — here we use a workaround)
+  // Verify password via Supabase Auth
   const { data: authData, error: authErr } = await sb.auth.signInWithPassword({
     email: profile.email,
     password: opts.password,
@@ -120,14 +116,12 @@ export async function login(opts: {
 async function createSession(userId: string): Promise<void> {
   const sessionId = newSessionId();
   const expiresAt = Math.floor(Date.now() / 1000) + COOKIE_MAX_AGE;
-  const sb = supabaseAdmin();
 
-  // Persist session in DB
-  await sb.from("sessions").insert({
-    id: sessionId,
-    user_id: userId,
-    expires_at: expiresAt,
-  });
+  // Persist session via exec_sql (bypasses RLS)
+  await exec(
+    "INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, $3)",
+    [sessionId, userId, expiresAt],
+  );
 
   const token = jwt.sign({ sid: sessionId, uid: userId }, SECRET, {
     expiresIn: "30d",
@@ -147,8 +141,7 @@ export async function logout(): Promise<void> {
   if (token) {
     try {
       const decoded = jwt.verify(token, SECRET) as { sid: string };
-      const sb = supabaseAdmin();
-      await sb.from("sessions").delete().eq("id", decoded.sid);
+      await exec("DELETE FROM sessions WHERE id = $1", [decoded.sid]);
     } catch {
       // ignore
     }
@@ -162,19 +155,17 @@ export async function getCurrentUser(): Promise<Session | null> {
   if (!token) return null;
   try {
     const decoded = jwt.verify(token, SECRET) as { sid: string };
-    const sb = supabaseAdmin();
-    const { data: session } = await sb
-      .from("sessions")
-      .select("user_id, expires_at")
-      .eq("id", decoded.sid)
-      .maybeSingle();
+    // Use exec_sql to bypass RLS
+    const session = await queryOne<{ user_id: string; expires_at: number }>(
+      "SELECT user_id, expires_at FROM sessions WHERE id = $1",
+      [decoded.sid],
+    );
     if (!session) return null;
     if (session.expires_at < Math.floor(Date.now() / 1000)) return null;
-    const { data: profile } = await sb
-      .from("profiles")
-      .select("username")
-      .eq("id", session.user_id)
-      .maybeSingle();
+    const profile = await queryOne<{ username: string }>(
+      "SELECT username FROM profiles WHERE id = $1",
+      [session.user_id],
+    );
     if (!profile) return null;
     return { userId: session.user_id, username: profile.username };
   } catch {
