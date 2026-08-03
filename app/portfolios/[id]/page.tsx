@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
 import { RichFundamentalsTable } from "@/components/rich-fundamentals-table";
+import { StrategyMemo } from "@/components/strategy-memo";
 import useSWR from "swr";
 import {
   CartesianGrid,
@@ -131,6 +132,24 @@ export default function PortfolioDetailPage({
       : null,
     fetcher,
   );
+  const { data: memoData } = useSWR<{
+    spec: {
+      category: "growth" | "value" | "income" | "momentum" | "quality" | "blend" | "thematic";
+      riskLevel: "conservative" | "moderate" | "aggressive";
+      thesis: string;
+      criteria: string[];
+      risks?: string[];
+      expectedBehavior?: string;
+    };
+    sectorExposure: Record<string, number>;
+    perHoldingRationale: Record<string, { sector: string; rationale: string }>;
+  }>(
+    portfolio && "id" in portfolio
+      ? `/api/portfolios/${portfolio.slug}/memo`
+      : null,
+    fetcher,
+  );
+
 
   if (portfolioError && "error" in portfolioError && portfolioError.error === "private") {
     return (

@@ -9,8 +9,11 @@ import {
   Filter,
   Settings2,
   X,
+  Sparkles,
+  BarChart3,
 } from "lucide-react";
 import { cn, formatCompact, formatPercent } from "@/lib/utils";
+import { RichFundamentalsTable } from "@/components/rich-fundamentals-table";
 
 type AssetType = "stock" | "etf" | "crypto";
 
@@ -289,6 +292,19 @@ export default function AssetsPage() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [showFilters, setShowFilters] = useState(true);
   const [showColumnPicker, setShowColumnPicker] = useState(false);
+  const [richTable, setRichTable] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return localStorage.getItem("screener:assets:rich") === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("screener:assets:rich", richTable ? "1" : "0");
+    } catch {}
+  }, [richTable]);
 
   // Filters
   const [exchangeFilter, setExchangeFilter] = useState<string>("all");
@@ -504,6 +520,16 @@ export default function AssetsPage() {
 
   const total = listData?.total ?? 0;
 
+  // Foundation batch for rich mode
+  const symbolsForBatch = filteredRows.map((r) => r.symbol);
+  const { data: richData } = useSWR<Record<string, unknown>>(
+    richTable && symbolsForBatch.length > 0
+      ? `/api/fundamentals/batch?symbols=${symbolsForBatch.join(",")}`
+      : null,
+    fetcher,
+    { dedupingInterval: 60_000 },
+  );
+
   return (
     <div className="px-8 py-8 max-w-7xl">
       <div className="mb-6 flex items-end justify-between">
@@ -514,6 +540,18 @@ export default function AssetsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setRichTable(!richTable)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1 text-xs rounded-md border transition-colors",
+              richTable
+                ? "bg-foreground text-background border-foreground"
+                : "border-border text-text-secondary hover:text-foreground",
+            )}
+          >
+            {richTable ? <Sparkles className="w-3 h-3" /> : <BarChart3 className="w-3 h-3" />}
+            {richTable ? "Modo rico" : "Modo rico"}
+          </button>
           <button
             onClick={() => setShowColumnPicker(!showColumnPicker)}
             className={cn(
@@ -724,6 +762,19 @@ export default function AssetsPage() {
                   ))}
                 </tr>
               </thead>
+              {richTable && richData ? (
+                <tbody>
+                  {filteredRows.map((r) => (
+                    <tr key={r.symbol} className="border-b border-border-subtle hover:bg-surface-elevated transition-colors">
+                      <td colSpan={visibleCols.length + 1} className="p-2">
+                        <RichFundamentalsTable
+                          rows={[{ symbol: r.symbol, weight: 1 / filteredRows.length }]}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              ) : (
               <tbody>
                 {filteredRows.map((r, i) => (
                   <tr
@@ -760,6 +811,7 @@ export default function AssetsPage() {
                   </tr>
                 ))}
               </tbody>
+              )}
             </table>
           </div>
         </div>

@@ -191,6 +191,19 @@ export default function MarketStatsPage() {
           {/* Sector breakdown */}
           <section>
             <h2 className="text-sm font-medium uppercase tracking-wider text-text-muted mb-3 flex items-center gap-2">
+              <Activity className="w-4 h-4" />
+              Evolução Histórica
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <HistoricalCard title="P/L Mediano (S&P 500)" endpoint="/api/market/history?metric=pe" color="text-blue-400" />
+              <HistoricalCard title="P/VP Mediano (S&P 500)" endpoint="/api/market/history?metric=pvp" color="text-purple-400" />
+              <HistoricalCard title="ROE Mediano" endpoint="/api/market/history?metric=roe" color="text-green-400" />
+              <HistoricalCard title="Dividend Yield Mediano" endpoint="/api/market/history?metric=dy" color="text-cyan-400" />
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-sm font-medium uppercase tracking-wider text-text-muted mb-3 flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
               Por Setor
             </h2>
@@ -310,6 +323,92 @@ function StatCard({
       </div>
       {sub && (
         <div className="text-xs text-text-muted mt-0.5">{sub}</div>
+      )}
+    </div>
+  );
+}
+
+function HistoricalCard({
+  title,
+  endpoint,
+  color,
+}: {
+  title: string;
+  endpoint: string;
+  color?: string;
+}) {
+  const { data, isLoading } = useSWR<{ history: { date: string; value: number }[] }>(
+    endpoint,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60_000 },
+  );
+  const history = data?.history ?? [];
+  const w = 400;
+  const h = 140;
+  const vals = history.map((p) => p.value).filter((v) => isFinite(v));
+  const min = vals.length > 0 ? Math.min(...vals) : 0;
+  const max = vals.length > 0 ? Math.max(...vals) : 1;
+  const range = max - min || 1;
+  const points = vals
+    .map(
+      (v, i) =>
+        `${(i / Math.max(1, vals.length - 1)) * w},${h - ((v - min) / range) * h}`,
+    )
+    .join(" ");
+  const latest = vals[vals.length - 1];
+  const first = vals[0];
+  const change = first && latest ? ((latest - first) / first) * 100 : 0;
+
+  return (
+    <div className="rounded-lg border border-border bg-surface p-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xs uppercase tracking-wider text-text-muted font-medium">
+          {title}
+        </h3>
+        {!isLoading && latest != null && (
+          <span
+            className={cn(
+              "font-mono text-sm tabular-nums",
+              change >= 0 ? "text-positive" : "text-negative",
+            )}
+          >
+            {change >= 0 ? "+" : ""}
+            {change.toFixed(1)}%
+          </span>
+        )}
+      </div>
+      <div className="relative h-[140px] bg-background/30 rounded">
+        {isLoading ? (
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-text-muted">
+            Carregando…
+          </div>
+        ) : vals.length < 2 ? (
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-text-muted">
+            Sem dados suficientes
+          </div>
+        ) : (
+          <svg
+            width="100%"
+            height="100%"
+            viewBox={`0 0 ${w} ${h}`}
+            preserveAspectRatio="none"
+          >
+            <polyline
+              points={points}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              vectorEffect="non-scaling-stroke"
+              className={color || "text-foreground"}
+            />
+          </svg>
+        )}
+      </div>
+      {!isLoading && history.length >= 2 && (
+        <div className="flex justify-between text-[10px] font-mono text-text-muted mt-1.5">
+          <span>{history[0].date}</span>
+          <span>{history[history.length - 1].date}</span>
+        </div>
       )}
     </div>
   );
