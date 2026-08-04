@@ -11,6 +11,7 @@ const NAV = [
   { href: "/assets", label: "Assets" },
   { href: "/portfolios", label: "Portfolios" },
   { href: "/indices", label: "Indices" },
+  { href: "/crypto", label: "Crypto" },
   { href: "/analysis", label: "Analysis" },
   { href: "/analysis/stats", label: "Mercado" },
   { href: "/news", label: "News" },
