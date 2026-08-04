@@ -1,6 +1,5 @@
-import { getTopCryptos, getGlobalMetrics } from "@/lib/cmc";
+import { getTopCryptos, getGlobalMetrics, isCmcConfigured } from "@/lib/cmc";
 import { CryptoMarketLive } from "@/components/crypto-market-live";
-import { isCmcConfigured } from "@/lib/cmc";
 
 /**
  * Server-rendered wrapper for crypto market data.
@@ -17,17 +16,25 @@ export async function CryptoMarket() {
     );
   }
 
+  let quotes: Awaited<ReturnType<typeof getTopCryptos>> = [];
+  let global: Awaited<ReturnType<typeof getGlobalMetrics>> = null;
+  let error: string | null = null;
+
   try {
-    const [quotes, global] = await Promise.all([
-      getTopCryptos(20),
-      getGlobalMetrics(),
-    ]);
-    return <CryptoMarketLive initialQuotes={quotes} initialGlobal={global} />;
+    const [q, g] = await Promise.all([getTopCryptos(20), getGlobalMetrics()]);
+    quotes = q;
+    global = g;
   } catch (e) {
+    error = String(e);
+  }
+
+  if (error) {
     return (
       <div className="panel p-6 text-sm text-negative">
-        Erro ao carregar dados CoinMarketCap: {String(e)}
+        Erro ao carregar dados CoinMarketCap: {error}
       </div>
     );
   }
+
+  return <CryptoMarketLive initialQuotes={quotes} initialGlobal={global} />;
 }
