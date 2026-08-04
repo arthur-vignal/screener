@@ -1,94 +1,61 @@
 @import "tailwindcss";
 
 /* ============================================================================
- * DESIGN SYSTEM — Hybrid (Revolut canvas + Kraken radius + Coinbase typography)
- * Dark canvas default. Light mode via .light class on <html>.
- * Cobalt-violet brand. 12px radius. Inter. Mono on every number.
- * 96px section rhythm. One shadow tier.
+ * SUSTAIN — design system v2
+ * Canvas branco + off-white + gradientes de cinza + verde-claro-opaco.
+ * Inter (UI) + Instrument Serif (display) + JetBrains Mono (mono).
+ * Sem vibrantes, sem dark mode. Tema único claro.
+ * Alinhamento geométrico via spacing tokens. Vertical rhythm.
  * ============================================================================ */
 
-:root,
-:root.dark {
-  /* Canvas (Revolut: true black story + white catalog) */
-  --canvas: #000000;
-  --canvas-soft: #0a0a0a;
-  --surface: #101114;
-  --surface-elevated: #16181a;
-  --surface-strong: #1c1e22;
-  --hairline: rgba(255, 255, 255, 0.08);
-  --hairline-strong: rgba(255, 255, 255, 0.14);
-
-  /* Brand — Cobalt Violet (Revolut) */
-  --brand: #494fdf;
-  --brand-bright: #4f55f1;
-  --brand-deep: #3a40c4;
-  --brand-soft: rgba(73, 79, 223, 0.14);
-  --brand-glow: rgba(73, 79, 223, 0.32);
-
-  /* Text */
-  --ink: #ffffff;
-  --body: rgba(255, 255, 255, 0.78);
-  --muted: rgba(255, 255, 255, 0.52);
-  --faint: rgba(255, 255, 255, 0.32);
-  --on-brand: #ffffff;
-
-  /* Semantic (Coinbase: text-only, never bg) */
-  --positive: #05b169;
-  --positive-soft: rgba(5, 177, 105, 0.12);
-  --negative: #cf202f;
-  --negative-soft: rgba(207, 32, 47, 0.12);
-  --warning: #ec7e00;
-
-  /* Accent (Revolut: in illustrations only, never bg) */
-  --accent-teal: #00a87e;
-  --accent-pink: #e61e49;
-  --accent-yellow: #b09000;
-
-  /* Shadows (one tier) */
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.18);
-  --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.28);
-
-  /* Radii (Kraken: 12px max) */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-}
-
-:root.light {
-  /* Surface ladder (Coinbase-style: white + soft gray elevation) */
+:root {
+  /* Canvas — brancura com leve off-white pra profundidade */
   --canvas: #ffffff;
   --canvas-soft: #fafafa;
   --surface: #ffffff;
-  --surface-elevated: #f7f7f7;
-  --surface-strong: #eef0f3;
-  --hairline: rgba(10, 10, 10, 0.08);
-  --hairline-strong: rgba(10, 10, 10, 0.14);
+  --surface-elevated: #fafafa;
+  --surface-strong: #f5f5f5;
 
-  /* Brand — slightly deeper on white for AA contrast */
-  --brand: #3a40c4;
-  --brand-bright: #494fdf;
-  --brand-deep: #2e339f;
-  --brand-soft: rgba(73, 79, 223, 0.10);
-  --brand-glow: rgba(73, 79, 223, 0.22);
+  /* Hairline — cinza-quase-invisível */
+  --hairline: rgba(10, 10, 10, 0.06);
+  --hairline-strong: rgba(10, 10, 10, 0.12);
 
-  /* Text */
-  --ink: #0a0b0d;
-  --body: rgba(10, 11, 13, 0.74);
-  --muted: rgba(10, 11, 13, 0.52);
-  --faint: rgba(10, 11, 13, 0.32);
-  --on-brand: #ffffff;
+  /* Brand — verde-claro-opaco (sustain) */
+  --brand: #86efac;          /* light green 300 */
+  --brand-soft: #d9f99d;     /* lime 200 */
+  --brand-deep: #65a30d;     /* lime 600 */
+  --brand-glow: rgba(134, 239, 172, 0.32);
+  --brand-on: #0a0a0a;       /* texto preto sobre green */
 
-  /* Semantic — slightly deeper for white bg readability */
-  --positive: #038a52;
-  --positive-soft: rgba(3, 138, 82, 0.10);
-  --negative: #b5192a;
-  --negative-soft: rgba(181, 25, 42, 0.10);
-  --warning: #c66a00;
+  /* Text — preto profundo + escala de cinza */
+  --ink: #0a0a0a;
+  --body: #404040;           /* neutral 700 */
+  --muted: #737373;          /* neutral 500 */
+  --faint: #a3a3a3;          /* neutral 400 */
+  --disabled: #d4d4d4;       /* neutral 300 */
 
-  /* Shadows go lighter on white surfaces */
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.06);
-  --shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.10);
+  /* Semantic — sempre opaco, nunca vibrante */
+  --positive: #15803d;       /* green 700 */
+  --positive-soft: rgba(21, 128, 61, 0.08);
+  --negative: #9f1239;       /* rose 800 */
+  --negative-soft: rgba(159, 18, 57, 0.08);
+  --warning: #854d0e;        /* amber 800 */
+  --warning-soft: rgba(133, 77, 14, 0.08);
+
+  /* Accents (uso ilustrativo, nunca vibrante) */
+  --accent-teal: #0f766e;
+  --accent-pink: #9d174d;
+  --accent-yellow: #713f12;
+
+  /* Shadows — 2 tiers, sempre sutis */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.06);
+
+  /* Radii — quadrados vivos, sem cantos arredondados de UI */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 }
 
 @theme inline {
@@ -101,27 +68,29 @@
   --color-hairline-strong: var(--hairline-strong);
 
   --color-brand: var(--brand);
-  --color-brand-bright: var(--brand-bright);
-  --color-brand-deep: var(--brand-deep);
   --color-brand-soft: var(--brand-soft);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-on: var(--brand-on);
 
   --color-ink: var(--ink);
   --color-body: var(--body);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
-  --color-on-brand: var(--on-brand);
+  --color-disabled: var(--disabled);
 
   --color-positive: var(--positive);
   --color-positive-soft: var(--positive-soft);
   --color-negative: var(--negative);
   --color-negative-soft: var(--negative-soft);
   --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
 
   --color-accent-teal: var(--accent-teal);
   --color-accent-pink: var(--accent-pink);
   --color-accent-yellow: var(--accent-yellow);
 
   --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
   --font-mono: var(--font-mono-font), "JetBrains Mono", "Geist Mono", "SF Mono", Menlo, monospace;
 }
 
@@ -136,6 +105,7 @@ html, body {
   font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -143,17 +113,20 @@ body {
 }
 
 /* ============================================================================
- * TYPOGRAPHY — Coinbase display weight 400 (institutional calm)
+ * TYPOGRAPHY
+ * — Instrument Serif em weight 400 com letter-spacing levemente negativo
+ * — Inter para body 400/500/600
+ * — JetBrains Mono para tabular e IDs
  * ============================================================================ */
 .font-display {
-  font-family: var(--font-sans);
+  font-family: var(--font-display);
   font-weight: 400;
   letter-spacing: -0.02em;
-  line-height: 1.0;
+  line-height: 1.05;
 }
 
 .font-display-md {
-  font-family: var(--font-sans);
+  font-family: var(--font-display);
   font-weight: 400;
   letter-spacing: -0.015em;
   line-height: 1.1;
@@ -166,7 +139,7 @@ body {
 }
 
 /* ============================================================================
- * SCROLLBAR — minimal, dark
+ * SCROLLBAR — minimal
  * ============================================================================ */
 ::-webkit-scrollbar {
   width: 10px;
@@ -177,27 +150,24 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   background: var(--hairline-strong);
-  border-radius: 9999px;
+  border-radius: 0;
   border: 2px solid var(--canvas);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--brand);
+  background: var(--brand-deep);
 }
 
 /* ============================================================================
- * ANIMATIONS — Library
+ * ANIMATIONS
  * ============================================================================ */
-
-/* Fade + slide up (page blocks, cards) */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-up {
   animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Fade in (simple appear) */
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -206,25 +176,22 @@ body {
   animation: fade-in 0.3s ease-out both;
 }
 
-/* Slide down (dropdowns, sheets) */
 @keyframes slide-down {
-  from { opacity: 0; transform: translateY(-6px); }
+  from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-slide-down {
   animation: slide-down 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Slide up (modals, popovers) */
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-slide-up {
   animation: slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Scale in (popovers, badges) */
 @keyframes scale-in {
   from { opacity: 0; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }
@@ -233,7 +200,6 @@ body {
   animation: scale-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Shimmer (skeleton loaders) */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
@@ -249,7 +215,6 @@ body {
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
-/* Pulse (live indicators, badges) */
 @keyframes pulse-soft {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }
@@ -258,7 +223,6 @@ body {
   animation: pulse-soft 2s ease-in-out infinite;
 }
 
-/* Pulse ring (live dot) */
 @keyframes pulse-ring {
   0% { box-shadow: 0 0 0 0 currentColor; opacity: 0.6; }
   100% { box-shadow: 0 0 0 8px transparent; opacity: 0; }
@@ -267,7 +231,6 @@ body {
   animation: pulse-ring 1.6s ease-out infinite;
 }
 
-/* Stagger helpers — combine with animate-fade-up */
 .stagger-1 { animation-delay: 40ms; }
 .stagger-2 { animation-delay: 80ms; }
 .stagger-3 { animation-delay: 120ms; }
@@ -277,7 +240,6 @@ body {
 .stagger-7 { animation-delay: 280ms; }
 .stagger-8 { animation-delay: 320ms; }
 
-/* Stroke draw (sparklines) */
 @keyframes stroke-draw {
   from { stroke-dashoffset: var(--draw-length, 1000); }
   to { stroke-dashoffset: 0; }
@@ -289,31 +251,24 @@ body {
 }
 
 /* ============================================================================
- * INTERACTIVE — Hover effects
+ * INTERACTIVE
  * ============================================================================ */
-
-/* Card hover lift */
 .hover-lift {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   will-change: transform;
 }
 .hover-lift:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-hover);
-  border-color: var(--hairline-strong);
 }
 
-/* Row hover (table rows, list items) */
 .hover-row {
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease;
 }
 .hover-row:hover {
   background-color: var(--surface-elevated);
 }
 
-/* Button press */
 .press {
   transition: transform 0.1s ease, background-color 0.15s ease, color 0.15s ease;
 }
@@ -321,7 +276,6 @@ body {
   transform: scale(0.97);
 }
 
-/* Icon rotate on hover */
 .icon-rotate-hover {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -329,7 +283,6 @@ body {
   transform: translateX(2px);
 }
 
-/* Underline grow on hover */
 .link-underline {
   position: relative;
   transition: color 0.15s ease;
@@ -350,31 +303,25 @@ body {
   transform: scaleX(1);
 }
 
-/* Tab indicator (animated underline) */
 .tab-indicator {
   position: absolute;
   bottom: 0;
   height: 2px;
-  background: var(--brand);
+  background: var(--brand-deep);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
               width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ============================================================================
- * FOCUS — keyboard-only brand ring
+ * FOCUS
  * ============================================================================ */
 :focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-button:focus-visible,
-a:focus-visible {
+  outline: 2px solid var(--brand-deep);
   outline-offset: 2px;
 }
 
 /* ============================================================================
- * REDUCED MOTION — respect user preference
+ * REDUCED MOTION
  * ============================================================================ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -386,30 +333,25 @@ a:focus-visible {
 }
 
 /* ============================================================================
- * UTILITIES — reused across pages
+ * UTILITIES
  * ============================================================================ */
-
-/* Card surface (panel) */
 .panel {
   background: var(--surface);
   border: 1px solid var(--hairline);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
 }
 
-/* Inset surface (deeper) */
 .panel-inset {
   background: var(--surface-elevated);
   border: 1px solid var(--hairline);
   border-radius: var(--radius-md);
 }
 
-/* Hairline divider */
-.divider {
+.section-rule {
   height: 1px;
   background: var(--hairline);
 }
 
-/* Number chip — used for tickers, IDs */
 .chip {
   display: inline-flex;
   align-items: center;
@@ -424,7 +366,6 @@ a:focus-visible {
   color: var(--muted);
 }
 
-/* Status dot — pulse for "live" */
 .status-dot {
   display: inline-block;
   width: 6px;
@@ -439,6 +380,5 @@ a:focus-visible {
   inset: 0;
   border-radius: 9999px;
   background: inherit;
-  color: inherit;
   animation: pulse-ring 1.6s ease-out infinite;
 }
