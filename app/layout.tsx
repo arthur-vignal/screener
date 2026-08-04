@@ -13,36 +13,28 @@ const inter = localFont({
   weight: "100 900",
 });
 
-// Archia — display
+// Archia (Bricolage Grotesque substitute) — display, single weight to reduce bundle
 const archia = localFont({
-  src: [
-    { path: "../public/fonts/archia/Archia-Regular.woff2", weight: "400", style: "normal" },
-    { path: "../public/fonts/archia/Archia-Medium.woff2", weight: "500", style: "normal" },
-    { path: "../public/fonts/archia/Archia-SemiBold.woff2", weight: "600", style: "normal" },
-  ],
+  src: "../public/fonts/archia/Archia-Regular.woff2",
   variable: "--font-archia",
   display: "swap",
+  weight: "400",
 });
 
-// Geist Mono — primary mono
+// Geist Mono — primary mono, single weight
 const geistMono = localFont({
-  src: [
-    { path: "../public/fonts/geist-mono/GeistMono-Regular.woff2", weight: "400", style: "normal" },
-    { path: "../public/fonts/geist-mono/GeistMono-Medium.woff2", weight: "500", style: "normal" },
-    { path: "../public/fonts/geist-mono/GeistMono-SemiBold.woff2", weight: "600", style: "normal" },
-  ],
+  src: "../public/fonts/geist-mono/GeistMono-Regular.woff2",
   variable: "--font-geist-mono",
   display: "swap",
+  weight: "400",
 });
 
-// Commit Mono — secondary mono
+// Commit Mono — secondary mono, single weight
 const commitMono = localFont({
-  src: [
-    { path: "../public/fonts/commit-mono/CommitMono-Regular.ttf", weight: "400", style: "normal" },
-    { path: "../public/fonts/commit-mono/CommitMono-Bold.ttf", weight: "700", style: "normal" },
-  ],
+  src: "../public/fonts/commit-mono/CommitMono-Regular.ttf",
   variable: "--font-commit-mono",
   display: "swap",
+  weight: "400",
 });
 
 export const metadata: Metadata = {

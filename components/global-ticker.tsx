@@ -5,14 +5,17 @@ import Link from "next/link";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) =>
+  fetch(url)
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+    .catch(() => ({ tickers: [] }));
 
 type Ticker = {
   symbol: string;
   label: string;
-  price: number;
-  change: number;
-  changePercent: number;
+  price: number | null;
+  change: number | null;
+  changePercent: number | null;
   href: string;
 };
 
@@ -20,22 +23,17 @@ type TickerResponse = {
   tickers: Ticker[];
 };
 
-/**
- * GlobalTicker — fixed top bar with horizontally scrolling marquee.
- * Hover to pause. Links to each asset page.
- */
 export function GlobalTicker() {
-  const { data, error } = useSWR<TickerResponse>("/api/market/ticker", fetcher, {
+  const { data } = useSWR<TickerResponse>("/api/market/ticker", fetcher, {
     refreshInterval: 30_000,
   });
 
   const tickers = data?.tickers ?? [];
 
-  if (error || tickers.length === 0) {
+  if (tickers.length === 0) {
     return null;
   }
 
-  // Duplicate for infinite scroll effect
   const items = [...tickers, ...tickers];
 
   return (
@@ -52,8 +50,9 @@ export function GlobalTicker() {
 }
 
 function TickerItem({ t }: { t: Ticker }) {
-  const Icon = t.changePercent > 0 ? TrendingUp : t.changePercent < 0 ? TrendingDown : Minus;
-  const tone = t.changePercent > 0 ? "positive" : t.changePercent < 0 ? "negative" : "muted";
+  const cp = t.changePercent ?? 0;
+  const Icon = cp > 0 ? TrendingUp : cp < 0 ? TrendingDown : Minus;
+  const tone = cp > 0 ? "positive" : cp < 0 ? "negative" : "muted";
 
   return (
     <Link
@@ -77,8 +76,8 @@ function TickerItem({ t }: { t: Ticker }) {
         )}
       >
         <Icon className="w-3 h-3" />
-        {t.changePercent >= 0 ? "+" : ""}
-        {t.changePercent.toFixed(2)}%
+        {cp >= 0 ? "+" : ""}
+        {cp.toFixed(2)}%
       </span>
     </Link>
   );
