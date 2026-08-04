@@ -4,6 +4,8 @@ import "./globals.css";
 import { TopNav } from "@/components/top-nav";
 import { PageFade } from "@/components/page-fade";
 import { GlobalTicker } from "@/components/global-ticker";
+import { SelectionProvider } from "@/components/ui/selection-context";
+import { MultiSelectToolbar } from "@/components/ui/multi-select-toolbar";
 
 // Inter — UI sans (kept)
 const inter = localFont({
@@ -53,11 +55,14 @@ export default function RootLayout({
       className={`${inter.variable} ${archia.variable} ${geistMono.variable} ${commitMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-canvas text-ink">
-        <GlobalTicker />
-        <TopNav />
-        <main className="pt-24">
-          <PageFade>{children}</PageFade>
-        </main>
+        <SelectionProvider>
+          <GlobalTicker />
+          <TopNav />
+          <main className="pt-24">
+            <PageFade>{children}</PageFade>
+          </main>
+          <MultiSelectToolbar />
+        </SelectionProvider>
       </body>
     </html>
   );

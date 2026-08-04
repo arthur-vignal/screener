@@ -5,10 +5,10 @@ type Tone = "neutral" | "positive" | "negative" | "warning" | "brand";
 
 const toneClasses: Record<Tone, string> = {
   neutral: "bg-surface-elevated text-muted border border-hairline",
-  positive: "bg-positive-soft text-positive border border-positive/20",
-  negative: "bg-negative-soft text-negative border border-negative/20",
+  positive: "bg-positive-soft text-positive border border-positive/20 glow-cyan",
+  negative: "bg-negative-soft text-negative border border-negative/20 glow-red",
   warning: "bg-warning/10 text-warning border border-warning/20",
-  brand: "bg-brand-soft text-brand-bright border border-brand/20",
+  brand: "bg-brand-soft text-brand-bright border border-brand/20 glow-mint",
 };
 
 export function Badge({

@@ -18,6 +18,7 @@ import { LiveDot } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SectorHeatmap } from "@/components/sector-heatmap";
 import { MacroPanel } from "@/components/macro-panel";
+import { Sparkline } from "@/components/sparkline";
 
 type AssetType = "stock" | "etf" | "crypto";
 type AssetRow = {

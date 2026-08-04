@@ -217,6 +217,30 @@ body {
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
+/* Glass skeleton — translucent layered surface with shimmer */
+.glass-skeleton {
+  position: relative;
+  background: rgba(16, 17, 20, 0.45);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.glass-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(134, 239, 172, 0.06) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
 @keyframes pulse-soft {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }
@@ -276,6 +300,34 @@ body {
 }
 .press:active {
   transform: scale(0.97);
+}
+
+/* Card pulse on selection */
+@keyframes pulse-mint {
+  0%, 100% { box-shadow: 0 0 0 0 var(--brand-glow); }
+  50% { box-shadow: 0 0 0 4px var(--brand-glow); }
+}
+.pulse-mint {
+  animation: pulse-mint 2s ease-in-out infinite;
+}
+
+/* Button glow on hover */
+.btn-glow {
+  transition: box-shadow 0.2s ease, transform 0.1s ease;
+}
+.btn-glow:hover {
+  box-shadow: 0 0 0 4px var(--brand-soft);
+}
+.btn-glow:active {
+  transform: scale(0.97);
+}
+
+/* Input focus glow (already in bg or replaced) */
+.input-glow {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.input-glow:focus {
+  box-shadow: 0 0 0 4px var(--brand-soft);
 }
 
 .icon-rotate-hover {

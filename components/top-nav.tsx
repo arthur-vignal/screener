@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { Menu, X, User, LogOut, ChevronDown } from "lucide-react";
+import { SearchBar } from "@/components/search-bar";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -57,7 +58,7 @@ export function TopNav() {
   }
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50 h-16 bg-canvas border-b border-hairline">
+    <header className="fixed top-7 inset-x-0 z-50 h-16 bg-canvas border-b border-hairline">
       <div className="h-full max-w-7xl mx-auto px-6 md:px-8 flex items-center justify-between">
         {/* Logo */}
         <Link
@@ -71,6 +72,11 @@ export function TopNav() {
             Screener
           </span>
         </Link>
+
+        {/* Search bar (desktop) */}
+        <div className="hidden md:block flex-1 max-w-md mx-6">
+          <SearchBar />
+        </div>
 
         {/* Center nav (desktop) */}
         <nav className="hidden md:flex items-center gap-1">
@@ -185,7 +191,7 @@ export function TopNav() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden absolute top-16 inset-x-0 bg-canvas border-b border-hairline shadow-lg animate-slide-down">
+        <div className="md:hidden absolute top-23 inset-x-0 bg-canvas border-b border-hairline shadow-lg animate-slide-down">
           <nav className="px-6 py-4 space-y-1">
             {NAV.map((item) => {
               const active = pathname === item.href;
