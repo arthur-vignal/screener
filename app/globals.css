@@ -90,8 +90,10 @@
   --color-accent-yellow: var(--accent-yellow);
 
   --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
-  --font-mono: var(--font-mono-font), "JetBrains Mono", "Geist Mono", "SF Mono", Menlo, monospace;
+  --font-mono: var(--font-geist-mono), "Geist Mono", "JetBrains Mono", monospace;
+  --font-commit-mono: var(--font-commit-mono), "Commit Mono", monospace;
+  /* Display font: Bricolage Grotesque (substitute for Archia — see public/fonts/archia/README.md) */
+  --font-display: var(--font-archia), "Bricolage Grotesque", sans-serif;
 }
 
 * {
@@ -381,4 +383,43 @@ body {
   border-radius: 9999px;
   background: inherit;
   animation: pulse-ring 1.6s ease-out infinite;
+}
+
+
+/* ============================================================================
+ * TICKER MARQUEE — infinite horizontal scroll
+ * ============================================================================ */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  animation: ticker-scroll 60s linear infinite;
+  width: max-content;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+}
+
+/* ============================================================================
+ * GLOW BADGES — box-shadow com cor do accent
+ * ============================================================================ */
+.glow-mint {
+  box-shadow: 0 0 0 1px var(--brand), 0 0 12px 0 var(--brand-glow);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 0 1px var(--accent-teal), 0 0 12px 0 rgba(6, 182, 212, 0.32);
+}
+
+.glow-violet {
+  box-shadow: 0 0 0 1px var(--accent-pink), 0 0 12px 0 rgba(139, 92, 246, 0.32);
+}
+
+.glow-red {
+  box-shadow: 0 0 0 1px var(--negative), 0 0 12px 0 rgba(207, 32, 47, 0.32);
 }
