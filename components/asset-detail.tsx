@@ -57,11 +57,11 @@ export function AssetDetail({ ticker }: { ticker: string }) {
 
   if (error) {
     return (
-      <div className="px-8 py-12 text-center">
+      <div className="px-3 py-6 text-center">
         <p className="text-negative">{String(error)}</p>
         <Link
           href="/assets"
-          className="text-sm text-brand-bright hover:underline mt-2 inline-block"
+          className="text-sm text-brand-bright link-underline mt-2 inline-block"
         >
           ← Voltar para Assets
         </Link>
@@ -71,10 +71,10 @@ export function AssetDetail({ ticker }: { ticker: string }) {
 
   if (isLoading || !data) {
     return (
-      <div className="px-8 py-8 space-y-4">
-        <div className="h-8 w-48 shimmer rounded" />
-        <div className="h-96 shimmer rounded-lg" />
-        <div className="h-32 shimmer rounded-lg" />
+      <div className="px-3 md:px-4 py-3 md:py-4 space-y-2">
+        <div className="h-8 w-48 shimmer rounded-none" />
+        <div className="h-96 shimmer rounded-none-none" />
+        <div className="h-32 shimmer rounded-none-none" />
       </div>
     );
   }
@@ -93,7 +93,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
   };
 
   return (
-    <div className="px-8 py-6 max-w-7xl">
+    <div className="px-3 md:px-4 py-3 md:py-4 max-w-7xl">
       <Link
         href="/assets"
         className="inline-flex items-center gap-1.5 text-sm text-body hover:text-ink mb-4 transition-colors"
@@ -102,29 +102,29 @@ export function AssetDetail({ ticker }: { ticker: string }) {
         Voltar
       </Link>
 
-      <div className="flex items-baseline gap-3 mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight font-mono">
+      <div className="flex items-baseline gap-3 mb-3">
+        <h1 className="font-mono text-xl font-semibold tracking-tight">
           {data.ticker}
         </h1>
         <span className="text-body">{profile?.name ?? ticker}</span>
       </div>
 
       {/* Layout 2/3 esquerda + 1/3 direita */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3">
         {/* Coluna esquerda (2/3): gráfico */}
         <div className="lg:col-span-2">
           <PriceChart ticker={data.ticker} />
         </div>
 
         {/* Coluna direita (1/3): info rápida */}
-        <div className="space-y-4">
-          <div className="rounded-lg border border-hairline bg-surface p-5">
-            <div className="text-3xl font-semibold tabular-nums tracking-tight">
+        <div className="space-y-2">
+          <div className="rounded-none-none border border-hairline bg-surface p-4">
+            <div className="text-2xl font-semibold font-tabular tracking-tight">
               {formatPrice(price)}
             </div>
             <div
               className={cn(
-                "text-sm font-mono tabular-nums mt-1",
+                "text-sm font-mono font-tabular mt-1",
                 changePercent >= 0 ? "text-positive" : "text-negative",
               )}
             >
@@ -134,7 +134,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
             </div>
           </div>
 
-          <div className="rounded-lg border border-hairline bg-surface divide-y divide-border-subtle">
+          <div className="rounded-none-none border border-hairline bg-surface divide-y divide-hairline">
             <StatRow label="Volume 24h" value={`$${formatCompact(quote?.volume ?? 0)}`} />
             <StatRow label="Variação 24h" value={`$${change.toFixed(2)}`} />
             <StatRow label="Máxima 24h" value={formatPrice(quote?.dayHigh ?? quote?.h ?? 0)} />
@@ -154,13 +154,13 @@ export function AssetDetail({ ticker }: { ticker: string }) {
 
       {/* ETF holdings */}
       {profile?.finnhubIndustry === "ETF" && (
-        <div className="mb-6">
+        <div className="mb-3">
           <EtfHoldings ticker={data.ticker} />
         </div>
       )}
 
       {/* Tabs: Estatísticas / Notícias / Eventos */}
-      <div className="border-b border-hairline mb-6">
+      <div className="border-b border-hairline mb-3">
         <div className="flex items-center gap-1">
           <TabButton active={tab === "statistics"} onClick={() => setTab("statistics")}>
             Estatísticas
@@ -177,7 +177,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
       </div>
 
       {tab === "statistics" && (
-        <div className="space-y-6">
+        <div className="space-y-3">
           <AssetScores ticker={data.ticker} />
           <FundamentalsPanel
           ticker={data.ticker}
@@ -256,7 +256,7 @@ function StatRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between px-4 py-2.5">
       <span className="text-xs text-muted uppercase tracking-wider">{label}</span>
-      <span className="font-mono tabular-nums text-sm">{value}</span>
+      <span className="font-mono font-tabular text-sm">{value}</span>
     </div>
   );
 }
@@ -283,7 +283,7 @@ function NewsTab({ ticker }: { ticker: string }) {
     return (
       <div className="space-y-2">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-20 rounded-md shimmer" />
+          <div key={i} className="h-20 rounded-none-none shimmer" />
         ))}
       </div>
     );
@@ -293,7 +293,7 @@ function NewsTab({ ticker }: { ticker: string }) {
 
   if (news.length === 0) {
     return (
-      <div className="rounded-lg border border-hairline bg-surface p-12 text-center">
+      <div className="rounded-none-none border border-hairline bg-surface p-12 text-center">
         <Newspaper className="w-8 h-8 text-muted mx-auto mb-3" strokeWidth={1.5} />
         <p className="text-body text-sm">
           Sem notícias recentes pra esse ticker.
@@ -308,7 +308,7 @@ function NewsTab({ ticker }: { ticker: string }) {
         <button
           key={n.id}
           onClick={() => setOpenArticle(n)}
-          className="w-full text-left block rounded-lg border border-hairline bg-surface p-4 hover:bg-surface-elevated/60 transition-colors group"
+          className="w-full text-left block rounded-none-none border border-hairline bg-surface p-4 hover:bg-surface-elevated transition-colors group"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
@@ -319,7 +319,7 @@ function NewsTab({ ticker }: { ticker: string }) {
                     (n.source || "").toLowerCase().includes("reuters") ||
                     (n.source || "").toLowerCase().includes("bloomberg") ||
                     (n.source || "").toLowerCase().includes("wsj")
-                      ? "text-amber-300"
+                      ? "text-warning"
                       : "text-muted",
                   )}
                 >
@@ -376,7 +376,7 @@ function NewsModal({ article, onClose }: { article: NewsItem; onClose: () => voi
       onClick={onClose}
     >
       <div
-        className="bg-surface border border-hairline rounded-lg max-w-3xl w-full my-8"
+        className="bg-surface border border-hairline rounded-none-none max-w-3xl w-full my-8"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 p-6 border-b border-hairline">
@@ -388,7 +388,7 @@ function NewsModal({ article, onClose }: { article: NewsItem; onClose: () => voi
             </div>
             <h2 className="text-xl font-semibold leading-tight">{article.headline}</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-surface-elevated/60 rounded-md shrink-0">✕</button>
+          <button onClick={onClose} className="p-1.5 hover:bg-surface-elevated rounded-none-none shrink-0">✕</button>
         </div>
         <div className="p-6 max-h-[60vh] overflow-y-auto">
           {content.status === "loading" && (
@@ -397,7 +397,7 @@ function NewsModal({ article, onClose }: { article: NewsItem; onClose: () => voi
           {content.status === "unavailable" && (
             <div className="text-center py-8">
               <p className="text-body text-sm mb-4">Não conseguimos extrair o conteúdo completo desta notícia.</p>
-              <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-brand-bright hover:underline text-sm">Abrir no portal original</a>
+              <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-brand-bright link-underline text-sm">Abrir no portal original</a>
             </div>
           )}
           {content.status === "ready" && content.text && (
@@ -408,7 +408,7 @@ function NewsModal({ article, onClose }: { article: NewsItem; onClose: () => voi
           )}
         </div>
         <div className="border-t border-hairline p-4 text-right">
-          <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-brand-bright hover:underline text-xs">Abrir original</a>
+          <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-brand-bright link-underline text-xs">Abrir original</a>
         </div>
       </div>
     </div>
@@ -425,7 +425,7 @@ function EventsTab({ ticker }: { ticker: string }) {
     return (
       <div className="space-y-2">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-16 rounded-md shimmer" />
+          <div key={i} className="h-16 rounded-none-none shimmer" />
         ))}
       </div>
     );
@@ -435,7 +435,7 @@ function EventsTab({ ticker }: { ticker: string }) {
 
   if (events.length === 0) {
     return (
-      <div className="rounded-lg border border-hairline bg-surface p-12 text-center">
+      <div className="rounded-none-none border border-hairline bg-surface p-12 text-center">
         <Calendar className="w-8 h-8 text-muted mx-auto mb-3" strokeWidth={1.5} />
         <p className="text-body text-sm">
           Sem eventos próximos.
@@ -445,7 +445,7 @@ function EventsTab({ ticker }: { ticker: string }) {
   }
 
   return (
-    <div className="rounded-lg border border-hairline bg-surface divide-y divide-border-subtle">
+    <div className="rounded-none-none border border-hairline bg-surface divide-y divide-hairline">
       {events.map((e, i) => (
         <div key={i} className="px-4 py-3 flex items-center gap-4">
           <div className="text-xs uppercase tracking-wider text-muted font-mono w-24 shrink-0">

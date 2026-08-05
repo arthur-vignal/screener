@@ -92,7 +92,7 @@ function MetricPopup({
       onClick={onClose}
     >
       <div
-        className="bg-surface border border-hairline rounded-lg p-6 max-w-3xl w-full"
+        className="bg-surface border border-hairline rounded-none p-4 max-w-3xl w-full"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
@@ -109,7 +109,7 @@ function MetricPopup({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded hover:bg-surface-elevated/60"
+            className="p-1.5 rounded hover:bg-surface-elevated"
             aria-label="Fechar"
           >
             <X className="w-4 h-4" />
@@ -118,11 +118,11 @@ function MetricPopup({
 
         {/* Toggle sector average */}
         {sectorAvg != null && (
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-1 mb-3">
             <button
               onClick={() => setShowAvg(!showAvg)}
               className={cn(
-                "flex items-center gap-2 px-3 py-1 text-xs rounded border transition-colors",
+                "flex items-center gap-1 px-3 py-1 text-xs rounded border transition-colors",
                 showAvg
                   ? "bg-ink text-canvas border-ink"
                   : "border-hairline text-muted",
@@ -268,20 +268,20 @@ export function RichFundamentalsTable({ rows }: { rows: Row[] }) {
 
   return (
     <>
-      <div className="overflow-x-auto rounded-lg border border-hairline bg-surface">
+      <div className="overflow-x-auto rounded-none border border-hairline bg-surface">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-hairline bg-background/30">
-              <th className="text-left px-3 py-2.5 text-[11px] uppercase tracking-wider text-muted font-medium">
+              <th className="text-left py-1.5 px-2.5 text-[11px] uppercase tracking-wider text-muted font-medium">
                 Ativo
               </th>
-              <th className="text-right px-3 py-2.5 text-[11px] uppercase tracking-wider text-muted font-medium">
+              <th className="text-right py-1.5 px-2.5 text-[11px] uppercase tracking-wider text-muted font-medium">
                 Peso
               </th>
               {METRIC_DEFS.map((m) => (
                 <th
                   key={m.key}
-                  className="text-right px-3 py-2.5 text-[11px] uppercase tracking-wider text-muted font-medium"
+                  className="text-right py-1.5 px-2.5 text-[11px] uppercase tracking-wider text-muted font-medium"
                 >
                   {m.label}
                 </th>
@@ -296,10 +296,10 @@ export function RichFundamentalsTable({ rows }: { rows: Row[] }) {
                   key={row.symbol}
                   className="border-b border-hairline-subtle/50 hover:bg-surface-elevated/40 transition-colors"
                 >
-                  <td className="px-3 py-2">
+                  <td className="py-1.5 px-2">
                     <Link
                       href={`/asset/${row.symbol}`}
-                      className="flex items-center gap-2 hover:text-brand-bright"
+                      className="flex items-center gap-1 hover:text-brand-bright"
                     >
                       <span className="font-mono font-semibold">{row.symbol}</span>
                       {fund?.targetMeanPrice && (
@@ -309,7 +309,7 @@ export function RichFundamentalsTable({ rows }: { rows: Row[] }) {
                       )}
                     </Link>
                   </td>
-                  <td className="text-right px-3 py-2 font-mono tabular-nums text-body">
+                  <td className="text-right py-1.5 px-2 font-mono font-tabular text-body">
                     {(row.weight * 100).toFixed(1)}%
                   </td>
                   {METRIC_DEFS.map((m) => {
@@ -318,7 +318,7 @@ export function RichFundamentalsTable({ rows }: { rows: Row[] }) {
                     return (
                       <td
                         key={m.key}
-                        className="text-right px-3 py-2 font-mono tabular-nums text-xs cursor-pointer hover:bg-surface-elevated/60"
+                        className="text-right py-1.5 px-2 font-mono font-tabular text-xs cursor-pointer hover:bg-surface-elevated"
                         onClick={() =>
                           setPopup({
                             ticker: row.symbol,
