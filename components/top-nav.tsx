@@ -24,21 +24,21 @@ type NavItem = {
 const NAV: NavItem[] = [
   { href: "/", label: "Dashboard" },
   {
-    href: "/assets",
+    href: "/market",
     label: "Market",
     subitems: [
-      { href: "/assets?type=stock", label: "Stocks", description: "Ações globais" },
-      { href: "/crypto", label: "Crypto", description: "Top 20 cryptos via CMC" },
-      { href: "/assets?type=etf", label: "ETFs", description: "ETFs listados" },
+      { href: "/market/stocks", label: "Stocks", description: "Ações S&P 500" },
+      { href: "/crypto", label: "Crypto", description: "Top 20 via CMC" },
+      { href: "/market/etfs", label: "ETFs", description: "ETFs listados" },
     ],
   },
   {
     href: "/portfolios",
     label: "Portfolios",
     subitems: [
-      { href: "/portfolios?tab=platform", label: "Sulfur", description: "Portfolios curados" },
-      { href: "/portfolios?tab=mine", label: "My Portfolios", description: "Os que você criou" },
-      { href: "/portfolios?tab=library", label: "Public", description: "Portfolios públicos" },
+      { href: "/portfolios/sulfur", label: "Sulfur", description: "Portfolios curados" },
+      { href: "/portfolios/my", label: "My Portfolios", description: "Os que você criou" },
+      { href: "/portfolios/public", label: "Public", description: "Portfolios públicos" },
     ],
   },
   { href: "/news", label: "News" },
@@ -107,7 +107,7 @@ export function TopNav() {
   }
 
   return (
-    <header className="fixed top-7 inset-x-0 z-50 h-16 bg-canvas border-b border-hairline">
+    <header className="fixed top-0 inset-x-0 z-50 h-16 bg-canvas border-b border-hairline">
       <div className="h-full max-w-7xl mx-auto px-6 md:px-8 flex items-center justify-between">
         {/* Logo */}
         <Link
@@ -311,7 +311,7 @@ export function TopNav() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden absolute top-23 inset-x-0 bg-canvas border-b border-hairline shadow-lg animate-slide-down max-h-[calc(100vh-6rem)] overflow-y-auto">
+        <div className="md:hidden absolute top-16 inset-x-0 bg-canvas border-b border-hairline shadow-lg animate-slide-down max-h-[calc(100vh-4rem)] overflow-y-auto">
           <nav className="px-6 py-4 space-y-1">
             {/* Search on mobile */}
             <div className="pb-3">

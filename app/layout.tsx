@@ -3,7 +3,6 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { TopNav } from "@/components/top-nav";
 import { PageFade } from "@/components/page-fade";
-import { GlobalTicker } from "@/components/global-ticker";
 import { SelectionProvider } from "@/components/ui/selection-context";
 import { MultiSelectToolbar } from "@/components/ui/multi-select-toolbar";
 
@@ -56,9 +55,8 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-canvas text-ink">
         <SelectionProvider>
-          <GlobalTicker />
           <TopNav />
-          <main className="pt-24">
+          <main className="pt-16">
             <PageFade>{children}</PageFade>
           </main>
           <MultiSelectToolbar />
