@@ -6,11 +6,11 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "outline";
 type Size = "sm" | "md" | "lg";
 
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 font-medium select-none transition-all duration-150 press disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none";
+  "inline-flex items-center justify-center gap-2 font-medium select-none transition-all duration-150 press btn-glow disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none";
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-brand text-on-brand hover:bg-brand-bright shadow-[0_0_0_0_var(--brand)] hover:shadow-[0_0_0_4px_var(--brand-soft)]",
+    "bg-brand text-on-brand hover:bg-brand-bright pulse-mint shadow-[0_0_0_0_var(--brand)] hover:shadow-[0_0_0_4px_var(--brand-soft)]",
   secondary:
     "bg-surface-elevated text-ink hover:bg-surface-strong border border-hairline hover:border-hairline-strong",
   ghost: "text-ink hover:bg-surface-elevated",

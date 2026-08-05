@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { cn, formatPercent } from "@/lib/utils";
 import { PageHeader, SectionHeader } from "@/components/page-header";
-import { Card } from "@/components/ui/card";
 import { LiveDot } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SectorHeatmap } from "@/components/sector-heatmap";
@@ -98,7 +97,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="px-6 md:px-10 py-8 md:py-12 max-w-7xl">
+    <div className="px-4 md:px-6 py-4 md:py-6 max-w-7xl">
       <PageHeader
         title={
           <span className="flex items-center gap-3">
@@ -110,16 +109,16 @@ export default function DashboardPage() {
       />
 
       {/* Quick search */}
-      <form onSubmit={handleQuickSearch} className="relative mb-10 group">
+      <form onSubmit={handleQuickSearch} className="relative mb-6 group">
         <Search
-          className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-brand-bright transition-colors duration-150"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-brand-bright transition-colors duration-150"
           strokeWidth={2}
         />
         <input
           value={quickSearch}
           onChange={(e) => setQuickSearch(e.target.value)}
           placeholder="Buscar ação, ETF ou cripto (ex: AAPL, Apple, Microsoft)"
-          className="w-full bg-surface border border-hairline rounded-md pl-11 pr-4 py-3.5 text-sm text-ink placeholder:text-faint transition-all duration-200 focus:outline-none focus:border-brand focus:bg-surface-elevated focus:shadow-[0_0_0_4px_var(--brand-soft)]"
+          className="w-full bg-surface border border-hairline pl-9 pr-3 py-2.5 text-sm text-ink placeholder:text-faint input-glow"
         />
       </form>
 
@@ -139,8 +138,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Top movers */}
-        <Card className="lg:col-span-2 animate-fade-up">
+        {/* Top movers — lista direta (sem panel) */}
+        <section>
           <SectionHeader
             icon={TrendingUp}
             title="Top movers"
@@ -155,22 +154,19 @@ export default function DashboardPage() {
             }
           />
           {loading ? (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-10" />
               ))}
             </div>
           ) : (
-            <div className="space-y-1">
+            <div className="border-t border-hairline">
               {topAssets.map((r, i) => (
                 <Link
                   key={`${r.symbol}-${r.type}`}
                   href={`/asset/${encodeURIComponent(r.symbol)}`}
-                  className={cn(
-                    "flex items-center justify-between px-3 py-2.5 rounded-md hover-row press group",
-                    "animate-fade-up",
-                  )}
-                  style={{ animationDelay: `${i * 40}ms` }}
+                  className="flex items-center justify-between px-3 py-2 hover-row press group border-b border-hairline animate-fade-up"
+                  style={{ animationDelay: `${i * 30}ms` }}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="font-mono font-semibold text-sm w-20 text-ink">
@@ -192,6 +188,12 @@ export default function DashboardPage() {
                         >
                           {formatPercent(r.quote.changePercent)}
                         </span>
+                        <Sparkline
+                          symbol={r.symbol}
+                          width={56}
+                          height={20}
+                          positive={r.quote.changePercent >= 0}
+                        />
                       </>
                     ) : (
                       <span className="text-muted">—</span>
@@ -201,10 +203,10 @@ export default function DashboardPage() {
               ))}
             </div>
           )}
-        </Card>
+        </section>
 
-        {/* News */}
-        <Card className="animate-fade-up stagger-2">
+        {/* News — lista direta (sem panel) */}
+        <section>
           <SectionHeader
             icon={Newspaper}
             title="Últimas notícias"
@@ -221,20 +223,20 @@ export default function DashboardPage() {
           {news.length === 0 ? (
             <p className="text-sm text-muted">Sem notícias disponíveis agora.</p>
           ) : (
-            <div className="space-y-3.5">
+            <div className="border-t border-hairline">
               {news.map((n, i) => (
                 <a
                   key={`${n.id}-${n.url}`}
                   href={n.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block group animate-fade-up"
-                  style={{ animationDelay: `${i * 60}ms` }}
+                  className="block px-3 py-2 hover-row group border-b border-hairline animate-fade-up"
+                  style={{ animationDelay: `${i * 40}ms` }}
                 >
-                  <div className="text-sm text-ink group-hover:text-brand-bright transition-colors duration-150 line-clamp-2 leading-relaxed">
+                  <div className="text-sm text-ink group-hover:text-brand-bright transition-colors duration-150 leading-relaxed">
                     {n.headline}
                   </div>
-                  <div className="text-xs text-muted mt-1">
+                  <div className="text-xs text-muted mt-0.5">
                     {n.source} ·{" "}
                     {new Date(n.datetime * 1000).toLocaleDateString("pt-BR", {
                       day: "2-digit",
@@ -245,10 +247,10 @@ export default function DashboardPage() {
               ))}
             </div>
           )}
-        </Card>
+        </section>
 
-        {/* Indices */}
-        <Card className="lg:col-span-2 animate-fade-up stagger-3">
+        {/* Indices — lista direta horizontal */}
+        <section>
           <SectionHeader
             icon={PieChart}
             title="Índices"
@@ -262,15 +264,15 @@ export default function DashboardPage() {
               </Link>
             }
           />
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          <div className="border-t border-hairline grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             {indices.map((idx, i) => (
               <Link
                 key={idx.id}
                 href={idx.href}
-                className="rounded-md border border-hairline bg-surface-elevated px-3.5 py-3 hover-lift group animate-fade-up"
-                style={{ animationDelay: `${i * 50}ms` }}
+                className="px-3 py-3 hover-row group border-b border-hairline border-r last:border-r-0 animate-fade-up"
+                style={{ animationDelay: `${i * 30}ms` }}
               >
-                <div className="text-xs text-muted mb-1 truncate group-hover:text-body transition-colors">
+                <div className="text-xs text-muted mb-0.5 truncate group-hover:text-body transition-colors">
                   {idx.name}
                 </div>
                 <div
@@ -285,10 +287,10 @@ export default function DashboardPage() {
               </Link>
             ))}
           </div>
-        </Card>
+        </section>
 
-        {/* Portfolios */}
-        <Card className="animate-fade-up stagger-4">
+        {/* Portfolios — lista direta */}
+        <section>
           <SectionHeader
             icon={Briefcase}
             title="Portfolios"
@@ -302,13 +304,13 @@ export default function DashboardPage() {
               </Link>
             }
           />
-          <div className="space-y-1">
+          <div className="border-t border-hairline">
             {portfolios.map((p, i) => (
               <Link
                 key={p.id}
                 href={p.href}
-                className="flex items-center justify-between px-3 py-2.5 rounded-md hover-row press animate-fade-up"
-                style={{ animationDelay: `${i * 40}ms` }}
+                className="flex items-center justify-between px-3 py-2 hover-row press border-b border-hairline animate-fade-up"
+                style={{ animationDelay: `${i * 30}ms` }}
               >
                 <span className="text-sm text-ink">{p.name}</span>
                 <span
@@ -323,70 +325,42 @@ export default function DashboardPage() {
               </Link>
             ))}
           </div>
-        </Card>
+        </section>
       </div>
 
-      {/* Quick navigation cards */}
-      <section className="mt-10">
-        <h2 className="text-xs font-medium text-muted mb-4 uppercase tracking-wider">
+      {/* Quick navigation — inline links */}
+      <section className="mt-8">
+        <h2 className="text-xs font-medium text-muted mb-2 uppercase tracking-wider">
           Acesso rápido
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <NavCard
-            href="/assets"
-            icon={TrendingUp}
-            title="Assets"
-            description="Buscar ações, ETFs e cripto"
-          />
-          <NavCard
-            href="/analysis"
-            icon={Activity}
-            title="Analysis"
-            description="Indicadores técnicos profundos"
-          />
-          <NavCard
-            href="/indices"
-            icon={PieChart}
-            title="Index"
-            description="Índices customizados"
-          />
-          <NavCard
-            href="/news"
-            icon={Newspaper}
-            title="News"
-            description="Feed consolidado"
-          />
-          <NavCard
-            href="/portfolios"
-            icon={Briefcase}
-            title="Portfolios"
-            description="Portfolios pré-definidos"
-          />
+        <div className="flex flex-wrap gap-x-6 gap-y-2">
+          <NavLink href="/assets" icon={TrendingUp} label="Assets" />
+          <NavLink href="/analysis" icon={Activity} label="Analysis" />
+          <NavLink href="/indices" icon={PieChart} label="Index" />
+          <NavLink href="/news" icon={Newspaper} label="News" />
+          <NavLink href="/portfolios" icon={Briefcase} label="Portfolios" />
         </div>
       </section>
     </div>
   );
 }
 
-function NavCard({
+function NavLink({
   href,
   icon: Icon,
-  title,
-  description,
+  label,
 }: {
   href: string;
   icon: typeof TrendingUp;
-  title: string;
-  description: string;
+  label: string;
 }) {
   return (
     <Link
       href={href}
-      className="panel p-4 hover-lift group animate-fade-up"
+      className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition-colors duration-150 press"
     >
-      <Icon className="w-5 h-5 text-muted group-hover:text-brand-bright transition-colors duration-150 mb-2.5" />
-      <div className="font-medium text-ink mb-1">{title}</div>
-      <div className="text-xs text-muted line-clamp-2">{description}</div>
+      <Icon className="w-3.5 h-3.5" />
+      {label}
     </Link>
   );
 }
