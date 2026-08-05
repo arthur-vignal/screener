@@ -16,6 +16,7 @@ const NAV = [
   { href: "/crypto", label: "Crypto" },
   { href: "/fear-greed", label: "F&G" },
   { href: "/analysis", label: "Analysis" },
+  { href: "/correlation", label: "Correlação" },
   { href: "/analysis/stats", label: "Mercado" },
   { href: "/news", label: "News" },
 ];
