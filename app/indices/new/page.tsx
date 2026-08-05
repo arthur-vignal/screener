@@ -141,7 +141,7 @@ export default function NewIndexPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="ex: Momentum Tech Q3"
-              className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm focus:outline-none focus:border-brand"
+              className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm input-glow"
               required
               maxLength={60}
             />
@@ -155,7 +155,7 @@ export default function NewIndexPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="metodologia, frequência de rebalanceamento, observações…"
-              className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm focus:outline-none focus:border-brand resize-none"
+              className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm input-glow resize-none"
               rows={2}
               maxLength={300}
             />

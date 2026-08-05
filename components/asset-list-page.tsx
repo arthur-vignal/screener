@@ -4,7 +4,6 @@ import useSWR from "swr";
 import Link from "next/link";
 import { ArrowRight, Building2, BarChart3 } from "lucide-react";
 import { cn, formatPercent, formatCompact } from "@/lib/utils";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -94,7 +93,7 @@ export function AssetListPage({ endpoint, title, description, icon, accent }: Pr
         </div>
       </div>
 
-      <Card>
+      <div>
         {loadingList ? (
           <div className="space-y-2">
             {Array.from({ length: 12 }).map((_, i) => (
@@ -155,7 +154,7 @@ export function AssetListPage({ endpoint, title, description, icon, accent }: Pr
             </table>
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

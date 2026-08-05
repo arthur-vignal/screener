@@ -6,7 +6,6 @@ import Link from "next/link";
 import { ArrowRight, Plus, Lock, Globe, User as UserIcon, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SEED_PORTFOLIOS, type SeedPortfolio } from "@/lib/seed-data";
@@ -122,7 +121,7 @@ export function PortfolioList({ scope, title, description, emptyMessage }: Props
       />
 
       {isAuthRequired ? (
-        <Card className="p-8 text-center">
+        <div className="border-t border-hairline py-10 text-center">
           <Lock className="w-6 h-6 text-muted mx-auto mb-2" />
           <h2 className="font-medium text-ink mb-1 text-sm">Faça login para ver seus portfolios</h2>
           <p className="text-xs text-muted mb-3">Seus portfolios são privados e sincronizam entre dispositivos.</p>
@@ -140,14 +139,14 @@ export function PortfolioList({ scope, title, description, emptyMessage }: Props
               Criar conta
             </Link>
           </div>
-        </Card>
+        </div>
       ) : loading ? (
         <Skeleton className="h-32" />
       ) : portfolios.length === 0 ? (
-        <Card className="p-8 text-center">
+        <div className="border-t border-hairline py-10 text-center">
           <BookOpen className="w-6 h-6 text-muted mx-auto mb-2" />
           <p className="text-xs text-muted">{emptyMessage}</p>
-        </Card>
+        </div>
       ) : (
         <div className="space-y-3">
           {portfolios.map((p, i) => (
@@ -161,7 +160,7 @@ export function PortfolioList({ scope, title, description, emptyMessage }: Props
 
 function PortfolioSection({ p, index }: { p: PortfolioWithMeta; index: number }) {
   return (
-    <Card className="animate-fade-up" style={{ animationDelay: `${index * 40}ms` }}>
+    <section className="border-t border-hairline animate-fade-up" style={{ animationDelay: `${index * 40}ms` }}>
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="min-w-0 flex-1">
           <Link
@@ -214,6 +213,6 @@ function PortfolioSection({ p, index }: { p: PortfolioWithMeta; index: number })
       </div>
 
       <PortfolioHoldingsTable holdings={p.constituents} />
-    </Card>
+    </section>
   );
 }

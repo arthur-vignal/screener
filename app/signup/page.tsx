@@ -66,7 +66,7 @@ export default function SignupPage() {
             onChange={(e) => setUsername(e.target.value)}
             placeholder="seu_user"
             autoComplete="username"
-            className="w-full bg-surface border border-hairline rounded-md px-3.5 py-2.5 text-sm text-ink placeholder:text-faint transition-colors duration-150 focus:outline-none focus:border-brand focus:bg-surface-elevated"
+            className="w-full bg-surface border border-hairline rounded-md px-3.5 py-2.5 text-sm text-ink placeholder:text-faint transition-colors duration-150 input-glow"
             required
             minLength={3}
             maxLength={20}
@@ -84,7 +84,7 @@ export default function SignupPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="seu@email.com"
             autoComplete="email"
-            className="w-full bg-surface border border-hairline rounded-md px-3.5 py-2.5 text-sm text-ink placeholder:text-faint transition-colors duration-150 focus:outline-none focus:border-brand focus:bg-surface-elevated"
+            className="w-full bg-surface border border-hairline rounded-md px-3.5 py-2.5 text-sm text-ink placeholder:text-faint transition-colors duration-150 input-glow"
             required
           />
         </div>
@@ -99,7 +99,7 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
-              className="w-full bg-surface border border-hairline rounded-md px-3.5 py-2.5 pr-10 text-sm text-ink placeholder:text-faint transition-colors duration-150 focus:outline-none focus:border-brand focus:bg-surface-elevated"
+              className="w-full bg-surface border border-hairline rounded-md px-3.5 py-2.5 pr-10 text-sm text-ink placeholder:text-faint transition-colors duration-150 input-glow"
               required
               minLength={8}
             />

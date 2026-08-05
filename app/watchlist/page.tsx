@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Star, Trash2, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WatchlistButton } from "@/components/watchlist-button";
 import { cn, formatPercent } from "@/lib/utils";
@@ -68,7 +67,7 @@ export default function WatchlistPage() {
 
   if (loggedIn === null) {
     return (
-      <div className="px-6 md:px-10 py-10 md:py-14 max-w-5xl">
+      <div className="px-4 md:px-6 py-4 md:py-6 max-w-5xl">
         <PageHeader
           title="Watchlist"
           description="Acompanhe os ativos que você favoritou."
@@ -80,12 +79,12 @@ export default function WatchlistPage() {
 
   if (loggedIn === false) {
     return (
-      <div className="px-6 md:px-10 py-10 md:py-14 max-w-5xl">
+      <div className="px-4 md:px-6 py-4 md:py-6 max-w-5xl">
         <PageHeader
           title="Watchlist"
           description="Acompanhe os ativos que você favoritou."
         />
-        <Card className="p-10 text-center">
+        <div className="border-t border-hairline py-12 text-center">
           <Star className="w-8 h-8 text-muted mx-auto mb-3" />
           <h2 className="font-medium text-ink mb-1">Faça login para usar a watchlist</h2>
           <p className="text-sm text-muted mb-4">
@@ -105,19 +104,19 @@ export default function WatchlistPage() {
               Criar conta
             </Link>
           </div>
-        </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="px-6 md:px-10 py-10 md:py-14 max-w-5xl">
+    <div className="px-4 md:px-6 py-4 md:py-6 max-w-5xl">
       <PageHeader
         title="Watchlist"
         description="Ativos que você favoritou. Use a estrela em qualquer asset para adicionar."
       />
 
-      <Card>
+      <div>
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -140,11 +139,11 @@ export default function WatchlistPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs uppercase tracking-wider text-muted border-b border-hairline">
-                  <th className="text-left px-4 py-3 font-medium w-10"></th>
-                  <th className="text-left px-4 py-3 font-medium">Ticker</th>
-                  <th className="text-right px-4 py-3 font-medium">Preço</th>
-                  <th className="text-right px-4 py-3 font-medium">24h</th>
-                  <th className="text-right px-4 py-3 font-medium">Adicionado em</th>
+                  <th className="text-left py-2 px-3 font-medium w-10"></th>
+                  <th className="text-left py-2 px-3 font-medium">Ticker</th>
+                  <th className="text-right py-2 px-3 font-medium">Preço</th>
+                  <th className="text-right py-2 px-3 font-medium">24h</th>
+                  <th className="text-right py-2 px-3 font-medium">Adicionado em</th>
                   <th className="w-10"></th>
                 </tr>
               </thead>
@@ -157,10 +156,10 @@ export default function WatchlistPage() {
                       className="border-b border-hairline last:border-0 hover-row animate-fade-up"
                       style={{ animationDelay: `${i * 40}ms` }}
                     >
-                      <td className="px-4 py-3">
+                      <td className="py-2 px-3">
                         <WatchlistButton symbol={e.symbol} initialWatched={true} size="sm" />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="py-2 px-3">
                         <Link
                           href={`/asset/${encodeURIComponent(e.symbol)}`}
                           className="font-mono font-medium text-ink hover:text-brand-deep transition-colors duration-150"
@@ -168,7 +167,7 @@ export default function WatchlistPage() {
                           {e.symbol}
                         </Link>
                       </td>
-                      <td className="text-right px-4 py-3 font-tabular text-ink">
+                      <td className="text-right py-2 px-3 font-tabular text-ink">
                         {q ? (
                           q.price < 1
                             ? `$${q.price.toFixed(4)}`
@@ -179,7 +178,7 @@ export default function WatchlistPage() {
                       </td>
                       <td
                         className={cn(
-                          "text-right px-4 py-3 font-tabular font-medium",
+                          "text-right py-2 px-3 font-tabular font-medium",
                           q?.changePercent == null
                             ? "text-muted"
                             : q.changePercent >= 0
@@ -189,10 +188,10 @@ export default function WatchlistPage() {
                       >
                         {q ? formatPercent(q.changePercent) : "—"}
                       </td>
-                      <td className="text-right px-4 py-3 text-muted text-xs">
+                      <td className="text-right py-2 px-3 text-muted text-xs">
                         {new Date(e.createdAt * 1000).toLocaleDateString("pt-BR")}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="py-2 px-3">
                         <button
                           onClick={() => remove(e.symbol)}
                           className="p-1 text-muted hover:text-negative transition-colors press"
@@ -208,7 +207,7 @@ export default function WatchlistPage() {
             </table>
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

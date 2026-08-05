@@ -134,7 +134,7 @@ export default function NewPortfolioPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="ex: Growth Tech 2025"
-              className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm focus:outline-none focus:border-brand"
+              className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm input-glow"
               required
               maxLength={60}
             />
@@ -148,7 +148,7 @@ export default function NewPortfolioPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="estratégia, tese, observações…"
-              className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm focus:outline-none focus:border-brand resize-none"
+              className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm input-glow resize-none"
               rows={2}
               maxLength={300}
             />
@@ -164,7 +164,7 @@ export default function NewPortfolioPage() {
                 value={initialValue}
                 onChange={(e) => setInitialValue(Number(e.target.value))}
                 min={1}
-                className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:border-brand"
+                className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm font-mono input-glow"
               />
             </div>
             <div>
@@ -177,7 +177,7 @@ export default function NewPortfolioPage() {
                 value={createdAt}
                 onChange={(e) => setCreatedAt(e.target.value)}
                 max={new Date().toISOString().slice(0, 10)}
-                className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:border-brand"
+                className="w-full bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm font-mono input-glow"
               />
               <p className="text-[11px] text-muted mt-1">
                 Retroativa simula performance desde essa data
@@ -216,7 +216,7 @@ export default function NewPortfolioPage() {
               onChange={(e) => setNewSymbol(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addHolding())}
               placeholder="ticker (ex: AAPL)"
-              className="flex-1 bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:border-brand"
+              className="flex-1 bg-canvas-soft border border-hairline rounded-md px-3 py-2 text-sm font-mono input-glow"
             />
             <button
               type="button"

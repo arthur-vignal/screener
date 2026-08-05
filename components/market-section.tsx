@@ -4,7 +4,6 @@ import useSWR from "swr";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { cn, formatPercent, formatCompact } from "@/lib/utils";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -68,7 +67,7 @@ export function MarketSection({ endpoint, title, icon: Icon, accent, viewAllHref
   const rows = quotes?.rows ?? [];
 
   return (
-    <Card className="animate-fade-up">
+    <div className="animate-fade-up">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Icon className={cn("w-4 h-4", accentMap[accent])} />
@@ -129,6 +128,6 @@ export function MarketSection({ endpoint, title, icon: Icon, accent, viewAllHref
           ))}
         </div>
       )}
-    </Card>
+    </div>
   );
 }
