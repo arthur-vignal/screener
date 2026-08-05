@@ -18,6 +18,7 @@ import { LiveDot } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SectorHeatmap } from "@/components/sector-heatmap";
 import { MacroPanel } from "@/components/macro-panel";
+import { FearGreedGauge } from "@/components/fear-greed";
 import { Sparkline } from "@/components/sparkline";
 
 type AssetType = "stock" | "etf" | "crypto";
@@ -128,9 +129,14 @@ export default function DashboardPage() {
           <SectorHeatmap />
         </div>
 
-        {/* Macro panel (full width) */}
-        <div className="lg:col-span-3">
-          <MacroPanel />
+        {/* Macro panel + Fear & Greed */}
+        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="md:col-span-2">
+            <MacroPanel />
+          </div>
+          <div>
+            <FearGreedGauge />
+          </div>
         </div>
 
         {/* Top movers */}
