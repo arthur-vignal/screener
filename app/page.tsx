@@ -123,14 +123,14 @@ export default function DashboardPage() {
         />
       </form>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Heatmap setorial (full width) */}
         <div className="lg:col-span-3">
           <SectorHeatmap />
         </div>
 
         {/* Macro panel + Fear & Greed */}
-        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="md:col-span-2">
             <MacroPanel />
           </div>

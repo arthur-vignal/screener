@@ -6,13 +6,13 @@ import { Bitcoin, Building2, BarChart3 } from "lucide-react";
 
 export default function MarketPage() {
   return (
-    <div className="px-6 md:px-10 py-10 md:py-14 max-w-7xl">
+    <div className="px-3 md:px-4 py-3 md:py-4 max-w-7xl">
       <PageHeader
         title="Market"
         description="Visão geral do mercado. Stocks, Crypto e ETFs numa só página. Use os submenus do nav para ir direto a uma categoria."
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <MarketSection
           endpoint="sp500"
           title="Stocks"

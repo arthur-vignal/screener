@@ -73,7 +73,7 @@ export function AssetListPage({ endpoint, title, description, icon, accent }: Pr
   const total = list?.total ?? 0;
 
   return (
-    <div className="px-6 md:px-10 py-10 md:py-14 max-w-7xl">
+    <div className="px-3 md:px-4 py-3 md:py-4 max-w-7xl">
       <div className="mb-8">
         <Link
           href="/market"

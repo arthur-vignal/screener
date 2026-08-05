@@ -61,7 +61,7 @@ export function FearGreedGauge() {
   const needleY = 50 + 38 * Math.sin(((angle - 90) * Math.PI) / 180);
 
   return (
-    <div className="panel p-5 animate-fade-up">
+    <div className="panel p-4 animate-fade-up">
       <div className="flex items-center gap-2 mb-4">
         <Gauge className="w-4 h-4 text-brand-deep" />
         <h3 className="text-sm font-medium text-ink uppercase tracking-wider">
@@ -69,7 +69,7 @@ export function FearGreedGauge() {
         </h3>
       </div>
 
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-3">
         {/* SVG Gauge */}
         <svg viewBox="0 0 100 60" className="w-32 h-20 shrink-0">
           {/* Background arc */}

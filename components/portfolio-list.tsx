@@ -104,7 +104,7 @@ export function PortfolioList({ scope, title, description, emptyMessage }: Props
   const isAuthRequired = scope === "mine" && !user;
 
   return (
-    <div className="px-4 md:px-6 py-6 md:py-8 max-w-7xl">
+    <div className="px-3 md:px-4 py-3 md:py-4 max-w-7xl">
       <PageHeader
         title={title}
         description={description}

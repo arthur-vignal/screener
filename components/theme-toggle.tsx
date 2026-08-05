@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { Sun, Moon, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Theme = "light" | "dark-green" | "dark-mono";
+type Theme = "light" | "dark-green" | "dark-green-mix" | "dark-mono";
 
 const STORAGE_KEY = "sulfur:theme";
 
-const ORDER: Theme[] = ["light", "dark-green", "dark-mono"];
+const ORDER: Theme[] = ["light", "dark-green", "dark-green-mix", "dark-mono"];
 
 function nextTheme(current: Theme): Theme {
   const idx = ORDER.indexOf(current);
@@ -17,7 +17,8 @@ function nextTheme(current: Theme): Theme {
 
 function themeLabel(theme: Theme): string {
   if (theme === "light") return "Light";
-  if (theme === "dark-green") return "Dark green";
+  if (theme === "dark-green") return "Tech sustain";
+  if (theme === "dark-green-mix") return "Forest mix";
   return "Dark mono";
 }
 
@@ -42,7 +43,7 @@ export function ThemeToggle({ className }: { className?: string }) {
   useEffect(() => {
     if (!mounted) return;
     const root = document.documentElement;
-    root.classList.remove("light", "dark-green", "dark-mono");
+    root.classList.remove("light", "dark-green", "dark-green-mix", "dark-mono");
     root.classList.add(theme);
     try {
       localStorage.setItem(STORAGE_KEY, theme);

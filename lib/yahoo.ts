@@ -100,11 +100,25 @@ type YahooChartResponse = {
 
 async function fetchYahoo(path: string, params: Record<string, string>): Promise<Response> {
   const qs = new URLSearchParams(params).toString();
-  return fetch(`https://query2.finance.yahoo.com${path}?${qs}`, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    },
-  });
+  const hosts = ["query2", "query1", "query3"];
+  const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Accept": "application/json",
+  };
+  let lastError: Error | null = null;
+  for (const host of hosts) {
+    try {
+      const r = await fetch(`https://${host}.finance.yahoo.com${path}?${qs}`, {
+        headers,
+        signal: AbortSignal.timeout(8000),
+      });
+      if (r.ok) return r;
+      lastError = new Error(`yahoo ${host} ${r.status}`);
+    } catch (e) {
+      lastError = e as Error;
+    }
+  }
+  throw lastError ?? new Error("yahoo: all hosts failed");
 }
 
 export async function getYahooCandles(

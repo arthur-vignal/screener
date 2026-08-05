@@ -116,6 +116,60 @@
   --radius-xl: 0;
 }
 
+/* ---------- THEME: DARK GREEN MIX (v2: verde + cinza + branco) ---------- */
+/* Mistura: canvas neutro escuro com tons de verde geomorficos, neutrals clean, highlights brancos em elementos ativos */
+:root.dark-green-mix {
+  --canvas: #0a0e0c;             /* near-black with green tint */
+  --canvas-soft: #0f1411;
+  --surface: #141a16;            /* deep neutral with green undertone */
+  --surface-elevated: #1a211c;   /* lighter */
+  --surface-strong: #212a23;     /* lightest */
+  --surface-mint: #2a3729;       /* hint of mint */
+  --surface-glow: #34453a;       /* mint glow */
+
+  --hairline: rgba(255, 255, 255, 0.05);
+  --hairline-strong: rgba(255, 255, 255, 0.10);
+
+  --brand: #a7f3d0;              /* mint 200 (lighter than dark-green) */
+  --brand-soft: rgba(167, 243, 208, 0.10);
+  --brand-deep: #6ee7b7;         /* mint 300 */
+  --brand-dark: #34d399;         /* mint 400 */
+  --brand-darker: #10b981;       /* mint 500 */
+  --brand-bright: #ecfdf5;       /* mint 50 (almost white) */
+  --brand-glow: rgba(167, 243, 208, 0.24);
+  --brand-on: #0a0e0c;
+
+  --green-mint: #a7f3d0;
+  --green-soft: #d1fae5;
+  --green-deep: #10b981;
+
+  --ink: #fafafa;                /* almost white */
+  --ink-soft: #e4e4e7;
+  --body: rgba(228, 228, 231, 0.78);
+  --muted: rgba(228, 228, 231, 0.52);
+  --faint: rgba(228, 228, 231, 0.32);
+  --disabled: rgba(228, 228, 231, 0.18);
+
+  --positive: #6ee7b7;
+  --positive-soft: rgba(110, 231, 183, 0.12);
+  --negative: #fca5a5;
+  --negative-soft: rgba(252, 165, 165, 0.12);
+  --warning: #fde047;
+  --warning-soft: rgba(253, 224, 71, 0.12);
+
+  --accent-teal: #5eead4;
+  --accent-pink: #f9a8d4;
+  --accent-yellow: #fde047;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(167, 243, 208, 0.04);
+  --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.48), 0 0 24px rgba(167, 243, 208, 0.06);
+
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+}
+
 /* ---------- THEME: DARK MONO (v1 cobalto violeta) ---------- */
 :root.dark-mono {
   --canvas: #000000;
@@ -538,26 +592,30 @@ body {
 }
 
 /* ========== SQUARE EDGES OVERRIDE (compress layout) ========== */
-/* Apply border-radius: 0 to all rounded-* utilities in cards/panels/buttons/inputs.
-   Ensures the square aesthetic without per-component edits. */
-.panel,
-.panel * ,
-.panel-inset,
-.panel-inset * ,
+/* Force border-radius: 0 across all surfaces. Tailwind rounded-* utilities
+   are overridden via attribute selector with class-regex-like matching. */
+button,
 input,
 select,
 textarea,
-button,
-.rounded-none,
-.rounded-xs,
-.rounded-sm,
-.rounded-md,
-.rounded-lg,
-.rounded-xl,
-.rounded-2xl,
-.rounded-3xl,
-.rounded-full {
+.panel,
+.panel-inset,
+.panel *,
+.panel-inset *,
+[class*="rounded-sm"]:not(.chip):not([class*="rounded-full"]),
+[class*="rounded-md"]:not(.chip):not([class*="rounded-full"]),
+[class*="rounded-lg"]:not(.chip):not([class*="rounded-full"]),
+[class*="rounded-xl"]:not(.chip):not([class*="rounded-full"]),
+[class*="rounded-2xl"]:not(.chip):not([class*="rounded-full"]),
+[class*="rounded-3xl"]:not(.chip):not([class*="rounded-full"]),
+[class*="rounded-full"]:not(.chip):not([data-keep-rad]) {
   border-radius: 0 !important;
+}
+
+/* Keep badges/avatars/pills rounded */
+.chip,
+[data-keep-rad] {
+  border-radius: 9999px !important;
 }
 
 /* Keep badges rounded (pill shape) */
