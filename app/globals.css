@@ -1,61 +1,151 @@
 @import "tailwindcss";
 
 /* ============================================================================
- * SUSTAIN — design system v2
- * Canvas branco + off-white + gradientes de cinza + verde-claro-opaco.
- * Inter (UI) + Instrument Serif (display) + JetBrains Mono (mono).
- * Sem vibrantes, sem dark mode. Tema único claro.
- * Alinhamento geométrico via spacing tokens. Vertical rhythm.
+ * SULFUR.IO — Design System v3 — Multi-theme
+ *
+ * 3 themes, applied via class on <html>:
+ *   .light       — Sustain Light (default). White + green-claro-opaco.
+ *   .dark-green  — Tech Sustain Dark. Deep green-tinted dark, mint accent.
+ *   .dark-mono   — Mono Dark. Pure dark with cobalto-violeta accent.
+ *
+ * Same token names, different values per theme.
+ * Tokens mapped to Tailwind via @theme inline.
  * ============================================================================ */
 
-:root {
-  /* Canvas — brancura com leve off-white pra profundidade */
+/* ---------- THEME: LIGHT (Sustain) ---------- */
+:root.light {
   --canvas: #ffffff;
   --canvas-soft: #fafafa;
   --surface: #ffffff;
   --surface-elevated: #fafafa;
   --surface-strong: #f5f5f5;
-
-  /* Hairline — cinza-quase-invisível */
   --hairline: rgba(10, 10, 10, 0.06);
   --hairline-strong: rgba(10, 10, 10, 0.12);
 
-  /* Brand — verde-claro-opaco (sustain) */
-  --brand: #86efac;          /* light green 300 */
-  --brand-soft: #d9f99d;     /* lime 200 */
-  --brand-deep: #65a30d;     /* lime 600 */
+  --brand: #86efac;
+  --brand-soft: #d9f99d;
+  --brand-deep: #65a30d;
   --brand-glow: rgba(134, 239, 172, 0.32);
-  --brand-on: #0a0a0a;       /* texto preto sobre green */
+  --brand-on: #0a0a0a;
 
-  /* Text — preto profundo + escala de cinza */
   --ink: #0a0a0a;
-  --body: #404040;           /* neutral 700 */
-  --muted: #737373;          /* neutral 500 */
-  --faint: #a3a3a3;          /* neutral 400 */
-  --disabled: #d4d4d4;       /* neutral 300 */
+  --body: rgba(10, 11, 13, 0.74);
+  --muted: rgba(10, 11, 13, 0.52);
+  --faint: rgba(10, 11, 13, 0.32);
+  --disabled: #d4d4d4;
 
-  /* Semantic — sempre opaco, nunca vibrante */
-  --positive: #15803d;       /* green 700 */
-  --positive-soft: rgba(21, 128, 61, 0.08);
-  --negative: #9f1239;       /* rose 800 */
-  --negative-soft: rgba(159, 18, 57, 0.08);
-  --warning: #854d0e;        /* amber 800 */
-  --warning-soft: rgba(133, 77, 14, 0.08);
+  --positive: #15803d;
+  --positive-soft: rgba(21, 128, 61, 0.10);
+  --negative: #9f1239;
+  --negative-soft: rgba(159, 18, 57, 0.10);
+  --warning: #854d0e;
+  --warning-soft: rgba(133, 77, 14, 0.10);
 
-  /* Accents (uso ilustrativo, nunca vibrante) */
   --accent-teal: #0f766e;
   --accent-pink: #9d174d;
   --accent-yellow: #713f12;
 
-  /* Shadows — 2 tiers, sempre sutis */
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.06);
 
-  /* Radii — quadrados vivos, sem cantos arredondados de UI */
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
+}
+
+/* ---------- THEME: DARK GREEN (Tech Sustain) ---------- */
+:root.dark-green {
+  --canvas: #061812;            /* deep green-tinted black */
+  --canvas-soft: #0a1f17;
+  --surface: #0d251c;
+  --surface-elevated: #122d22;
+  --surface-strong: #1a3528;
+
+  --hairline: rgba(134, 239, 172, 0.08);
+  --hairline-strong: rgba(134, 239, 172, 0.14);
+
+  --brand: #86efac;
+  --brand-soft: rgba(134, 239, 172, 0.10);
+  --brand-deep: #4ade80;
+  --brand-glow: rgba(134, 239, 172, 0.32);
+  --brand-on: #061812;
+
+  --ink: #e6f7ed;
+  --body: rgba(230, 247, 237, 0.78);
+  --muted: rgba(230, 247, 237, 0.52);
+  --faint: rgba(230, 247, 237, 0.32);
+  --disabled: rgba(230, 247, 237, 0.18);
+
+  --positive: #4ade80;
+  --positive-soft: rgba(74, 222, 128, 0.12);
+  --negative: #fb7185;
+  --negative-soft: rgba(251, 113, 133, 0.12);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.12);
+
+  --accent-teal: #2dd4bf;
+  --accent-pink: #f9a8d4;
+  --accent-yellow: #fde047;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.32);
+  --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.48);
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+/* ---------- THEME: DARK MONO (v1 cobalto violeta) ---------- */
+:root.dark-mono {
+  --canvas: #000000;
+  --canvas-soft: #0a0a0a;
+  --surface: #101114;
+  --surface-elevated: #16181a;
+  --surface-strong: #1c1e22;
+
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-strong: rgba(255, 255, 255, 0.14);
+
+  --brand: #494fdf;
+  --brand-soft: rgba(73, 79, 223, 0.14);
+  --brand-deep: #3a40c4;
+  --brand-glow: rgba(73, 79, 223, 0.32);
+  --brand-on: #ffffff;
+
+  --ink: #ffffff;
+  --body: rgba(255, 255, 255, 0.78);
+  --muted: rgba(255, 255, 255, 0.52);
+  --faint: rgba(255, 255, 255, 0.32);
+  --disabled: rgba(255, 255, 255, 0.20);
+
+  --positive: #05b169;
+  --positive-soft: rgba(5, 177, 105, 0.12);
+  --negative: #cf202f;
+  --negative-soft: rgba(207, 32, 47, 0.12);
+  --warning: #ec7e00;
+  --warning-soft: rgba(236, 126, 0, 0.12);
+
+  --accent-teal: #00a87e;
+  --accent-pink: #e61e49;
+  --accent-yellow: #b09000;
+
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.32);
+  --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.48);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+}
+
+/* ---------- SHARED SECTION (fonts, animations, scrollbar, etc.) ---------- */
+:root {
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: var(--font-archia), "Bricolage Grotesque", sans-serif;
+  --font-mono: var(--font-geist-mono), "Geist Mono", "JetBrains Mono", monospace;
+  --font-commit-mono: var(--font-commit-mono), "Commit Mono", monospace;
 }
 
 @theme inline {
@@ -88,12 +178,6 @@
   --color-accent-teal: var(--accent-teal);
   --color-accent-pink: var(--accent-pink);
   --color-accent-yellow: var(--accent-yellow);
-
-  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: var(--font-geist-mono), "Geist Mono", "JetBrains Mono", monospace;
-  --font-commit-mono: var(--font-commit-mono), "Commit Mono", monospace;
-  /* Display font: Bricolage Grotesque (substitute for Archia — see public/fonts/archia/README.md) */
-  --font-display: var(--font-archia), "Bricolage Grotesque", sans-serif;
 }
 
 * {
@@ -108,18 +192,13 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 body {
   min-height: 100vh;
 }
 
-/* ============================================================================
- * TYPOGRAPHY
- * — Instrument Serif em weight 400 com letter-spacing levemente negativo
- * — Inter para body 400/500/600
- * — JetBrains Mono para tabular e IDs
- * ============================================================================ */
 .font-display {
   font-family: var(--font-display);
   font-weight: 400;
@@ -140,9 +219,7 @@ body {
   font-feature-settings: "tnum" 1, "zero" 1;
 }
 
-/* ============================================================================
- * SCROLLBAR — minimal
- * ============================================================================ */
+/* ---------- SCROLLBAR ---------- */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -152,16 +229,15 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   background: var(--hairline-strong);
-  border-radius: 0;
+  border-radius: 9999px;
   border: 2px solid var(--canvas);
+  transition: background-color 0.2s ease;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--brand-deep);
 }
 
-/* ============================================================================
- * ANIMATIONS
- * ============================================================================ */
+/* ---------- ANIMATIONS ---------- */
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
@@ -217,12 +293,11 @@ body {
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
-/* Glass skeleton — translucent layered surface with shimmer */
 .glass-skeleton {
   position: relative;
-  background: rgba(16, 17, 20, 0.45);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--hairline);
   overflow: hidden;
 }
 
@@ -233,7 +308,7 @@ body {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(134, 239, 172, 0.06) 50%,
+    color-mix(in srgb, var(--brand) 8%, transparent) 50%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -276,9 +351,7 @@ body {
   animation: stroke-draw 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* ============================================================================
- * INTERACTIVE
- * ============================================================================ */
+/* ---------- INTERACTIVE ---------- */
 .hover-lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   will-change: transform;
@@ -300,34 +373,6 @@ body {
 }
 .press:active {
   transform: scale(0.97);
-}
-
-/* Card pulse on selection */
-@keyframes pulse-mint {
-  0%, 100% { box-shadow: 0 0 0 0 var(--brand-glow); }
-  50% { box-shadow: 0 0 0 4px var(--brand-glow); }
-}
-.pulse-mint {
-  animation: pulse-mint 2s ease-in-out infinite;
-}
-
-/* Button glow on hover */
-.btn-glow {
-  transition: box-shadow 0.2s ease, transform 0.1s ease;
-}
-.btn-glow:hover {
-  box-shadow: 0 0 0 4px var(--brand-soft);
-}
-.btn-glow:active {
-  transform: scale(0.97);
-}
-
-/* Input focus glow (already in bg or replaced) */
-.input-glow {
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
-}
-.input-glow:focus {
-  box-shadow: 0 0 0 4px var(--brand-soft);
 }
 
 .icon-rotate-hover {
@@ -366,17 +411,39 @@ body {
               width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ============================================================================
- * FOCUS
- * ============================================================================ */
+.pulse-mint {
+  animation: pulse-mint 2s ease-in-out infinite;
+}
+
+@keyframes pulse-mint {
+  0%, 100% { box-shadow: 0 0 0 0 var(--brand-glow); }
+  50% { box-shadow: 0 0 0 4px var(--brand-glow); }
+}
+
+.btn-glow {
+  transition: box-shadow 0.2s ease, transform 0.1s ease;
+}
+.btn-glow:hover {
+  box-shadow: 0 0 0 4px var(--brand-soft);
+}
+.btn-glow:active {
+  transform: scale(0.97);
+}
+
+.input-glow {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.input-glow:focus {
+  box-shadow: 0 0 0 4px var(--brand-soft);
+}
+
+/* ---------- FOCUS ---------- */
 :focus-visible {
   outline: 2px solid var(--brand-deep);
   outline-offset: 2px;
 }
 
-/* ============================================================================
- * REDUCED MOTION
- * ============================================================================ */
+/* ---------- REDUCED MOTION ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -386,19 +453,17 @@ body {
   }
 }
 
-/* ============================================================================
- * UTILITIES
- * ============================================================================ */
+/* ---------- UTILITIES ---------- */
 .panel {
   background: var(--surface);
   border: 1px solid var(--hairline);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
 }
 
 .panel-inset {
   background: var(--surface-elevated);
   border: 1px solid var(--hairline);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
 }
 
 .section-rule {
@@ -437,15 +502,11 @@ body {
   animation: pulse-ring 1.6s ease-out infinite;
 }
 
-
-/* ============================================================================
- * TICKER MARQUEE — infinite horizontal scroll
- * ============================================================================ */
+/* ---------- TICKER MARQUEE ---------- */
 @keyframes ticker-scroll {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
-
 .ticker-track {
   animation: ticker-scroll 60s linear infinite;
   width: max-content;
@@ -457,21 +518,16 @@ body {
   }
 }
 
-/* ============================================================================
- * GLOW BADGES — box-shadow com cor do accent
- * ============================================================================ */
+/* ---------- GLOW BADGES ---------- */
 .glow-mint {
   box-shadow: 0 0 0 1px var(--brand), 0 0 12px 0 var(--brand-glow);
 }
-
 .glow-cyan {
-  box-shadow: 0 0 0 1px var(--accent-teal), 0 0 12px 0 rgba(6, 182, 212, 0.32);
+  box-shadow: 0 0 0 1px var(--accent-teal), 0 0 12px 0 color-mix(in srgb, var(--accent-teal) 32%, transparent);
 }
-
 .glow-violet {
-  box-shadow: 0 0 0 1px var(--accent-pink), 0 0 12px 0 rgba(139, 92, 246, 0.32);
+  box-shadow: 0 0 0 1px var(--accent-pink), 0 0 12px 0 color-mix(in srgb, var(--accent-pink) 32%, transparent);
 }
-
 .glow-red {
-  box-shadow: 0 0 0 1px var(--negative), 0 0 12px 0 rgba(207, 32, 47, 0.32);
+  box-shadow: 0 0 0 1px var(--negative), 0 0 12px 0 color-mix(in srgb, var(--negative) 32%, transparent);
 }

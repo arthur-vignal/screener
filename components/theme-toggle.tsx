@@ -15,12 +15,6 @@ function nextTheme(current: Theme): Theme {
   return ORDER[(idx + 1) % ORDER.length];
 }
 
-function themeIcon(theme: Theme) {
-  if (theme === "light") return Sun;
-  if (theme === "dark-green") return Moon;
-  return Monitor;
-}
-
 function themeLabel(theme: Theme): string {
   if (theme === "light") return "Light";
   if (theme === "dark-green") return "Dark green";
@@ -57,40 +51,39 @@ export function ThemeToggle({ className }: { className?: string }) {
 
   // Inject inline script to apply theme before paint, avoiding flash.
   useEffect(() => {
+    if (document.getElementById("theme-init-script")) return;
     const script = document.createElement("script");
-    script.innerHTML = `
-      (function() {
-        try {
-          var t = localStorage.getItem('${STORAGE_KEY}');
-          if (t === 'light' || t === 'dark-green' || t === 'dark-mono') {
-            document.documentElement.classList.add(t);
-          } else {
-            document.documentElement.classList.add('light');
-          }
-        } catch (e) {
-          document.documentElement.classList.add('light');
-        }
-      })();
-    `;
-    if (!document.getElementById("theme-init-script")) {
-      script.id = "theme-init-script";
-      document.head.appendChild(script);
-    }
+    script.id = "theme-init-script";
+    script.innerHTML =
+      "(function(){try{var t=localStorage.getItem('sulfur:theme');" +
+      "if(t==='light'||t==='dark-green'||t==='dark-mono')" +
+      "{document.documentElement.classList.add(t);}" +
+      "else{document.documentElement.classList.add('light');}" +
+      "}catch(e){document.documentElement.classList.add('light');}})();";
+    document.head.appendChild(script);
   }, []);
 
-  const Icon = mounted ? themeIcon(theme) : Sun;
+  const iconClass = "w-4 h-4";
 
   return (
     <button
       onClick={() => setTheme(nextTheme(theme))}
       aria-label={`Switch theme (current: ${themeLabel(theme)})`}
-      title={`Tema: ${themeLabel(theme)} — click pra próximo`}
+      title={`Tema: ${themeLabel(theme)} \u2014 click pra pr\u00f3ximo`}
       className={cn(
         "relative inline-flex items-center justify-center w-9 h-9 rounded-md text-muted hover:text-ink hover:bg-surface-elevated transition-all duration-200 press",
         className,
       )}
     >
-      <Icon className="w-4 h-4" />
+      {!mounted ? (
+        <Sun className={iconClass} />
+      ) : theme === "light" ? (
+        <Sun className={iconClass} />
+      ) : theme === "dark-green" ? (
+        <Moon className={iconClass} />
+      ) : (
+        <Monitor className={iconClass} />
+      )}
     </button>
   );
 }
