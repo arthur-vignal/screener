@@ -28,7 +28,7 @@ export function CryptoMarketLive({ initialQuotes, initialGlobal }: Props) {
 
   if (quotes.length === 0) {
     return (
-      <div className="panel p-6 text-sm text-muted">
+      <div className="panel p-3 text-sm text-muted">
         Sem dados crypto disponíveis.
       </div>
     );
@@ -80,7 +80,7 @@ function GlobalStats({ global }: { global: CmcGlobal }) {
       {items.map((item, i) => (
         <div
           key={item.label}
-          className="panel-inset p-4 animate-fade-up"
+          className="panel-inset p-3 animate-fade-up"
           style={{ animationDelay: `${i * 30}ms` }}
         >
           <div className="text-[11px] uppercase tracking-wider text-muted font-medium mb-1.5">

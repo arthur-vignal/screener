@@ -12,7 +12,6 @@ import {
   Bitcoin,
 } from "lucide-react";
 import { SectionHeader } from "@/components/page-header";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Badge } from "@/components/ui/badge";
@@ -68,7 +67,7 @@ export function MacroPanel() {
   const items = data?.macro ?? [];
 
   return (
-    <Card className="animate-fade-up stagger-1">
+    <section className="animate-fade-up stagger-1">
       <SectionHeader
         icon={Landmark}
         title="Macro panel"
@@ -88,7 +87,7 @@ export function MacroPanel() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="border-t border-hairline grid grid-cols-2 md:grid-cols-3">
           {items.map((m, i) => {
             const Icon = ICON_MAP[m.label] ?? Gauge;
             const tone = toneFromChange(m.changePercent, m.label);
@@ -103,7 +102,7 @@ export function MacroPanel() {
             return (
               <div
                 key={m.symbol}
-                className="panel-inset p-4 hover-lift group animate-fade-up"
+                className="p-4 hover-row group border-b border-hairline border-r last:border-r-0 animate-fade-up"
                 style={{ animationDelay: `${i * 50}ms` }}
               >
                 <div className="flex items-start justify-between mb-2">
@@ -150,6 +149,6 @@ export function MacroPanel() {
           })}
         </div>
       )}
-    </Card>
+    </section>
   );
 }

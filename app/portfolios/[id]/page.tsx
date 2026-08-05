@@ -3,7 +3,7 @@
 import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
-import { RichFundamentalsTable } from "@/components/rich-fundamentals-table";
+import { PortfolioHoldingsTable } from "@/components/portfolio-holdings-table";
 import useSWR from "swr";
 import {
   CartesianGrid,
@@ -113,7 +113,7 @@ export default function PortfolioDetailPage({
           <ArrowLeft className="w-3 h-3" />
           Voltar
         </Link>
-        <div className="panel p-10 text-center animate-fade-up">
+        <div className="border-t border-hairline py-10 text-center animate-fade-up">
           <Lock className="w-8 h-8 text-muted mx-auto mb-3" />
           <h1 className="font-display text-xl text-ink mb-1">Portfolio privado</h1>
           <p className="text-sm text-muted">
@@ -154,7 +154,7 @@ export default function PortfolioDetailPage({
   const isLoading = !isSeed && !portfolio && !portfolioError;
 
   return (
-    <div className="px-6 md:px-10 py-8 md:py-12 max-w-5xl">
+    <div className="px-4 md:px-6 py-4 md:py-6 max-w-5xl">
       <Link
         href="/portfolios"
         className="inline-flex items-center gap-1 text-xs text-muted hover:text-ink mb-6 transition-colors link-underline"
@@ -172,8 +172,8 @@ export default function PortfolioDetailPage({
 
       {!isLoading && (
         <>
-          <div className="mb-8 animate-fade-up">
-            <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight mb-2">
+          <div className="mb-4 animate-fade-up">
+            <h1 className="font-display text-2xl md:text-3xl text-ink tracking-tight mb-2">
               {name}
             </h1>
             {description && (
@@ -203,7 +203,7 @@ export default function PortfolioDetailPage({
           </div>
 
           {/* Performance */}
-          <div className="panel p-6 mb-6 animate-fade-up stagger-1">
+          <div className="border-t border-hairline pt-4 mb-6 animate-fade-up stagger-1">
             <div className="flex items-baseline justify-between mb-5">
               <h2 className="text-sm font-medium text-ink uppercase tracking-wider">
                 Performance
@@ -218,7 +218,7 @@ export default function PortfolioDetailPage({
 
             {performance && (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
                   <Metric
                     label="Total"
                     value={totalReturn!}
@@ -301,7 +301,7 @@ export default function PortfolioDetailPage({
           </div>
 
           {/* Constituents table with live prices + P&L */}
-          <div className="panel p-6 animate-fade-up stagger-2">
+          <div className="border-t border-hairline pt-4 animate-fade-up stagger-2">
             <div className="flex items-baseline justify-between mb-4">
               <h2 className="text-sm font-medium text-ink uppercase tracking-wider">
                 Constituentes ({constituents.length})
@@ -329,7 +329,7 @@ export default function PortfolioDetailPage({
                         className="border-b border-hairline last:border-0 hover-row animate-fade-up"
                         style={{ animationDelay: `${i * 30}ms` }}
                       >
-                        <td className="py-2.5">
+                        <td className="py-1.5">
                           <Link
                             href={`/asset/${encodeURIComponent(q.symbol)}`}
                             className="font-mono font-semibold text-ink hover:text-brand-bright transition-colors duration-150"
@@ -337,15 +337,15 @@ export default function PortfolioDetailPage({
                             {q.symbol}
                           </Link>
                         </td>
-                        <td className="text-right py-2.5 font-tabular text-body">
+                        <td className="text-right py-1.5 font-tabular text-body">
                           {(q.weight * 100).toFixed(1)}%
                         </td>
-                        <td className="text-right py-2.5 font-tabular text-ink">
+                        <td className="text-right py-1.5 font-tabular text-ink">
                           {q.price != null ? `$${q.price.toFixed(2)}` : "—"}
                         </td>
                         <td
                           className={cn(
-                            "text-right py-2.5 font-tabular font-medium",
+                            "text-right py-1.5 font-tabular font-medium",
                             q.changePercent == null
                               ? "text-muted"
                               : q.changePercent >= 0
@@ -357,7 +357,7 @@ export default function PortfolioDetailPage({
                             ? `${q.changePercent >= 0 ? "+" : ""}${q.changePercent.toFixed(2)}%`
                             : "—"}
                         </td>
-                        <td className="text-right py-2.5 font-tabular text-ink">
+                        <td className="text-right py-1.5 font-tabular text-ink">
                           {q.value != null
                             ? `$${q.value.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
                             : "—"}
@@ -368,8 +368,8 @@ export default function PortfolioDetailPage({
                 </table>
               </div>
             ) : (
-              <RichFundamentalsTable
-                rows={constituents.map((h) => ({ symbol: h.symbol, weight: h.weight }))}
+              <PortfolioHoldingsTable
+                holdings={constituents.map((h) => ({ symbol: h.symbol, weight: h.weight }))}
               />
             )}
           </div>

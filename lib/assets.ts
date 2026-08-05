@@ -233,7 +233,38 @@ export async function getAssetQuote(symbol: string): Promise<Quote | null> {
  * Batch quote for multiple symbols. ONE HTTP request.
  */
 export async function getAssetQuotes(symbols: string[]): Promise<Map<string, Quote | null>> {
-  return getQuotesBatch(symbols);
+  // Use getFundamentals per symbol — that path works reliably against Yahoo
+  // (concurrent calls cached). Falls back to a per-symbol spark if missing.
+  const map = new Map<string, Quote | null>();
+  if (symbols.length === 0) return map;
+  const { getFundamentals } = await import("./fundamentals");
+  await Promise.all(
+    symbols.map(async (sym) => {
+      const upper = sym.toUpperCase();
+      try {
+        const f = await getFundamentals(upper);
+        if (f && f.price) {
+          map.set(upper, {
+            symbol: upper,
+            price: f.price ?? 0,
+            change: f.change ?? 0,
+            changePercent: f.changePercent ?? 0,
+            currency: "USD",
+            dayHigh: f.dayHigh ?? 0,
+            dayLow: f.dayLow ?? 0,
+            dayOpen: 0,
+            prevClose: f.prevClose ?? 0,
+            volume: f.volume ?? 0,
+          });
+        } else {
+          map.set(upper, null);
+        }
+      } catch {
+        map.set(upper, null);
+      }
+    }),
+  );
+  return map;
 }
 
 /**

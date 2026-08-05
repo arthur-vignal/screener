@@ -67,15 +67,29 @@ type SparkMeta = {
 
 async function fetchYahooSpark(symbol: string): Promise<SparkMeta | null> {
   return cached(`yahoo:spark:${symbol}`, 60, async () => {
-    const r = await fetch(
-      `https://query1.finance.yahoo.com/v7/finance/spark?symbols=${encodeURIComponent(symbol)}&range=1d&interval=1d`,
-      { headers: { "User-Agent": "Mozilla/5.0" } },
-    );
-    if (!r.ok) return null;
-    const data = (await r.json()) as {
-      spark?: { result?: Array<{ symbol: string; response?: Array<{ meta: SparkMeta }> }> };
+    const hosts = ["query1", "query2", "query3"];
+    const headers = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      "Accept": "application/json",
     };
-    return data.spark?.result?.[0]?.response?.[0]?.meta ?? null;
+    let lastErr: Error | null = null;
+    for (const host of hosts) {
+      try {
+        const r = await fetch(
+          `https://${host}.finance.yahoo.com/v7/finance/spark?symbols=${encodeURIComponent(symbol)}&range=1d&interval=1d`,
+          { headers, signal: AbortSignal.timeout(8000) },
+        );
+        if (!r.ok) { lastErr = new Error(`yahoo ${host} ${r.status}`); continue; }
+        const data = (await r.json()) as {
+          spark?: { result?: Array<{ symbol: string; response?: Array<{ meta: SparkMeta }> }> };
+        };
+        const meta = data.spark?.result?.[0]?.response?.[0]?.meta ?? null;
+        if (meta) return meta;
+      } catch (e) {
+        lastErr = e as Error;
+      }
+    }
+    return null;
   });
 }
 

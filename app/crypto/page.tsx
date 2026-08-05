@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default function CryptoMarketPage() {
   return (
-    <div className="px-6 md:px-10 py-10 md:py-14 max-w-7xl">
+    <div className="px-4 md:px-6 py-4 md:py-6 max-w-7xl">
       <PageHeader
         title={
           <span className="flex items-center gap-3">
