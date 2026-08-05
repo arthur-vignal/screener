@@ -6,7 +6,16 @@ type CardProps = HTMLAttributes<HTMLDivElement> & {
   interactive?: boolean;
   /** Inset surface (deeper) instead of default */
   inset?: boolean;
+  /** Padding override (default: p-4) */
+  padding?: "none" | "sm" | "md" | "lg";
   children?: ReactNode;
+};
+
+const PAD_MAP = {
+  none: "p-0",
+  sm: "p-2",
+  md: "p-4",
+  lg: "p-6",
 };
 
 /**
@@ -17,6 +26,7 @@ export function Card({
   className,
   interactive = false,
   inset = false,
+  padding = "md",
   children,
   ...props
 }: CardProps) {
@@ -25,7 +35,7 @@ export function Card({
       {...props}
       className={cn(
         inset ? "panel-inset" : "panel",
-        "p-5",
+        PAD_MAP[padding],
         interactive && "hover-lift cursor-pointer",
         className,
       )}

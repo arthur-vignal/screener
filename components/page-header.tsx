@@ -13,13 +13,13 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <header className={cn("mb-8 flex items-start justify-between gap-4", className)}>
+    <header className={cn("mb-4 flex items-start justify-between gap-3", className)}>
       <div className="min-w-0">
-        <h1 className="font-display text-4xl md:text-5xl text-ink tracking-tight">
+        <h1 className="font-display text-2xl md:text-3xl text-ink tracking-tight">
           {title}
         </h1>
         {description && (
-          <p className="mt-2 text-body text-base max-w-2xl">{description}</p>
+          <p className="mt-1 text-body text-base max-w-2xl">{description}</p>
         )}
       </div>
       {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}

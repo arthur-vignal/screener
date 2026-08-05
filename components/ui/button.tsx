@@ -20,9 +20,9 @@ const variantClasses: Record<Variant, string> = {
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: "h-8 px-3 text-xs rounded-md",
-  md: "h-10 px-4 text-sm rounded-md",
-  lg: "h-12 px-6 text-base rounded-md",
+  sm: "h-8 px-3 text-xs rounded-none",
+  md: "h-10 px-4 text-sm rounded-none",
+  lg: "h-12 px-6 text-base rounded-none",
 };
 
 export function Button({
@@ -77,7 +77,7 @@ export function IconButton({
     <button
       {...props}
       className={cn(
-        "inline-flex items-center justify-center w-9 h-9 rounded-md text-muted hover:text-ink hover:bg-surface-elevated transition-colors press",
+        "inline-flex items-center justify-center w-9 h-9 rounded-none text-muted hover:text-ink hover:bg-surface-elevated transition-colors press",
         className,
       )}
     >
