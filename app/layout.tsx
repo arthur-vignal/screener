@@ -40,8 +40,8 @@ const commitMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Screener",
-  description: "Stock screener and portfolio analyzer",
+  title: "Sulfur.io",
+  description: "Plataforma de análise de mercados financeiros — stocks, crypto, ETFs, portfolios e índices",
 };
 
 export default function RootLayout({
