@@ -1,12 +1,14 @@
 @import "tailwindcss";
 
 /* ============================================================================
- * SULFUR.IO — Design System v3 — Multi-theme
+ * SULFUR.IO — Design System v4 — Ledger
  *
- * 3 themes, applied via class on <html>:
- *   .light       — Sustain Light (default). White + green-claro-opaco.
- *   .dark-green  — Tech Sustain Dark. Deep green-tinted dark, mint accent.
- *   .dark-mono   — Mono Dark. Pure dark with cobalto-violeta accent.
+ * 4 themes, applied via class on <html>:
+ *   .light          — Sustain Light (default). White + green-claro-opaco.
+ *   .dark-green     — Tech Sustain Dark. Deep green-tinted dark, mint accent.
+ *   .dark-green-mix — Forest Mix. Neutral dark with green undertones.
+ *   .dark-mono      — Mono Dark. Pure dark with cobalto-violeta accent.
+ *   .graphite       — NEW (Ledger spec). Near-black neutral, sage-green brand.
  *
  * Same token names, different values per theme.
  * Tokens mapped to Tailwind via @theme inline.
@@ -15,12 +17,12 @@
 /* ---------- THEME: LIGHT (Sustain) ---------- */
 :root.light {
   --canvas: #ffffff;
-  --canvas-soft: #fafafa;
-  --surface: #ffffff;
-  --surface-elevated: #fafafa;
-  --surface-strong: #f5f5f5;
-  --hairline: rgba(10, 10, 10, 0.06);
-  --hairline-strong: rgba(10, 10, 10, 0.12);
+  --canvas-soft: #f7f8f5;
+  --surface: #f1f4ef;
+  --surface-elevated: #f7f8f5;
+  --surface-strong: #ffffff;
+  --hairline: rgba(11, 15, 12, 0.07);
+  --hairline-strong: rgba(11, 15, 12, 0.14);
 
   --brand: #86efac;
   --brand-soft: #d9f99d;
@@ -28,16 +30,16 @@
   --brand-glow: rgba(134, 239, 172, 0.32);
   --brand-on: #0a0a0a;
 
-  --ink: #0a0a0a;
-  --body: rgba(10, 11, 13, 0.74);
-  --muted: rgba(10, 11, 13, 0.52);
-  --faint: rgba(10, 11, 13, 0.32);
+  --ink: #0b0f0c;
+  --body: #3d4a42;
+  --muted: #6b7a70;
+  --faint: #a8b2ab;
   --disabled: #d4d4d4;
 
   --positive: #15803d;
   --positive-soft: rgba(21, 128, 61, 0.10);
-  --negative: #9f1239;
-  --negative-soft: rgba(159, 18, 57, 0.10);
+  --negative: #b91c1c;
+  --negative-soft: rgba(185, 28, 28, 0.10);
   --warning: #854d0e;
   --warning-soft: rgba(133, 77, 14, 0.10);
 
@@ -52,6 +54,18 @@
   --radius-md: 0;
   --radius-lg: 0;
   --radius-xl: 0;
+
+  /* Primary CTA — Ledger spec: inverse canvas for max contrast over brand fills */
+  --primary-bg: #0b0f0c;
+  --primary-fg: #ffffff;
+  --primary-bg-hover: #65a30d;
+
+  /* Sector ribbon cell fills — computed via CSS var per cell */
+  --cell-positive: rgba(101, 163, 13, var(--cell-alpha, 0.1));
+  --cell-negative: rgba(220, 38, 38, var(--cell-alpha, 0.1));
+  --cell-label: #4a564e;
+  --cell-value-up: #3f6212;
+  --cell-value-down: #b91c1c;
 }
 
 /* ---------- THEME: DARK GREEN (Tech Sustain) ---------- */
@@ -59,7 +73,7 @@
 :root.dark-green {
   /* Surface ladder — 5 stops from deepest to lightest */
   --canvas: #030d09;             /* near-black, deep green */
-  --canvas-soft: #061812;         /* deep green-tinted */
+  --canvas-soft: #061410;         /* deep green-tinted */
   --surface: #0a1f17;             /* mid green-tinted dark */
   --surface-elevated: #0e2a20;    /* lighter */
   --surface-strong: #143725;       /* lightest */
@@ -67,7 +81,7 @@
   --surface-glow: #22553a;        /* mint glow (hover states) */
 
   /* Hairlines — green-tinted at low alpha */
-  --hairline: rgba(134, 239, 172, 0.06);
+  --hairline: rgba(134, 239, 172, 0.07);
   --hairline-strong: rgba(134, 239, 172, 0.14);
 
   /* Brand — mint with depth variants */
@@ -86,18 +100,17 @@
   --green-deep: #16a34a;
 
   /* Text — green-tinted neutrals */
-  --ink: #ecfdf5;                /* mint 50 */
-  --ink-soft: #d1fae5;           /* mint 100 */
-  --body: rgba(209, 250, 229, 0.78);
-  --muted: rgba(167, 243, 208, 0.52);
-  --faint: rgba(134, 239, 172, 0.32);
+  --ink: #e8f5ee;                /* near-white green-tinted */
+  --body: #a9c8b7;
+  --muted: #7d9a8a;
+  --faint: #456b58;
   --disabled: rgba(134, 239, 172, 0.18);
 
   /* Semantic colors */
   --positive: #4ade80;
   --positive-soft: rgba(74, 222, 128, 0.12);
-  --negative: #fb7185;
-  --negative-soft: rgba(251, 113, 133, 0.12);
+  --negative: #f87171;
+  --negative-soft: rgba(248, 113, 113, 0.12);
   --warning: #fbbf24;
   --warning-soft: rgba(251, 191, 36, 0.12);
 
@@ -114,9 +127,21 @@
   --radius-md: 0;
   --radius-lg: 0;
   --radius-xl: 0;
+
+  /* Primary CTA — mint on dark */
+  --primary-bg: #86efac;
+  --primary-fg: #03150c;
+  --primary-bg-hover: #4ade80;
+
+  /* Sector ribbon cell fills */
+  --cell-positive: rgba(74, 222, 128, var(--cell-alpha, 0.1));
+  --cell-negative: rgba(248, 113, 113, var(--cell-alpha, 0.1));
+  --cell-label: #c9e8d6;
+  --cell-value-up: #86efac;
+  --cell-value-down: #fca5a5;
 }
 
-/* ---------- THEME: DARK GREEN MIX (v2: verde + cinza + branco) ---------- */
+/* ---------- THEME: DARK GREEN MIX (Forest Mix v2: verde + cinza + branco) ---------- */
 /* Mistura: canvas neutro escuro com tons de verde geomorficos, neutrals clean, highlights brancos em elementos ativos */
 :root.dark-green-mix {
   --canvas: #0a0e0c;             /* near-black with green tint */
@@ -127,8 +152,8 @@
   --surface-mint: #2a3729;       /* hint of mint */
   --surface-glow: #34453a;       /* mint glow */
 
-  --hairline: rgba(255, 255, 255, 0.05);
-  --hairline-strong: rgba(255, 255, 255, 0.10);
+  --hairline: rgba(255, 255, 255, 0.07);
+  --hairline-strong: rgba(255, 255, 255, 0.14);
 
   --brand: #a7f3d0;              /* mint 200 (lighter than dark-green) */
   --brand-soft: rgba(167, 243, 208, 0.10);
@@ -144,10 +169,9 @@
   --green-deep: #10b981;
 
   --ink: #fafafa;                /* almost white */
-  --ink-soft: #e4e4e7;
-  --body: rgba(228, 228, 231, 0.78);
-  --muted: rgba(228, 228, 231, 0.52);
-  --faint: rgba(228, 228, 231, 0.32);
+  --body: #c3cac6;
+  --muted: #9aa39d;
+  --faint: #69736d;
   --disabled: rgba(228, 228, 231, 0.18);
 
   --positive: #6ee7b7;
@@ -168,6 +192,18 @@
   --radius-md: 0;
   --radius-lg: 0;
   --radius-xl: 0;
+
+  /* Primary CTA — mint 200 on neutral dark */
+  --primary-bg: #a7f3d0;
+  --primary-fg: #0a0e0c;
+  --primary-bg-hover: #6ee7b7;
+
+  /* Sector ribbon cell fills */
+  --cell-positive: rgba(110, 231, 183, var(--cell-alpha, 0.1));
+  --cell-negative: rgba(252, 165, 165, var(--cell-alpha, 0.1));
+  --cell-label: #c3cac6;
+  --cell-value-up: #a7f3d0;
+  --cell-value-down: #fca5a5;
 }
 
 /* ---------- THEME: DARK MONO (v1 cobalto violeta) ---------- */
@@ -211,6 +247,75 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
+
+  /* Primary CTA — cobalto */
+  --primary-bg: #494fdf;
+  --primary-fg: #ffffff;
+  --primary-bg-hover: #3a40c4;
+
+  /* Sector ribbon cell fills */
+  --cell-positive: rgba(73, 79, 223, var(--cell-alpha, 0.1));
+  --cell-negative: rgba(207, 32, 47, var(--cell-alpha, 0.1));
+  --cell-label: #ffffff;
+  --cell-value-up: #494fdf;
+  --cell-value-down: #cf202f;
+}
+
+/* ---------- THEME: GRAPHITE (NEW — Ledger spec) ---------- */
+/* Near-black neutral with sage-green brand. "Safest scheme for long sessions"
+   per design brief — data colours clear 4.5:1 on canvas. */
+:root.graphite {
+  --canvas: #131614;
+  --canvas-soft: #1a1e1c;
+  --surface: #222724;
+  --surface-elevated: #2a302c;
+  --surface-strong: #353c38;
+
+  --hairline: rgba(230, 233, 231, 0.07);
+  --hairline-strong: rgba(230, 233, 231, 0.14);
+
+  --brand: #3f8f66;
+  --brand-soft: rgba(63, 143, 102, 0.14);
+  --brand-deep: #5eb98a;
+  --brand-glow: rgba(94, 185, 138, 0.32);
+  --brand-on: #ffffff;
+
+  --ink: #e6e9e7;
+  --body: #c3cac6;
+  --muted: #9aa39d;
+  --faint: #69736d;
+  --disabled: rgba(230, 233, 231, 0.18);
+
+  --positive: #5eb98a;
+  --positive-soft: rgba(94, 185, 138, 0.12);
+  --negative: #c96a6a;
+  --negative-soft: rgba(201, 106, 106, 0.12);
+  --warning: #d4a04d;
+  --warning-soft: rgba(212, 160, 77, 0.12);
+
+  --accent-teal: #5eb98a;
+  --accent-pink: #c97a9c;
+  --accent-yellow: #d4a04d;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(230, 233, 231, 0.04);
+  --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.48), 0 0 24px rgba(230, 233, 231, 0.06);
+
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+
+  /* Primary CTA — sage green on graphite */
+  --primary-bg: #2d6b4d;
+  --primary-fg: #eaf2ee;
+  --primary-bg-hover: #5eb98a;
+
+  /* Sector ribbon cell fills */
+  --cell-positive: rgba(94, 185, 138, var(--cell-alpha, 0.1));
+  --cell-negative: rgba(201, 106, 106, var(--cell-alpha, 0.1));
+  --cell-label: #dfe4e1;
+  --cell-value-up: #8fd3b0;
+  --cell-value-down: #e2a3a3;
 }
 
 /* ---------- SHARED SECTION (fonts, animations, scrollbar, etc.) ---------- */
@@ -251,6 +356,10 @@
   --color-accent-teal: var(--accent-teal);
   --color-accent-pink: var(--accent-pink);
   --color-accent-yellow: var(--accent-yellow);
+
+  --color-primary-bg: var(--primary-bg);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-bg-hover: var(--primary-bg-hover);
 }
 
 * {
@@ -291,6 +400,51 @@ body {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1, "zero" 1;
 }
+
+/* ---------- LABEL TYPOGRAPHY (Ledger spec) ----------
+ * Mono uppercase with tracking. Used for: every label, column header,
+ * nav item, chip, section title. */
+.label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.label-s {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.label-l {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.label-muted-2 { color: var(--faint); }
+.label-faint { color: var(--faint); opacity: 0.7; }
+
+/* ---------- NUMBER TYPOGRAPHY (Ledger spec) ----------
+ * Geist Mono tabular. Used for: all prices, %, market caps, scores. */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+  letter-spacing: -0.02em;
+}
+.num-xl { font-size: 25px; letter-spacing: -0.03em; }    /* Macro strip values */
+.num-xxl { font-size: 42px; letter-spacing: -0.04em; }   /* Asset hero price */
+.num-hero { font-size: 52px; letter-spacing: -0.04em; }  /* F&G main number */
+.num-md { font-size: 22px; letter-spacing: -0.02em; }    /* Quant score */
+.num-sm { font-size: 12.5px; }
+.num-xs { font-size: 12px; }
+.num-row { font-size: 11.5px; }
 
 /* ---------- SCROLLBAR ---------- */
 ::-webkit-scrollbar {
@@ -438,7 +592,7 @@ body {
   transition: background-color 0.15s ease;
 }
 .hover-row:hover {
-  background-color: var(--surface-elevated);
+  background-color: var(--canvas-soft);
 }
 
 .press {
@@ -522,9 +676,115 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+    scroll-overflow-behavior: auto !important;
   }
 }
+
+/* ---------- LEDGER SPEC UTILITIES ---------- */
+
+/* Column chip (dashboard table toolbar) */
+.col-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid var(--hairline-strong);
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.col-chip:hover {
+  border-color: var(--brand-deep);
+  color: var(--ink);
+}
+.col-chip[data-on="true"] {
+  background: var(--ink);
+  color: var(--canvas);
+  border-color: var(--ink);
+}
+.col-chip[data-on="true"]:hover {
+  background: var(--brand-deep);
+  border-color: var(--brand-deep);
+}
+
+/* Ghost button (Watchlist, Compare) */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 15px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--hairline-strong);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-ghost:hover {
+  border-color: var(--brand-deep);
+  color: var(--brand-deep);
+}
+
+/* Primary button (Ledger spec — inverse canvas for max contrast) */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 15px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--primary-bg);
+  color: var(--primary-fg);
+  border: 1px solid var(--primary-bg);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-primary:hover {
+  background: var(--primary-bg-hover);
+  border-color: var(--primary-bg-hover);
+}
+
+/* Sector ribbon cell */
+.sector-cell {
+  --cell-alpha: 0.1;
+  background: var(--cell-positive);
+  transition: outline-color 0.15s ease, background-color 0.15s ease;
+}
+.sector-cell[data-direction="down"] {
+  background: var(--cell-negative);
+}
+.sector-cell:hover {
+  outline: 2px solid var(--brand-deep);
+  outline-offset: -2px;
+}
+
+/* Ticker chip (in news meta, modal mentioned table) */
+.ticker-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  border: 1px solid color-mix(in srgb, var(--brand-deep) 35%, transparent);
+  color: var(--brand-deep);
+}
+
+/* Sparkline cell color override (per row sign) */
+.spark-up { color: var(--positive); }
+.spark-down { color: var(--negative); }
 
 /* ---------- UTILITIES ---------- */
 .panel {
@@ -602,6 +862,11 @@ textarea,
 .panel-inset,
 .panel *,
 .panel-inset *,
+.col-chip,
+.btn-ghost,
+.btn-primary,
+.sector-cell,
+.ticker-chip,
 [class*="rounded-sm"]:not(.chip):not([class*="rounded-full"]),
 [class*="rounded-md"]:not(.chip):not([class*="rounded-full"]),
 [class*="rounded-lg"]:not(.chip):not([class*="rounded-full"]),

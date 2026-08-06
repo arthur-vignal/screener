@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sun, Moon, Monitor } from "lucide-react";
+import { Sun, Moon, Monitor, Leaf, Trees } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Theme = "light" | "dark-green" | "dark-green-mix" | "dark-mono";
+type Theme = "light" | "dark-green" | "dark-green-mix" | "graphite" | "dark-mono";
 
 const STORAGE_KEY = "sulfur:theme";
 
-const ORDER: Theme[] = ["light", "dark-green", "dark-green-mix", "dark-mono"];
+const ORDER: Theme[] = ["light", "dark-green", "dark-green-mix", "graphite", "dark-mono"];
 
 function nextTheme(current: Theme): Theme {
   const idx = ORDER.indexOf(current);
@@ -19,11 +19,13 @@ function themeLabel(theme: Theme): string {
   if (theme === "light") return "Light";
   if (theme === "dark-green") return "Tech sustain";
   if (theme === "dark-green-mix") return "Forest mix";
+  if (theme === "graphite") return "Graphite";
   return "Dark mono";
 }
 
 /**
- * ThemeToggle — cycles through 3 themes on click.
+ * ThemeToggle — cycles through 5 themes on click.
+ * Order: Light → Tech Sustain → Forest Mix → Graphite → Dark Mono → Light
  * Theme is persisted to localStorage and applied to <html> via class.
  */
 export function ThemeToggle({ className }: { className?: string }) {
@@ -43,7 +45,7 @@ export function ThemeToggle({ className }: { className?: string }) {
   useEffect(() => {
     if (!mounted) return;
     const root = document.documentElement;
-    root.classList.remove("light", "dark-green", "dark-green-mix", "dark-mono");
+    root.classList.remove("light", "dark-green", "dark-green-mix", "graphite", "dark-mono");
     root.classList.add(theme);
     try {
       localStorage.setItem(STORAGE_KEY, theme);
@@ -57,8 +59,8 @@ export function ThemeToggle({ className }: { className?: string }) {
     script.id = "theme-init-script";
     script.innerHTML =
       "(function(){try{var t=localStorage.getItem('sulfur:theme');" +
-      "if(t==='light'||t==='dark-green'||t==='dark-mono')" +
-      "{document.documentElement.classList.add(t);}" +
+      "var v=['light','dark-green','dark-green-mix','graphite','dark-mono'];" +
+      "if(v.indexOf(t)>=0){document.documentElement.classList.add(t);}" +
       "else{document.documentElement.classList.add('light');}" +
       "}catch(e){document.documentElement.classList.add('light');}})();";
     document.head.appendChild(script);
@@ -70,7 +72,7 @@ export function ThemeToggle({ className }: { className?: string }) {
     <button
       onClick={() => setTheme(nextTheme(theme))}
       aria-label={`Switch theme (current: ${themeLabel(theme)})`}
-      title={`Tema: ${themeLabel(theme)} \u2014 click pra pr\u00f3ximo`}
+      title={`Tema: ${themeLabel(theme)} — click pra próximo`}
       className={cn(
         "relative inline-flex items-center justify-center w-9 h-9 rounded-md text-muted hover:text-ink hover:bg-surface-elevated transition-all duration-200 press",
         className,
@@ -81,6 +83,10 @@ export function ThemeToggle({ className }: { className?: string }) {
       ) : theme === "light" ? (
         <Sun className={iconClass} />
       ) : theme === "dark-green" ? (
+        <Leaf className={iconClass} />
+      ) : theme === "dark-green-mix" ? (
+        <Trees className={iconClass} />
+      ) : theme === "graphite" ? (
         <Moon className={iconClass} />
       ) : (
         <Monitor className={iconClass} />

@@ -56,7 +56,7 @@ export default function RootLayout({
       <body className="min-h-full bg-canvas text-ink">
         <SelectionProvider>
           <TopNav />
-          <main className="pt-16">
+          <main className="pt-[102px]">
             <PageFade>{children}</PageFade>
           </main>
           <MultiSelectToolbar />
