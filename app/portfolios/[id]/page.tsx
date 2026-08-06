@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { getSeedPortfolio } from "@/lib/seed-data";
+import { NewsForTickers } from "@/components/news-for-tickers";
 
 type Holding = { symbol: string; weight: number };
 
@@ -567,6 +568,14 @@ export default function PortfolioDetailPage({
                 </p>
               </section>
             )}
+
+            {/* News — aggregated across all constituents */}
+            <NewsForTickers
+              tickers={constituents.map((c) => c.symbol)}
+              title="News"
+              showAllHref="/news"
+              limit={8}
+            />
           </aside>
         </div>
       )}

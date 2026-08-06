@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { getSeedIndex } from "@/lib/seed-data";
+import { NewsForTickers } from "@/components/news-for-tickers";
 
 type Constituent = {
   symbol: string;
@@ -508,7 +509,15 @@ export default function IndexDetailPage({
                 </div>
               </section>
             )}
-          </aside>
+
+            {/* News — aggregated across all constituents */}
+            <NewsForTickers
+              tickers={constituents.map((c) => c.symbol)}
+              title="News"
+              showAllHref="/news"
+              limit={8}
+            />
+                                    </aside>
         </div>
       )}
     </div>

@@ -8,12 +8,14 @@ import { PriceChart } from "@/components/price-chart";
 import { AssetScores } from "@/components/asset-scores";
 import { EtfHoldings } from "@/components/etf-holdings";
 import { cn, formatCompact } from "@/lib/utils";
-import { FundamentalsPanel } from "@/components/fundamentals-panel";
+import { AllFundamentals } from "@/components/all-fundamentals";
+import { NewsForTickers } from "@/components/news-for-tickers";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 type AssetData = {
   ticker: string;
+  secAsOf?: string | null;
   quote: {
     price?: number;
     change?: number;
@@ -84,10 +86,10 @@ export function AssetDetail({ ticker }: { ticker: string }) {
   const profile = data.profile;
 
   const formatPrice = (n: number | undefined | null) => {
-      if (n == null || n === 0) return "—";
-      if (Math.abs(n) < 0.01) return `$${n.toFixed(6)}`;
-      return `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
-    };
+    if (n == null || n === 0) return "—";
+    if (Math.abs(n) < 0.01) return `$${n.toFixed(6)}`;
+    return `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  };
 
   const marketCap = profile?.marketCapitalization
     ? profile.marketCapitalization * 1e6
@@ -118,7 +120,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
         </div>
       </div>
 
-      {/* ============= HERO (padding 30/32/26, border-bottom hairline-3) ============= */}
+      {/* ============= HERO ============= */}
       <div className="px-8 pt-[30px] pb-[26px] border-b border-hairline-strong">
         <Link
           href="/assets"
@@ -129,7 +131,6 @@ export function AssetDetail({ ticker }: { ticker: string }) {
         </Link>
 
         <div className="flex items-end gap-6">
-          {/* Ticker tile + name + meta */}
           <div className="flex items-end gap-5">
             <div className="w-[60px] h-[60px] bg-ink flex items-center justify-center shrink-0">
               <span className="font-display text-[15px] text-canvas leading-none font-bold">
@@ -146,7 +147,6 @@ export function AssetDetail({ ticker }: { ticker: string }) {
             </div>
           </div>
 
-          {/* Divided price block */}
           <div className="border-l border-hairline-strong pl-[34px] pb-1">
             <div className="flex items-baseline gap-4">
               <span className="num num-xxl text-ink leading-none">
@@ -176,7 +176,6 @@ export function AssetDetail({ ticker }: { ticker: string }) {
             </div>
           </div>
 
-          {/* Actions */}
           <div className="ml-auto flex items-center gap-2">
             <button type="button" className="btn-ghost">
               <Star className="w-3 h-3" />
@@ -197,12 +196,10 @@ export function AssetDetail({ ticker }: { ticker: string }) {
       <div className="grid" style={{ gridTemplateColumns: "1fr 380px" }}>
         {/* LEFT — chart + scores + fundamentals */}
         <div className="border-r border-hairline-strong">
-          {/* Chart block */}
           <div className="px-8 pt-6 pb-2">
             <PriceChart ticker={data.ticker} />
           </div>
 
-          {/* Quant scores — the "wow" element (Ledger spec) */}
           <div className="px-8 pt-6 pb-2 border-t border-hairline-strong">
             <div className="flex items-baseline justify-between mb-4">
               <h2 className="font-display text-[18px] text-ink tracking-[-0.03em]">
@@ -213,65 +210,27 @@ export function AssetDetail({ ticker }: { ticker: string }) {
             <AssetScores ticker={data.ticker} />
           </div>
 
-          {/* Fundamentals — 3 columns, 33px rows */}
+          {/* Fundamentals — exhaustive list, 7 categories */}
           <div className="px-8 pt-6 pb-6 border-t border-hairline-strong">
             <div className="flex items-baseline justify-between mb-4">
               <h2 className="font-display text-[18px] text-ink tracking-[-0.03em]">
                 Fundamentals
               </h2>
-              <span className="label-s label-muted-2">FY2025 · TTM</span>
+              <span className="label-s label-muted-2">
+                {data.secAsOf
+                  ? `As of ${data.secAsOf.slice(0, 10)}`
+                  : "FY2025 · TTM"}
+              </span>
             </div>
-            <FundamentalsPanel
-              ticker={data.ticker}
-              metrics={[
-                // Valuation
-                { label: "P/L (P/E)", key: "peRatio" },
-                { label: "P/VP (P/B)", key: "priceToBook" },
-                { label: "P/Receita (PSR)", key: "priceToSales" },
-                { label: "EV/EBITDA", key: "evEbitda" },
-                { label: "EV/EBIT", key: "evEbit" },
-                { label: "P/EBITDA", key: "pebitda" },
-                // Profitability
-                { label: "ROE", key: "roe", suffix: "%" },
-                { label: "ROIC", key: "roic", suffix: "%" },
-                { label: "Margem Bruta", key: "grossMargin", suffix: "%" },
-                { label: "Margem EBITDA", key: "ebitdaMargin", suffix: "%" },
-                { label: "Margem Líquida", key: "profitMargin", suffix: "%" },
-                // Growth
-                { label: "CAGR Receita", key: "revenueGrowth", suffix: "%" },
-                { label: "CAGR Lucros", key: "earningsGrowth", suffix: "%" },
-                // Risk
-                { label: "Dívida/EBITDA", key: "debtToEbitda" },
-                { label: "Beta", key: "beta" },
-                // Dividends
-                { label: "Dividend Yield", key: "dividendYield", suffix: "%" },
-                { label: "Payout", key: "payoutRatio", suffix: "%" },
-                // Quality
-                { label: "Piotroski F-Score", key: "piotroskiF" },
-              ]
-                .map((m) => {
-                  const raw = (data.metrics as Record<string, number | null>)[m.key];
-                  if (raw == null) return null;
-                  const value = m.suffix === "%" ? raw * 100 : raw;
-                  return { label: m.label, key: m.key, value, suffix: m.suffix };
-                })
-                .filter(
-                  (
-                    m,
-                  ): m is { label: string; key: string; value: number; suffix: string } =>
-                    m !== null,
-                )}
-            />
+            <AllFundamentals metrics={data.metrics} />
           </div>
 
-          {/* ETF holdings */}
           {profile?.finnhubIndustry === "ETF" && (
             <div className="px-8 py-4 border-t border-hairline-strong">
               <EtfHoldings ticker={data.ticker} />
             </div>
           )}
 
-          {/* Tabs: News + Events */}
           {(tab === "news" || tab === "events") && (
             <div className="px-8 py-6 border-t border-hairline-strong">
               <div className="flex items-center gap-1 mb-4 border-b border-hairline-strong">
@@ -300,16 +259,14 @@ export function AssetDetail({ ticker }: { ticker: string }) {
                   Events
                 </button>
               </div>
-
               {tab === "news" && <NewsTab ticker={data.ticker} />}
               {tab === "events" && <EventsTab ticker={data.ticker} />}
             </div>
           )}
         </div>
 
-        {/* RIGHT — 380px rail: Session + 52w range + Events preview */}
+        {/* RIGHT — 380px rail */}
         <aside className="px-6 py-6 space-y-6">
-          {/* Session block */}
           <section>
             <h3 className="font-display text-[16px] text-ink mb-3 tracking-[-0.02em]">
               Session
@@ -339,15 +296,20 @@ export function AssetDetail({ ticker }: { ticker: string }) {
             </div>
           </section>
 
-          {/* 52w range */}
           <RangeBlock
             low={quote?.dayLow ?? quote?.l ?? 0}
             high={quote?.dayHigh ?? quote?.h ?? 0}
             current={price}
           />
 
-          {/* Events preview */}
           <EventsPreview ticker={data.ticker} />
+
+          <NewsForTickers
+            tickers={[data.ticker]}
+            title="News"
+            showAllHref="/news"
+            limit={6}
+          />
         </aside>
       </div>
     </div>
@@ -372,7 +334,6 @@ function RangeBlock({
   high: number;
   current: number;
 }) {
-  // Use 52w heuristic: scale by current ± 30% if low/high missing
   const L = low || (current ? current * 0.85 : 0);
   const H = high || (current ? current * 1.15 : 0);
   const pct = H > L ? Math.min(100, Math.max(0, ((current - L) / (H - L)) * 100)) : 0;
@@ -395,15 +356,11 @@ function RangeBlock({
           />
         </div>
         <div className="flex items-center justify-between">
-          <span className="num text-[11px] text-muted">
-            L {L ? L.toFixed(2) : "—"}
-          </span>
+          <span className="num text-[11px] text-muted">L {L ? L.toFixed(2) : "—"}</span>
           <span className="num text-[11px] text-ink font-medium">
             Now {current ? current.toFixed(2) : "—"}
           </span>
-          <span className="num text-[11px] text-muted">
-            H {H ? H.toFixed(2) : "—"}
-          </span>
+          <span className="num text-[11px] text-muted">H {H ? H.toFixed(2) : "—"}</span>
         </div>
       </div>
     </section>
@@ -438,9 +395,7 @@ function EventsPreview({ ticker }: { ticker: string }) {
               </span>
               <div className="flex-1 min-w-0 pt-1">
                 <div className="label-s label-muted-2 mb-1">{e.type}</div>
-                <div className="text-[12px] text-ink truncate">
-                  {e.description}
-                </div>
+                <div className="text-[12px] text-ink truncate">{e.description}</div>
               </div>
             </div>
           ))
@@ -606,10 +561,11 @@ function NewsModal({ article, onClose }: { article: NewsItem; onClose: () => voi
             </div>
           )}
           {content.status === "ready" && content.text && (
-            <div className="text-[15.5px] text-body leading-[1.72] text-pretty" style={{ maxWidth: "68ch" }}>
-              {article.summary && (
-                <p className="text-body mb-4">{article.summary}</p>
-              )}
+            <div
+              className="text-[15.5px] text-body leading-[1.72] text-pretty"
+              style={{ maxWidth: "68ch" }}
+            >
+              {article.summary && <p className="text-body mb-4">{article.summary}</p>}
               <p className="text-muted">{content.text}</p>
             </div>
           )}
