@@ -49,7 +49,7 @@ const BAND_STYLE: Record<
   "STRONG SELL": { bg: "bg-negative/15", text: "text-negative" },
 };
 
-export function AssetScores({ ticker }: { ticker: string }) {
+export function AssetScores({ ticker, compact = false }: { ticker: string; compact?: boolean }) {
   const { data: scoresData, isLoading } = useSWR<ScoresData>(
     `/api/scores/${ticker}`,
     fetcher,
@@ -90,6 +90,141 @@ export function AssetScores({ ticker }: { ticker: string }) {
       : f.score >= 5
         ? "text-warning"
         : "text-negative";
+
+  if (compact) {
+    return (
+      <div className="space-y-2.5">
+        {/* Quant recommendation + Piotroski — compact side by side */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-lg border border-hairline bg-surface p-2.5">
+            <div className="flex items-baseline justify-between mb-1.5">
+              <span className="text-[10.5px] uppercase tracking-wider text-muted">Quant score</span>
+              {rec && (
+                <span
+                  className={cn(
+                    "text-[9.5px] px-1.5 py-0.5 rounded font-mono uppercase tracking-wider",
+                    BAND_STYLE[rec.band].bg,
+                    BAND_STYLE[rec.band].text,
+                  )}
+                >
+                  {rec.band}
+                </span>
+              )}
+            </div>
+            <div className="flex items-baseline gap-2 mb-1.5">
+              <span className="num text-[18px] font-semibold text-ink leading-none">
+                {rec?.score ?? "—"}
+              </span>
+              <span className="text-[10px] text-muted">/100</span>
+            </div>
+            <div className="h-1 bg-surface-elevated/60 rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  "h-full transition-all",
+                  (rec?.score ?? 0) >= 60
+                    ? "bg-positive"
+                    : (rec?.score ?? 0) >= 45
+                      ? "bg-yellow-400"
+                      : "bg-negative",
+                )}
+                style={{ width: `${rec?.score ?? 0}%` }}
+              />
+            </div>
+          </div>
+          <div className="rounded-lg border border-hairline bg-surface p-2.5">
+            <div className="flex items-baseline justify-between mb-1.5">
+              <span className="text-[10.5px] uppercase tracking-wider text-muted">Piotroski</span>
+              <span className={cn("text-[10px] font-mono uppercase tracking-wider", scoreColor)}>
+                {f.score}/{f.max}
+              </span>
+            </div>
+            <div className="flex items-baseline gap-2 mb-1.5">
+              <span className={cn("num text-[18px] font-semibold leading-none", scoreColor)}>
+                {f.score}
+              </span>
+              <span className="text-[10px] text-muted">/ {f.max}</span>
+            </div>
+            <div className="h-1 bg-surface-elevated/60 rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  "h-full transition-all",
+                  scorePct >= 0.78 ? "bg-positive" : scorePct >= 0.55 ? "bg-yellow-400" : "bg-negative",
+                )}
+                style={{ width: `${Math.round(scorePct * 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Altman Z + Growth + Dividend — 3-up compact */}
+        <div className="grid grid-cols-3 gap-2.5">
+          <div className="rounded-lg border border-hairline bg-surface p-2.5">
+            <div className="text-[9.5px] uppercase tracking-wider text-muted mb-1">Altman Z</div>
+            {z.z != null ? (
+              <div className="flex items-baseline gap-1.5">
+                <span
+                  className={cn(
+                    "num text-[15px] font-semibold leading-none tabular-nums",
+                    z.zone === "safe" ? "text-positive" : z.zone === "grey" ? "text-warning" : "text-negative",
+                  )}
+                >
+                  {z.z.toFixed(1)}
+                </span>
+                <span
+                  className={cn(
+                    "text-[9px] px-1 py-0.5 font-mono uppercase tracking-wider",
+                    z.zone === "safe"
+                      ? "bg-positive-soft text-positive"
+                      : z.zone === "grey"
+                        ? "bg-yellow-400/10 text-warning"
+                        : "bg-negative-soft text-negative",
+                  )}
+                >
+                  {z.zone === "safe" ? "safe" : z.zone === "grey" ? "grey" : "distress"}
+                </span>
+              </div>
+            ) : (
+              <span className="text-[11px] text-muted">—</span>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-hairline bg-surface p-2.5">
+            <div className="text-[9.5px] uppercase tracking-wider text-muted mb-1">Crescimento</div>
+            <div className="text-[11px] font-mono tabular-nums leading-tight">
+              {m.revenueGrowth != null && (
+                <div>
+                  Receita: <span className={cn(m.revenueGrowth >= 0 ? "text-positive" : "text-negative")}>
+                    {m.revenueGrowth >= 0 ? "+" : ""}{(m.revenueGrowth * 100).toFixed(1)}%
+                  </span>
+                </div>
+              )}
+              {m.earningsGrowth != null && (
+                <div>
+                  Lucro: <span className={cn(m.earningsGrowth >= 0 ? "text-positive" : "text-negative")}>
+                    {m.earningsGrowth >= 0 ? "+" : ""}{(m.earningsGrowth * 100).toFixed(1)}%
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-hairline bg-surface p-2.5">
+            <div className="text-[9.5px] uppercase tracking-wider text-muted mb-1">Dividend</div>
+            <div className="text-[11px] font-mono tabular-nums leading-tight">
+              {m.dividendYield != null ? (
+                <span className="text-positive">{m.dividendYield.toFixed(2)}%</span>
+              ) : (
+                <span className="text-muted">—</span>
+              )}
+              {m.payoutRatio != null && (
+                <div className="text-muted text-[10px]">payout {m.payoutRatio.toFixed(0)}%</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

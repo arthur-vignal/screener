@@ -201,16 +201,6 @@ export function AssetDetail({ ticker }: { ticker: string }) {
             <PriceChart ticker={data.ticker} />
           </div>
 
-          <div className="px-8 pt-6 pb-2 border-t border-hairline-strong">
-            <div className="flex items-baseline justify-between mb-4">
-              <h2 className="font-display text-[18px] text-ink tracking-[-0.03em]">
-                Quant scores
-              </h2>
-              <span className="label-s label-muted-2">Sector median (68 peers)</span>
-            </div>
-            <AssetScores ticker={data.ticker} />
-          </div>
-
           {/* Fundamentals — exhaustive list, 7 categories */}
           <div className="px-8 pt-6 pb-6 border-t border-hairline-strong">
             <div className="flex items-baseline justify-between mb-4">
@@ -311,6 +301,16 @@ export function AssetDetail({ ticker }: { ticker: string }) {
             showAllHref="/news"
             limit={6}
           />
+
+          <section>
+            <div className="flex items-baseline justify-between mb-3">
+              <h3 className="font-display text-[14px] text-ink tracking-[-0.02em]">
+                Quant scores
+              </h3>
+              <span className="label-s label-muted-2">68 peers</span>
+            </div>
+            <AssetScores ticker={data.ticker} compact />
+          </section>
         </aside>
       </div>
     </div>
