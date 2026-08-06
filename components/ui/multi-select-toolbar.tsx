@@ -49,7 +49,7 @@ export function MultiSelectToolbar() {
           label="Comparar"
           onClick={() => {
             const symbols = selected.map((s) => s.symbol).join(",");
-            window.location.href = `/assets?q=${encodeURIComponent(symbols)}`;
+            window.location.href = `/market/stocks?q=${encodeURIComponent(symbols)}`;
           }}
         />
         <ActionButton

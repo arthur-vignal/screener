@@ -1,14 +1,196 @@
-import { AssetListPage } from "@/components/asset-list-page";
-import { Building2 } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ArrowLeft, ArrowRight, Search } from "lucide-react";
+import { cn, formatPercent, formatCompact } from "@/lib/utils";
+import { SP500_SECTORS } from "@/lib/snp500";
+import { Skeleton } from "@/components/ui/skeleton";
+
+type AssetType = "stock" | "etf" | "crypto";
+type Row = { symbol: string; type: AssetType; sector: string; quote: { price: number; changePercent: number; volume: number } | null };
+type ListResponse = { items: { symbol: string; name: string; type: AssetType; sector: string }[]; total: number; hasMore: boolean };
+type MultiQuoteResponse = { rows: Row[] };
+
+const PAGE_SIZE = 50;
+
+const SECTORS = ["All", ...SP500_SECTORS];
 
 export default function StocksPage() {
+  const [page, setPage] = useState(0);
+  const [sector, setSector] = useState<string>("All");
+  const [items, setItems] = useState<ListResponse["items"] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [quotes, setQuotes] = useState<Record<string, Row["quote"]>>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setPage(0);
+  }, [sector]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
+    const params = new URLSearchParams({ offset: String(page * PAGE_SIZE), limit: String(PAGE_SIZE), exchange: "sp500" });
+    if (sector !== "All") params.set("sector", sector);
+    fetch(`/api/assets/list?${params}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        setItems(d.items ?? []);
+        setTotal(d.total ?? 0);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setItems([]);
+          setTotal(0);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page, sector]);
+
+  useEffect(() => {
+    if (!items || items.length === 0) return;
+    const syms = items.map((i) => i.symbol).join(",");
+    fetch(`/api/assets/quote?symbols=${encodeURIComponent(syms)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const map: Record<string, Row["quote"]> = {};
+        for (const row of (d as MultiQuoteResponse).rows ?? []) {
+          if (row.quote) map[row.symbol] = row.quote;
+        }
+        setQuotes(map);
+      })
+      .catch(() => {});
+  }, [items]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const start = total === 0 ? 0 : page * PAGE_SIZE + 1;
+  const end = Math.min(total, (page + 1) * PAGE_SIZE);
+
   return (
-    <AssetListPage
-      endpoint="sp500"
-      title="Stocks"
-      description="Ações do S&P 500 com preços em tempo real, variação de 24h e volume. Filtre, ordene e abra cada ativo para análise fundamentalista completa."
-      icon="building"
-      accent="mint"
-    />
+    <div className="px-3 md:px-4 py-3 md:py-4 max-w-[1920px]">
+      <Link
+        href="/market"
+        className="inline-flex items-center gap-1 text-xs text-muted hover:text-ink mb-3 link-underline"
+      >
+        <ArrowLeft className="w-3 h-3" />
+        Market
+      </Link>
+
+      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <div>
+          <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight">Stocks</h1>
+          <p className="text-body text-sm mt-1 max-w-2xl">
+            Ações do S&amp;P 500 com preços em tempo real, variação de 24h e volume.
+          </p>
+        </div>
+        <div className="label-s label-muted-2">{total} ativos</div>
+      </div>
+
+      <div className="flex items-center gap-2 mb-3 overflow-x-auto">
+        {SECTORS.map((s) => (
+          <button
+            key={s}
+            onClick={() => setSector(s)}
+            className={cn(
+              "label-s border px-2.5 py-1 whitespace-nowrap press",
+              sector === s
+                ? "border-ink text-ink bg-surface-elevated"
+                : "border-hairline-strong text-muted hover:text-ink",
+            )}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+
+      <div className="border-t border-hairline-strong">
+        <div className="grid grid-cols-[40px_minmax(220px,1fr)_110px_100px_88px_100px] label-s label-muted-2 h-9 items-center px-3 bg-canvas-soft">
+          <div className="num text-faint">#</div>
+          <div>Ticker</div>
+          <div>Sector</div>
+          <div className="text-right">Price</div>
+          <div className="text-right">24h</div>
+          <div className="text-right">Volume</div>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-px">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <Skeleton key={i} className="h-9" />
+            ))}
+          </div>
+        ) : !items || items.length === 0 ? (
+          <div className="py-10 text-center label-s text-muted">No stocks in this sector.</div>
+        ) : (
+          items.map((it, i) => {
+            const q = quotes[it.symbol];
+            return (
+              <Link
+                key={it.symbol}
+                href={`/asset/${encodeURIComponent(it.symbol)}`}
+                className="grid grid-cols-[40px_minmax(220px,1fr)_110px_100px_88px_100px] items-center h-9 px-3 border-b border-hairline hover-row press"
+              >
+                <div className="num text-faint text-[10.5px]">
+                  {String(start + i).padStart(3, "0")}
+                </div>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="num font-semibold text-[12.5px] text-ink">{it.symbol}</span>
+                  <span className="text-[11px] text-muted truncate">{it.name}</span>
+                </div>
+                <div className="text-[11px] text-muted truncate">{it.sector}</div>
+                <div className="num text-[12px] text-ink text-right">
+                  {q ? `$${q.price.toFixed(2)}` : "—"}
+                </div>
+                <div
+                  className={cn(
+                    "num text-[12px] text-right font-medium",
+                    q ? (q.changePercent >= 0 ? "text-positive" : "text-negative") : "text-faint",
+                  )}
+                >
+                  {q ? formatPercent(q.changePercent) : "—"}
+                </div>
+                <div className="num text-[12px] text-muted text-right">
+                  {q && q.volume > 0 ? formatCompact(q.volume) : "—"}
+                </div>
+              </Link>
+            );
+          })
+        )}
+      </div>
+
+      <div className="px-3 py-3 flex items-center justify-between border-t border-hairline-strong">
+        <div className="label-s label-muted-2">
+          Showing {start}–{end} of {total.toLocaleString("en-US")}
+        </div>
+        <div className="flex items-stretch border border-hairline-strong">
+          <button
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0}
+            className="px-3 py-1.5 label-s text-muted hover:text-ink disabled:text-disabled press border-r border-hairline-strong"
+          >
+            <ArrowLeft className="inline w-3 h-3 mr-1" />
+            Prev
+          </button>
+          <span className="px-3 py-1.5 label-s text-muted">
+            {page + 1} / {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={page >= totalPages - 1}
+            className="px-3 py-1.5 label-s text-muted hover:text-ink disabled:text-disabled press border-l border-hairline-strong"
+          >
+            Next
+            <ArrowRight className="inline w-3 h-3 ml-1" />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

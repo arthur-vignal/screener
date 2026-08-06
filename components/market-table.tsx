@@ -245,14 +245,14 @@ export function MarketTable({ sectorFilter }: { sectorFilter?: string | null }) 
 
   const columnWidth: Record<ColKey, string> = {
     asset: "minmax(180px,1fr)",
-    sector: "130px",
-    price: "104px",
-    "1d": "88px",
-    "7d": "88px",
-    "30d": "88px",
-    mcap: "minmax(140px,168px)",
-    vol: "104px",
-    spark: "124px",
+    sector: "110px",
+    price: "84px",
+    "1d": "76px",
+    "7d": "76px",
+    "30d": "76px",
+    mcap: "84px",
+    vol: "80px",
+    spark: "104px",
   };
   const cols: ColKey[] = ["asset", "sector", "price", "1d", "7d", "30d", "mcap", "vol", "spark"];
   const activeColumns = cols.filter((key) => key === "asset" || visible.includes(key));
@@ -466,14 +466,8 @@ export function MarketTable({ sectorFilter }: { sectorFilter?: string | null }) 
                 )}
 
                 {isOn("mcap") && (
-                  <div className="flex items-center justify-end gap-2">
-                    <div className="relative flex-1 h-[5px] bg-surface">
-                      <div
-                        className="absolute right-0 top-0 bottom-0 bg-brand"
-                        style={{ width: `${Math.max(2, mcapPct)}%` }}
-                      />
-                    </div>
-                    <div className="num text-[12px] text-ink w-[56px] text-right">
+                  <div className="flex items-center justify-end">
+                    <div className="num text-[12px] text-ink text-right whitespace-nowrap">
                       {fmtCap(mcap)}
                     </div>
                   </div>

@@ -33,30 +33,29 @@ export function AllFundamentals({ finviz }: { finviz: Record<string, string> }) 
   }
 
   return (
-    <div className="overflow-x-auto border border-hairline-strong">
-      <div
-        className="grid min-w-[1320px]"
-        style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(205px, 1fr))` }}
-      >
-        {columns.map((column, columnIndex) => (
-          <div key={columnIndex} className={cn(columnIndex > 0 && "border-l border-hairline-strong")}>
-            {column.map((label) => {
-              const value = finviz[label] ?? "-";
-              return (
-                <div
-                  key={`${columnIndex}:${label}`}
-                  className="grid grid-cols-[minmax(0,1fr)_minmax(74px,auto)] items-center h-[31px] px-2.5 border-b border-hairline last:border-b-0"
-                >
-                  <span className="text-[11.5px] text-muted truncate pr-2">{label}</span>
-                  <span className={cn("num text-[12px] font-semibold text-right whitespace-nowrap", tone(label, value))}>
-                    {value}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
+    <div className="border border-hairline-strong divide-y divide-hairline">
+      {columns.map((column, columnIndex) => (
+        <div
+          key={columnIndex}
+          className={cn("grid items-stretch", columnIndex > 0 && "border-t border-hairline-strong")}
+          style={{ gridTemplateColumns: `repeat(${column.length}, minmax(0, 1fr))` }}
+        >
+          {column.map((label) => {
+            const value = finviz[label] ?? "-";
+            return (
+              <div
+                key={label}
+                className="flex items-baseline justify-between gap-2 min-w-0 h-[34px] px-3 border-r border-hairline last:border-r-0"
+              >
+                <span className="text-[11px] text-muted truncate">{label}</span>
+                <span className={cn("num text-[11.5px] font-semibold text-right truncate", tone(label, value))}>
+                  {value}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }

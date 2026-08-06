@@ -61,10 +61,10 @@ export function AssetDetail({ ticker }: { ticker: string }) {
       <div className="px-3 py-6 text-center">
         <p className="text-negative">{String(error)}</p>
         <Link
-          href="/assets"
+          href="/market/stocks"
           className="text-sm text-brand-deep link-underline mt-2 inline-block"
         >
-          ← Voltar para Assets
+          ← Voltar para Stocks
         </Link>
       </div>
     );
@@ -103,12 +103,12 @@ export function AssetDetail({ ticker }: { ticker: string }) {
       {/* ============= BREADCRUMB BAR (42px, canvas-soft) ============= */}
       <div className="h-[42px] bg-canvas-soft border-b border-hairline-strong px-8 flex items-center justify-between">
         <div className="label flex items-center gap-2">
-          <Link href="/assets" className="text-brand-deep link-underline">
-            Assets
+          <Link href="/market/stocks" className="text-brand-deep link-underline">
+            Stocks
           </Link>
           <span className="text-faint">›</span>
           <Link
-            href={`/assets?q=${encodeURIComponent(profile?.finnhubIndustry ?? "")}`}
+            href={`/market/stocks?q=${encodeURIComponent(profile?.finnhubIndustry ?? "")}`}
             className="text-brand-deep link-underline"
           >
             {profile?.finnhubIndustry ?? "—"}
@@ -124,7 +124,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
       {/* ============= HERO ============= */}
       <div className="px-8 pt-[30px] pb-[26px] border-b border-hairline-strong">
         <Link
-          href="/assets"
+          href="/market/stocks"
           className="inline-flex items-center gap-1.5 label label-muted-2 hover:text-ink mb-3 transition-colors"
         >
           <ArrowLeft className="w-3 h-3" />
@@ -193,8 +193,8 @@ export function AssetDetail({ ticker }: { ticker: string }) {
         </div>
       </div>
 
-      {/* ============= MAIN SPLIT (1fr 380px) ============= */}
-      <div className="grid" style={{ gridTemplateColumns: "1fr 380px" }}>
+      {/* ============= MAIN SPLIT (1fr 320px) ============= */}
+      <div className="grid" style={{ gridTemplateColumns: "1fr 320px" }}>
         {/* LEFT — chart + scores + fundamentals */}
         <div className="border-r border-hairline-strong">
           <div className="px-8 pt-6 pb-2">

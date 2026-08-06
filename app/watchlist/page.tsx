@@ -130,7 +130,7 @@ export default function WatchlistPage() {
               Sua watchlist está vazia.
             </p>
             <p className="text-xs text-muted">
-              Vá em <Link href="/assets" className="text-brand-deep link-underline">Assets</Link>{" "}
+              Vá em <Link href="/market/stocks" className="text-brand-deep link-underline">Stocks</Link>{" "}
               e clique na estrela ao lado de cada ticker.
             </p>
           </div>
