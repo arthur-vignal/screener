@@ -8,10 +8,10 @@ export const maxDuration = 30;
 
 function parseFinvizMarketCap(value: string | undefined): number | null {
   if (!value || value === "-") return null;
-  const match = value.replace(/,/g, "").match(/^(-?[\d.]+)([TＢMGK])?$/i);
+  const match = value.replace(/,/g, "").match(/^(-?[\d.]+)([TBMG])?$/i);
   if (!match) return null;
   const amount = Number(match[1]);
-  const multiplier = { T: 1e12, B: 1e9, M: 1e6, G: 1e9, K: 1e3 }[match[2]?.toUpperCase() as "T" | "B" | "M" | "G" | "K"] ?? 1;
+  const multiplier = { T: 1e12, B: 1e9, M: 1e6, G: 1e9 }[match[2]?.toUpperCase() as "T" | "B" | "M" | "G"] ?? 1;
   return Number.isFinite(amount) ? amount * multiplier : null;
 }
 
