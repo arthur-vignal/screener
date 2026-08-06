@@ -3,7 +3,7 @@
 import useSWR from "swr";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ArrowLeft, ExternalLink, Newspaper, Calendar } from "lucide-react";
+import { ArrowLeft, Newspaper, Calendar, Star, Plus } from "lucide-react";
 import { PriceChart } from "@/components/price-chart";
 import { AssetScores } from "@/components/asset-scores";
 import { EtfHoldings } from "@/components/etf-holdings";
@@ -15,7 +15,6 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 type AssetData = {
   ticker: string;
   quote: {
-    // Yahoo shape (preferred)
     price?: number;
     change?: number;
     changePercent?: number;
@@ -26,7 +25,6 @@ type AssetData = {
     prevClose?: number;
     volume?: number;
     marketCap?: number;
-    // Finnhub shape (fallback)
     c?: number;
     d?: number;
     dp?: number;
@@ -61,7 +59,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
         <p className="text-negative">{String(error)}</p>
         <Link
           href="/assets"
-          className="text-sm text-brand-bright link-underline mt-2 inline-block"
+          className="text-sm text-brand-deep link-underline mt-2 inline-block"
         >
           ← Voltar para Assets
         </Link>
@@ -71,196 +69,386 @@ export function AssetDetail({ ticker }: { ticker: string }) {
 
   if (isLoading || !data) {
     return (
-      <div className="px-3 md:px-4 py-3 md:py-4 space-y-2">
-        <div className="h-8 w-48 shimmer rounded-none" />
-        <div className="h-96 shimmer rounded-none-none" />
-        <div className="h-32 shimmer rounded-none-none" />
+      <div className="px-8 py-6 space-y-2">
+        <div className="h-8 w-48 shimmer" />
+        <div className="h-96 shimmer" />
+        <div className="h-32 shimmer" />
       </div>
     );
   }
 
-  // Normaliza quote (Yahoo usa price/currency, Finnhub usa c)
   const quote = data.quote;
   const price = quote?.price ?? quote?.c ?? 0;
   const change = quote?.change ?? quote?.d ?? 0;
   const changePercent = quote?.changePercent ?? quote?.dp ?? 0;
   const profile = data.profile;
 
-  const formatPrice = (n: number) => {
-    if (n === 0) return "—";
-    if (n < 0.01) return `$${n.toFixed(6)}`;
-    return `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
-  };
+  const formatPrice = (n: number | undefined | null) => {
+      if (n == null || n === 0) return "—";
+      if (Math.abs(n) < 0.01) return `$${n.toFixed(6)}`;
+      return `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+    };
+
+  const marketCap = profile?.marketCapitalization
+    ? profile.marketCapitalization * 1e6
+    : quote?.marketCap
+      ? quote.marketCap
+      : null;
 
   return (
-    <div className="px-3 md:px-4 py-3 md:py-4 max-w-7xl">
-      <Link
-        href="/assets"
-        className="inline-flex items-center gap-1.5 text-sm text-body hover:text-ink mb-4 transition-colors"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        Voltar
-      </Link>
-
-      <div className="flex items-baseline gap-3 mb-3">
-        <h1 className="font-mono text-xl font-semibold tracking-tight">
-          {data.ticker}
-        </h1>
-        <span className="text-body">{profile?.name ?? ticker}</span>
+    <div className="max-w-[1920px] mx-auto bg-canvas text-ink">
+      {/* ============= BREADCRUMB BAR (42px, canvas-soft) ============= */}
+      <div className="h-[42px] bg-canvas-soft border-b border-hairline-strong px-8 flex items-center justify-between">
+        <div className="label flex items-center gap-2">
+          <Link href="/assets" className="text-brand-deep link-underline">
+            Assets
+          </Link>
+          <span className="text-faint">›</span>
+          <Link
+            href={`/assets?q=${encodeURIComponent(profile?.finnhubIndustry ?? "")}`}
+            className="text-brand-deep link-underline"
+          >
+            {profile?.finnhubIndustry ?? "—"}
+          </Link>
+          <span className="text-faint">›</span>
+          <span className="text-ink">{data.ticker}</span>
+        </div>
+        <div className="label label-muted-2">
+          Delayed 15 min · Yahoo Finance
+        </div>
       </div>
 
-      {/* Layout 2/3 esquerda + 1/3 direita */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3">
-        {/* Coluna esquerda (2/3): gráfico */}
-        <div className="lg:col-span-2">
-          <PriceChart ticker={data.ticker} />
-        </div>
+      {/* ============= HERO (padding 30/32/26, border-bottom hairline-3) ============= */}
+      <div className="px-8 pt-[30px] pb-[26px] border-b border-hairline-strong">
+        <Link
+          href="/assets"
+          className="inline-flex items-center gap-1.5 label label-muted-2 hover:text-ink mb-3 transition-colors"
+        >
+          <ArrowLeft className="w-3 h-3" />
+          Back
+        </Link>
 
-        {/* Coluna direita (1/3): info rápida */}
-        <div className="space-y-2">
-          <div className="rounded-none-none border border-hairline bg-surface p-4">
-            <div className="text-2xl font-semibold font-tabular tracking-tight">
-              {formatPrice(price)}
+        <div className="flex items-end gap-6">
+          {/* Ticker tile + name + meta */}
+          <div className="flex items-end gap-5">
+            <div className="w-[60px] h-[60px] bg-ink flex items-center justify-center shrink-0">
+              <span className="font-display text-[15px] text-canvas leading-none font-bold">
+                {data.ticker.slice(0, 4)}
+              </span>
             </div>
-            <div
-              className={cn(
-                "text-sm font-mono font-tabular mt-1",
-                changePercent >= 0 ? "text-positive" : "text-negative",
-              )}
-            >
-              {changePercent >= 0 ? "+" : ""}
-              {change.toFixed(2)} ({changePercent >= 0 ? "+" : ""}
-              {changePercent.toFixed(2)}%)
+            <div className="pb-1">
+              <h1 className="font-display text-[30px] text-ink tracking-[-0.03em] leading-none mb-2">
+                {profile?.name ?? ticker}
+              </h1>
+              <div className="label label-muted-2">
+                {profile?.exchange ?? "—"}: {data.ticker} · {profile?.finnhubIndustry ?? "—"}
+              </div>
             </div>
           </div>
 
-          <div className="rounded-none-none border border-hairline bg-surface divide-y divide-hairline">
-            <StatRow label="Volume 24h" value={`$${formatCompact(quote?.volume ?? 0)}`} />
-            <StatRow label="Variação 24h" value={`$${change.toFixed(2)}`} />
-            <StatRow label="Máxima 24h" value={formatPrice(quote?.dayHigh ?? quote?.h ?? 0)} />
-            <StatRow label="Mínima 24h" value={formatPrice(quote?.dayLow ?? quote?.l ?? 0)} />
-            <StatRow label="Abertura" value={formatPrice(quote?.dayOpen ?? quote?.o ?? 0)} />
-            <StatRow label="Fechamento anterior" value={formatPrice(quote?.prevClose ?? quote?.pc ?? 0)} />
-            <StatRow
-              label="Market cap"
-              value={profile?.marketCapitalization ? `$${formatCompact(profile.marketCapitalization * 1e6)}` : "—"}
+          {/* Divided price block */}
+          <div className="border-l border-hairline-strong pl-[34px] pb-1">
+            <div className="flex items-baseline gap-4">
+              <span className="num num-xxl text-ink leading-none">
+                {formatPrice(price)}
+              </span>
+              <span
+                className={cn(
+                  "num text-[17px]",
+                  changePercent >= 0 ? "text-positive" : "text-negative",
+                )}
+              >
+                {change >= 0 ? "+" : "−"}
+                {Math.abs(change).toFixed(2)}{" "}
+                <span className="ml-1">
+                  ({changePercent >= 0 ? "+" : "−"}
+                  {Math.abs(changePercent).toFixed(2)}%)
+                </span>
+              </span>
+            </div>
+            <div className="label label-muted-2 mt-2">
+              {profile?.exchange ?? "—"} session · {profile?.currency ?? "USD"}
+              {quote?.prevClose ? (
+                <span className="ml-2">
+                  · prev close {formatPrice(quote.prevClose)}
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="ml-auto flex items-center gap-2">
+            <button type="button" className="btn-ghost">
+              <Star className="w-3 h-3" />
+              Watchlist
+            </button>
+            <button type="button" className="btn-ghost">
+              Compare
+            </button>
+            <button type="button" className="btn-primary">
+              <Plus className="w-3 h-3" />
+              Add to portfolio
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ============= MAIN SPLIT (1fr 380px) ============= */}
+      <div className="grid" style={{ gridTemplateColumns: "1fr 380px" }}>
+        {/* LEFT — chart + scores + fundamentals */}
+        <div className="border-r border-hairline-strong">
+          {/* Chart block */}
+          <div className="px-8 pt-6 pb-2">
+            <PriceChart ticker={data.ticker} />
+          </div>
+
+          {/* Quant scores — the "wow" element (Ledger spec) */}
+          <div className="px-8 pt-6 pb-2 border-t border-hairline-strong">
+            <div className="flex items-baseline justify-between mb-4">
+              <h2 className="font-display text-[18px] text-ink tracking-[-0.03em]">
+                Quant scores
+              </h2>
+              <span className="label-s label-muted-2">Sector median (68 peers)</span>
+            </div>
+            <AssetScores ticker={data.ticker} />
+          </div>
+
+          {/* Fundamentals — 3 columns, 33px rows */}
+          <div className="px-8 pt-6 pb-6 border-t border-hairline-strong">
+            <div className="flex items-baseline justify-between mb-4">
+              <h2 className="font-display text-[18px] text-ink tracking-[-0.03em]">
+                Fundamentals
+              </h2>
+              <span className="label-s label-muted-2">FY2025 · TTM</span>
+            </div>
+            <FundamentalsPanel
+              ticker={data.ticker}
+              metrics={[
+                // Valuation
+                { label: "P/L (P/E)", key: "peRatio" },
+                { label: "P/VP (P/B)", key: "priceToBook" },
+                { label: "P/Receita (PSR)", key: "priceToSales" },
+                { label: "EV/EBITDA", key: "evEbitda" },
+                { label: "EV/EBIT", key: "evEbit" },
+                { label: "P/EBITDA", key: "pebitda" },
+                // Profitability
+                { label: "ROE", key: "roe", suffix: "%" },
+                { label: "ROIC", key: "roic", suffix: "%" },
+                { label: "Margem Bruta", key: "grossMargin", suffix: "%" },
+                { label: "Margem EBITDA", key: "ebitdaMargin", suffix: "%" },
+                { label: "Margem Líquida", key: "profitMargin", suffix: "%" },
+                // Growth
+                { label: "CAGR Receita", key: "revenueGrowth", suffix: "%" },
+                { label: "CAGR Lucros", key: "earningsGrowth", suffix: "%" },
+                // Risk
+                { label: "Dívida/EBITDA", key: "debtToEbitda" },
+                { label: "Beta", key: "beta" },
+                // Dividends
+                { label: "Dividend Yield", key: "dividendYield", suffix: "%" },
+                { label: "Payout", key: "payoutRatio", suffix: "%" },
+                // Quality
+                { label: "Piotroski F-Score", key: "piotroskiF" },
+              ]
+                .map((m) => {
+                  const raw = (data.metrics as Record<string, number | null>)[m.key];
+                  if (raw == null) return null;
+                  const value = m.suffix === "%" ? raw * 100 : raw;
+                  return { label: m.label, key: m.key, value, suffix: m.suffix };
+                })
+                .filter(
+                  (
+                    m,
+                  ): m is { label: string; key: string; value: number; suffix: string } =>
+                    m !== null,
+                )}
             />
-            <StatRow label="Setor" value={profile?.finnhubIndustry ?? "—"} />
-            <StatRow label="Exchange" value={profile?.exchange ?? "—"} />
-            <StatRow label="Moeda" value={profile?.currency ?? quote?.currency ?? "USD"} />
           </div>
+
+          {/* ETF holdings */}
+          {profile?.finnhubIndustry === "ETF" && (
+            <div className="px-8 py-4 border-t border-hairline-strong">
+              <EtfHoldings ticker={data.ticker} />
+            </div>
+          )}
+
+          {/* Tabs: News + Events */}
+          {(tab === "news" || tab === "events") && (
+            <div className="px-8 py-6 border-t border-hairline-strong">
+              <div className="flex items-center gap-1 mb-4 border-b border-hairline-strong">
+                <button
+                  onClick={() => setTab("news")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2 label border-b-2 -mb-px transition-colors",
+                    tab === "news"
+                      ? "text-ink border-brand-deep"
+                      : "text-muted border-transparent hover:text-ink",
+                  )}
+                >
+                  <Newspaper className="w-3 h-3" />
+                  News
+                </button>
+                <button
+                  onClick={() => setTab("events")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2 label border-b-2 -mb-px transition-colors",
+                    tab === "events"
+                      ? "text-ink border-brand-deep"
+                      : "text-muted border-transparent hover:text-ink",
+                  )}
+                >
+                  <Calendar className="w-3 h-3" />
+                  Events
+                </button>
+              </div>
+
+              {tab === "news" && <NewsTab ticker={data.ticker} />}
+              {tab === "events" && <EventsTab ticker={data.ticker} />}
+            </div>
+          )}
         </div>
+
+        {/* RIGHT — 380px rail: Session + 52w range + Events preview */}
+        <aside className="px-6 py-6 space-y-6">
+          {/* Session block */}
+          <section>
+            <h3 className="font-display text-[16px] text-ink mb-3 tracking-[-0.02em]">
+              Session
+            </h3>
+            <div className="border-t border-hairline-strong">
+              <RailRow label="Open" value={formatPrice(quote?.dayOpen ?? quote?.o)} />
+              <RailRow label="Previous close" value={formatPrice(quote?.prevClose ?? quote?.pc)} />
+              <RailRow
+                label="Day range"
+                value={
+                  quote?.dayLow || quote?.dayHigh
+                    ? `${formatPrice(quote?.dayLow ?? quote?.l)} – ${formatPrice(quote?.dayHigh ?? quote?.h)}`
+                    : "—"
+                }
+              />
+              <RailRow
+                label="Volume"
+                value={quote?.volume ? `$${formatCompact(quote.volume)}` : "—"}
+              />
+              <RailRow
+                label="Market cap"
+                value={marketCap ? `$${formatCompact(marketCap)}` : "—"}
+              />
+              <RailRow label="Exchange" value={profile?.exchange ?? "—"} />
+              <RailRow label="Currency" value={profile?.currency ?? quote?.currency ?? "USD"} />
+              <RailRow label="Sector" value={profile?.finnhubIndustry ?? "—"} />
+            </div>
+          </section>
+
+          {/* 52w range */}
+          <RangeBlock
+            low={quote?.dayLow ?? quote?.l ?? 0}
+            high={quote?.dayHigh ?? quote?.h ?? 0}
+            current={price}
+          />
+
+          {/* Events preview */}
+          <EventsPreview ticker={data.ticker} />
+        </aside>
       </div>
-
-      {/* ETF holdings */}
-      {profile?.finnhubIndustry === "ETF" && (
-        <div className="mb-3">
-          <EtfHoldings ticker={data.ticker} />
-        </div>
-      )}
-
-      {/* Tabs: Estatísticas / Notícias / Eventos */}
-      <div className="border-b border-hairline mb-3">
-        <div className="flex items-center gap-1">
-          <TabButton active={tab === "statistics"} onClick={() => setTab("statistics")}>
-            Estatísticas
-          </TabButton>
-          <TabButton active={tab === "news"} onClick={() => setTab("news")}>
-            <Newspaper className="w-3.5 h-3.5" />
-            Notícias
-          </TabButton>
-          <TabButton active={tab === "events"} onClick={() => setTab("events")}>
-            <Calendar className="w-3.5 h-3.5" />
-            Eventos
-          </TabButton>
-        </div>
-      </div>
-
-      {tab === "statistics" && (
-        <div className="space-y-3">
-          <AssetScores ticker={data.ticker} />
-          <FundamentalsPanel
-          ticker={data.ticker}
-          metrics={[
-            // Valuation
-            { label: "P/L (P/E)", key: "peRatio" },
-            { label: "P/VP (P/B)", key: "priceToBook" },
-            { label: "P/Receita (PSR)", key: "priceToSales" },
-            { label: "EV/EBITDA", key: "evEbitda" },
-            { label: "EV/EBIT", key: "evEbit" },
-            { label: "EV/Receita", key: "evRevenue" },
-            { label: "P/EBITDA", key: "pebitda" },
-            { label: "P/EBIT", key: "pebit" },
-            { label: "P/Ativo", key: "priceToAssets" },
-            { label: "P/Ativo Circ. Liq.", key: "priceToCurrentAssets" },
-            { label: "P/Cap.Giro", key: "priceToWorkingCapital" },
-            { label: "LPA", key: "eps", prefix: "$" },
-            { label: "VPA", key: "bookValuePerShare", prefix: "$" },
-            // Efficiency
-            { label: "Margem Bruta", key: "grossMargin", suffix: "%" },
-            { label: "Margem EBITDA", key: "ebitdaMargin", suffix: "%" },
-            { label: "Margem EBIT", key: "operatingMargin", suffix: "%" },
-            { label: "Margem Líquida", key: "profitMargin", suffix: "%" },
-            { label: "Giro Ativos", key: "assetTurnover" },
-            // Profitability
-            { label: "ROE", key: "roe", suffix: "%" },
-            { label: "ROIC", key: "roic", suffix: "%" },
-            { label: "ROA", key: "roa", suffix: "%" },
-            // Risk
-            { label: "Dívida/EBITDA", key: "debtToEbitda" },
-            { label: "Dívida/PL", key: "debtToEquity" },
-            { label: "Liquidez Corrente", key: "currentRatio" },
-            { label: "Beta", key: "beta" },
-            // Growth
-            { label: "CAGR Receita", key: "revenueGrowth", suffix: "%" },
-            { label: "CAGR Lucros", key: "earningsGrowth", suffix: "%" },
-            // Dividends
-            { label: "Dividend Yield", key: "dividendYield", suffix: "%" },
-            { label: "Payout", key: "payoutRatio", suffix: "%" },
-            // Quality scores
-            { label: "Piotroski F-Score", key: "piotroskiF" },
-            { label: "Altman Z-Score", key: "altmanZ" },
-          ].map((m) => {
-            const raw = (data.metrics as Record<string, number | null>)[m.key];
-            if (raw == null) return null;
-            const value = (m.suffix === "%") ? raw * 100 : raw;
-            return { label: m.label, key: m.key, value, suffix: m.suffix };
-          }).filter((m): m is { label: string; key: string; value: number; suffix: string } => m !== null)}
-        />
-        </div>
-      )}
-
-      {tab === "news" && <NewsTab ticker={data.ticker} />}
-      {tab === "events" && <EventsTab ticker={data.ticker} />}
     </div>
   );
 }
 
-function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function RailRow({ label, value }: { label: string; value: string }) {
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
-        active
-          ? "border-ink text-ink"
-          : "border-transparent text-body hover:text-ink",
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
-function StatRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between px-4 py-2.5">
-      <span className="text-xs text-muted uppercase tracking-wider">{label}</span>
-      <span className="font-mono font-tabular text-sm">{value}</span>
+    <div className="flex items-center justify-between h-8 px-3 border-b border-hairline">
+      <span className="label-s label-muted-2">{label}</span>
+      <span className="num text-[12.5px] text-ink">{value}</span>
     </div>
   );
 }
 
+function RangeBlock({
+  low,
+  high,
+  current,
+}: {
+  low: number;
+  high: number;
+  current: number;
+}) {
+  // Use 52w heuristic: scale by current ± 30% if low/high missing
+  const L = low || (current ? current * 0.85 : 0);
+  const H = high || (current ? current * 1.15 : 0);
+  const pct = H > L ? Math.min(100, Math.max(0, ((current - L) / (H - L)) * 100)) : 0;
+  const tickPct = H > L ? 50 : 0;
+
+  return (
+    <section>
+      <h3 className="font-display text-[16px] text-ink mb-3 tracking-[-0.02em]">
+        52w range
+      </h3>
+      <div className="border-t border-hairline-strong pt-3">
+        <div className="relative h-1.5 bg-surface mb-2">
+          <div
+            className="absolute left-0 top-0 bottom-0 bg-brand"
+            style={{ width: `${pct}%` }}
+          />
+          <div
+            className="absolute top-[-5px] w-0.5 h-4 bg-ink"
+            style={{ left: `${tickPct}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="num text-[11px] text-muted">
+            L {L ? L.toFixed(2) : "—"}
+          </span>
+          <span className="num text-[11px] text-ink font-medium">
+            Now {current ? current.toFixed(2) : "—"}
+          </span>
+          <span className="num text-[11px] text-muted">
+            H {H ? H.toFixed(2) : "—"}
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function EventsPreview({ ticker }: { ticker: string }) {
+  const { data } = useSWR<{
+    events: Array<{ date: string; type: string; description: string }>;
+  }>(`/api/events/${ticker}`, fetcher);
+  const events = data?.events ?? [];
+  const upcoming = events.slice(0, 4);
+
+  return (
+    <section>
+      <div className="flex items-baseline justify-between mb-3">
+        <h3 className="font-display text-[16px] text-ink tracking-[-0.02em]">
+          Events
+        </h3>
+      </div>
+      <div className="border-t border-hairline-strong">
+        {upcoming.length === 0 ? (
+          <div className="py-4 text-faint text-[12px]">No upcoming events.</div>
+        ) : (
+          upcoming.map((e, i) => (
+            <div
+              key={i}
+              className="flex items-start gap-3 h-[60px] px-3 border-b border-hairline hover-row"
+            >
+              <span className="num text-[10px] text-brand-deep w-[52px] shrink-0 pt-1">
+                {e.date}
+              </span>
+              <div className="flex-1 min-w-0 pt-1">
+                <div className="label-s label-muted-2 mb-1">{e.type}</div>
+                <div className="text-[12px] text-ink truncate">
+                  {e.description}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
 
 type NewsItem = {
   id: string;
@@ -283,7 +471,7 @@ function NewsTab({ ticker }: { ticker: string }) {
     return (
       <div className="space-y-2">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-20 rounded-none-none shimmer" />
+          <div key={i} className="h-20 shimmer" />
         ))}
       </div>
     );
@@ -293,73 +481,62 @@ function NewsTab({ ticker }: { ticker: string }) {
 
   if (news.length === 0) {
     return (
-      <div className="rounded-none-none border border-hairline bg-surface p-12 text-center">
+      <div className="border-t border-hairline-strong py-12 text-center">
         <Newspaper className="w-8 h-8 text-muted mx-auto mb-3" strokeWidth={1.5} />
-        <p className="text-body text-sm">
-          Sem notícias recentes pra esse ticker.
-        </p>
+        <p className="text-muted text-sm">No recent news for this ticker.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      {news.slice(0, 30).map((n) => (
+      {news.slice(0, 20).map((n) => (
         <button
           key={n.id}
           onClick={() => setOpenArticle(n)}
-          className="w-full text-left block rounded-none-none border border-hairline bg-surface p-4 hover:bg-surface-elevated transition-colors group"
+          className="w-full text-left block border border-hairline-strong hover:bg-canvas-soft transition-colors group p-4"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span
-                  className={cn(
-                    "text-xs font-medium",
-                    (n.source || "").toLowerCase().includes("reuters") ||
-                    (n.source || "").toLowerCase().includes("bloomberg") ||
-                    (n.source || "").toLowerCase().includes("wsj")
-                      ? "text-warning"
-                      : "text-muted",
-                  )}
-                >
-                  {n.source}
-                </span>
-                <span className="text-xs text-muted">·</span>
-                <span className="text-xs text-muted">
-                  {new Date(n.datetime * 1000).toLocaleString("pt-BR", {
-                    day: "2-digit",
+              <div className="flex items-center gap-2 mb-1 flex-wrap label-s label-muted-2">
+                <span>{n.source}</span>
+                <span>·</span>
+                <span>
+                  {new Date(n.datetime * 1000).toLocaleString("en-US", {
                     month: "short",
+                    day: "2-digit",
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
                 </span>
               </div>
-              <h4 className="font-medium text-ink group-hover:text-brand-bright transition-colors mb-1">
+              <h4 className="text-[13px] text-ink group-hover:text-brand-deep transition-colors mb-1 leading-snug">
                 {n.headline}
               </h4>
               {n.summary && (
-                <p className="text-sm text-body line-clamp-2">{n.summary}</p>
+                <p className="text-[12px] text-muted line-clamp-2 leading-relaxed">
+                  {n.summary}
+                </p>
               )}
             </div>
-            <ExternalLink className="w-3.5 h-3.5 text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
           </div>
         </button>
       ))}
 
-      {/* Modal inline */}
       {openArticle && <NewsModal article={openArticle} onClose={() => setOpenArticle(null)} />}
     </div>
   );
 }
 
 function NewsModal({ article, onClose }: { article: NewsItem; onClose: () => void }) {
-  const [content, setContent] = useState<{ text: string | null; status: "loading" | "ready" | "unavailable" }>(
-    { text: null, status: "loading" },
-  );
+  const [content, setContent] = useState<{
+    text: string | null;
+    status: "loading" | "ready" | "unavailable";
+  }>({ text: null, status: "loading" });
 
   useEffect(() => {
-    let cancelled = false;setContent({ text: null, status: "loading" });
+    let cancelled = false;
+    setContent({ text: null, status: "loading" });
     fetch(`/api/news/article?url=${encodeURIComponent(article.url)}`)
       .then((r) => r.json())
       .then((d) => {
@@ -367,48 +544,75 @@ function NewsModal({ article, onClose }: { article: NewsItem; onClose: () => voi
         if (d.content) setContent({ text: d.content, status: "ready" });
         else setContent({ text: null, status: "unavailable" });
       })
-      .catch(() => { if (!cancelled) setContent({ text: null, status: "unavailable" }); });return () => { cancelled = true; };
+      .catch(() => {
+        if (!cancelled) setContent({ text: null, status: "unavailable" });
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [article.url]);
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 sm:p-8"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8"
+      style={{ background: "color-mix(in srgb, var(--canvas-soft) 78%, transparent)" }}
       onClick={onClose}
     >
       <div
-        className="bg-surface border border-hairline rounded-none-none max-w-3xl w-full my-8"
+        className="bg-canvas border border-hairline-strong max-w-3xl w-full my-12 animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 p-6 border-b border-hairline">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2 flex-wrap text-xs text-muted">
-              <span>{article.source}</span>
-              <span>·</span>
-              <span>{new Date(article.datetime * 1000).toLocaleString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
-            </div>
-            <h2 className="text-xl font-semibold leading-tight">{article.headline}</h2>
+        <div className="px-7 py-[15px] border-b border-hairline-strong flex items-center justify-between">
+          <div className="label label-muted-2">
+            <span className="text-brand-deep mr-2">{article.source}</span>
+            <span>
+              {new Date(article.datetime * 1000).toLocaleString("en-US", {
+                month: "short",
+                day: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-surface-elevated rounded-none-none shrink-0">✕</button>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="w-6 h-6 border border-hairline-strong flex items-center justify-center hover:bg-canvas-soft text-ink press"
+          >
+            <span className="text-[10px]">✕</span>
+          </button>
         </div>
-        <div className="p-6 max-h-[60vh] overflow-y-auto">
+        <div className="px-7 py-[28px] max-h-[60vh] overflow-y-auto">
+          <h2 className="font-display text-[28px] text-ink mb-5 tracking-[-0.03em] leading-[1.15]">
+            {article.headline}
+          </h2>
           {content.status === "loading" && (
-            <div className="flex items-center justify-center py-12 text-muted text-sm">Carregando conteúdo...</div>
+            <div className="py-12 text-muted text-sm text-center">Loading…</div>
           )}
           {content.status === "unavailable" && (
             <div className="text-center py-8">
-              <p className="text-body text-sm mb-4">Não conseguimos extrair o conteúdo completo desta notícia.</p>
-              <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-brand-bright link-underline text-sm">Abrir no portal original</a>
+              <p className="text-muted text-sm mb-4">
+                Couldn&apos;t extract full content from this article.
+              </p>
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="label text-brand-deep link-underline"
+              >
+                Open in original portal →
+              </a>
             </div>
           )}
           {content.status === "ready" && content.text && (
-            <div className="text-sm text-body leading-relaxed whitespace-pre-line">
-              {article.summary && <p className="text-base text-ink font-medium mb-4">{article.summary}</p>}
-              {content.text}
+            <div className="text-[15.5px] text-body leading-[1.72] text-pretty" style={{ maxWidth: "68ch" }}>
+              {article.summary && (
+                <p className="text-body mb-4">{article.summary}</p>
+              )}
+              <p className="text-muted">{content.text}</p>
             </div>
           )}
-        </div>
-        <div className="border-t border-hairline p-4 text-right">
-          <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-brand-bright link-underline text-xs">Abrir original</a>
         </div>
       </div>
     </div>
@@ -416,16 +620,15 @@ function NewsModal({ article, onClose }: { article: NewsItem; onClose: () => voi
 }
 
 function EventsTab({ ticker }: { ticker: string }) {
-  const { data, isLoading } = useSWR<{ events: Array<{ date: string; type: string; description: string }> }>(
-    `/api/events/${ticker}`,
-    fetcher,
-  );
+  const { data, isLoading } = useSWR<{
+    events: Array<{ date: string; type: string; description: string }>;
+  }>(`/api/events/${ticker}`, fetcher);
 
   if (isLoading) {
     return (
       <div className="space-y-2">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-16 rounded-none-none shimmer" />
+          <div key={i} className="h-16 shimmer" />
         ))}
       </div>
     );
@@ -435,26 +638,25 @@ function EventsTab({ ticker }: { ticker: string }) {
 
   if (events.length === 0) {
     return (
-      <div className="rounded-none-none border border-hairline bg-surface p-12 text-center">
+      <div className="border-t border-hairline-strong py-12 text-center">
         <Calendar className="w-8 h-8 text-muted mx-auto mb-3" strokeWidth={1.5} />
-        <p className="text-body text-sm">
-          Sem eventos próximos.
-        </p>
+        <p className="text-muted text-sm">No upcoming events.</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-none-none border border-hairline bg-surface divide-y divide-hairline">
+    <div className="border-t border-hairline-strong">
       {events.map((e, i) => (
-        <div key={i} className="px-4 py-3 flex items-center gap-4">
-          <div className="text-xs uppercase tracking-wider text-muted font-mono w-24 shrink-0">
+        <div
+          key={i}
+          className="flex items-center gap-4 px-4 py-3 border-b border-hairline last:border-0"
+        >
+          <div className="num text-[10px] uppercase text-brand-deep w-[52px] shrink-0">
             {e.date}
           </div>
-          <div className="text-xs font-medium text-body uppercase tracking-wider w-24 shrink-0">
-            {e.type}
-          </div>
-          <div className="flex-1 text-sm text-ink">{e.description}</div>
+          <div className="label-s label-muted-2 w-[100px] shrink-0">{e.type}</div>
+          <div className="flex-1 text-[13px] text-ink">{e.description}</div>
         </div>
       ))}
     </div>
