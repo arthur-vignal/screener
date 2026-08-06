@@ -243,11 +243,20 @@ export function MarketTable({ sectorFilter }: { sectorFilter?: string | null }) 
   const start = total === 0 ? 0 : page * limit + 1;
   const end = Math.min(total, (page + 1) * limit);
 
-  // Column template (10 cols): index · asset · sector · price · 1D · 7D · 30D · mcap · vol · spark
+  const columnWidth: Record<ColKey, string> = {
+    asset: "minmax(180px,1fr)",
+    sector: "130px",
+    price: "104px",
+    "1d": "88px",
+    "7d": "88px",
+    "30d": "88px",
+    mcap: "minmax(140px,168px)",
+    vol: "104px",
+    spark: "124px",
+  };
   const cols: ColKey[] = ["asset", "sector", "price", "1d", "7d", "30d", "mcap", "vol", "spark"];
-  const tpl =
-    "44px minmax(180px,1fr) 130px 104px 88px 88px 88px minmax(140px,168px) 104px 124px";
-
+  const activeColumns = cols.filter((key) => key === "asset" || visible.includes(key));
+  const tpl = ["44px", ...activeColumns.map((key) => columnWidth[key])].join(" ");
   function isOn(key: ColKey) {
     return visible.includes(key);
   }

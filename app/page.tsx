@@ -5,6 +5,9 @@ import { MacroStrip } from "@/components/macro-strip";
 import { SectorRibbon } from "@/components/sector-ribbon";
 import { MarketTable } from "@/components/market-table";
 import { FearGreedPanel, NewsRail, SulfurPortfoliosRail } from "@/components/right-rail";
+import { MacroPanel } from "@/components/macro-panel";
+import { SectorHeatmap } from "@/components/sector-heatmap";
+import { CorrelationHeatmap } from "@/components/correlation-heatmap";
 
 /**
  * Dashboard — Ledger spec (1b direction).
@@ -50,6 +53,14 @@ export default function DashboardPage() {
           </RailBlock>
         </aside>
       </div>
+
+      <section className="border-t border-hairline-strong px-7 py-7 space-y-5">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <MacroPanel />
+          <SectorHeatmap />
+        </div>
+        <CorrelationHeatmap />
+      </section>
     </div>
   );
 }
