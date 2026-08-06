@@ -2,16 +2,17 @@
 
 import { cn } from "@/lib/utils";
 
-const ROWS: string[][] = [
-  ["Index", "Market Cap", "Enterprise Value", "Income", "Sales", "Book/sh", "Cash/sh", "Dividend Est.", "Dividend TTM", "Dividend Ex-Date", "Dividend Gr. 3/5Y", "Payout", "Employees", "IPO"],
-  ["P/E", "Forward P/E", "PEG", "P/S", "P/B", "P/C", "P/FCF", "EV/EBITDA", "EV/Sales", "Quick Ratio", "Current Ratio", "Debt/Eq", "LT Debt/Eq", "Option/Short"],
-  ["EPS (ttm)", "EPS next Y", "EPS next Q", "EPS this Y", "EPS next Y", "EPS next 5Y", "EPS past 3/5Y", "Sales past 3/5Y", "EPS Y/Y TTM", "Sales Y/Y TTM", "EPS Q/Q", "Sales Q/Q", "Earnings", "EPS/Sales Surpr."],
-  ["Insider Own", "Insider Trans", "Inst Own", "Inst Trans", "ROA", "ROE", "ROIC", "Gross Margin", "Oper. Margin", "Profit Margin", "SMA20", "SMA50", "SMA200", "Trades"],
-  ["Shs Outstand", "Shs Float", "Short Float", "Short Ratio", "Short Interest", "52W High", "52W Low", "Volatility", "ATR (14)", "RSI (14)", "Beta", "Rel Volume", "Avg Volume", "Volume"],
-  ["Perf Week", "Perf Month", "Perf Quarter", "Perf Half Y", "Perf YTD", "Perf Year", "Perf 3Y", "Perf 5Y", "Perf 10Y", "Recom", "Target Price", "Prev Close", "Price", "Change"],
-];
+type Category = { title: string; rows: { label: string; value: string }[] };
 
-const NEGATIVE_IS_BAD = /^(Income|ROA|ROE|ROIC|Gross Margin|Oper\. Margin|Profit Margin|Perf |Change|EPS |Sales )/;
+const CATEGORIES: { match: RegExp; title: string }[] = [
+  { match: /^(Index|Market Cap|Enterprise Value|Income|Sales|Book|Cash|Dividend|Payout|Employees|IPO)/i, title: "Company" },
+  { match: /^(P\/E|P\/S|P\/B|P\/C|P\/FCF|Forward P\/E|PEG|EV\/)/i, title: "Valuation" },
+  { match: /^(EPS |Sales |Earnings)/i, title: "Growth" },
+  { match: /^(ROA|ROE|ROIC|Gross Margin|Oper\. Margin|Profit Margin)/i, title: "Profitability" },
+  { match: /^(Insider|Inst )/i, title: "Ownership" },
+  { match: /^(Shs |Short |52W|Volatility|ATR|RSI|SMA|Beta|Rel Volume|Avg Volume|Volume|Trades)/i, title: "Technical" },
+  { match: /^(Perf |Recom|Target Price|Prev Close|Price|Change)/i, title: "Performance" },
+];
 
 function tone(label: string, value: string): string {
   if (!value || value === "-") return "text-faint";
@@ -19,7 +20,8 @@ function tone(label: string, value: string): string {
   if (!match) return "text-ink";
   const n = Number(match[0].replace(/,/g, ""));
   if (!Number.isFinite(n)) return "text-ink";
-  if (NEGATIVE_IS_BAD.test(label) || /SMA\d+|52W (High|Low)/.test(label)) {
+  const isContextLabel = /^(Perf|Change|ROA|ROE|ROIC|Gross Margin|Oper\. Margin|Profit Margin|EPS |Sales |SMA\d+|52W (High|Low))/.test(label);
+  if (isContextLabel) {
     if (n > 0) return "text-positive";
     if (n < 0) return "text-negative";
   }
@@ -27,33 +29,44 @@ function tone(label: string, value: string): string {
 }
 
 export function AllFundamentals({ finviz }: { finviz: Record<string, string> }) {
-  const columns = ROWS.filter((column) => column.some((label) => finviz[label] != null));
-  if (columns.length === 0) {
+  const available = Object.entries(finviz).filter(([, v]) => v && v !== "-");
+  if (available.length === 0) {
     return <div className="py-5 text-[12px] text-faint">Finviz statistics unavailable.</div>;
   }
 
+  const categories: Category[] = [];
+  for (const { title, match } of CATEGORIES) {
+    const rows = available
+      .filter(([label]) => match.test(label))
+      .map(([label, value]) => ({ label, value }));
+    if (rows.length > 0) categories.push({ title, rows });
+  }
+  if (available.some(([label]) => !categories.some((c) => c.rows.some((r) => r.label === label)))) {
+    const used = new Set(categories.flatMap((c) => c.rows.map((r) => r.label)));
+    const extras = available.filter(([label]) => !used.has(label));
+    if (extras.length > 0) categories.push({ title: "Other", rows: extras.map(([label, value]) => ({ label, value })) });
+  }
+
   return (
-    <div className="border border-hairline-strong divide-y divide-hairline">
-      {columns.map((column, columnIndex) => (
-        <div
-          key={columnIndex}
-          className={cn("grid items-stretch", columnIndex > 0 && "border-t border-hairline-strong")}
-          style={{ gridTemplateColumns: `repeat(${column.length}, minmax(0, 1fr))` }}
-        >
-          {column.map((label) => {
-            const value = finviz[label] ?? "-";
-            return (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {categories.map((cat) => (
+        <div key={cat.title} className="border border-hairline-strong">
+          <div className="px-3 py-2 bg-canvas-soft border-b border-hairline-strong label-s label-muted-2 uppercase tracking-wider">
+            {cat.title}
+          </div>
+          <div>
+            {cat.rows.map(({ label, value }) => (
               <div
                 key={label}
-                className="flex items-baseline justify-between gap-2 min-w-0 h-[34px] px-3 border-r border-hairline last:border-r-0"
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center h-[34px] px-3 border-b border-hairline last:border-b-0"
               >
-                <span className="text-[11px] text-muted truncate">{label}</span>
-                <span className={cn("num text-[11.5px] font-semibold text-right truncate", tone(label, value))}>
+                <span className="text-[12px] text-muted truncate pr-2">{label}</span>
+                <span className={cn("num text-[12.5px] font-semibold text-right whitespace-nowrap tabular-nums", tone(label, value))}>
                   {value}
                 </span>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
       ))}
     </div>
