@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFinancials, getProfile, getQuote } from "@/lib/finnhub";
 import { getFundamentals } from "@/lib/fundamentals";
+import { getFinvizStock } from "@/lib/finviz";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -21,11 +22,12 @@ export async function GET(
 
   try {
     // Fetch from all sources in parallel
-    const [quote, profile, fins, fundamentals] = await Promise.all([
+    const [quote, profile, fins, fundamentals, finviz] = await Promise.all([
       getQuote(ticker).catch(() => null),
       getProfile(ticker).catch(() => null),
       getFinancials(ticker).catch(() => null),
       getFundamentals(ticker).catch(() => null),
+      getFinvizStock(ticker).catch(() => null),
     ]);
 
     if (!quote && !fundamentals) {
@@ -71,6 +73,7 @@ export async function GET(
       },
       marketCap: quoteYahoo?.marketCap ?? null,
       profile,
+      finviz: finviz?.snapshot ?? {},
       metrics: {
         // Valuation (prefer SEC, fallback Finnhub)
         peRatio: quoteYahoo?.pe ?? m.peBasicExtraTTM ?? m.peTTM ?? null,

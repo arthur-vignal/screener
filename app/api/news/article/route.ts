@@ -4,38 +4,18 @@ import { cached } from "@/lib/cache";
 export const dynamic = "force-dynamic";
 export const maxDuration = 20;
 
-const ALLOWED_DOMAINS = [
-  "yahoo.com",
-  "finance.yahoo.com",
-  "news.google.com",
-  "reuters.com",
-  "bloomberg.com",
-  "wsj.com",
-  "ft.com",
-  "cnbc.com",
-  "marketwatch.com",
-  "forbes.com",
-  "morningstar.com",
-  "investopedia.com",
-  "seekingalpha.com",
-  "fool.com",
-  "benzinga.com",
-  "zacks.com",
-  "nasdaq.com",
-  "sec.gov",
-  "coindesk.com",
-  "cointelegraph.com",
-  "decrypt.co",
-  "bitcoinmagazine.com",
-];
-
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+const BLOCKED_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
 
 function isAllowed(url: string): boolean {
   try {
     const u = new URL(url);
-    return ALLOWED_DOMAINS.some((d) => u.hostname.endsWith(d));
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    if (BLOCKED_HOSTNAMES.has(u.hostname) || u.hostname.endsWith(".local")) return false;
+    if (/^(10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(u.hostname)) return false;
+    return true;
   } catch {
     return false;
   }

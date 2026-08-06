@@ -9,6 +9,7 @@
  */
 
 import { cached } from "./cache";
+import { getFinvizStock } from "./finviz";
 
 export type NewsItem = {
   id: string;
@@ -189,13 +190,14 @@ export async function fetchNewsForTicker(
 
   // Try cache first
   return cached(`news-multi:${upper}`, 180, async () => {
-    const [yahoo, google, sec] = await Promise.all([
+    const [finviz, yahoo, google, sec] = await Promise.all([
+      isCrypto ? Promise.resolve([]) : getFinvizStock(upper).then((x) => x.news).catch(() => []),
       fetchYahoo(upper),
       fetchGoogle(upper, isCrypto),
       isCrypto ? Promise.resolve([]) : fetchSEC(upper),
     ]);
 
-    const merged = [...yahoo, ...google, ...sec];
+    const merged = [...finviz, ...yahoo, ...google, ...sec];
     return dedupeAndSort(merged).slice(0, limit);
   });
 }

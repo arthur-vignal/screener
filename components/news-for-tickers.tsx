@@ -2,6 +2,8 @@
 
 import useSWR from "swr";
 import Link from "next/link";
+import { useState } from "react";
+import { ArticleModal } from "@/components/article-modal";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -36,6 +38,7 @@ export function NewsForTickers({
   showAllHref,
   limit = 6,
 }: Props) {
+  const [openArticle, setOpenArticle] = useState<NewsItem | null>(null);
   const tickersParam = tickers.slice(0, 30).join(",");
   const { data, isLoading } = useSWR<MultiNewsResponse>(
     tickersParam ? `/api/news/multi/${tickersParam}` : null,
@@ -71,12 +74,11 @@ export function NewsForTickers({
           <div className="py-4 text-faint text-[12px]">No recent news.</div>
         ) : (
           news.map((n) => (
-            <a
+            <button
+              type="button"
               key={`${n.id}-${n.url}`}
-              href={n.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block px-3 py-[11px] border-b border-hairline hover-row press group"
+              onClick={() => setOpenArticle(n)}
+              className="block w-full text-left px-3 py-[11px] border-b border-hairline hover-row press group"
             >
               <div className="label-s label-muted-2 mb-1 flex items-center gap-2">
                 <span>
@@ -97,10 +99,11 @@ export function NewsForTickers({
               <div className="text-[12.5px] leading-[1.45] text-ink group-hover:text-brand-deep transition-colors duration-150 text-pretty line-clamp-2">
                 {n.headline}
               </div>
-            </a>
+            </button>
           ))
         )}
       </div>
+      {openArticle && <ArticleModal article={openArticle} onClose={() => setOpenArticle(null)} />}
     </section>
   );
 }

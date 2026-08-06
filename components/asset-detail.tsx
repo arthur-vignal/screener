@@ -43,6 +43,7 @@ type AssetData = {
     marketCapitalization: number;
   };
   metrics: Record<string, number | null>;
+  finviz: Record<string, string>;
 };
 
 type Tab = "statistics" | "news" | "events";
@@ -222,7 +223,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
                   : "FY2025 · TTM"}
               </span>
             </div>
-            <AllFundamentals metrics={data.metrics} />
+            <AllFundamentals finviz={data.finviz} />
           </div>
 
           {profile?.finnhubIndustry === "ETF" && (
