@@ -28,8 +28,9 @@ function tone(label: string, value: string): string {
   return "text-ink";
 }
 
-export function AllFundamentals({ finviz }: { finviz: Record<string, string> }) {
-  const available = Object.entries(finviz).filter(([, v]) => v && v !== "-");
+export function AllFundamentals({ finviz }: { finviz: Record<string, string> | undefined | null }) {
+  const safeFinviz = finviz ?? {};
+  const available = Object.entries(safeFinviz).filter(([, v]) => v && v !== "-");
   if (available.length === 0) {
     return <div className="py-5 text-[12px] text-faint">Finviz statistics unavailable.</div>;
   }
