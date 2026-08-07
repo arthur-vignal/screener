@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getYahooCandles } from "@/lib/yahoo";
-import { getBrapiCandles, isBrazilianTicker } from "@/lib/brapi";
+import { isBrazilianTicker } from "@/lib/brapi";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -11,6 +11,7 @@ const RANGE_MAP: Record<string, "1mo" | "3mo" | "6mo" | "1y" | "2y" | "5y"> = {
   "6M": "6mo",
   "1Y": "1y",
   "2Y": "2y",
+  "5Y": "5y",
 };
 
 export async function GET(
@@ -23,30 +24,16 @@ export async function GET(
   const rangeKey = searchParams.get("range") ?? "1Y";
   const range = RANGE_MAP[rangeKey] ?? "1y";
 
-  // Brazilian B3 tickers (PETR4, VALE3, ITUB4, etc.) -> Brapi.
-  // Yahoo often 404s for raw BR tickers, so we route them explicitly.
-  if (isBrazilianTicker(ticker)) {
-    try {
-      const candles = await getBrapiCandles(ticker, range, "1d");
-      return NextResponse.json({
-        ticker,
-        range: rangeKey,
-        source: "brapi",
-        currency: "BRL",
-        points: candles,
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "unknown error";
-      return NextResponse.json({ error: msg }, { status: 500 });
-    }
-  }
+  // B3 tickers need the `.SA` suffix for Yahoo Finance.
+  const yahooSymbol = isBrazilianTicker(ticker) ? `${ticker}.SA` : ticker;
 
   try {
-    const candles = await getYahooCandles(ticker, range, "1d");
+    const candles = await getYahooCandles(yahooSymbol, range, "1d");
     return NextResponse.json({
       ticker,
       range: rangeKey,
       source: "yahoo",
+      currency: isBrazilianTicker(ticker) ? "BRL" : "USD",
       points: candles,
     });
   } catch (err) {

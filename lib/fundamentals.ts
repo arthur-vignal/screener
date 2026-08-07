@@ -16,12 +16,12 @@
 import { cached } from "./cache";
 import { getSecFundamentals, type Fundamentals } from "./sec-edgar";
 import { getCompanyName, getCompanySector } from "./asset-names";
-import { getBrapiQuote } from "./brapi";
+import { getYahooQuoteSnapshot } from "./yahoo";
+import { IBOV_BY_SYMBOL } from "./ibovespa";
 
 /**
  * True when the symbol is a Brazilian B3 ticker (e.g. PETR4, PETR4.SA).
- * We route those to Brapi for reliable price + market cap data, since Yahoo
- * query1/2/3 sometimes returns 404 for `.SA` symbols.
+ * We route those to Yahoo Finance `.SA` + IBOV sector fallback.
  */
 function isBrazilianTicker(symbol: string): boolean {
   const s = symbol.toUpperCase().replace(/\.SA$/, "");
@@ -30,41 +30,53 @@ function isBrazilianTicker(symbol: string): boolean {
 }
 
 /**
- * Build fundamentals for a Brazilian ticker using Brapi.
- * Brapi free has price/marketCap/PE/EPS/52w — no income statement series.
- * SEC ratios are not available for non-US issuers, so they're null.
+ * Build fundamentals for a Brazilian ticker using Yahoo `.SA` snapshot.
+ *
+ * Yahoo chart endpoint returns price, prevClose, 52w, day range, volume, name.
+ * It does NOT return fundamentals-rich metrics (P/E, P/VP, ROE etc.) without
+ * the cookie-crumb /quoteSummary endpoint. For those, the asset route layer
+ * serves /api/fundamentals/history/[ticker] which bridges via CVM cadastro.
+ *
+ * Sector comes from IBOV_BY_SYMBOL since Yahoo's `.SA` sector field is often
+ * empty for BR tickers.
  */
-async function buildBrapiFundamentals(symbol: string): Promise<CombinedFundamentals | null> {
+async function buildYahooBrFundamentals(
+  symbol: string,
+): Promise<CombinedFundamentals | null> {
   const upper = symbol.toUpperCase().replace(/\.SA$/, "");
-  const result = await getBrapiQuote(upper);
-  if (!result) return null;
-  const q = result.quote;
-  if (!q.price) return null;
+  const snap = await getYahooQuoteSnapshot(`${upper}.SA`);
+  if (!snap) return null;
+  const ibov = IBOV_BY_SYMBOL[upper];
+  const price = snap.price;
+  const prevClose = snap.prevClose;
+  const change = snap.change;
+  const changePercent = snap.changePercent;
   return {
     symbol: upper,
-    name: q.longName ?? q.shortName ?? null,
-    sector: null, // B3 sector lives in lib/ibovespa.ts; resolved by route layer if needed
+    name: snap.longName ?? snap.shortName ?? ibov?.name ?? null,
+    sector: ibov?.sector ?? null,
     exchange: "B3",
-    price: q.price,
-    prevClose: q.prevClose,
-    change: q.change,
-    changePercent: q.changePercent,
-    dayHigh: q.dayHigh || null,
-    dayLow: q.dayLow || null,
-    volume: q.volume || null,
-    marketCap: q.marketCap,
-    fiftyTwoWeekHigh: q.fiftyTwoWeekHigh,
-    fiftyTwoWeekLow: q.fiftyTwoWeekLow,
-    pe: q.trailingPE,
+    price,
+    prevClose,
+    change,
+    changePercent,
+    dayHigh: snap.dayHigh ?? null,
+    dayLow: snap.dayLow ?? null,
+    volume: snap.volume ?? null,
+    marketCap: null,
+    fiftyTwoWeekHigh: snap.fiftyTwoWeekHigh ?? null,
+    fiftyTwoWeekLow: snap.fiftyTwoWeekLow ?? null,
+    // Fundamentals-rich metrics unavailable from Yahoo `.SA` without crumb.
+    pe: null,
     pb: null,
     ps: null,
     roe: null,
     roic: null,
     netMargin: null,
     operatingMargin: null,
-    eps: q.earningsPerShare,
+    eps: null,
     bookValuePerShare: null,
-    asOf: q.marketTime,
+    asOf: null,
     cik: null,
   };
 }
@@ -148,9 +160,9 @@ async function fetchYahooSpark(symbol: string): Promise<SparkMeta | null> {
 async function buildFundamentals(symbol: string): Promise<CombinedFundamentals | null> {
   const upper = symbol.toUpperCase();
 
-  // Brazilian tickers: route to Brapi (more reliable than Yahoo for `.SA`).
+  // Brazilian tickers: route to Yahoo `.SA` (Brapi was removed in 2026-08-07).
   if (isBrazilianTicker(upper)) {
-    return buildBrapiFundamentals(upper);
+    return buildYahooBrFundamentals(upper);
   }
 
   const [meta, sec] = await Promise.all([

@@ -340,3 +340,64 @@ export async function getYahooQuotes(
     return all;
   });
 }
+
+/**
+ * Lightweight quote snapshot from the Yahoo chart endpoint.
+ * Returns price + 52w + day range + volume + name, but NO fundamentals
+ * (P/E, P/VP, ROE require the /quoteSummary endpoint which needs auth cookie).
+ *
+ * Works for any ticker, including BR with the `.SA` suffix.
+ */
+export type YahooQuoteSnapshot = {
+  symbol: string;
+  price: number;
+  prevClose: number;
+  change: number;
+  changePercent: number;
+  currency: string;
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
+  dayHigh: number | null;
+  dayLow: number | null;
+  volume: number | null;
+  longName: string | null;
+  shortName: string | null;
+};
+
+export async function getYahooQuoteSnapshot(
+  ticker: string,
+): Promise<YahooQuoteSnapshot | null> {
+  return cached(`yahoo:snapshot:${ticker}`, 300, async () => {
+    try {
+      const r = await fetchYahoo(
+        `/v8/finance/chart/${encodeURIComponent(ticker)}`,
+        { range: "1d", interval: "1d" },
+      );
+      if (!r.ok) return null;
+      const data = (await r.json()) as YahooChartResponse;
+      const meta = data.chart.result?.[0]?.meta;
+      if (!meta || meta.regularMarketPrice == null) return null;
+      const price = meta.regularMarketPrice;
+      const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? price;
+      const change = price - prevClose;
+      const changePercent = prevClose === 0 ? 0 : (change / prevClose) * 100;
+      return {
+        symbol: meta.symbol,
+        price,
+        prevClose,
+        change,
+        changePercent,
+        currency: meta.currency ?? "USD",
+        fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh ?? null,
+        fiftyTwoWeekLow: meta.fiftyTwoWeekLow ?? null,
+        dayHigh: meta.regularMarketDayHigh ?? null,
+        dayLow: meta.regularMarketDayLow ?? null,
+        volume: meta.regularMarketVolume ?? null,
+        longName: meta.longName ?? null,
+        shortName: meta.shortName ?? null,
+      };
+    } catch {
+      return null;
+    }
+  });
+}
