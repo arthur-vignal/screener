@@ -3,13 +3,16 @@
 import useSWR from "swr";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ArrowLeft, Newspaper, Calendar, Star, Plus } from "lucide-react";
+import { ArrowLeft, Newspaper, Calendar, Plus } from "lucide-react";
 import { PriceChart } from "@/components/price-chart";
 import { AssetScores } from "@/components/asset-scores";
 import { EtfHoldings } from "@/components/etf-holdings";
 import { cn, formatCompact } from "@/lib/utils";
 import { AllFundamentals } from "@/components/all-fundamentals";
 import { NewsForTickers } from "@/components/news-for-tickers";
+import { WatchlistButton } from "@/components/watchlist-button";
+import { CompareButton } from "@/components/compare-button";
+import { AddToPortfolioButton } from "@/components/add-to-portfolio-button";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -258,17 +261,9 @@ export function AssetDetail({ ticker }: { ticker: string }) {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <button type="button" className="btn-ghost">
-              <Star className="w-3 h-3" />
-              Watchlist
-            </button>
-            <button type="button" className="btn-ghost">
-              Compare
-            </button>
-            <button type="button" className="btn-primary">
-              <Plus className="w-3 h-3" />
-              Add to portfolio
-            </button>
+            <WatchlistButton symbol={data.ticker} />
+            <CompareButton symbol={data.ticker} />
+            <AddToPortfolioButton symbol={data.ticker} />
           </div>
         </div>
       </div>
