@@ -145,142 +145,162 @@ export function AssetDetail({ ticker }: { ticker: string }) {
   }
 
   const quote = data.quote;
-    const price = quote?.price ?? quote?.c ?? 0;
-    const change = quote?.change ?? quote?.d ?? 0;
-    const changePercent = quote?.changePercent ?? quote?.dp ?? 0;
-    const vm = normalizeAsset(data);
-    if (!vm) return null;
-    const { name, exchange, industry, currency, currencySymbol, marketCap, source } = vm;
-
-    const formatPrice = (n: number | undefined | null) =>
-      formatByCurrency(n, currency, currencySymbol);
-
-    const dataSourceLabel =
-      source === "brapi"
-        ? "Brapi · B3"
-        : "Delayed 15 min · Yahoo Finance";
-
+  const price = quote?.price ?? quote?.c ?? 0;
+  const change = quote?.change ?? quote?.d ?? 0;
+  const changePercent = quote?.changePercent ?? quote?.dp ?? 0;
+  const vm = normalizeAsset(data);
+  if (!vm) {
+    // Defensive fallback: never return null on BR pages where some fields may
+    // be missing — render a minimal page with just the ticker so we never end
+    // up with a blank screen.
     return (
-          <div className="max-w-[1920px] mx-auto bg-canvas text-ink">
-            {/* ============= BREADCRUMB BAR (42px, canvas-soft) ============= */}
-            <div className="h-[42px] bg-canvas-soft border-b border-hairline-strong px-8 flex items-center justify-between">
-              <div className="label flex items-center gap-2">
-                <Link href="/market/stocks" className="text-brand-deep link-underline">
-                  Stocks
-                </Link>
-                <span className="text-faint">›</span>
-                <Link
-                  href={`/market/stocks?q=${encodeURIComponent(industry)}`}
-                  className="text-brand-deep link-underline"
-                >
-                  {industry}
-                </Link>
-                <span className="text-faint">›</span>
-                <span className="text-ink">{data.ticker}</span>
-              </div>
-              <div className="label label-muted-2">{dataSourceLabel}</div>
+      <div className="max-w-[1920px] mx-auto bg-canvas text-ink px-8 py-10">
+        <Link
+          href="/market/stocks"
+          className="label label-muted-2 hover:text-ink"
+        >
+          ← Back to Stocks
+        </Link>
+        <h1 className="font-display text-[28px] text-ink mt-4 mb-2">
+          {data.ticker}
+        </h1>
+        <p className="text-muted text-sm">
+          Asset data unavailable for this ticker.
+        </p>
+      </div>
+    );
+  }
+  const { name, exchange, industry, currency, currencySymbol, marketCap, source } = vm;
+
+  const formatPrice = (n: number | undefined | null) =>
+    formatByCurrency(n, currency, currencySymbol);
+
+  const dataSourceLabel =
+    source === "brapi"
+      ? "Brapi · B3"
+      : "Delayed 15 min · Yahoo Finance";
+
+  return (
+    <div className="max-w-[1920px] mx-auto bg-canvas text-ink">
+      {/* ============= BREADCRUMB BAR (42px, canvas-soft) ============= */}
+      <div className="h-[42px] bg-canvas-soft border-b border-hairline-strong px-8 flex items-center justify-between">
+        <div className="label flex items-center gap-2">
+          <Link href="/market/stocks" className="text-brand-deep link-underline">
+            Stocks
+          </Link>
+          <span className="text-faint">›</span>
+          <Link
+            href={`/market/stocks?q=${encodeURIComponent(industry)}`}
+            className="text-brand-deep link-underline"
+          >
+            {industry}
+          </Link>
+          <span className="text-faint">›</span>
+          <span className="text-ink">{data.ticker}</span>
+        </div>
+        <div className="label label-muted-2">{dataSourceLabel}</div>
+      </div>
+
+      {/* ============= HERO ============= */}
+      <div className="px-8 pt-[30px] pb-[26px] border-b border-hairline-strong">
+        <Link
+          href="/market/stocks"
+          className="inline-flex items-center gap-1.5 label label-muted-2 hover:text-ink mb-3 transition-colors"
+        >
+          <ArrowLeft className="w-3 h-3" />
+          Back
+        </Link>
+
+        <div className="flex items-end gap-6">
+          <div className="flex items-end gap-5">
+            <div className="w-[60px] h-[60px] bg-ink flex items-center justify-center shrink-0">
+              <span className="font-display text-[15px] text-canvas leading-none font-bold">
+                {data.ticker.slice(0, 4)}
+              </span>
             </div>
-
-            {/* ============= HERO ============= */}
-            <div className="px-8 pt-[30px] pb-[26px] border-b border-hairline-strong">
-              <Link
-                href="/market/stocks"
-                className="inline-flex items-center gap-1.5 label label-muted-2 hover:text-ink mb-3 transition-colors"
-              >
-                <ArrowLeft className="w-3 h-3" />
-                Back
-              </Link>
-
-              <div className="flex items-end gap-6">
-                <div className="flex items-end gap-5">
-                  <div className="w-[60px] h-[60px] bg-ink flex items-center justify-center shrink-0">
-                    <span className="font-display text-[15px] text-canvas leading-none font-bold">
-                      {data.ticker.slice(0, 4)}
-                    </span>
-                  </div>
-                  <div className="pb-1">
-                    <h1 className="font-display text-[30px] text-ink tracking-[-0.03em] leading-none mb-2">
-                      {name}
-                    </h1>
-                    <div className="label label-muted-2">
-                      {exchange}: {data.ticker} · {industry}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-l border-hairline-strong pl-[34px] pb-1">
-                  <div className="flex items-baseline gap-4">
-                    <span className="num num-xxl text-ink leading-none">
-                      {formatPrice(price)}
-                    </span>
-                    <span
-                      className={cn(
-                        "num text-[17px]",
-                        changePercent >= 0 ? "text-positive" : "text-negative",
-                      )}
-                    >
-                      {change >= 0 ? "+" : "−"}
-                      {Math.abs(change).toFixed(2)}{" "}
-                      <span className="ml-1">
-                        ({changePercent >= 0 ? "+" : "−"}
-                        {Math.abs(changePercent).toFixed(2)}%)
-                      </span>
-                    </span>
-                  </div>
-                  <div className="label label-muted-2 mt-2">
-                    {exchange} session · {currency}
-                    {quote?.prevClose ? (
-                      <span className="ml-2">
-                        · prev close {formatPrice(quote.prevClose)}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="ml-auto flex items-center gap-2">
-                  <button type="button" className="btn-ghost">
-                    <Star className="w-3 h-3" />
-                    Watchlist
-                  </button>
-                  <button type="button" className="btn-ghost">
-                    Compare
-                  </button>
-                  <button type="button" className="btn-primary">
-                    <Plus className="w-3 h-3" />
-                    Add to portfolio
-                  </button>
-                </div>
+            <div className="pb-1">
+              <h1 className="font-display text-[30px] text-ink tracking-[-0.03em] leading-none mb-2">
+                {name}
+              </h1>
+              <div className="label label-muted-2">
+                {exchange}: {data.ticker} · {industry}
               </div>
             </div>
+          </div>
 
-            {/* ============= MAIN SPLIT (1fr 320px) ============= */}
-            <div className="grid" style={{ gridTemplateColumns: "1fr 320px" }}>
-              {/* LEFT — chart + scores + fundamentals */}
-              <div className="border-r border-hairline-strong">
-                <div className="px-8 pt-6 pb-2">
-                  <PriceChart ticker={data.ticker} />
-                </div>
-
-                {/* Fundamentals — exhaustive list, 7 categories */}
-                <div className="px-8 pt-6 pb-6 border-t border-hairline-strong">
-                  <div className="flex items-baseline justify-between mb-4">
-                    <h2 className="font-display text-[18px] text-ink tracking-[-0.03em]">
-                      Fundamentals
-                    </h2>
-                    <span className="label-s label-muted-2">
-                      {data.secAsOf
-                        ? `As of ${data.secAsOf.slice(0, 10)}`
-                        : "FY2025 · TTM"}
-                    </span>
-                  </div>
-                  <AllFundamentals finviz={data.finviz} />
-                </div>
-
-                {industry === "ETF" && (
-                  <div className="px-8 py-4 border-t border-hairline-strong">
-                    <EtfHoldings ticker={data.ticker} />
-                  </div>
+          <div className="border-l border-hairline-strong pl-[34px] pb-1">
+            <div className="flex items-baseline gap-4">
+              <span className="num num-xxl text-ink leading-none">
+                {formatPrice(price)}
+              </span>
+              <span
+                className={cn(
+                  "num text-[17px]",
+                  changePercent >= 0 ? "text-positive" : "text-negative",
                 )}
+              >
+                {change >= 0 ? "+" : "−"}
+                {Math.abs(change).toFixed(2)}{" "}
+                <span className="ml-1">
+                  ({changePercent >= 0 ? "+" : "−"}
+                  {Math.abs(changePercent).toFixed(2)}%)
+                </span>
+              </span>
+            </div>
+            <div className="label label-muted-2 mt-2">
+              {exchange} session · {currency}
+              {quote?.prevClose ? (
+                <span className="ml-2">
+                  · prev close {formatPrice(quote.prevClose)}
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            <button type="button" className="btn-ghost">
+              <Star className="w-3 h-3" />
+              Watchlist
+            </button>
+            <button type="button" className="btn-ghost">
+              Compare
+            </button>
+            <button type="button" className="btn-primary">
+              <Plus className="w-3 h-3" />
+              Add to portfolio
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ============= MAIN SPLIT (1fr 320px) ============= */}
+      <div className="grid" style={{ gridTemplateColumns: "1fr 320px" }}>
+        {/* LEFT — chart + scores + fundamentals */}
+        <div className="border-r border-hairline-strong">
+          <div className="px-8 pt-6 pb-2">
+            <PriceChart ticker={data.ticker} />
+          </div>
+
+          {/* Fundamentals — exhaustive list, 7 categories */}
+          <div className="px-8 pt-6 pb-6 border-t border-hairline-strong">
+            <div className="flex items-baseline justify-between mb-4">
+              <h2 className="font-display text-[18px] text-ink tracking-[-0.03em]">
+                Fundamentals
+              </h2>
+              <span className="label-s label-muted-2">
+                {data.secAsOf
+                  ? `As of ${data.secAsOf.slice(0, 10)}`
+                  : "FY2025 · TTM"}
+              </span>
+            </div>
+            <AllFundamentals finviz={data.finviz} />
+          </div>
+
+          {industry === "ETF" && (
+            <div className="px-8 py-4 border-t border-hairline-strong">
+              <EtfHoldings ticker={data.ticker} />
+            </div>
+          )}
 
           {(tab === "news" || tab === "events") && (
             <div className="px-8 py-6 border-t border-hairline-strong">
@@ -334,16 +354,16 @@ export function AssetDetail({ ticker }: { ticker: string }) {
                 }
               />
               <RailRow
-                              label="Volume"
-                              value={quote?.volume ? `${currencySymbol}${formatCompact(quote.volume)}` : "—"}
-                            />
-                            <RailRow
-                              label="Market cap"
-                              value={marketCap ? `${currencySymbol}${formatCompact(marketCap)}` : "—"}
-                            />
-                            <RailRow label="Exchange" value={exchange} />
-                            <RailRow label="Currency" value={currency} />
-                            <RailRow label="Sector" value={industry} />
+                label="Volume"
+                value={quote?.volume ? `${currencySymbol}${formatCompact(quote.volume)}` : "—"}
+              />
+              <RailRow
+                label="Market cap"
+                value={marketCap ? `${currencySymbol}${formatCompact(marketCap)}` : "—"}
+              />
+              <RailRow label="Exchange" value={exchange} />
+              <RailRow label="Currency" value={currency} />
+              <RailRow label="Sector" value={industry} />
             </div>
           </section>
 
