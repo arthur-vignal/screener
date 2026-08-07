@@ -16,6 +16,58 @@
 import { cached } from "./cache";
 import { getSecFundamentals, type Fundamentals } from "./sec-edgar";
 import { getCompanyName, getCompanySector } from "./asset-names";
+import { getBrapiQuote } from "./brapi";
+
+/**
+ * True when the symbol is a Brazilian B3 ticker (e.g. PETR4, PETR4.SA).
+ * We route those to Brapi for reliable price + market cap data, since Yahoo
+ * query1/2/3 sometimes returns 404 for `.SA` symbols.
+ */
+function isBrazilianTicker(symbol: string): boolean {
+  const s = symbol.toUpperCase().replace(/\.SA$/, "");
+  // B3 tickers: 4 letters (A-Z) + 1-2 digits. Optional suffix 11/12/etc.
+  return /^[A-Z]{4}\d{1,2}$/.test(s);
+}
+
+/**
+ * Build fundamentals for a Brazilian ticker using Brapi.
+ * Brapi free has price/marketCap/PE/EPS/52w — no income statement series.
+ * SEC ratios are not available for non-US issuers, so they're null.
+ */
+async function buildBrapiFundamentals(symbol: string): Promise<CombinedFundamentals | null> {
+  const upper = symbol.toUpperCase().replace(/\.SA$/, "");
+  const result = await getBrapiQuote(upper);
+  if (!result) return null;
+  const q = result.quote;
+  if (!q.price) return null;
+  return {
+    symbol: upper,
+    name: q.longName ?? q.shortName ?? null,
+    sector: null, // B3 sector lives in lib/ibovespa.ts; resolved by route layer if needed
+    exchange: "B3",
+    price: q.price,
+    prevClose: q.prevClose,
+    change: q.change,
+    changePercent: q.changePercent,
+    dayHigh: q.dayHigh || null,
+    dayLow: q.dayLow || null,
+    volume: q.volume || null,
+    marketCap: q.marketCap,
+    fiftyTwoWeekHigh: q.fiftyTwoWeekHigh,
+    fiftyTwoWeekLow: q.fiftyTwoWeekLow,
+    pe: q.trailingPE,
+    pb: null,
+    ps: null,
+    roe: null,
+    roic: null,
+    netMargin: null,
+    operatingMargin: null,
+    eps: q.earningsPerShare,
+    bookValuePerShare: null,
+    asOf: q.marketTime,
+    cik: null,
+  };
+}
 
 export type CombinedFundamentals = {
   symbol: string;
@@ -95,6 +147,12 @@ async function fetchYahooSpark(symbol: string): Promise<SparkMeta | null> {
 
 async function buildFundamentals(symbol: string): Promise<CombinedFundamentals | null> {
   const upper = symbol.toUpperCase();
+
+  // Brazilian tickers: route to Brapi (more reliable than Yahoo for `.SA`).
+  if (isBrazilianTicker(upper)) {
+    return buildBrapiFundamentals(upper);
+  }
+
   const [meta, sec] = await Promise.all([
     fetchYahooSpark(upper),
     getSecFundamentals(upper).catch(() => null),

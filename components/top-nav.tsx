@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import {
   Menu,
   X,
@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SearchBar } from "@/components/search-bar";
+import { MarketToggle } from "@/components/market-toggle";
 
 type SubItem = {
   href: string;
@@ -162,6 +163,9 @@ export function TopNav() {
 
           {/* Right cluster */}
           <div className="flex items-center gap-[14px]">
+            <Suspense fallback={null}>
+              <MarketToggle className="hidden lg:inline-flex" />
+            </Suspense>
             <ThemeToggle />
 
             {/* User avatar (always rendered; popover if logged in) */}
@@ -355,6 +359,12 @@ export function TopNav() {
           <nav className="px-6 py-4 space-y-1">
             <div className="pb-3">
               <SearchBar />
+            </div>
+
+            <div className="pb-3">
+              <Suspense fallback={null}>
+                <MarketToggle />
+              </Suspense>
             </div>
 
             {NAV.map((item) => {

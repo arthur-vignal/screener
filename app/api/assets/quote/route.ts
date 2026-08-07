@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getFundamentalsBatch } from "@/lib/fundamentals";
 import { getAssetType } from "@/lib/assets";
 import { getFinvizStock } from "@/lib/finviz";
+import { IBOV_BY_SYMBOL } from "@/lib/ibovespa";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -37,10 +38,14 @@ export async function GET(req: NextRequest) {
     const rows = symbols.map((sym) => {
       const upper = sym.toUpperCase();
       const f = fundMap.get(upper);
+      // For Brazilian tickers, sector comes from IBOV (not SEC).
+      const ibovSector = IBOV_BY_SYMBOL[upper]?.sector ?? null;
+      const sector = f?.sector ?? ibovSector ?? "—";
+      const currency = IBOV_BY_SYMBOL[upper] ? "BRL" : "USD";
       return {
         symbol: upper,
         type: getAssetType(upper),
-        sector: f?.sector ?? "—",
+        sector,
         quote: f
           ? {
               symbol: upper,
@@ -48,7 +53,7 @@ export async function GET(req: NextRequest) {
               prevClose: f.prevClose,
               change: f.change,
               changePercent: f.changePercent,
-              currency: "USD",
+              currency,
               dayHigh: f.dayHigh,
               dayLow: f.dayLow,
               dayOpen: 0,
