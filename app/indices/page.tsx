@@ -89,15 +89,13 @@ export default function IndicesPage() {
             : "Índices pré-definidos pela plataforma"
         }
         actions={
-          user && (
-            <Link
-              href="/indices/new"
-              className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-md bg-brand text-on-brand hover:bg-brand-bright transition-colors press text-sm font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              Novo índice
-            </Link>
-          )
+          <Link
+            href="/indices/new"
+            className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-md bg-brand text-on-brand hover:bg-brand-bright transition-colors press text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Novo índice
+          </Link>
         }
       />
 
