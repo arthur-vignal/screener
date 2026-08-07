@@ -293,7 +293,11 @@ export function AssetDetail({ ticker }: { ticker: string }) {
                   : "FY2025 · TTM"}
               </span>
             </div>
-            <AllFundamentals finviz={data.finviz} />
+            <AllFundamentals
+                finviz={data.finviz}
+                metrics={data.metrics}
+                currency={currency}
+              />
           </div>
 
           {industry === "ETF" && (
