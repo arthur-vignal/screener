@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCnpjToCvmMap, lookupCnpjByTicker, getCvmHistory } from "@/lib/cvm";
+import { lookupCnpjByTicker, getCvmHistory } from "@/lib/cvm";
 import { IBOV_BY_SYMBOL } from "@/lib/ibovespa";
 
 export const dynamic = "force-dynamic";
@@ -15,16 +15,7 @@ export async function GET(req: Request) {
     timestamp: new Date().toISOString(),
   };
 
-  // Step 1: cadastro map
-  try {
-    const map = await getCnpjToCvmMap();
-    debug.cadastroSize = Object.keys(map).length;
-    debug.cadastroSample = Object.entries(map).slice(0, 3);
-  } catch (e) {
-    debug.cadastroError = e instanceof Error ? e.message : String(e);
-  }
-
-  // Step 2: lookup by ticker
+  // Step 1: lookup by ticker (uses internal cadastro map)
   try {
     const lookup = await lookupCnpjByTicker(ticker);
     debug.lookupResult = lookup;
@@ -32,10 +23,11 @@ export async function GET(req: Request) {
     debug.lookupError = e instanceof Error ? e.message : String(e);
   }
 
-  // Step 3: full history (only if lookup succeeded)
-  if (debug.lookupResult && typeof debug.lookupResult === "object" && "cnpj" in debug.lookupResult) {
+  // Step 2: full history (only if lookup succeeded)
+  const lookup = debug.lookupResult as { cnpj: string } | null;
+  if (lookup && lookup.cnpj) {
     try {
-      const hist = await getCvmHistory((debug.lookupResult as { cnpj: string }).cnpj);
+      const hist = await getCvmHistory(lookup.cnpj);
       debug.historyQuarters = hist.quarters.size;
       debug.historySample = Array.from(hist.quarters.values()).slice(0, 3);
     } catch (e) {
@@ -43,5 +35,5 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json(debug, null, 2);
+  return NextResponse.json(debug);
 }
