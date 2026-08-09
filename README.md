@@ -1,84 +1,87 @@
-# Screener v2
+# Sulfur.io
 
-Stock screener and portfolio analyzer. Built with Next.js 16, Supabase, and Yahoo Finance.
+Screener de ações estilo "Ledger/Linear-grade UI" cobrindo US + B3 (Brasil) sem custos de dados.
 
-## Stack
+- **Prod:** https://screener-production-4f58.up.railway.app
+- **Stack:** Next.js 16 (App Router) + React 19 + TypeScript + Tailwind 4 + Recharts + SWR + Supabase Postgres + Vercel-style API routes.
+- **Auth:** Supabase (login/signup/session/JWT) + perfis custom `profiles`.
 
-- **Next.js 16** (App Router, Turbopack)
-- **TypeScript** strict
-- **Tailwind CSS v4**
-- **Supabase** (Postgres + Auth)
-- **Yahoo Finance** (quotes, candles, fundamentals)
-- **Finnhub** (recommendations, scores)
-- **Recharts** (charts)
-- **libsql-style async DB** via Supabase RPC
+## Fontes de dados (estratégia $0/mês + Brapi Pro)
 
-## Setup
+| Fonte | Cobertura | Custo | Auth |
+|-------|-----------|-------|------|
+| **Yahoo Finance `.SA`** | B3 (BR) | $0 | none |
+| **Yahoo Finance** | US | $0 | none |
+| **Brapi Pro** | BR (full fundamentals) | R$/mês | `BRAPI_TOKEN` env var |
+| **Finnhub** | US | $0 (free tier) | `FINNHUB_API_KEY` env var |
+| **SEC EDGAR** | US | $0 | none |
+| **Finviz** | US | $0 | scraping |
+| **Google News RSS** | fallback | $0 | none |
+| **DefiLlama** | crypto macro | $0 | none |
+| **CMC** | crypto | $0 | `CMC_API_KEY` env var |
 
-### 1. Supabase project
-
-Create a new project at https://supabase.com.
-
-1. Settings → API → copy:
-   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
-   - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `service_role` (secret) → `SUPABASE_SERVICE_ROLE_KEY`
-
-2. SQL Editor → run migration:
-   ```bash
-   # In Supabase SQL Editor, paste and run:
-   # supabase/migrations/0001_initial.sql
-   ```
-
-   This creates tables: `profiles`, `sessions`, `indices`, `portfolios`, `portfolio_holdings`, `portfolio_history`, and the `exec_sql` RPC function.
-
-### 2. Environment variables
-
-Create `.env.local` (not committed):
+## Env vars
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-AUTH_SECRET=any-random-string-for-jwt-signing
-FINNHUB_API_KEY=your-finnhub-key  # optional
+# Brapi Pro (full BR fundamentals — quote, valuation, profitability, dividends)
+BRAPI_TOKEN=...
+
+# Finnhub (US profile + financial metrics)
+FINNHUB_API_KEY=...
+
+# CoinMarketCap (crypto)
+CMC_API_KEY=...
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
-### 3. Run
+## Setup local
 
 ```bash
 npm install
 npm run dev
+# http://localhost:3000
 ```
 
-Open http://localhost:3000.
-
-## Deploy
-
-Deployed on Railway. Set env vars in Railway dashboard and push to `main` — auto-deploys.
-
-## Features
-
-- **Assets**: 503 S&P 500 + 35 ETFs + 50 cryptos, with filters (volatility, RSI, ADX, Sharpe) and column picker
-- **Asset detail**: price chart with toggleable SMA/RSI, fundamentals, quantitative recommendation score
-- **News**: aggregated from Yahoo Finance + Google News + SEC EDGAR, opens inline
-- **Indices**: community-created indices with backtesting
-- **Portfolios**: manual portfolios with historical performance tracking
-- **Auth**: username + email + password (Supabase Auth)
-- **Private/public**: choose visibility per index/portfolio
-
-## Roadmap
-
-- Market statistics dashboard (CoinMarketCap-style)
-- Backtesting strategy engine
-- Quantitative recommendation model
-- Custom index/portfolio detail pages
-
-## Scripts
+## Build
 
 ```bash
-npm run dev      # dev server
-npm run build    # production build
-npm run start    # production server
-npm run lint     # eslint
+npm run build
+npm start
 ```
+
+## Estratégia de fallback
+
+- BR sem `BRAPI_TOKEN` → Yahoo `.SA` apenas (sem fundamentals)
+- BR com Brapi indisponível → Yahoo `.SA` apenas
+- US sem Finnhub → SEC EDGAR + Finviz
+- US sem SEC → Finnhub + Yahoo
+
+## Endpoints principais
+
+| Path | Cobertura | Fonte |
+|------|-----------|-------|
+| `/asset/[ticker]` | US + BR | US bundle / Brapi Pro |
+| `/fundamentals/history/[ticker]` | BR | Brapi Pro |
+| `/recommendation/[ticker]` | US + BR | Yahoo + calcula |
+| `/scores/[ticker]` | US + BR | agrega métricas |
+| `/chart/[ticker]` | US + BR | Yahoo candles |
+| `/news/{single,multi}/[ticker]` | US + BR | Google News + Yahoo |
+
+## Estratégia rejeitada
+
+- ❌ Brapi free tier (apenas 4 IBOV whitelisted: PETR4/MGLU3/VALE3/ITUB4)
+- ❌ Yahoo `/quoteSummary` (exige crumb cookie, não-autenticado falha)
+- ❌ Token paga de qualquer provider fora do que já está no plano
+
+## Princípios de design
+
+1. UI estilo "Ledger/Linear": tipografia mono pra números, display serif pra títulos, paleta neutra com tinta/superfície/cabelo (hairline), zero `border-radius`, tabelas densas.
+2. News SEMPRE inline via modal — nunca abre link externo.
+3. Range filters = dual-range slider + badge de zona contextual ("Baixa/Média/Alta"), não `<select>`.
+4. Colunas toggleáveis via picker de chips; colunas com 0 valores escondidas.
+5. Overlays (RSI, etc) default OFF, transição suave.
+6. Performance > estética vazia.
