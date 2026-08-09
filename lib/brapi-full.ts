@@ -19,8 +19,12 @@ const FULL_MODULES = [
   "financialData",
   "incomeStatementHistory",
   "balanceSheetHistory",
+  "incomeStatementHistoryQuarterly",
+  "balanceSheetHistoryQuarterly",
   "defaultKeyStatisticsHistory",
+  "defaultKeyStatisticsHistoryQuarterly",
   "cashflowHistory",
+  "cashflowHistoryQuarterly",
 ].join(",");
 
 export type BrapiQuote = {
@@ -126,6 +130,44 @@ export type BrapiBalanceSheet = {
   netReceivables: number | null;
 };
 
+export type BrapiIncomeStatementQuarterly = {
+  endDate: string;
+  totalRevenue: number | null;
+  costOfRevenue: number | null;
+  grossProfit: number | null;
+  operatingIncome: number | null;
+  ebit: number | null;
+  netIncome: number | null;
+  totalOperatingExpenses: number | null;
+  interestExpense: number | null;
+  incomeTaxExpense: number | null;
+  basicEarningsPerCommonShare: number | null;
+  dilutedEarningsPerCommonShare: number | null;
+  /** Reported in centavos (divide by 100 for BRL). */
+  basicEarningsPerPreferredShare: number | null;
+};
+
+export type BrapiBalanceSheetQuarterly = {
+  endDate: string;
+  totalCurrentAssets: number | null;
+  totalAssets: number | null;
+  totalCurrentLiabilities: number | null;
+  totalLiab: number | null;
+  totalStockholderEquity: number | null;
+  longTermDebt: number | null;
+  cash: number | null;
+  inventory: number | null;
+  netReceivables: number | null;
+};
+
+export type BrapiCashflowQuarterly = {
+  endDate: string;
+  totalCashFromOperatingActivities: number | null;
+  capitalExpenditures: number | null;
+  freeCashFlow: number | null;
+  dividendsPaid: number | null;
+};
+
 export type BrapiDividend = {
   assetIssued: string;
   paymentDate: string;
@@ -154,6 +196,9 @@ export type BrapiFull = {
   financialData: BrapiFinancialData | null;
   incomeStatementHistory: BrapiIncomeStatement[];
   balanceSheetHistory: BrapiBalanceSheet[];
+  incomeStatementQuarterly: BrapiIncomeStatementQuarterly[];
+  balanceSheetQuarterly: BrapiBalanceSheetQuarterly[];
+  cashflowQuarterly: BrapiCashflowQuarterly[];
   dividends: BrapiDividend[];
   profile: BrapiProfile | null;
   source: "brapi-full";
@@ -188,6 +233,9 @@ type RawBrapiResult = {
   financialData?: Record<string, unknown>;
   incomeStatementHistory?: Array<Record<string, unknown>>;
   balanceSheetHistory?: Array<Record<string, unknown>>;
+  incomeStatementHistoryQuarterly?: Array<Record<string, unknown>>;
+  balanceSheetHistoryQuarterly?: Array<Record<string, unknown>>;
+  cashflowHistoryQuarterly?: Array<Record<string, unknown>>;
   summaryProfile?: Record<string, unknown>;
   dividendsData?: { cashDividends?: Array<Record<string, unknown>> };
 };
@@ -335,6 +383,68 @@ function parseBalanceSheet(r: RawBrapiResult): BrapiBalanceSheet[] {
     .sort((a, b) => (a.endDate < b.endDate ? -1 : a.endDate > b.endDate ? 1 : 0));
 }
 
+function parseIncomeStatementQuarterly(r: RawBrapiResult): BrapiIncomeStatementQuarterly[] {
+  if (!r.incomeStatementHistoryQuarterly) return [];
+  return r.incomeStatementHistoryQuarterly
+    .filter((row) => row.type === "quarterly")
+    .map((row) => ({
+      endDate: str(row.endDate) ?? "",
+      totalRevenue: num(row.totalRevenue),
+      costOfRevenue: num(row.costOfRevenue),
+      grossProfit: num(row.grossProfit),
+      operatingIncome: num(row.operatingIncome),
+      ebit: num(row.ebit),
+      netIncome: num(row.netIncome),
+      totalOperatingExpenses: num(row.totalOperatingExpenses),
+      interestExpense: num(row.interestExpense),
+      incomeTaxExpense: num(row.incomeTaxExpense),
+      basicEarningsPerCommonShare: num(row.basicEarningsPerCommonShare),
+      dilutedEarningsPerCommonShare: num(row.dilutedEarningsPerCommonShare),
+      // EarningsPerShare in quarterly statements is reported in centavos
+      // (PETR4 Q1 2026 = 2530 -> R$ 2.53). Convert to BRL by /100.
+      basicEarningsPerPreferredShare: num(row.basicEarningsPerPreferredShare) != null
+        ? num(row.basicEarningsPerPreferredShare)! / 100
+        : null,
+    }))
+    .filter((row) => row.endDate)
+    .sort((a, b) => (a.endDate < b.endDate ? -1 : a.endDate > b.endDate ? 1 : 0));
+}
+
+function parseBalanceSheetQuarterly(r: RawBrapiResult): BrapiBalanceSheetQuarterly[] {
+  if (!r.balanceSheetHistoryQuarterly) return [];
+  return r.balanceSheetHistoryQuarterly
+    .filter((row) => row.type === "quarterly")
+    .map((row) => ({
+      endDate: str(row.endDate) ?? "",
+      totalCurrentAssets: num(row.totalCurrentAssets),
+      totalAssets: num(row.totalAssets),
+      totalCurrentLiabilities: num(row.totalCurrentLiabilities),
+      totalLiab: num(row.totalLiab),
+      totalStockholderEquity: num(row.totalStockholderEquity),
+      longTermDebt: num(row.longTermDebt),
+      cash: num(row.cash),
+      inventory: num(row.inventory),
+      netReceivables: num(row.netReceivables),
+    }))
+    .filter((row) => row.endDate)
+    .sort((a, b) => (a.endDate < b.endDate ? -1 : a.endDate > b.endDate ? 1 : 0));
+}
+
+function parseCashflowQuarterly(r: RawBrapiResult): BrapiCashflowQuarterly[] {
+  if (!r.cashflowHistoryQuarterly) return [];
+  return r.cashflowHistoryQuarterly
+    .filter((row) => row.type === "quarterly")
+    .map((row) => ({
+      endDate: str(row.endDate) ?? "",
+      totalCashFromOperatingActivities: num(row.totalCashFromOperatingActivities),
+      capitalExpenditures: num(row.capitalExpenditures),
+      freeCashFlow: num(row.freeCashFlow),
+      dividendsPaid: num(row.dividendsPaid),
+    }))
+    .filter((row) => row.endDate)
+    .sort((a, b) => (a.endDate < b.endDate ? -1 : a.endDate > b.endDate ? 1 : 0));
+}
+
 function parseDividends(r: RawBrapiResult): BrapiDividend[] {
   const cash = r.dividendsData?.cashDividends ?? [];
   return cash
@@ -391,6 +501,9 @@ export async function getBrapiFull(ticker: string): Promise<BrapiFull | null> {
       financialData: parseFinancialData(raw),
       incomeStatementHistory: parseIncomeStatement(raw),
       balanceSheetHistory: parseBalanceSheet(raw),
+      incomeStatementQuarterly: parseIncomeStatementQuarterly(raw),
+      balanceSheetQuarterly: parseBalanceSheetQuarterly(raw),
+      cashflowQuarterly: parseCashflowQuarterly(raw),
       dividends: parseDividends(raw),
       profile: parseProfile(raw),
       source: "brapi-full",

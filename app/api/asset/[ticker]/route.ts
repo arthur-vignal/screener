@@ -4,6 +4,7 @@ import { getFundamentals } from "@/lib/fundamentals";
 import { getFinvizStock } from "@/lib/finviz";
 import { isBrazilianTicker } from "@/lib/brapi";
 import { getBrapiFull } from "@/lib/brapi-full";
+import { computeTTM, derivedTTMMetrics, computeDividendYieldTTM } from "@/lib/ttm";
 import { getYahooQuoteSnapshot } from "@/lib/yahoo";
 import { IBOV_BY_SYMBOL } from "@/lib/ibovespa";
 
@@ -36,6 +37,32 @@ export async function GET(
     const f = brapi.financialData;
     const p = brapi.profile;
     const ibov = IBOV_BY_SYMBOL[ticker];
+
+    // TTM: sum of last 4 reported quarters (more current than annual).
+    const ttm = computeTTM(
+      brapi.incomeStatementQuarterly,
+      brapi.balanceSheetQuarterly,
+      brapi.cashflowQuarterly,
+      brapi.dividends,
+    );
+    const ttmMetrics = ttm
+      ? derivedTTMMetrics(
+          ttm,
+          q.regularMarketPrice,
+          k?.sharesOutstanding ?? null,
+          k?.enterpriseValue ?? null,
+          k?.bookValue ?? null,
+          ttm.revenue,
+          ttm.operatingIncome,
+          ttm.netIncome,
+        )
+      : null;
+    const dyTtm = computeDividendYieldTTM(
+      brapi.cashflowQuarterly,
+      q.regularMarketPrice,
+      k?.sharesOutstanding ?? null,
+    );
+
     return NextResponse.json({
       ticker,
       name: q.longName ?? q.shortName ?? ibov?.name ?? null,
@@ -63,43 +90,48 @@ export async function GET(
       },
       marketCap: q.marketCap ?? k?.marketCap ?? null,
       metrics: {
-        peRatio: q.priceEarnings,
+        // Valuation — TTM preferred, falls back to Brapi yearly
+        peRatio: ttmMetrics?.peRatio ?? q.priceEarnings,
         forwardPE: k?.forwardPE,
         pegRatio: k?.pegRatio,
-        priceToBook: k?.priceToBook,
+        priceToBook: ttmMetrics?.priceToBook ?? k?.priceToBook,
         priceToSales: f?.totalRevenue && q.marketCap ? q.marketCap / f.totalRevenue : null,
         evEbitda: k?.enterpriseToEbitda,
-        evRevenue: k?.enterpriseToRevenue,
-        earningsYield: q.priceEarnings && q.priceEarnings > 0 ? 1 / q.priceEarnings : null,
-        roe: f?.returnOnEquity,
-        roa: f?.returnOnAssets,
+        evRevenue: ttmMetrics?.evRevenue ?? k?.enterpriseToRevenue,
+        earningsYield: ttmMetrics?.earningsYield ?? (q.priceEarnings && q.priceEarnings > 0 ? 1 / q.priceEarnings : null),
+        // Profitability — TTM preferred
+        roe: ttmMetrics?.roe ?? f?.returnOnEquity,
+        roa: ttmMetrics?.roa ?? f?.returnOnAssets,
         roic: null,
-        operatingMargin: f?.operatingMargins,
-        profitMargin: f?.profitMargins,
-        grossMargin: f?.grossMargins,
+        operatingMargin: ttm?.operatingMargin ?? f?.operatingMargins,
+        profitMargin: ttm?.netMargin ?? f?.profitMargins,
+        grossMargin: ttm?.grossMargin ?? f?.grossMargins,
         ebitdaMargin: f?.ebitdaMargins,
-        eps: q.earningsPerShare,
+        // Per share — TTM LPA preferred
+        eps: ttmMetrics?.eps ?? q.earningsPerShare,
         forwardEps: k?.forwardEps,
         bookValuePerShare: k?.bookValue,
-        revenuePerShare:
-          k?.sharesOutstanding && f?.totalRevenue
-            ? (f.totalRevenue * 1000) / k.sharesOutstanding
-            : null,
-        earningsGrowthQuarterly: k?.earningsQuarterlyGrowth,
+        revenuePerShare: ttmMetrics?.revenuePerShare ?? (k?.sharesOutstanding && f?.totalRevenue ? (f.totalRevenue * 1000) / k.sharesOutstanding : null),
+        // Growth
+        earningsGrowthQuarterly: ttm?.epsYoYGrowth ?? k?.earningsQuarterlyGrowth,
         earningsGrowthAnnual: f?.earningsGrowth,
         revenueGrowthQuarterly: null,
         revenueGrowthAnnual: f?.revenueGrowth,
+        // Cash flow
         freeCashFlow: f?.freeCashflow,
         operatingCashFlow: f?.operatingCashflow,
         ebitda: f?.ebitda,
+        // Dividends — TTM yield preferred
         dividendRate: k?.lastDividendValue,
-        dividendYield: k?.yield,
+        dividendYield: dyTtm ?? k?.yield,
         lastDividendValue: k?.lastDividendValue,
         lastDividendDate: k?.lastDividendDate,
         payoutRatio: null,
+        // Risk
         beta: k?.beta,
         yearHigh: q.fiftyTwoWeekHigh,
         yearLow: q.fiftyTwoWeekLow,
+        // Balance sheet — latest quarterly snapshot
         totalCash: f?.totalCash,
         totalCashPerShare: f?.totalCashPerShare,
         totalDebt: f?.totalDebt,
@@ -128,8 +160,28 @@ export async function GET(
       historicals: {
         income: brapi.incomeStatementHistory,
         balance: brapi.balanceSheetHistory,
+        incomeQuarterly: brapi.incomeStatementQuarterly,
+        balanceQuarterly: brapi.balanceSheetQuarterly,
+        cashflowQuarterly: brapi.cashflowQuarterly,
         dividends: brapi.dividends,
       },
+      ttm: ttm
+        ? {
+            asOfQuarter: ttm.asOfQuarter,
+            quartersIncluded: ttm.quartersIncluded,
+            sourceQuarters: ttm.sourceQuarters,
+            revenue: ttm.revenue,
+            netIncome: ttm.netIncome,
+            epsTTM: ttm.epsTTM,
+            epsLatest: ttm.epsLatest,
+            epsYoYGrowth: ttm.epsYoYGrowth,
+            grossMargin: ttm.grossMargin,
+            operatingMargin: ttm.operatingMargin,
+            netMargin: ttm.netMargin,
+            dividendsPaidLast4Q: ttm.dividendsPaidLast4Q,
+            dividendYieldTTM: dyTtm,
+          }
+        : null,
       asOf: brapi.fetchedAt,
       source: "brapi-full",
     });
