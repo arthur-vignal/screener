@@ -257,3 +257,81 @@ export function MethodologyFooter({ ticker }: { ticker: string }) {
     </>
   );
 }
+
+
+/**
+ * MethodologyBanner — slim colored banner at the top of the asset page.
+ * Shows the current TTM quarter and freshness so the user knows how
+ * recent the data is. Dismissible per-session (in-memory).
+ */
+export function MethodologyBanner({
+  ticker,
+  ttmAsOf,
+  ttmQuartersIncluded,
+  sourceQuarters,
+}: {
+  ticker: string;
+  ttmAsOf: string | null;
+  ttmQuartersIncluded: number | null;
+  sourceQuarters: string[] | null;
+}) {
+  const [open, setOpen] = useState(true);
+  if (!open) return null;
+
+  const freshness =
+    ttmAsOf
+      ? // Within 4 months of "current" → fresh; otherwise stale
+        (() => {
+          const [y, m] = ttmAsOf.split("-").map(Number);
+          const now = new Date();
+          const ageMonths = (now.getFullYear() - y) * 12 + (now.getMonth() + 1 - m);
+          if (ageMonths <= 4) return { tone: "fresh", label: "Recente" };
+          if (ageMonths <= 9) return { tone: "aging", label: "Atenção" };
+          return { tone: "stale", label: "Desatualizado" };
+        })()
+      : { tone: "stale", label: "Sem dado" };
+
+  const toneClass =
+    freshness.tone === "fresh"
+      ? "bg-positive/10 border-positive/30 text-positive"
+      : freshness.tone === "aging"
+        ? "bg-warning/10 border-warning/30 text-warning"
+        : "bg-negative/10 border-negative/30 text-negative";
+
+  return (
+    <div
+      className={`px-4 py-2 border-y ${toneClass} flex items-center gap-3`}
+      role="status"
+    >
+      <BookOpen className="w-3.5 h-3.5 shrink-0" />
+      <div className="flex-1 text-[12px] leading-relaxed">
+        <span className="font-medium">{ticker}</span>
+        <span className="opacity-80"> · </span>
+        {ttmAsOf ? (
+          <>
+            TTM até <span className="font-mono font-semibold">{ttmAsOf}</span>
+            {ttmQuartersIncluded != null && (
+              <span className="opacity-70">
+                {" "}({ttmQuartersIncluded} trimestres
+                {sourceQuarters && sourceQuarters.length > 0 && (
+                  <> · {sourceQuarters.join(", ")}</>
+                )})
+              </span>
+            )}
+            <span className="opacity-70"> · {freshness.label}</span>
+          </>
+        ) : (
+          <span className="opacity-80">Sem dado TTM disponível</span>
+        )}
+        <span className="opacity-80"> · Fonte: CVM ITR/DFP + Brapi Pro</span>
+      </div>
+      <button
+        onClick={() => setOpen(false)}
+        aria-label="Fechar aviso"
+        className="opacity-60 hover:opacity-100 transition-opacity"
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}

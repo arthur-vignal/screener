@@ -10,7 +10,7 @@ import { EtfHoldings } from "@/components/etf-holdings";
 import { cn, formatCompact } from "@/lib/utils";
 import { AllFundamentals } from "@/components/all-fundamentals";
 import { CvmFundamentalsPanel } from "@/components/cvm-fundamentals-panel";
-import { MethodologyFooter } from "@/components/methodology-tooltip";
+import { MethodologyFooter, MethodologyBanner } from "@/components/methodology-tooltip";
 import { NewsForTickers } from "@/components/news-for-tickers";
 import { WatchlistButton } from "@/components/watchlist-button";
 import { CompareButton } from "@/components/compare-button";
@@ -189,6 +189,20 @@ export function AssetDetail({ ticker }: { ticker: string }) {
 
   return (
     <div className="max-w-[1920px] mx-auto bg-canvas text-ink">
+      {/* ============= METHODOLOGY BANNER ============= */}
+      {isBrazilianTicker(data.ticker) && (
+        <MethodologyBanner
+          ticker={data.ticker}
+          ttmAsOf={ttmAsOf}
+          ttmQuartersIncluded={
+            (data as unknown as { ttm?: { quartersIncluded?: number } }).ttm?.quartersIncluded ?? null
+          }
+          sourceQuarters={
+            (data as unknown as { ttm?: { sourceQuarters?: string[] } }).ttm?.sourceQuarters ?? null
+          }
+        />
+      )}
+
       {/* ============= BREADCRUMB BAR (42px, canvas-soft) ============= */}
       <div className="h-[42px] bg-canvas-soft border-b border-hairline-strong px-8 flex items-center justify-between">
         <div className="label flex items-center gap-2">

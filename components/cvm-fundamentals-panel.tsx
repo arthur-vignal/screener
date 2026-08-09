@@ -4,6 +4,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { LineChart, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MethodologyTooltip } from "@/components/methodology-tooltip";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -289,7 +290,10 @@ function MetricRow({
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,90px)_repeat(5,minmax(0,75px))_auto] items-center h-[34px] px-3 border-b border-hairline last:border-b-0 gap-2 group hover:bg-canvas-soft/50">
-      <span className="text-[12px] text-muted truncate pr-2">{metric.label}</span>
+      <span className="text-[12px] text-muted truncate pr-2 inline-flex items-center">
+        {metric.label}
+        <MethodologyTooltip metricKey={metric.label} />
+      </span>
       <span
         className={cn(
           "num text-[12.5px] font-semibold text-right whitespace-nowrap tabular-nums",
