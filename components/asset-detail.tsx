@@ -9,10 +9,12 @@ import { AssetScores } from "@/components/asset-scores";
 import { EtfHoldings } from "@/components/etf-holdings";
 import { cn, formatCompact } from "@/lib/utils";
 import { AllFundamentals } from "@/components/all-fundamentals";
+import { CvmFundamentalsPanel } from "@/components/cvm-fundamentals-panel";
 import { NewsForTickers } from "@/components/news-for-tickers";
 import { WatchlistButton } from "@/components/watchlist-button";
 import { CompareButton } from "@/components/compare-button";
 import { AddToPortfolioButton } from "@/components/add-to-portfolio-button";
+import { isBrazilianTicker } from "@/lib/brapi";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -288,6 +290,11 @@ export function AssetDetail({ ticker }: { ticker: string }) {
                   : "FY2025 · TTM"}
               </span>
             </div>
+            {isBrazilianTicker(data.ticker) && (
+              <div className="mb-6">
+                <CvmFundamentalsPanel ticker={data.ticker} />
+              </div>
+            )}
             <AllFundamentals
                 finviz={data.finviz}
                 metrics={data.metrics}
