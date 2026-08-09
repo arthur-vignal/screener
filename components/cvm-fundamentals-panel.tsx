@@ -146,7 +146,7 @@ function CvmHistoryPopup({
     fetcher,
   );
 
-  const series = data ? seriesOf(data.quarters, metricKey) : [];
+  const series = data && data.quarters ? seriesOf(data.quarters, metricKey) : [];
   const w = 640;
   const h = 240;
   const vals = series.map((p) => p.value);
@@ -371,12 +371,12 @@ export function CvmFundamentalsPanel({ ticker }: { ticker: string }) {
   }
 
   // Filter annual periods (DFP ends 12-31) and last 5 years.
-  const annual = data.quarters.filter((q) => q.endDate.endsWith("-12-31"));
+  const annual = (data.quarters ?? []).filter((q) => q.endDate.endsWith("-12-31"));
   const annualYears = new Set(annual.map((q) => q.endDate.slice(0, 4)));
   const lastFiveYears = Array.from(annualYears).sort().slice(-5);
   const quarters = annual.filter((q) => lastFiveYears.includes(q.endDate.slice(0, 4)));
 
-  if (!data.populated || quarters.length === 0) {
+  if (!data || !data.populated || quarters.length === 0) {
     return (
       <div className="py-5 text-[12px] text-faint">
         Sem histórico CVM para este ticker (não consta no cadastro IBOV / CVM).
