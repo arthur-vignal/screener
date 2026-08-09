@@ -30,7 +30,7 @@ type MergedQuarter = {
   dividendsPaid: number | null;
   /** From Brapi quarterly EPS, in BRL */
   basicEarningsPerCommonShare: number | null;
-  source: "brapi" | "cvm-seed" | "brapi+cvm";
+  source: "brapi" | "cvm-seed" | "cvm-dfp" | "brapi+cvm";
 };
 
 /**
@@ -50,7 +50,8 @@ export async function computeTTMHybrid(
   // Build map keyed by endDate
   const merged = new Map<string, MergedQuarter>();
 
-  // Add CVM seeds first (will be overwritten by Brapi if both present)
+  // Add CVM seeds first. DFP entries (annual) are tagged `source: "DFP"` so they
+  // can be skipped from TTM (they span 12 months, incompatible with rolling).
   for (const s of seeds) {
     merged.set(s.endDate, {
       endDate: s.endDate,
@@ -66,7 +67,7 @@ export async function computeTTMHybrid(
       longTermDebt: null,
       dividendsPaid: null,
       basicEarningsPerCommonShare: null,
-      source: "cvm-seed",
+      source: s.source === "DFP" ? "cvm-dfp" : "cvm-seed",
     });
   }
 
@@ -136,10 +137,11 @@ export async function computeTTMHybrid(
     }
   }
 
-  // Sort by date ascending
-  const allQuarters = Array.from(merged.values()).sort((a, b) =>
-    a.endDate < b.endDate ? -1 : a.endDate > b.endDate ? 1 : 0,
-  );
+  // Sort by date ascending. EXCLUDE DFP entries (annual) because they represent
+  // 12-month totals and would double-count if summed with quarterly ITRs.
+  const allQuarters = Array.from(merged.values())
+    .filter((q) => q.source !== "cvm-dfp")
+    .sort((a, b) => (a.endDate < b.endDate ? -1 : a.endDate > b.endDate ? 1 : 0));
 
   if (allQuarters.length < 4) {
     // Not enough to compute TTM; fall back to Brapi-only
