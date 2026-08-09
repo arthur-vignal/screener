@@ -85,3 +85,4 @@ npm start
 4. Colunas toggleáveis via picker de chips; colunas com 0 valores escondidas.
 5. Overlays (RSI, etc) default OFF, transição suave.
 6. Performance > estética vazia.
+
