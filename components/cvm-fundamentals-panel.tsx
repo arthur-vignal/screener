@@ -9,6 +9,7 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 type CvmQuarter = {
   endDate: string;
+  source?: string;
   revenue: number | null;
   grossProfit: number | null;
   ebit: number | null;
@@ -23,16 +24,28 @@ type CvmQuarter = {
   netIncomeGrowthYoY: number | null;
 };
 
+type TtmData = {
+  ticker: string;
+  populated: boolean;
+  asOfQuarter?: string;
+  quartersIncluded?: number;
+  sourceQuarters?: string[];
+  revenue?: number | null;
+  grossProfit?: number | null;
+  netIncome?: number | null;
+  grossMargin?: number | null;
+  operatingMargin?: number | null;
+  netMargin?: number | null;
+  epsYoYGrowth?: number | null;
+  latestTotalEquity?: number | null;
+  latestTotalAssets?: number | null;
+};
+
 type CvmHistory = {
   ticker: string;
-  cnpj?: string;
-  cvm?: string;
-  name?: string;
   populated: boolean;
   quarters: CvmQuarter[];
 };
-
-// ——— Value formatters ———
 
 function fmtBRL(n: number): string {
   if (Math.abs(n) >= 1e9) return `R$${(n / 1e9).toFixed(2)}B`;
@@ -50,19 +63,11 @@ function fmtGrowth(n: number): string {
   return `${sign}${Math.abs(n * 100).toFixed(2)}%`;
 }
 
-function fmtPp(n: number): string {
-  // For margins displayed as pp deltas (e.g. +1.20pp)
-  const sign = n >= 0 ? "+" : "−";
-  return `${sign}${Math.abs(n * 100).toFixed(2)}pp`;
-}
-
 function toneGrowth(n: number): string {
   if (n > 0) return "text-positive";
   if (n < 0) return "text-negative";
   return "text-ink";
 }
-
-// ——— Metric registry ———
 
 type MetricKey =
   | "revenue"
@@ -82,7 +87,6 @@ type MetricDef = {
   key: MetricKey;
   label: string;
   format: "brl" | "pct" | "growth";
-  /** Categories this metric belongs to (1+). */
   categories: ReadonlyArray<string>;
 };
 
@@ -103,32 +107,21 @@ const METRICS: ReadonlyArray<MetricDef> = [
 
 const CATEGORIES = ["Resultado", "Margens", "Crescimento", "Balanço"] as const;
 
-function formatValue(def: MetricDef, v: number | null): string {
+function formatValue(def: MetricDef, v: number | null | undefined): string {
   if (v == null) return "—";
   if (def.format === "brl") return fmtBRL(v);
   if (def.format === "pct") return fmtPct(v);
   return fmtGrowth(v);
 }
 
-function latestValue(quarters: CvmQuarter[], key: MetricKey): number | null {
-  // Annual data: pick the most recent quarter that has a value.
-  for (let i = quarters.length - 1; i >= 0; i--) {
-    const v = quarters[i][key];
-    if (v != null) return v;
-  }
-  return null;
-}
-
-function seriesOf(quarters: CvmQuarter[], key: MetricKey): Array<{ date: string; value: number }> {
-  const out: Array<{ date: string; value: number }> = [];
+function seriesOf(quarters: CvmQuarter[], key: MetricKey): Array<{ date: string; value: number; source?: string }> {
+  const out: Array<{ date: string; value: number; source?: string }> = [];
   for (const q of quarters) {
     const v = q[key];
-    if (v != null) out.push({ date: q.endDate, value: v });
+    if (v != null) out.push({ date: q.endDate, value: v, source: q.source });
   }
   return out;
 }
-
-// ——— History popup ———
 
 function CvmHistoryPopup({
   ticker,
@@ -210,7 +203,6 @@ function CvmHistoryPopup({
               viewBox={`0 0 ${w} ${h}`}
               preserveAspectRatio="none"
             >
-              {/* y-axis labels */}
               {tickValues.map((tv, i) => {
                 const y = h - ((tv - min) / range) * (h - 32) - 16;
                 return (
@@ -242,7 +234,6 @@ function CvmHistoryPopup({
                   </g>
                 );
               })}
-              {/* line */}
               <polyline
                 points={points}
                 fill="none"
@@ -250,7 +241,6 @@ function CvmHistoryPopup({
                 strokeWidth={2}
                 vectorEffect="non-scaling-stroke"
               />
-              {/* dots */}
               {series.map((p, i) => {
                 const x = (i / Math.max(1, series.length - 1)) * w;
                 const y = h - ((p.value - min) / range) * (h - 32) - 16;
@@ -281,39 +271,50 @@ function CvmHistoryPopup({
   );
 }
 
-// ——— Row component ———
-
 function MetricRow({
   metric,
   ticker,
-  quarters,
+  ttmValue,
+  annualValues,
   onOpenChart,
 }: {
   metric: MetricDef;
   ticker: string;
-  quarters: CvmQuarter[];
+  ttmValue: number | null | undefined;
+  annualValues: Array<{ year: string; value: number | null }>;
   onOpenChart: (key: MetricKey, label: string) => void;
 }) {
-  const value = latestValue(quarters, metric.key);
-  const display = formatValue(metric, value);
+  const display = formatValue(metric, ttmValue);
   const useGrowthTone = metric.format === "growth";
 
   return (
-    <div className="group grid grid-cols-[minmax(0,1fr)_auto_auto] items-center h-[34px] px-3 border-b border-hairline last:border-b-0">
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,90px)_repeat(5,minmax(0,75px))_auto] items-center h-[34px] px-3 border-b border-hairline last:border-b-0 gap-2 group hover:bg-canvas-soft/50">
       <span className="text-[12px] text-muted truncate pr-2">{metric.label}</span>
       <span
         className={cn(
           "num text-[12.5px] font-semibold text-right whitespace-nowrap tabular-nums",
-          value == null && "text-faint",
-          useGrowthTone && value != null && toneGrowth(value),
+          ttmValue == null && "text-faint",
+          useGrowthTone && ttmValue != null && toneGrowth(ttmValue),
+          "text-ink",
         )}
       >
         {display}
       </span>
+      {annualValues.map((av) => (
+        <span
+          key={av.year}
+          className={cn(
+            "num text-[11px] text-muted text-right whitespace-nowrap tabular-nums",
+            av.value == null && "text-faint",
+          )}
+        >
+          {formatValue(metric, av.value)}
+        </span>
+      ))}
       <button
         type="button"
         onClick={() => onOpenChart(metric.key, metric.label)}
-        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 ml-2 rounded hover:bg-canvas-soft text-muted hover:text-brand-bright"
+        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-canvas-soft text-muted hover:text-brand-bright"
         title="Ver histórico"
         aria-label={`Ver histórico de ${metric.label}`}
       >
@@ -323,37 +324,22 @@ function MetricRow({
   );
 }
 
-// ——— Public component ———
-
-/**
- * CVM fundamentals panel — BR-only.
- * Renders a grid of categorized cards (Linear/Ledger style) with annual
- * fundamentals from CVM DFP. Each row has a chart icon that opens a popup
- * with the historical series line chart.
- *
- * Cards displayed: Resultado, Margens, Crescimento, Balanço.
- * No valuation/dividend cards (Tarefa B).
- */
 export function CvmFundamentalsPanel({ ticker }: { ticker: string }) {
   const [historyOpen, setHistoryOpen] = useState<{
     metricKey: MetricKey;
     label: string;
   } | null>(null);
 
-  const { data, error, isLoading } = useSWR<CvmHistory>(
+  const { data: ttmData } = useSWR<TtmData>(
+    `/api/fundamentals/ttm/${ticker}`,
+    fetcher,
+  );
+  const { data: historyData, isLoading } = useSWR<CvmHistory>(
     `/api/fundamentals/history/${ticker}`,
     fetcher,
   );
 
-  if (error) {
-    return (
-      <div className="py-5 text-[12px] text-faint">
-        Erro ao carregar histórico CVM.
-      </div>
-    );
-  }
-
-  if (isLoading || !data) {
+  if (isLoading && !historyData) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -370,13 +356,7 @@ export function CvmFundamentalsPanel({ ticker }: { ticker: string }) {
     );
   }
 
-  // Filter annual periods (DFP ends 12-31) and last 5 years.
-  const annual = (data.quarters ?? []).filter((q) => q.endDate.endsWith("-12-31"));
-  const annualYears = new Set(annual.map((q) => q.endDate.slice(0, 4)));
-  const lastFiveYears = Array.from(annualYears).sort().slice(-5);
-  const quarters = annual.filter((q) => lastFiveYears.includes(q.endDate.slice(0, 4)));
-
-  if (!data || !data.populated || quarters.length === 0) {
+  if (!historyData || !historyData.populated || historyData.quarters.length === 0) {
     return (
       <div className="py-5 text-[12px] text-faint">
         Sem histórico CVM para este ticker (não consta no cadastro IBOV / CVM).
@@ -384,7 +364,48 @@ export function CvmFundamentalsPanel({ ticker }: { ticker: string }) {
     );
   }
 
-  // Build category → metrics map.
+  const annual = (historyData.quarters ?? []).filter((q) => q.endDate.endsWith("-12-31"));
+  const annualYears = Array.from(new Set(annual.map((q) => q.endDate.slice(0, 4)))).sort();
+  const lastFiveYears = annualYears.slice(-5);
+
+  const annualByYear = new Map<string, CvmQuarter>();
+  for (const q of annual) {
+    const y = q.endDate.slice(0, 4);
+    if (lastFiveYears.includes(y)) {
+      annualByYear.set(y, q);
+    }
+  }
+
+  const annualValuesByKey = (key: MetricKey) =>
+    lastFiveYears.map((year) => {
+      const v = annualByYear.get(year)?.[key];
+      return { year, value: v ?? null };
+    });
+
+  const ttmValueFor = (key: MetricKey): number | null => {
+    if (!ttmData?.populated) return null;
+    switch (key) {
+      case "revenue":
+        return ttmData.revenue ?? null;
+      case "grossProfit":
+        return ttmData.grossProfit ?? null;
+      case "netIncome":
+        return ttmData.netIncome ?? null;
+      case "grossMargin":
+        return ttmData.grossMargin ?? null;
+      case "operatingMargin":
+        return ttmData.operatingMargin ?? null;
+      case "netMargin":
+        return ttmData.netMargin ?? null;
+      case "totalAssets":
+        return ttmData.latestTotalAssets ?? null;
+      case "totalEquity":
+        return ttmData.latestTotalEquity ?? null;
+      default:
+        return null;
+    }
+  };
+
   const categoryMap = new Map<string, MetricDef[]>();
   for (const cat of CATEGORIES) categoryMap.set(cat, []);
   for (const m of METRICS) {
@@ -393,8 +414,8 @@ export function CvmFundamentalsPanel({ ticker }: { ticker: string }) {
     }
   }
 
-  // Most-recent year for the panel header note.
-  const lastYear = quarters[quarters.length - 1]?.endDate.slice(0, 4);
+  const ttmAsOf = ttmData?.asOfQuarter ?? null;
+  const latestYear = lastFiveYears[lastFiveYears.length - 1];
 
   return (
     <>
@@ -404,8 +425,13 @@ export function CvmFundamentalsPanel({ ticker }: { ticker: string }) {
           if (ms.length === 0) return null;
           return (
             <div key={cat} className="border border-hairline-strong">
-              <div className="px-3 py-2 bg-canvas-soft border-b border-hairline-strong label-s label-muted-2 uppercase tracking-wider">
-                {cat}
+              <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,90px)_repeat(5,minmax(0,75px))_auto] items-center gap-2 px-3 py-2 bg-canvas-soft border-b border-hairline-strong label-s label-muted-2 uppercase tracking-wider">
+                <span>{cat}</span>
+                <span className="text-right">TTM{ttmAsOf ? ` · ${ttmAsOf.slice(0, 7)}` : ""}</span>
+                {lastFiveYears.map((y) => (
+                  <span key={y} className="text-right text-[10px]">{y}</span>
+                ))}
+                <span className="w-4" />
               </div>
               <div>
                 {ms.map((m) => (
@@ -413,7 +439,8 @@ export function CvmFundamentalsPanel({ ticker }: { ticker: string }) {
                     key={m.key}
                     metric={m}
                     ticker={ticker}
-                    quarters={quarters}
+                    ttmValue={ttmValueFor(m.key)}
+                    annualValues={annualValuesByKey(m.key)}
                     onOpenChart={(key, label) => setHistoryOpen({ metricKey: key, label })}
                   />
                 ))}
@@ -424,7 +451,8 @@ export function CvmFundamentalsPanel({ ticker }: { ticker: string }) {
       </div>
 
       <div className="mt-2 label-s label-muted-2">
-        Fonte: CVM DFP (DFP anual) · {quarters.length} períodos · último {lastYear}
+        TTM: CVM ITR + Brapi ({ttmData?.quartersIncluded ?? 0} trimestres · até {ttmData?.asOfQuarter ?? "n/a"}) ·
+        {" "}Anual: CVM ITR + DFP ({lastFiveYears.length} anos · até {latestYear})
       </div>
 
       {historyOpen && (
