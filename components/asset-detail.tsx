@@ -10,6 +10,7 @@ import { EtfHoldings } from "@/components/etf-holdings";
 import { cn, formatCompact } from "@/lib/utils";
 import { AllFundamentals } from "@/components/all-fundamentals";
 import { CvmFundamentalsPanel } from "@/components/cvm-fundamentals-panel";
+import { MethodologyFooter } from "@/components/methodology-tooltip";
 import { NewsForTickers } from "@/components/news-for-tickers";
 import { WatchlistButton } from "@/components/watchlist-button";
 import { CompareButton } from "@/components/compare-button";
@@ -176,6 +177,7 @@ export function AssetDetail({ ticker }: { ticker: string }) {
     );
   }
   const { name, exchange, industry, currency, currencySymbol, marketCap, source } = vm;
+  const ttmAsOf = (data as unknown as { ttm?: { asOfQuarter?: string } }).ttm?.asOfQuarter ?? null;
 
   const formatPrice = (n: number | undefined | null) =>
     formatByCurrency(n, currency, currencySymbol);
@@ -285,9 +287,11 @@ export function AssetDetail({ ticker }: { ticker: string }) {
                 Fundamentals
               </h2>
               <span className="label-s label-muted-2">
-                {data.secAsOf
-                  ? `As of ${data.secAsOf.slice(0, 10)}`
-                  : "FY2025 · TTM"}
+                {isBrazilianTicker(data.ticker) && ttmAsOf
+                  ? `TTM · ${ttmAsOf}`
+                  : data.secAsOf
+                    ? `As of ${data.secAsOf.slice(0, 10)}`
+                    : "FY2025 · TTM"}
               </span>
             </div>
             {isBrazilianTicker(data.ticker) && (
@@ -398,6 +402,11 @@ export function AssetDetail({ ticker }: { ticker: string }) {
             <AssetScores ticker={data.ticker} compact />
           </section>
         </aside>
+      </div>
+
+      {/* MethodologyFooter — sits below the main split, full-width */}
+      <div className="px-8 max-w-[1920px] mx-auto">
+        <MethodologyFooter ticker={data.ticker} />
       </div>
     </div>
   );
