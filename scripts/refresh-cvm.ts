@@ -225,31 +225,37 @@ async function buildIbovCnpjMap(): Promise<Map<string, IBOVEntry>> {
     let bestCnpj: string | null = null;
     let bestLen = Infinity;
     for (const [key, rowList] of rows) {
-    const row = rowList[0];
+      const row = rowList[0];
+      // Filter to ACTIVE companies only (cadastro has CANCELADA, SUSPENSO, etc)
+      if ((row["SIT"] || "").trim() !== "ATIVO") continue;
       const cnpj = key.split("|")[0];
       const denom = (row["DENOM_COMERC"] || "").trim();
       const denomSocial = (row["DENOM_SOCIAL"] || "").trim();
-      // Prefer DENOM_SOCIAL (full legal name) over DENOM_COMERC (short trading name).
-      // Petrobrás: DENOM_COMERC="PETROBRAS" but DENOM_SOCIAL="PETRÓLEO BRASILEIRO S.A. PETROBRAS"
-      const name = denomSocial && denomSocial !== "--" ? denomSocial : denom;
-      if (!name) continue;
-      const candidate = norm(name);
-      let matched = false;
-      if (candidate === target) matched = true;
-      else if (candidate.includes(target) || target.includes(candidate)) matched = true;
-      else if (targetTokens.length > 0) {
-        const shorter = candidate.length < target.length ? candidate : target;
-        const longer = candidate.length < target.length ? target : candidate;
-        const shorterTokens = shorter
-          .split(" ")
-          .filter((t) => t.length >= 3);
-        if (shorterTokens.length > 0 && shorterTokens.every((t) => longer.includes(t))) {
-          matched = true;
+      // Try BOTH name fields. SABESP only has "SABESP" in DENOM_COMERC;
+      // most others only have the full legal name in DENOM_SOCIAL.
+      const names = [
+        denomSocial && denomSocial !== "--" ? denomSocial : null,
+        denom && denom !== "--" ? denom : null,
+      ].filter((n): n is string => Boolean(n));
+      for (const name of names) {
+        const candidate = norm(name);
+        let matched = false;
+        if (candidate === target) matched = true;
+        else if (candidate.includes(target) || target.includes(candidate)) matched = true;
+        else if (targetTokens.length > 0) {
+          const shorter = candidate.length < target.length ? candidate : target;
+          const longer = candidate.length < target.length ? target : candidate;
+          const shorterTokens = shorter
+            .split(" ")
+            .filter((t) => t.length >= 3);
+          if (shorterTokens.length > 0 && shorterTokens.every((t) => longer.includes(t))) {
+            matched = true;
+          }
         }
-      }
-      if (matched && candidate.length < bestLen) {
-        bestCnpj = cnpj;
-        bestLen = candidate.length;
+        if (matched && candidate.length < bestLen) {
+          bestCnpj = cnpj;
+          bestLen = candidate.length;
+        }
       }
     }
     if (bestCnpj) {
@@ -337,9 +343,12 @@ async function processZip(
     return 0;
   }
 
+  console.log(`[${source}] found DRE file: ${dreFile}`);
+
   const { rows: dreRows } = await parseCsv(join(tmpDir, dreFile));
   const { rows: bpaRows } = bpaFile ? await parseCsv(join(tmpDir, bpaFile)) : { rows: new Map() };
   const { rows: bppRows } = bppFile ? await parseCsv(join(tmpDir, bppFile)) : { rows: new Map() };
+  console.log(`[${source}] dreRows=${dreRows.size} bpaRows=${bpaRows.size} bppRows=${bppRows.size}`);
 
   // Aggregate by CNPJ+date
   const merged = new Map<string, QuarterlyMetrics>();
@@ -387,6 +396,7 @@ async function processZip(
 
   // Write per-ticker JSON
   let written = 0;
+  console.log(`[${source}] merged size: ${merged.size}, cnpjMap size: ${cnpjMap.size}`);
   for (const [ticker, ibov] of cnpjMap) {
     const cnpj = ibov.cnpj;
     const tickerDir = join(DATA_DIR, ticker);
@@ -398,6 +408,9 @@ async function processZip(
       }
     }
     tickerEntries.sort((a, b) => (a.endDate < b.endDate ? -1 : 1));
+    if (ticker === 'PETR4') {
+      console.log(`  ${ticker}: cnpj(type)=${typeof cnpj} cnpj=${JSON.stringify(cnpj)} entries=${tickerEntries.length} mergedSampleKeys=${Array.from(merged.keys()).slice(0,3).map(k=>JSON.stringify(k)).join(',')}`);
+    }
     for (const entry of tickerEntries) {
       const [year, month] = entry.endDate.split("-");
       const q = month === "12" ? "4" : Math.ceil(Number(month) / 3).toString();

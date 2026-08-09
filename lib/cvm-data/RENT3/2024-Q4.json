@@ -1,12 +1,12 @@
 {
   "endDate": "2024-12-31",
   "source": "DFP",
-  "totalRevenue": 37271558000,
-  "grossProfit": 8752862000,
-  "operatingIncome": 5805169000,
-  "ebit": 5805169000,
-  "netIncome": 1813310000,
-  "totalAssets": 87243607000,
-  "totalLiabilities": 87243607000,
-  "totalEquity": 26342714000
+  "totalRevenue": 75149000,
+  "grossProfit": 20128000,
+  "operatingIncome": 18637000,
+  "ebit": 18637000,
+  "netIncome": 7950000,
+  "totalAssets": 243669000,
+  "totalLiabilities": 243669000,
+  "totalEquity": 37096000
 }

@@ -1,12 +1,12 @@
 {
   "endDate": "2026-03-31",
   "source": "ITR",
-  "totalRevenue": 12284362000,
-  "grossProfit": 3335230000,
-  "operatingIncome": 2732934000,
-  "ebit": 2732934000,
-  "netIncome": 1221896000,
-  "totalAssets": 85467583000,
-  "totalLiabilities": 85467583000,
-  "totalEquity": 26309612000
+  "totalRevenue": 96641000,
+  "grossProfit": 28824000,
+  "operatingIncome": 16855000,
+  "ebit": 16855000,
+  "netIncome": 12317000,
+  "totalAssets": 1057096000,
+  "totalLiabilities": 1057096000,
+  "totalEquity": 392277000
 }

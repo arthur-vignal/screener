@@ -1,12 +1,12 @@
 {
   "endDate": "2025-09-30",
   "source": "ITR",
-  "totalRevenue": 1529007000,
-  "grossProfit": 740065000,
-  "operatingIncome": 621900000,
-  "ebit": 621900000,
-  "netIncome": 50447000,
-  "totalAssets": 23021635000,
-  "totalLiabilities": 23021635000,
-  "totalEquity": 2630595000
+  "totalRevenue": 3465492000,
+  "grossProfit": 500382000,
+  "operatingIncome": -15467000,
+  "ebit": -15467000,
+  "netIncome": -166609000,
+  "totalAssets": 8475776000,
+  "totalLiabilities": 8475776000,
+  "totalEquity": 2074395000
 }
