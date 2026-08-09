@@ -181,7 +181,7 @@ export function derivedTTMMetrics(
     peRatio = price / ttm.epsTTM;
   } else if (price != null && sharesOutstanding && sharesOutstanding > 0 && netIncomeTTM != null) {
     // Fallback: derive EPS from TTM netIncome / sharesOutstanding
-    const epsDerived = (netIncomeTTM * 1000) / sharesOutstanding;
+    const epsDerived = netIncomeTTM / sharesOutstanding;
     if (epsDerived > 0) peRatio = price / epsDerived;
   }
 
@@ -220,7 +220,7 @@ export function derivedTTMMetrics(
   // Receita / ação
   let revenuePerShare: number | null = null;
   if (totalRevenueTTM != null && sharesOutstanding != null && sharesOutstanding > 0) {
-    revenuePerShare = (totalRevenueTTM * 1000) / sharesOutstanding;
+    revenuePerShare = totalRevenueTTM / sharesOutstanding;
   }
 
   // Earnings Yield = 1 / P/E
@@ -256,6 +256,6 @@ export function computeDividendYieldTTM(
   }
   // dividendsPaid is total cash outflow. Per share = dividendsPaid / sharesOutstanding.
   // Yield = per-share / price.
-  const perShare = (dividendsPaid * 1000) / sharesOutstanding;
+  const perShare = dividendsPaid / sharesOutstanding;
   return price > 0 ? perShare / price : null;
 }

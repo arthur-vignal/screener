@@ -5,6 +5,7 @@ import { getFinvizStock } from "@/lib/finviz";
 import { isBrazilianTicker } from "@/lib/brapi";
 import { getBrapiFull } from "@/lib/brapi-full";
 import { computeTTM, derivedTTMMetrics, computeDividendYieldTTM } from "@/lib/ttm";
+import { computeTTMHybrid } from "@/lib/ttm-hybrid";
 import { getYahooQuoteSnapshot } from "@/lib/yahoo";
 import { IBOV_BY_SYMBOL } from "@/lib/ibovespa";
 
@@ -38,12 +39,14 @@ export async function GET(
     const p = brapi.profile;
     const ibov = IBOV_BY_SYMBOL[ticker];
 
-    // TTM: sum of last 4 reported quarters (more current than annual).
-    const ttm = computeTTM(
+    // TTM: hybrid Brapi + CVM seed (most recent quarter may be from CVM when Brapi lags).
+    const ttm = await computeTTMHybrid(
+      ticker,
       brapi.incomeStatementQuarterly,
       brapi.balanceSheetQuarterly,
       brapi.cashflowQuarterly,
       brapi.dividends,
+      k?.sharesOutstanding ?? null,
     );
     const ttmMetrics = ttm
       ? derivedTTMMetrics(
