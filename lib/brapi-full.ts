@@ -398,12 +398,16 @@ function parseIncomeStatementQuarterly(r: RawBrapiResult): BrapiIncomeStatementQ
       totalOperatingExpenses: num(row.totalOperatingExpenses),
       interestExpense: num(row.interestExpense),
       incomeTaxExpense: num(row.incomeTaxExpense),
-      basicEarningsPerCommonShare: num(row.basicEarningsPerCommonShare),
-      dilutedEarningsPerCommonShare: num(row.dilutedEarningsPerCommonShare),
-      // EarningsPerShare in quarterly statements is reported in centavos
-      // (PETR4 Q1 2026 = 2530 -> R$ 2.53). Convert to BRL by /100.
+      // Brapi quarterly EPS is reported in thousandths of BRL
+      // (PETR4 Q1 2026 = 2530 -> R$ 2.53). Divide by 1000 to get BRL.
+      basicEarningsPerCommonShare: num(row.basicEarningsPerCommonShare) != null
+        ? num(row.basicEarningsPerCommonShare)! / 1000
+        : null,
+      dilutedEarningsPerCommonShare: num(row.dilutedEarningsPerCommonShare) != null
+        ? num(row.dilutedEarningsPerCommonShare)! / 1000
+        : null,
       basicEarningsPerPreferredShare: num(row.basicEarningsPerPreferredShare) != null
-        ? num(row.basicEarningsPerPreferredShare)! / 100
+        ? num(row.basicEarningsPerPreferredShare)! / 1000
         : null,
     }))
     .filter((row) => row.endDate)
