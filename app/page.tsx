@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { SectorRibbon } from "@/components/sector-ribbon";
 import { MarketTable } from "@/components/market-table";
 import { FearGreedPanel, NewsRail, SulfurPortfoliosRail } from "@/components/right-rail";
@@ -16,6 +17,25 @@ import { FearGreedPanel, NewsRail, SulfurPortfoliosRail } from "@/components/rig
  *      Right — Rail (Fear & Greed · News · Sulfur portfolios)
  */
 export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardFallback />}>
+      <DashboardInner />
+    </Suspense>
+  );
+}
+
+function DashboardFallback() {
+  return (
+    <div className="max-w-[1920px] mx-auto bg-canvas text-ink p-7">
+      <div className="label-s label-muted-2">Carregando…</div>
+    </div>
+  );
+}
+
+function DashboardInner() {
+  const searchParams = useSearchParams();
+  const marketRaw = searchParams.get("market");
+  const market: "us" | "br" | "global" = marketRaw === "us" || marketRaw === "br" ? marketRaw : "global";
   const [sector, setSector] = useState<string | null>(null);
 
   return (
@@ -30,7 +50,7 @@ export default function DashboardPage() {
       >
         {/* Left — Market table */}
         <div className="border-r border-hairline-strong">
-          <MarketTable sectorFilter={sector} />
+          <MarketTable sectorFilter={sector} market={market} />
         </div>
 
         {/* Right — 340px rail */}

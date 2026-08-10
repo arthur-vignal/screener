@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { cn, formatPercent } from "@/lib/utils";
 
@@ -50,7 +51,13 @@ const DEFAULT_VISIBLE: ColKey[] = ["asset", "sector", "price", "1d", "30d", "mca
  * MarketTable — Ledger spec. Owns the dashboard page.
  * 10-column grid with sort, column chips, pagination, sparklines, market cap bars.
  */
-export function MarketTable({ sectorFilter }: { sectorFilter?: string | null }) {
+export function MarketTable({ sectorFilter, market: marketProp }: { sectorFilter?: string | null; market?: "us" | "br" | "global" }) {
+  const searchParams = useSearchParams();
+  const market = marketProp ?? (() => {
+    const r = searchParams.get("market");
+    return r === "us" || r === "br" ? r : "global";
+  })();
+
   const [page, setPage] = useState(0);
   const limit = 30;
   const [items, setItems] = useState<AssetListItem[] | null>(null);
@@ -71,10 +78,11 @@ export function MarketTable({ sectorFilter }: { sectorFilter?: string | null }) 
   // Fetch page of assets
   useEffect(() => {
     let abort = false;
+    const exchangeParam = market === "br" ? "ibov" : "sp500";
     const params = new URLSearchParams({
       offset: String(page * limit),
       limit: String(limit),
-      exchange: "sp500",
+      exchange: exchangeParam,
     });
     if (sectorFilter && sectorFilter !== "all") params.set("sector", sectorFilter);
 
