@@ -20,9 +20,11 @@ type SectorRow = {
 export function SectorRibbon({
   onSectorChange,
   activeSector,
+  market = "us",
 }: {
   onSectorChange?: (sector: string | null) => void;
   activeSector?: string | null;
+  market?: "us" | "br" | "global";
 }) {
   const [data, setData] = useState<SectorRow[] | null>(null);
   const [gainers, totalSectors] = [
@@ -31,11 +33,12 @@ export function SectorRibbon({
   ];
 
   useEffect(() => {
-    fetch("/api/market/sectors")
+    const url = market === "br" ? "/api/market/sectors?market=br" : "/api/market/sectors";
+    fetch(url)
       .then((r) => r.json())
       .then((d) => setData(d.sectors ?? []))
       .catch(() => setData([]));
-  }, []);
+  }, [market]);
 
   function handleClick(sector: string) {
     if (!onSectorChange) return;

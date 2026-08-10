@@ -83,7 +83,7 @@ function DashboardInner() {
       </div>
 
       {/* Sector ribbon — click filters the table below */}
-      <SectorRibbon onSectorChange={setSector} activeSector={sector} />
+      <SectorRibbon onSectorChange={setSector} activeSector={sector} market={mode === "br" ? "br" : mode === "us" ? "us" : "us"} />
 
       {/* Main split — table + rail */}
       <div
@@ -97,9 +97,15 @@ function DashboardInner() {
 
         {/* Right — 340px rail */}
         <aside className="px-6 py-7 space-y-[18px]">
-          <RailBlock>
-            <FearGreedPanel />
-          </RailBlock>
+          {mode === "br" ? (
+            <RailBlock>
+              <BrDashboardRail />
+            </RailBlock>
+          ) : (
+            <RailBlock>
+              <FearGreedPanel />
+            </RailBlock>
+          )}
           <RailBlock>
             <NewsRail />
           </RailBlock>
@@ -114,4 +120,36 @@ function DashboardInner() {
 
 function RailBlock({ children }: { children: React.ReactNode }) {
   return <div className="border-t border-hairline-strong pt-[18px]">{children}</div>;
+}
+
+/**
+ * BrDashboardRail — placeholder rail for the BR dashboard.
+ * The real F&G-equivalent for BR (IVOL-BR, IBOV momentum, Selic real,
+ * breadth) is a future feature. For now, this lists the same News/Sulfur
+ * portfolio blocks the US rail has, so the BR dashboard has a right column
+ * that matches in height.
+ */
+function BrDashboardRail() {
+  return (
+    <>
+      <RailBlock>
+        <div>
+          <div className="flex items-baseline justify-between mb-2">
+            <h3 className="label-s label-muted-2">Mercado BR · 1D</h3>
+          </div>
+          <p className="text-[12.5px] text-muted leading-snug">
+            Painel de sentimento dedicado ao mercado brasileiro (Fear & Greed
+            BR-style: IBOV momentum, IVOL-BR, breadth, juros reais) — em
+            construção.
+          </p>
+        </div>
+      </RailBlock>
+      <RailBlock>
+        <NewsRail />
+      </RailBlock>
+      <RailBlock>
+        <SulfurPortfoliosRail />
+      </RailBlock>
+    </>
+  );
 }

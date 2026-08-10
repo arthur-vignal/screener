@@ -3,8 +3,11 @@ import { SP500, SP500_SECTORS } from "@/lib/snp500";
 import { ETFS, CRYPTOS } from "@/lib/universe";
 import { IBOV, IBOV_SECTORS } from "@/lib/ibovespa";
 import { B3_LIST } from "@/lib/b3-list";
+import { isBrazilianTicker } from "@/lib/brapi";
+import { getBrapiQuoteBatch } from "@/lib/brapi-quote-batch";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 type AssetType = "stock" | "etf" | "crypto";
 type Market = "us" | "br" | "global";
@@ -23,19 +26,33 @@ const ALL_SECTORS: readonly string[] = Array.from(
   new Set([...SP500_SECTORS, ...IBOV_SECTORS]),
 ).sort();
 
+type ExchangeKey = "all" | "sp500" | "ibov" | "b3" | "etf" | "crypto";
+
+function normalizeExchange(raw: string): ExchangeKey {
+  const r = raw.toLowerCase();
+  if (r === "us") return "sp500";
+  if (r === "br") return "b3"; // /market/br uses 'br' -> full B3 list
+  if (r === "ibov") return "ibov";
+  if (r === "b3") return "b3";
+  if (r === "global" || r === "all") return "all";
+  if (r === "sp500" || r === "ibov" || r === "etf" || r === "crypto") return r;
+  return "all";
+}
+
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
 
   // Filters
   const offset = parseInt(sp.get("offset") ?? "0", 10);
   const limit = Math.min(parseInt(sp.get("limit") ?? "50", 10), 500);
-  // exchange accepts: all | sp500 | ibov | etf | crypto
-  // Also accepts the friendly aliases: us | br | global
   const exchangeRaw = sp.get("exchange") ?? "all";
   const exchange = normalizeExchange(exchangeRaw);
   const sector = sp.get("sector") ?? "all";
   const search = (sp.get("q") ?? "").toLowerCase().trim();
 
+  // Build the symbol list for the requested exchange first, with rich data
+  // baked in (name + sector) from the static universe. B3-only entries are
+  // placeholders — they'll be enriched from Brapi in a second pass.
   let items: AssetListItem[] = [];
 
   // US stocks (S&P 500)
@@ -66,20 +83,29 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Brazil stocks (full B3 list — broader than IBOV)
+  // Brazil stocks (full B3 list — broader than IBOV). IBOV entries above
+  // already have rich data; B3-only entries get placeholder name/sector here
+  // and are enriched from Brapi below.
   if (exchange === "b3") {
     for (const sym of B3_LIST) {
-      // Skip if it's already in IBOV (will have name/sector). IBOV entries get richer
-      // data below; B3-only entries just get the symbol as name.
-      const isIbov = IBOV.some((e) => e.symbol === sym);
-      if (isIbov) continue;
-      items.push({
-        symbol: sym,
-        name: sym, // TODO: enrich with CVM/BRapi name lookup
-        type: "stock",
-        sector: "—", // TODO: enrich with B3 sector classification
-        market: "br",
-      });
+      const ibovEntry = IBOV.find((e) => e.symbol === sym);
+      if (ibovEntry) {
+        items.push({
+          symbol: ibovEntry.symbol,
+          name: ibovEntry.name,
+          type: "stock",
+          sector: ibovEntry.sector,
+          market: "br",
+        });
+      } else {
+        items.push({
+          symbol: sym,
+          name: sym, // enriched from Brapi below
+          type: "stock",
+          sector: "—", // enriched from Brapi below
+          market: "br",
+        });
+      }
     }
   }
 
@@ -131,8 +157,33 @@ export async function GET(req: NextRequest) {
     return a.symbol.localeCompare(b.symbol);
   });
 
+  // Enrichment pass: for the current page of B3 items, hit Brapi once to
+  // fill in name + sector. Only the page slice is enriched (max 30) to keep
+  // this fast; pagination re-triggers the fetch as the user pages.
   const total = items.length;
   const slice = items.slice(offset, offset + limit);
+  if (slice.length > 0) {
+    const pageBrSymbols = slice
+      .filter((it) => it.type === "stock" && isBrazilianTicker(it.symbol))
+      .map((it) => it.symbol);
+    if (pageBrSymbols.length > 0) {
+      try {
+        const brapiMap = await getBrapiQuoteBatch(pageBrSymbols);
+        for (const it of slice) {
+          const b = brapiMap.get(it.symbol.toUpperCase());
+          if (!b) continue;
+          if (it.name === it.symbol && b.longName) {
+            it.name = b.longName;
+          }
+          if ((it.sector === "—" || !it.sector) && b.sector) {
+            it.sector = b.sector;
+          }
+        }
+      } catch (err) {
+        console.error("[/api/assets/list] brapi enrichment failed:", err);
+      }
+    }
+  }
 
   return NextResponse.json({
     items: slice,
@@ -143,19 +194,6 @@ export async function GET(req: NextRequest) {
     sectors: ALL_SECTORS,
     exchanges: ["all", "sp500", "ibov", "b3", "etf", "crypto"],
   });
-}
-
-type ExchangeKey = "all" | "sp500" | "ibov" | "b3" | "etf" | "crypto";
-
-function normalizeExchange(raw: string): ExchangeKey {
-  const r = raw.toLowerCase();
-  if (r === "us") return "sp500";
-  if (r === "br") return "b3"; // /market/br uses 'br' -> full B3 list
-  if (r === "ibov") return "ibov";
-  if (r === "b3") return "b3";
-  if (r === "global" || r === "all") return "all";
-  if (r === "sp500" || r === "ibov" || r === "etf" || r === "crypto") return r;
-  return "all";
 }
 
 const CRYPTO_NAMES: Record<string, string> = {
