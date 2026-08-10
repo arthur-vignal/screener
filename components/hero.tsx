@@ -3,7 +3,7 @@
 import { motion } from "motion/react"
 import { AuroraBackground } from "@/components/ui/aurora-background"
 import { EncryptedText } from "@/components/ui/encrypted-text"
-import { HoverBorderGradient } from "@/components/ui/hover-border-gradient"
+import { LiquidGlassButton } from "@/components/ui/liquid-glass-button"
 
 export function Hero() {
   return (
@@ -58,19 +58,18 @@ export function Hero() {
           transition={{ delay: 3, duration: 0.7, ease: "easeOut" }}
           className="mt-10 flex flex-col items-center gap-3 sm:flex-row"
         >
-          <HoverBorderGradient
-            containerClassName="rounded-full"
-            as="button"
-            className="dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2 px-7 py-3 text-sm font-semibold"
+          <LiquidGlassButton
+            variant="default"
+            className="px-7 py-3 sm:w-auto"
           >
-            <span>Começar análise gratuita</span>
-          </HoverBorderGradient>
-          <a
-            href="#recursos"
-            className="w-full rounded-full border border-border bg-card/50 px-7 py-3 text-sm font-semibold text-foreground backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-card sm:w-auto"
+            Começar análise gratuita
+          </LiquidGlassButton>
+          <LiquidGlassButton
+            variant="ghost"
+            className="px-7 py-3 sm:w-auto"
           >
             Ver como funciona
-          </a>
+          </LiquidGlassButton>
         </motion.div>
 
         <motion.div

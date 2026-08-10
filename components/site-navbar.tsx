@@ -12,6 +12,7 @@ import {
   MobileNavToggle,
   MobileNavMenu,
 } from "@/components/ui/resizable-navbar"
+import { LiquidGlassButton } from "@/components/ui/liquid-glass-button"
 
 const navItems = [
   { name: "Recursos", link: "#recursos" },
@@ -29,8 +30,18 @@ export function SiteNavbar() {
         <NavbarLogo />
         <NavItems items={navItems} />
         <div className="flex items-center gap-2">
-          <NavbarButton variant="secondary">Entrar</NavbarButton>
-          <NavbarButton variant="primary">Começar agora</NavbarButton>
+          <LiquidGlassButton
+            variant="ghost"
+            className="px-4 py-2 text-[13px]"
+          >
+            Entrar
+          </LiquidGlassButton>
+          <LiquidGlassButton
+            variant="default"
+            className="px-4 py-2 text-[13px]"
+          >
+            Começar agora
+          </LiquidGlassButton>
         </div>
       </NavBody>
 
@@ -53,12 +64,20 @@ export function SiteNavbar() {
             </a>
           ))}
           <div className="flex w-full flex-col gap-3 pt-2">
-            <NavbarButton onClick={() => setIsMobileMenuOpen(false)} variant="secondary" className="w-full">
+            <LiquidGlassButton
+              variant="ghost"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="w-full px-4 py-2.5 text-sm"
+            >
               Entrar
-            </NavbarButton>
-            <NavbarButton onClick={() => setIsMobileMenuOpen(false)} variant="primary" className="w-full">
+            </LiquidGlassButton>
+            <LiquidGlassButton
+              variant="default"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="w-full px-4 py-2.5 text-sm"
+            >
               Começar agora
-            </NavbarButton>
+            </LiquidGlassButton>
           </div>
         </MobileNavMenu>
       </MobileNav>
