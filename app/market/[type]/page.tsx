@@ -4,7 +4,6 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { cn, formatPercent, formatCompact } from "@/lib/utils";
-import { IBOV_SECTORS } from "@/lib/ibovespa";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type AssetType = "stock" | "etf" | "crypto";
@@ -27,19 +26,37 @@ type MultiQuoteResponse = { rows: Row[] };
 
 const PAGE_SIZE = 50;
 
-// B3 sectors come from IBOV; for non-IBOV stocks we'll show "—" until we
-// enrich the list with full CVM/B3 sector data.
-const SECTORS: readonly string[] = ["All", ...IBOV_SECTORS];
+const TITLES: Record<string, { title: string; subtitle: string; type: string }> = {
+  fiis: {
+    title: "Fundos Imobiliários 🇧🇷",
+    subtitle: "Todos os FIIs listados na B3, com preços em tempo real (via Brapi Pro), variação de 24h e volume.",
+    type: "fii",
+  },
+  bdrs: {
+    title: "BDRs (Brazilian Depositary Receipts) 🇧🇷",
+    subtitle: "BDRs são certificados que representam ações estrangeiras negociadas na B3 em Reais.",
+    type: "bdr",
+  },
+  etfs: {
+    title: "ETFs 🇧🇷",
+    subtitle: "ETFs listados na B3 — fundos negociados em bolsa que replicam índices ou setores.",
+    type: "etf",
+  },
+};
 
-export default function BrMarketPage() {
+export default function BrMarketTypePage({
+  params,
+}: {
+  params: { type: string };
+}) {
   return (
-    <Suspense fallback={<BrMarketFallback />}>
-      <BrMarketInner />
+    <Suspense fallback={<Fallback />}>
+      <BrMarketTypeInner params={params} />
     </Suspense>
   );
 }
 
-function BrMarketFallback() {
+function Fallback() {
   return (
     <div className="px-3 md:px-4 py-3 md:py-4 max-w-[1920px]">
       <div className="label-s label-muted-2 mb-3">Carregando…</div>
@@ -52,9 +69,18 @@ function BrMarketFallback() {
   );
 }
 
-function BrMarketInner() {
+function BrMarketTypeInner({ params }: { params: { type: string } }) {
+  const meta = TITLES[params.type];
+  if (!meta) {
+    return (
+      <div className="px-3 md:px-4 py-3 md:py-4 max-w-[1920px]">
+        <p className="text-sm text-muted">Tipo desconhecido: {params.type}</p>
+        <Link href="/market" className="link-underline text-sm">← Voltar</Link>
+      </div>
+    );
+  }
+
   const [page, setPage] = useState(0);
-  const [sector, setSector] = useState<string>("All");
   const [items, setItems] = useState<Item[] | null>(null);
   const [total, setTotal] = useState(0);
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
@@ -62,20 +88,20 @@ function BrMarketInner() {
 
   useEffect(() => {
     setPage(0);
-  }, [sector]);
+  }, [params.type]);
 
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
 
-    const params = new URLSearchParams({
+    const params2 = new URLSearchParams({
       offset: String(page * PAGE_SIZE),
       limit: String(PAGE_SIZE),
       exchange: "b3",
+      type: meta.type,
     });
-    if (sector !== "All") params.set("sector", sector);
 
-    fetch(`/api/assets/list?${params}`)
+    fetch(`/api/assets/list?${params2}`)
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
@@ -94,7 +120,7 @@ function BrMarketInner() {
     return () => {
       cancelled = true;
     };
-  }, [page, sector]);
+  }, [page, params.type, meta.type]);
 
   useEffect(() => {
     if (!items || items.length === 0) return;
@@ -135,31 +161,11 @@ function BrMarketInner() {
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
         <div>
           <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight">
-            Mercado Brasileiro 🇧🇷
+            {meta.title}
           </h1>
-          <p className="text-body text-sm mt-1 max-w-2xl">
-            Todas as ações listadas na B3, com preços em tempo real (via Brapi Pro),
-            variação de 24h e volume. Use os filtros de setor para navegar.
-          </p>
+          <p className="text-body text-sm mt-1 max-w-2xl">{meta.subtitle}</p>
         </div>
         <div className="label-s label-muted-2">{total.toLocaleString("en-US")} ativos</div>
-      </div>
-
-      <div className="flex items-center gap-2 mb-3 overflow-x-auto">
-        {SECTORS.map((s) => (
-          <button
-            key={s}
-            onClick={() => setSector(s)}
-            className={cn(
-              "label-s border px-2.5 py-1 whitespace-nowrap press",
-              sector === s
-                ? "border-ink text-ink bg-surface-elevated"
-                : "border-hairline-strong text-muted hover:text-ink",
-            )}
-          >
-            {s}
-          </button>
-        ))}
       </div>
 
       <div className="border-t border-hairline-strong">
@@ -179,7 +185,7 @@ function BrMarketInner() {
             ))}
           </div>
         ) : !items || items.length === 0 ? (
-          <div className="py-10 text-center label-s text-muted">Nenhuma ação encontrada.</div>
+          <div className="py-10 text-center label-s text-muted">Nenhum ativo encontrado.</div>
         ) : (
           items.map((it, i) => {
             const q = quotes[it.symbol];
@@ -193,9 +199,7 @@ function BrMarketInner() {
                   {String(start + i).padStart(3, "0")}
                 </div>
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-[12px] leading-none shrink-0" title="Brasil">
-                    🇧🇷
-                  </span>
+                  <span className="text-[12px] leading-none shrink-0" title="Brasil">🇧🇷</span>
                   <span className="num font-semibold text-[12.5px] text-ink">{it.symbol}</span>
                   <span className="text-[11px] text-muted truncate">{it.name}</span>
                 </div>

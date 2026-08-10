@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { B3_INDICES } from "@/lib/b3-indices";
 
 type Index = {
   id: number;
@@ -49,25 +50,13 @@ const SEED_INDICES = [
     description: "Ações com baixa volatilidade histórica para proteção de capital.",
     methodology: "Universo: S&P 500. Ranking por volatilidade anualizada (menor melhor). Top 30. Equal-weighted.",
     author: "platform",
-    change24h: -0.08,
-  },
-  {
-    id: -4,
-    slug: "global-momentum",
-    name: "Global Momentum",
-    description: "ETFs globais com momentum positivo em 6 meses.",
-    methodology: "Mix de ETFs globais. Rebalanceamento mensal.",
-    author: "platform",
-    change24h: 0.85,
+    change24h: -0.21,
   },
 ];
 
 export default function IndicesPage() {
-  const { data } = useSWR<{ indices: Index[] }>(
-    "/api/indices?scope=public",
-    fetcher,
-  );
-  const [user, setUser] = useState<{ username: string } | null>(null);
+  const [user, setUser] = useState<{ userId: string; username: string } | null>(null);
+  const [showingUserIndices, setShowingUserIndices] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -76,90 +65,89 @@ export default function IndicesPage() {
       .catch(() => setUser(null));
   }, []);
 
-  const userIndices = data?.indices ?? [];
-  const showingUserIndices = userIndices.length > 0;
-
   return (
-    <div className="px-6 md:px-10 py-8 md:py-12 max-w-7xl">
+    <div className="max-w-[1920px] mx-auto px-3 md:px-4 py-6 md:py-8">
       <PageHeader
         title="Indices"
-        description={
-          user
-            ? "Seus índices + índices públicos da plataforma"
-            : "Índices pré-definidos pela plataforma"
-        }
-        actions={
-          <Link
-            href="/indices/new"
-            className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-md bg-brand text-on-brand hover:bg-brand-bright transition-colors press text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Novo índice
-          </Link>
-        }
+        description="Crie screeners custom ou explore índices curados (Sulfur) e oficiais (B3)."
       />
 
-      {!user && (
-        <div className="mb-6 panel p-4 flex items-center justify-between border-brand/30 anime-fade-up">
-          <div className="text-sm text-body">
-            <strong className="text-ink">Crie sua conta</strong> pra criar
-            índices custom e ver performance real.
-          </div>
-          <Link
-            href="/signup"
-            className="inline-flex items-center h-8 px-3 rounded-md bg-brand text-on-brand hover:bg-brand-bright transition-colors press text-xs font-medium"
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowingUserIndices(false)}
+            className={cn(
+              "px-3 py-1.5 label-s border press",
+              !showingUserIndices
+                ? "border-ink text-ink bg-surface-elevated"
+                : "border-hairline-strong text-muted hover:text-ink",
+            )}
           >
-            Criar agora
-          </Link>
+            Pré-definidos
+          </button>
+          <button
+            onClick={() => setShowingUserIndices(true)}
+            className={cn(
+              "px-3 py-1.5 label-s border press",
+              showingUserIndices
+                ? "border-ink text-ink bg-surface-elevated"
+                : "border-hairline-strong text-muted hover:text-ink",
+            )}
+          >
+            {user ? "Meus" : "Públicos"}
+            {!user && <Lock className="inline w-3 h-3 ml-1" />}
+          </button>
         </div>
-      )}
 
-      {showingUserIndices ? (
+        {user && (
+          <Link href="/build" className="btn-primary inline-flex items-center gap-1">
+            <Plus className="w-3.5 h-3.5" />
+            Novo índice
+          </Link>
+        )}
+      </div>
+
+      {/* ===================== B3 OFFICIAL INDICES ===================== */}
+      {!showingUserIndices && (
         <>
           <h2 className="text-xs uppercase tracking-wider text-muted font-medium mb-3">
-            {user ? "Meus índices" : "Índices da plataforma"}
+            Índices da B3
+            <Badge tone="neutral" className="ml-2 text-[10px]">oficial</Badge>
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            {userIndices.map((idx, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {B3_INDICES.map((idx) => (
               <Link
-                key={idx.id}
-                href={`/indices/${idx.slug}`}
+                key={idx.code}
+                href={`/indices/${idx.code.toLowerCase()}`}
                 className="panel p-5 hover-lift group animate-fade-up"
-                style={{ animationDelay: `${i * 60}ms` }}
               >
                 <div className="flex items-start justify-between mb-2.5">
                   <h3 className="font-medium text-ink group-hover:text-brand-bright transition-colors duration-150">
-                    {idx.name}
+                    {idx.code}
                   </h3>
-                  <ArrowRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 shrink-0" />
+                  <Badge tone="neutral" className="text-[9px]">
+                    B3
+                  </Badge>
                 </div>
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  {idx.isPublic ? (
-                    <Badge tone="neutral">Público</Badge>
-                  ) : (
-                    <Badge tone="neutral">
-                      <Lock className="w-2.5 h-2.5 mr-1" />
-                      Privado
-                    </Badge>
-                  )}
-                  <span className="text-xs text-muted">@{idx.owner ?? "anon"}</span>
-                  <span className="text-xs text-muted">· {idx.topN} ativos</span>
+                <div className="text-xs text-muted mb-3">{idx.name}</div>
+                <p className="text-sm text-body mb-3 line-clamp-2">{idx.description}</p>
+                <div className="flex items-baseline justify-between pt-3 border-t border-hairline">
+                  <span className="text-xs text-muted">
+                    {idx.holdings.length} constituintes
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
                 </div>
-                {idx.description && (
-                  <p className="text-sm text-body line-clamp-2">
-                    {idx.description}
-                  </p>
-                )}
               </Link>
             ))}
           </div>
         </>
-      ) : null}
+      )}
 
-      {!showingUserIndices && (
+      {/* ===================== SEED / CUSTOM INDICES ===================== */}
+      {!showingUserIndices ? (
         <>
           <h2 className="text-xs uppercase tracking-wider text-muted font-medium mb-3">
-            Pré-definidos
+            Pré-definidos (Sulfur)
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {SEED_INDICES.map((idx, i) => (
@@ -197,7 +185,48 @@ export default function IndicesPage() {
             ))}
           </div>
         </>
+      ) : (
+        <UserIndices />
       )}
+    </div>
+  );
+}
+
+function UserIndices() {
+  const { data, error, isLoading } = useSWR<{ indices: Index[] }>("/api/indices", fetcher);
+  if (isLoading) return <div className="text-sm text-muted">Carregando…</div>;
+  if (error || !data) return <div className="text-sm text-muted">Sem índices.</div>;
+  if (data.indices.length === 0) {
+    return (
+      <div className="text-sm text-muted">
+        Nenhum índice ainda. Crie um via{" "}
+        <Link href="/build" className="link-underline text-ink">
+          Build
+        </Link>
+        .
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {data.indices.map((idx, i) => (
+        <Link
+          key={idx.id}
+          href={`/indices/${idx.slug}`}
+          className="panel p-5 hover-lift group animate-fade-up"
+          style={{ animationDelay: `${i * 60}ms` }}
+        >
+          <div className="flex items-start justify-between mb-2.5">
+            <h3 className="font-medium text-ink">{idx.name}</h3>
+            <ArrowRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 shrink-0" />
+          </div>
+          <p className="text-sm text-body mb-3 line-clamp-2">{idx.description}</p>
+          <div className="flex items-baseline justify-between pt-3 border-t border-hairline">
+            <span className="text-xs text-muted">top {idx.topN}</span>
+            <span className="text-xs text-muted">{idx.universe}</span>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }

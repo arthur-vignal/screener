@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { query, insert } from "@/lib/db";
+import { B3_INDICES } from "@/lib/b3-indices";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +58,24 @@ export async function GET(req: NextRequest) {
     owner: r.username,
   }));
 
-  return NextResponse.json({ indices: result });
+  // Merge B3 official indices (IBOV, IBrX-100, SMLL, IDIV).
+  const b3Indices = B3_INDICES.map((i) => ({
+    id: -1, // sentinel — frontend knows negative ids are system
+    slug: i.code.toLowerCase(),
+    name: i.code + " — " + i.name,
+    description: i.description,
+    universe: "b3",
+    filters: { holdings: i.holdings },
+    ranking: "market_cap",
+    topN: i.holdings.length,
+    isPublic: true,
+    createdAt: 0,
+    updatedAt: 0,
+    owner: "B3",
+    source: "b3-official",
+  }));
+
+  return NextResponse.json({ indices: [...b3Indices, ...result] });
 }
 
 export async function POST(req: NextRequest) {

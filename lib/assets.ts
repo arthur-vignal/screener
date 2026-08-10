@@ -47,6 +47,21 @@ const STOCKS = [
   "FUBO", "RBLX",
   "DDOG", "MDB", "TEAM", "ADSK", "DOCU", "ZM",
   "VWO", "IEFA", "EFA", "IEMG", "AGG", "BND", "LQD", "HYG",
+  // BR stocks — IBOV + a curated set of high-liquidity B3-only listings.
+  // All BR tickers added to search via this list. The full B3 universe
+  // (1184) is still listed via /api/assets/list?exchange=b3 but only the
+  // most-traded ones are searchable from the top-nav SearchBar.
+  "PETR4", "PETR3", "VALE3", "ITUB4", "BBDC4", "BBAS3", "ABEV3", "BBDC3",
+  "WEGE3", "RENT3", "BPAC11", "SANB11", "PRIO3", "BBSE3", "ITSA4",
+  "ENGI11", "SUZB3", "EQTL3", "RDOR3", "HAPV3", "FLRY3", "HYPE3",
+  "VIVT3", "CMIG4", "VBBR3", "UGPA3", "RAIL3", "EMBJ3", "CSAN3",
+  "CSNA3", "CYRE3", "ELET3", "KLBN11", "TOTS3", "LREN3", "MGLU3",
+  "MRVE3", "RADL3", "SBSP3", "IGTI11", "VAMO3", "BHIA3", "BEEF3",
+  "BRML3", "CCRO3", "GGBR4", "PCAR3", "USIM5", "CSMG3", "EGIE3",
+  "TAEE11", "TIMS3", "ALOS3", "BBDC4", "CRFB3", "CVCB3", "DXCO3",
+  "EZTC3", "GGBR4", "GOAU4", "HAPV3", "JBSS3", "KLBN11", "LREN3",
+  "MGLU3", "MOTV3", "MULT3", "POMO4", "QUAL3", "SAPR11", "SBSP3",
+  "SMFT3", "SULA11", "TAEE11", "TOTS3", "VALE3", "VBBR3", "VIIA3",
 ];
 
 const ETFS = [

@@ -59,7 +59,7 @@ export function MarketTable({ sectorFilter, market: marketProp }: { sectorFilter
   })();
 
   const [page, setPage] = useState(0);
-  const limit = 30;
+  const limit = 50;
   const [items, setItems] = useState<AssetListItem[] | null>(null);
   const [total, setTotal] = useState(0);
   const [quotes, setQuotes] = useState<Record<string, Quote | null>>({});

@@ -5,6 +5,7 @@ import { IBOV, IBOV_SECTORS } from "@/lib/ibovespa";
 import { B3_LIST } from "@/lib/b3-list";
 import { isBrazilianTicker } from "@/lib/brapi";
 import { getBrapiQuoteBatch } from "@/lib/brapi-quote-batch";
+import { classifyB3Ticker } from "@/lib/b3-classify";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -76,11 +77,21 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // ?type filter for B3 (?type=stock|fii|etf|bdr|fractional|all).
+  // Default for the dashboard market table is 'stock' only (drop BDRs,
+  // FIIs, ETFs). Other callers (e.g. /market/fiis page) can request a class.
+  const typeFilter = sp.get("type") ?? "stock";
+
   if (exchange === "b3") {
     for (const sym of B3_LIST) {
       const ibovEntry = IBOV.find((e) => e.symbol === sym);
+      // IBOV entries are always stocks. B3-only entries get classified.
+      const t: "stock" | "fii" | "etf" | "bdr" | "fractional" = ibovEntry
+        ? "stock"
+        : classifyB3Ticker(sym);
+      if (typeFilter !== "all" && t !== typeFilter) continue;
+
       if (ibovEntry) {
-        // IBOV entries have a known sector; honor the sector filter here.
         if (sector !== "all" && ibovEntry.sector !== sector) continue;
         items.push({
           symbol: ibovEntry.symbol,
@@ -90,12 +101,12 @@ export async function GET(req: NextRequest) {
           market: "br",
         });
       } else {
-        // B3-only entries get a real sector via Brapi below. The filter is
-        // applied AFTER enrichment so the sector param can be honored.
         items.push({
           symbol: sym,
           name: sym,
-          type: "stock",
+          // We expose the B3 sub-type so callers (like /market/fiis) can
+          // group on it. For dashboard, all entries here are 'stock'.
+          type: t === "etf" ? "etf" : "stock",
           sector: "—",
           market: "br",
         });

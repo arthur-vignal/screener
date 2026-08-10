@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Loader2, Lock, Plus } from "lucide-react";
 import Link from "next/link";
-import { use } from "react";
+import { use, useEffect, useState } from "react";
 import { RichFundamentalsTable } from "@/components/rich-fundamentals-table";
 import useSWR from "swr";
 import {
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { getSeedIndex } from "@/lib/seed-data";
 import { NewsForTickers } from "@/components/news-for-tickers";
+import { B3_INDICES, getB3IndexByCode } from "@/lib/b3-indices";
 
 type Constituent = {
   symbol: string;
@@ -69,6 +70,9 @@ export default function IndexDetailPage({
   const { id } = use(params);
   const seed = getSeedIndex(id);
   const isSeed = !!seed;
+  // B3 official index lookup (slug like "ibov", "ibrx-100", "smll", "idiv")
+  const b3Index = !isSeed ? getB3IndexByCode(id.toUpperCase()) : undefined;
+  const isB3 = !!b3Index;
 
   const { data: index, error: indexError } = useSWR<IndexDetail | { error: string }>(
     isSeed ? null : `/api/indices/${id}`,
@@ -380,7 +384,9 @@ export default function IndexDetailPage({
                   <span className="label-s label-muted-2">Live prices</span>
                 )}
               </div>
-              {currentQuotes.length > 0 ? (
+              {isB3 && b3Index ? (
+                <B3ConstituentsTable b3Index={b3Index} />
+              ) : currentQuotes.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -545,6 +551,123 @@ function MetricCell({ label, value }: { label: string; value: number }) {
       >
         <AnimatedNumber value={value * 100} signed decimals={2} suffix="%" />
       </div>
+    </div>
+  );
+}
+
+/**
+ * B3ConstituentsTable — renders the B3 official index composition with each
+ * holding's allocation weight + live quote (price, 24h change).
+ */
+function B3ConstituentsTable({ b3Index }: { b3Index: any }) {
+  const [quotes, setQuotes] = useState<Record<string, { price: number; changePercent: number }>>({});
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const symbols = b3Index.holdings.map((h: any) => h.symbol).join(",");
+    fetch(`/api/assets/quote?symbols=${encodeURIComponent(symbols)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const map: Record<string, { price: number; changePercent: number }> = {};
+        for (const row of d.rows ?? []) {
+          if (row.quote) {
+            map[row.symbol] = {
+              price: row.quote.price,
+              changePercent: row.quote.changePercent,
+            };
+          }
+        }
+        setQuotes(map);
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+  }, [b3Index]);
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="label-s label-muted-2 border-b border-hairline-strong h-8">
+            <th className="text-left py-2 font-medium w-12">#</th>
+            <th className="text-left py-2 font-medium">Ticker</th>
+            <th className="text-right py-2 font-medium w-24">Alocação</th>
+            <th className="text-right py-2 font-medium w-24">Preço</th>
+            <th className="text-right py-2 font-medium w-20">24h</th>
+            <th className="text-right py-2 font-medium w-20">Aloc. × Var</th>
+          </tr>
+        </thead>
+        <tbody>
+          {b3Index.holdings.map((h: any, i: number) => {
+            const q = quotes[h.symbol];
+            const allocVar = q ? (h.weight / 100) * q.changePercent : null;
+            return (
+              <tr
+                key={h.symbol}
+                className="border-b border-hairline last:border-0 hover-row animate-fade-up"
+                style={{ animationDelay: `${i * 20}ms` }}
+              >
+                <td className="py-2.5 num text-faint text-[10.5px]">
+                  {String(i + 1).padStart(2, "0")}
+                </td>
+                <td className="py-2.5">
+                  <Link
+                    href={`/asset/${encodeURIComponent(h.symbol)}`}
+                    className="num text-[12.5px] text-ink hover:text-brand-deep transition-colors duration-150"
+                  >
+                    {h.symbol}
+                  </Link>
+                </td>
+                <td className="py-2.5 num text-[12.5px] text-ink text-right font-medium">
+                  {h.weight.toFixed(2)}%
+                </td>
+                <td className="py-2.5 num text-[12.5px] text-ink text-right">
+                  {!loaded ? "—" : q ? `R$${q.price.toFixed(2)}` : "—"}
+                </td>
+                <td
+                  className={cn(
+                    "py-2.5 num text-[12px] text-right font-medium",
+                    !q
+                      ? "text-faint"
+                      : q.changePercent >= 0
+                        ? "text-positive"
+                        : "text-negative",
+                  )}
+                >
+                  {!q
+                    ? "—"
+                    : `${q.changePercent >= 0 ? "+" : "−"}${Math.abs(q.changePercent).toFixed(2)}%`}
+                </td>
+                <td
+                  className={cn(
+                    "py-2.5 num text-[12px] text-right font-medium",
+                    allocVar == null
+                      ? "text-faint"
+                      : allocVar >= 0
+                        ? "text-positive"
+                        : "text-negative",
+                  )}
+                  title="Contribuição ponderada: weight × 24h change"
+                >
+                  {allocVar == null
+                    ? "—"
+                    : `${allocVar >= 0 ? "+" : "−"}${Math.abs(allocVar).toFixed(3)}%`}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr className="border-t border-hairline-strong h-9">
+            <td colSpan={2} className="py-2 text-[11px] text-muted font-medium uppercase tracking-wider">
+              Total
+            </td>
+            <td className="py-2 num text-[12.5px] text-ink text-right font-semibold">
+              {b3Index.holdings.reduce((s: number, h: any) => s + h.weight, 0).toFixed(2)}%
+            </td>
+            <td colSpan={3}></td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 }

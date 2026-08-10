@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { SectorRibbon } from "@/components/sector-ribbon";
 import { MarketTable } from "@/components/market-table";
 import { FearGreedPanel, NewsRail, SulfurPortfoliosRail } from "@/components/right-rail";
+import { FearGreedGaugeBR } from "@/components/fear-greed-br";
 import { IBOV_SECTORS } from "@/lib/ibovespa";
 
 type DashboardMode = "global" | "us" | "br";
@@ -70,12 +71,6 @@ function DashboardInner() {
     <div className="max-w-[1920px] mx-auto bg-canvas text-ink">
       {/* Dashboard hero — title + subtitle */}
       <div className="px-8 pt-[26px] pb-[14px] border-b border-hairline-strong">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1 text-xs text-muted hover:text-ink mb-2 link-underline"
-        >
-          ← Dashboard
-        </Link>
         <h1 className="font-display text-[32px] md:text-[40px] text-ink tracking-tight">
           {meta.flag} {meta.title}
         </h1>
@@ -130,26 +125,5 @@ function RailBlock({ children }: { children: React.ReactNode }) {
  * that matches in height.
  */
 function BrDashboardRail() {
-  return (
-    <>
-      <RailBlock>
-        <div>
-          <div className="flex items-baseline justify-between mb-2">
-            <h3 className="label-s label-muted-2">Mercado BR · 1D</h3>
-          </div>
-          <p className="text-[12.5px] text-muted leading-snug">
-            Painel de sentimento dedicado ao mercado brasileiro (Fear & Greed
-            BR-style: IBOV momentum, IVOL-BR, breadth, juros reais) — em
-            construção.
-          </p>
-        </div>
-      </RailBlock>
-      <RailBlock>
-        <NewsRail />
-      </RailBlock>
-      <RailBlock>
-        <SulfurPortfoliosRail />
-      </RailBlock>
-    </>
-  );
+  return <FearGreedGaugeBR />;
 }
