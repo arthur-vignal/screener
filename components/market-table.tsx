@@ -52,7 +52,7 @@ const DEFAULT_VISIBLE: ColKey[] = ["asset", "sector", "price", "1d", "30d", "mca
  */
 export function MarketTable({ sectorFilter }: { sectorFilter?: string | null }) {
   const [page, setPage] = useState(0);
-  const limit = 12;
+  const limit = 30;
   const [items, setItems] = useState<AssetListItem[] | null>(null);
   const [total, setTotal] = useState(0);
   const [quotes, setQuotes] = useState<Record<string, Quote | null>>({});
@@ -252,7 +252,7 @@ export function MarketTable({ sectorFilter }: { sectorFilter?: string | null }) 
     "30d": "76px",
     mcap: "84px",
     vol: "80px",
-    spark: "104px",
+    spark: "100px",
   };
   const cols: ColKey[] = ["asset", "sector", "price", "1d", "7d", "30d", "mcap", "vol", "spark"];
   const activeColumns = cols.filter((key) => key === "asset" || visible.includes(key));
@@ -568,7 +568,7 @@ function SparkCell({ symbol, positive }: { symbol: string; positive: boolean }) 
     };
   }, [symbol]);
 
-  const w = 112;
+  const w = 100;
   const h = 26;
 
   if (!pts || pts.length < 2) {
