@@ -8,6 +8,7 @@ import useSWR from "swr";
 import {
   CartesianGrid,
   Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -680,12 +681,10 @@ function B3ConstituentsTable({ b3Index }: { b3Index: any }) {
 }
 
 /**
- * IndexPointChart — line chart of an index's value over time, showing
- * variation in points (e.g., IBOV 130.000 -> 131.200 = +1.200 pts).
+ * IndexPointChart — line chart of an index's value over time, with X/Y
+ * axes and gridlines (recharts).
  *
- * Synthetic data for now (lib/b3-indices has no historical series).
- * Wire to /api/indices/[id]/chart for real points when Brapi or B3
- * historical feed is available.
+ * Data source: /api/indices/[id]/chart (Brapi ETF as index proxy).
  */
 function IndexPointChart({ b3Index }: { b3Index: any }) {
   const [range, setRange] = useState<string>("6M");
@@ -704,6 +703,7 @@ function IndexPointChart({ b3Index }: { b3Index: any }) {
   }, [b3Index.code, range]);
 
   const positive = (summary?.change ?? 0) >= 0;
+  const color = positive ? "var(--positive)" : "var(--negative)";
 
   return (
     <div>
@@ -750,45 +750,65 @@ function IndexPointChart({ b3Index }: { b3Index: any }) {
         </div>
       )}
 
-      <div className="h-40">
+      <div className="h-48 border border-hairline bg-canvas-soft">
         {!points ? (
           <div className="h-full flex items-center justify-center label-s text-muted">
             Carregando…
           </div>
+        ) : points.length < 2 ? (
+          <div className="h-full flex items-center justify-center label-s text-muted">
+            Sem dados.
+          </div>
         ) : (
-          <SparkPreview points={points} positive={positive} />
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={points} margin={{ top: 12, right: 16, left: 8, bottom: 8 }}>
+              <CartesianGrid stroke="var(--hairline)" strokeDasharray="2 4" vertical={false} />
+              <XAxis
+                dataKey="date"
+                axisLine={{ stroke: "var(--hairline-strong)" }}
+                tickLine={false}
+                tick={{ fontSize: 9, fill: "var(--faint)", fontFamily: "var(--font-mono)" }}
+                tickFormatter={(v: string) => {
+                  const d = new Date(v);
+                  return `${d.getDate()}/${d.getMonth() + 1}`;
+                }}
+                minTickGap={32}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 9, fill: "var(--faint)", fontFamily: "var(--font-mono)" }}
+                tickFormatter={(v: number) => v.toLocaleString("pt-BR")}
+                width={64}
+                orientation="right"
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--surface-elevated)",
+                  border: "1px solid var(--hairline-strong)",
+                  borderRadius: 0,
+                  fontSize: 11,
+                  fontFamily: "var(--font-mono)",
+                }}
+                labelStyle={{ color: "var(--muted)" }}
+                formatter={(v: any) => Number(v).toLocaleString("pt-BR")}
+                labelFormatter={(v: any) =>
+                  new Date(v).toLocaleDateString("pt-BR")
+                }
+              />
+              <Line
+                type="monotone"
+                dataKey="close"
+                stroke={color}
+                strokeWidth={1.6}
+                dot={false}
+                isAnimationActive={true}
+                animationDuration={400}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         )}
       </div>
     </div>
-  );
-}
-
-/** Lightweight inline SVG sparkline for index chart preview. */
-function SparkPreview({
-  points,
-  positive,
-}: {
-  points: Array<{ date: string; close: number }>;
-  positive: boolean;
-}) {
-  const w = 800;
-  const h = 160;
-  if (points.length < 2) return null;
-  const min = Math.min(...points.map((p) => p.close));
-  const max = Math.max(...points.map((p) => p.close));
-  const range = max - min || 1;
-  const stepX = w / (points.length - 1);
-  const path = points
-    .map((p, i) => {
-      const x = i * stepX;
-      const y = h - ((p.close - min) / range) * h;
-      return `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
-    })
-    .join(" ");
-  const color = positive ? "var(--positive)" : "var(--negative)";
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-full" preserveAspectRatio="none">
-      <path d={path} stroke={color} strokeWidth="1.5" fill="none" vectorEffect="non-scaling-stroke" />
-    </svg>
   );
 }
