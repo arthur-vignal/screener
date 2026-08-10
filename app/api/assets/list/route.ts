@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SP500, SP500_SECTORS } from "@/lib/snp500";
 import { ETFS, CRYPTOS } from "@/lib/universe";
 import { IBOV, IBOV_SECTORS } from "@/lib/ibovespa";
+import { B3_LIST } from "@/lib/b3-list";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +52,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Brazil stocks (IBOV)
+  // Brazil stocks (IBOV — carteira teorica vigente)
   if (exchange === "all" || exchange === "ibov") {
     for (const e of IBOV) {
       if (sector !== "all" && e.sector !== sector) continue;
@@ -60,6 +61,23 @@ export async function GET(req: NextRequest) {
         name: e.name,
         type: "stock",
         sector: e.sector,
+        market: "br",
+      });
+    }
+  }
+
+  // Brazil stocks (full B3 list — broader than IBOV)
+  if (exchange === "b3") {
+    for (const sym of B3_LIST) {
+      // Skip if it's already in IBOV (will have name/sector). IBOV entries get richer
+      // data below; B3-only entries just get the symbol as name.
+      const isIbov = IBOV.some((e) => e.symbol === sym);
+      if (isIbov) continue;
+      items.push({
+        symbol: sym,
+        name: sym, // TODO: enrich with CVM/BRapi name lookup
+        type: "stock",
+        sector: "—", // TODO: enrich with B3 sector classification
         market: "br",
       });
     }
@@ -123,14 +141,18 @@ export async function GET(req: NextRequest) {
     limit,
     hasMore: offset + limit < total,
     sectors: ALL_SECTORS,
-    exchanges: ["all", "sp500", "ibov", "etf", "crypto"],
+    exchanges: ["all", "sp500", "ibov", "b3", "etf", "crypto"],
   });
 }
 
-function normalizeExchange(raw: string): "all" | "sp500" | "ibov" | "etf" | "crypto" {
+type ExchangeKey = "all" | "sp500" | "ibov" | "b3" | "etf" | "crypto";
+
+function normalizeExchange(raw: string): ExchangeKey {
   const r = raw.toLowerCase();
   if (r === "us") return "sp500";
-  if (r === "br" || r === "b3") return "ibov";
+  if (r === "br") return "b3"; // /market/br uses 'br' -> full B3 list
+  if (r === "ibov") return "ibov";
+  if (r === "b3") return "b3";
   if (r === "global" || r === "all") return "all";
   if (r === "sp500" || r === "ibov" || r === "etf" || r === "crypto") return r;
   return "all";
