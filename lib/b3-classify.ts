@@ -75,7 +75,6 @@ export const KNOWN_B3_ETFS: ReadonlySet<string> = new Set([
   "BBSD11", "ECOO11", "PIBB11", "BRAX11", "MATB11",
   "DIVO11", "FIND11", "GOVE11", "ISUS11", "EURP11",
   "AGBH11", "XFIX11", "IMAB11", "IRFM11", "NTNB11",
-  "BTCI11",
 ]);
 
 export const KNOWN_FII_ROOTS: ReadonlySet<string> = new Set([
