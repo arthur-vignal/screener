@@ -139,7 +139,7 @@ export function CorrelationHeatmap() {
             className="h-1.5 w-32 rounded-full"
             style={{
               background:
-                "linear-gradient(to right, var(--negative), #7a4e3c, var(--muted), #4a8a64, var(--positive))",
+                "linear-gradient(to right, rgb(207, 32, 47), rgb(140, 80, 60), rgb(120, 120, 120), rgb(80, 140, 100), rgb(5, 177, 105))",
             }}
           />
           <span className="text-muted">+1</span>
@@ -154,17 +154,16 @@ function cellColor(v: number): string {
   const clamped = Math.max(-1, Math.min(1, v));
   if (clamped >= 0) {
     const t = clamped;
-    // Desaturated: gray (#3f4047) to green (#34d399) per Fey palette
-    const r = Math.round(63 + (52 - 63) * t);
-    const g = Math.round(64 + (211 - 64) * t);
-    const b = Math.round(71 + (153 - 71) * t);
+    // gray to green
+    const r = Math.round(120 + (5 - 120) * t);
+    const g = Math.round(120 + (177 - 120) * t);
+    const b = Math.round(120 + (105 - 120) * t);
     return `rgb(${r}, ${g}, ${b})`;
   } else {
     const t = -clamped;
-    // Gray (#3f4047) to red (#f2555f)
-    const r = Math.round(63 + (242 - 63) * t);
-    const g = Math.round(64 + (85 - 64) * t);
-    const b = Math.round(71 + (95 - 71) * t);
+    const r = Math.round(120 + (207 - 120) * t);
+    const g = Math.round(120 + (32 - 120) * t);
+    const b = Math.round(120 + (47 - 120) * t);
     return `rgb(${r}, ${g}, ${b})`;
   }
 }

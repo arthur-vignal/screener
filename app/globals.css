@@ -1,84 +1,322 @@
+@import "tailwindcss";
 
-/* ---------- FEY THEME (dark/glass aesthetic) ----------
- * Shared tokens applied to every theme class so the visual layer is
- * consistent regardless of the class on <html>. The original themes
- * (light, dark-green, dark-green-mix, dark-mono, graphite) all map to
- * these same Fey tokens — the aesthetic is unique. Tokens follow
- * the briefing: never-pure-black surfaces, hairline borders, three-tier
- * text, semantic gain/loss, desaturated chart palette.
- */
-:root.light,
-:root.dark-green,
-:root.dark-green-mix,
-:root.dark-mono,
-:root.graphite {
-  /* Surfaces — never pure black */
-  --canvas: #0a0a0c;
-  --canvas-soft: #0f0f12;
-  --surface: #131316;
-  --surface-elevated: #1a1a1e;
-  --surface-strong: #222226;
+/* ============================================================================
+ * SULFUR.IO — Design System v4 — Ledger
+ *
+ * 4 themes, applied via class on <html>:
+ *   .light          — Sustain Light (default). White + green-claro-opaco.
+ *   .dark-green     — Tech Sustain Dark. Deep green-tinted dark, mint accent.
+ *   .dark-green-mix — Forest Mix. Neutral dark with green undertones.
+ *   .dark-mono      — Mono Dark. Pure dark with cobalto-violeta accent.
+ *   .graphite       — NEW (Ledger spec). Near-black neutral, sage-green brand.
+ *
+ * Same token names, different values per theme.
+ * Tokens mapped to Tailwind via @theme inline.
+ * ============================================================================ */
 
-  /* Borders / dividers — extremely subtle */
+/* ---------- THEME: LIGHT (Sustain) ---------- */
+:root.light {
+  --canvas: #ffffff;
+  --canvas-soft: #f7f8f5;
+  --surface: #f1f4ef;
+  --surface-elevated: #f7f8f5;
+  --surface-strong: #ffffff;
+  --hairline: rgba(11, 15, 12, 0.07);
+  --hairline-strong: rgba(11, 15, 12, 0.14);
+
+  --brand: #86efac;
+  --brand-soft: #d9f99d;
+  --brand-deep: #65a30d;
+  --brand-glow: rgba(134, 239, 172, 0.32);
+  --brand-on: #0a0a0a;
+
+  --ink: #0b0f0c;
+  --body: #3d4a42;
+  --muted: #6b7a70;
+  --faint: #a8b2ab;
+  --disabled: #d4d4d4;
+
+  --positive: #15803d;
+  --positive-soft: rgba(21, 128, 61, 0.10);
+  --negative: #b91c1c;
+  --negative-soft: rgba(185, 28, 28, 0.10);
+  --warning: #854d0e;
+  --warning-soft: rgba(133, 77, 14, 0.10);
+
+  --accent-teal: #0f766e;
+  --accent-pink: #9d174d;
+  --accent-yellow: #713f12;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.06);
+
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+
+  /* Primary CTA — Ledger spec: inverse canvas for max contrast over brand fills */
+  --primary-bg: #0b0f0c;
+  --primary-fg: #ffffff;
+  --primary-bg-hover: #65a30d;
+
+  /* Sector ribbon cell fills — computed via CSS var per cell */
+  --cell-positive: rgba(101, 163, 13, var(--cell-alpha, 0.1));
+  --cell-negative: rgba(220, 38, 38, var(--cell-alpha, 0.1));
+  --cell-label: #4a564e;
+  --cell-value-up: #3f6212;
+  --cell-value-down: #b91c1c;
+}
+
+/* ---------- THEME: DARK GREEN (Tech Sustain) ---------- */
+/* Layered green palette with depth: deepest greens for canvas/floor, lighter greens for elevated surfaces, mint highlights for accents. Greens tinted warm-cool for variation. */
+:root.dark-green {
+  /* Surface ladder — 5 stops from deepest to lightest */
+  --canvas: #030d09;             /* near-black, deep green */
+  --canvas-soft: #061410;         /* deep green-tinted */
+  --surface: #0a1f17;             /* mid green-tinted dark */
+  --surface-elevated: #0e2a20;    /* lighter */
+  --surface-strong: #143725;       /* lightest */
+  --surface-mint: #1c4530;        /* misted mint highlight */
+  --surface-glow: #22553a;        /* mint glow (hover states) */
+
+  /* Hairlines — green-tinted at low alpha */
+  --hairline: rgba(134, 239, 172, 0.07);
+  --hairline-strong: rgba(134, 239, 172, 0.14);
+
+  /* Brand — mint with depth variants */
+  --brand: #86efac;              /* mint 300 */
+  --brand-soft: rgba(134, 239, 172, 0.10);
+  --brand-deep: #4ade80;         /* mint 400 */
+  --brand-dark: #16a34a;         /* mint 600 for borders/focus */
+  --brand-darker: #15803d;       /* mint 700 */
+  --brand-bright: #bbf7d0;       /* mint 200 for highlights */
+  --brand-glow: rgba(134, 239, 172, 0.32);
+  --brand-on: #030d09;
+
+  /* Greens for status/subtle accents */
+  --green-mint: #6ee7b7;
+  --green-soft: #d9f99d;
+  --green-deep: #16a34a;
+
+  /* Text — green-tinted neutrals */
+  --ink: #e8f5ee;                /* near-white green-tinted */
+  --body: #a9c8b7;
+  --muted: #7d9a8a;
+  --faint: #456b58;
+  --disabled: rgba(134, 239, 172, 0.18);
+
+  /* Semantic colors */
+  --positive: #4ade80;
+  --positive-soft: rgba(74, 222, 128, 0.12);
+  --negative: #f87171;
+  --negative-soft: rgba(248, 113, 113, 0.12);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.12);
+
+  /* Other accents */
+  --accent-teal: #2dd4bf;
+  --accent-pink: #f9a8d4;
+  --accent-yellow: #fde047;
+
+  /* Shadows */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(134, 239, 172, 0.04);
+  --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.48), 0 0 24px rgba(134, 239, 172, 0.08);
+
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+
+  /* Primary CTA — mint on dark */
+  --primary-bg: #86efac;
+  --primary-fg: #03150c;
+  --primary-bg-hover: #4ade80;
+
+  /* Sector ribbon cell fills */
+  --cell-positive: rgba(74, 222, 128, var(--cell-alpha, 0.1));
+  --cell-negative: rgba(248, 113, 113, var(--cell-alpha, 0.1));
+  --cell-label: #c9e8d6;
+  --cell-value-up: #86efac;
+  --cell-value-down: #fca5a5;
+}
+
+/* ---------- THEME: DARK GREEN MIX (Forest Mix v2: verde + cinza + branco) ---------- */
+/* Mistura: canvas neutro escuro com tons de verde geomorficos, neutrals clean, highlights brancos em elementos ativos */
+:root.dark-green-mix {
+  --canvas: #0a0e0c;             /* near-black with green tint */
+  --canvas-soft: #0f1411;
+  --surface: #141a16;            /* deep neutral with green undertone */
+  --surface-elevated: #1a211c;   /* lighter */
+  --surface-strong: #212a23;     /* lightest */
+  --surface-mint: #2a3729;       /* hint of mint */
+  --surface-glow: #34453a;       /* mint glow */
+
   --hairline: rgba(255, 255, 255, 0.07);
   --hairline-strong: rgba(255, 255, 255, 0.14);
 
-  /* Text hierarchy — three tiers */
-  --ink: #f5f5f7;
-  --body: #9a9ba3;
-  --muted: #65666e;
-  --faint: #3f4047;
-  --disabled: #2a2a2e;
+  --brand: #a7f3d0;              /* mint 200 (lighter than dark-green) */
+  --brand-soft: rgba(167, 243, 208, 0.10);
+  --brand-deep: #6ee7b7;         /* mint 300 */
+  --brand-dark: #34d399;         /* mint 400 */
+  --brand-darker: #10b981;       /* mint 500 */
+  --brand-bright: #ecfdf5;       /* mint 50 (almost white) */
+  --brand-glow: rgba(167, 243, 208, 0.24);
+  --brand-on: #0a0e0c;
 
-  /* Brand — desaturated accent (used sparingly) */
-  --brand: #f5f5f7;
-  --brand-soft: rgba(245, 245, 247, 0.13);
-  --brand-deep: #ffffff;
-  --brand-glow: rgba(245, 245, 247, 0.32);
-  --brand-on: #0a0a0c;
+  --green-mint: #a7f3d0;
+  --green-soft: #d1fae5;
+  --green-deep: #10b981;
 
-  /* Semantic — gain / loss / warning */
-  --positive: #34d399;
-  --positive-soft: rgba(52, 211, 153, 0.13);
-  --positive-border: rgba(52, 211, 153, 0.26);
-  --negative: #f2555f;
-  --negative-soft: rgba(242, 85, 95, 0.13);
-  --negative-border: rgba(242, 85, 95, 0.26);
-  --warning: #fbbf24;
-  --warning-soft: rgba(251, 191, 36, 0.13);
-  --warning-border: rgba(251, 191, 36, 0.26);
+  --ink: #fafafa;                /* almost white */
+  --body: #c3cac6;
+  --muted: #9aa39d;
+  --faint: #69736d;
+  --disabled: rgba(228, 228, 231, 0.18);
 
-  /* Accents — desaturated chart series colors */
-  --accent-teal: #3fbfb0;
-  --accent-pink: #a78bfa;
-  --accent-yellow: #e8935b;
-  --accent-olive: #c9c46a;
+  --positive: #6ee7b7;
+  --positive-soft: rgba(110, 231, 183, 0.12);
+  --negative: #fca5a5;
+  --negative-soft: rgba(252, 165, 165, 0.12);
+  --warning: #fde047;
+  --warning-soft: rgba(253, 224, 71, 0.12);
 
-  /* Shadows — heavier for dark aesthetic */
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --accent-teal: #5eead4;
+  --accent-pink: #f9a8d4;
+  --accent-yellow: #fde047;
 
-  /* Radius — soft rounding per spec */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(167, 243, 208, 0.04);
+  --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.48), 0 0 24px rgba(167, 243, 208, 0.06);
 
-  /* CTA — high-contrast pill over dark canvas */
-  --primary-bg: #f5f5f7;
-  --primary-fg: #0a0a0c;
-  --primary-bg-hover: #34d399;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
 
-  /* Sector ribbon cell fills — desaturated to match new palette */
-  --cell-positive: rgba(52, 211, 153, var(--cell-alpha, 0.10));
-  --cell-negative: rgba(242, 85, 95, var(--cell-alpha, 0.10));
-  --cell-label: #65666e;
-  --cell-value-up: #34d399;
-  --cell-value-down: #f2555f;
+  /* Primary CTA — mint 200 on neutral dark */
+  --primary-bg: #a7f3d0;
+  --primary-fg: #0a0e0c;
+  --primary-bg-hover: #6ee7b7;
+
+  /* Sector ribbon cell fills */
+  --cell-positive: rgba(110, 231, 183, var(--cell-alpha, 0.1));
+  --cell-negative: rgba(252, 165, 165, var(--cell-alpha, 0.1));
+  --cell-label: #c3cac6;
+  --cell-value-up: #a7f3d0;
+  --cell-value-down: #fca5a5;
 }
 
+/* ---------- THEME: DARK MONO (v1 cobalto violeta) ---------- */
+:root.dark-mono {
+  --canvas: #000000;
+  --canvas-soft: #0a0a0a;
+  --surface: #101114;
+  --surface-elevated: #16181a;
+  --surface-strong: #1c1e22;
 
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-strong: rgba(255, 255, 255, 0.14);
 
+  --brand: #494fdf;
+  --brand-soft: rgba(73, 79, 223, 0.14);
+  --brand-deep: #3a40c4;
+  --brand-glow: rgba(73, 79, 223, 0.32);
+  --brand-on: #ffffff;
+
+  --ink: #ffffff;
+  --body: rgba(255, 255, 255, 0.78);
+  --muted: rgba(255, 255, 255, 0.52);
+  --faint: rgba(255, 255, 255, 0.32);
+  --disabled: rgba(255, 255, 255, 0.20);
+
+  --positive: #05b169;
+  --positive-soft: rgba(5, 177, 105, 0.12);
+  --negative: #cf202f;
+  --negative-soft: rgba(207, 32, 47, 0.12);
+  --warning: #ec7e00;
+  --warning-soft: rgba(236, 126, 0, 0.12);
+
+  --accent-teal: #00a87e;
+  --accent-pink: #e61e49;
+  --accent-yellow: #b09000;
+
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.32);
+  --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.48);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* Primary CTA — cobalto */
+  --primary-bg: #494fdf;
+  --primary-fg: #ffffff;
+  --primary-bg-hover: #3a40c4;
+
+  /* Sector ribbon cell fills */
+  --cell-positive: rgba(73, 79, 223, var(--cell-alpha, 0.1));
+  --cell-negative: rgba(207, 32, 47, var(--cell-alpha, 0.1));
+  --cell-label: #ffffff;
+  --cell-value-up: #494fdf;
+  --cell-value-down: #cf202f;
+}
+
+/* ---------- THEME: GRAPHITE (NEW — Ledger spec) ---------- */
+/* Near-black neutral with sage-green brand. "Safest scheme for long sessions"
+   per design brief — data colours clear 4.5:1 on canvas. */
+:root.graphite {
+  --canvas: #131614;
+  --canvas-soft: #1a1e1c;
+  --surface: #222724;
+  --surface-elevated: #2a302c;
+  --surface-strong: #353c38;
+
+  --hairline: rgba(230, 233, 231, 0.07);
+  --hairline-strong: rgba(230, 233, 231, 0.14);
+
+  --brand: #3f8f66;
+  --brand-soft: rgba(63, 143, 102, 0.14);
+  --brand-deep: #5eb98a;
+  --brand-glow: rgba(94, 185, 138, 0.32);
+  --brand-on: #ffffff;
+
+  --ink: #e6e9e7;
+  --body: #c3cac6;
+  --muted: #9aa39d;
+  --faint: #69736d;
+  --disabled: rgba(230, 233, 231, 0.18);
+
+  --positive: #5eb98a;
+  --positive-soft: rgba(94, 185, 138, 0.12);
+  --negative: #c96a6a;
+  --negative-soft: rgba(201, 106, 106, 0.12);
+  --warning: #d4a04d;
+  --warning-soft: rgba(212, 160, 77, 0.12);
+
+  --accent-teal: #5eb98a;
+  --accent-pink: #c97a9c;
+  --accent-yellow: #d4a04d;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(230, 233, 231, 0.04);
+  --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.48), 0 0 24px rgba(230, 233, 231, 0.06);
+
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+
+  /* Primary CTA — sage green on graphite */
+  --primary-bg: #2d6b4d;
+  --primary-fg: #eaf2ee;
+  --primary-bg-hover: #5eb98a;
+
+  /* Sector ribbon cell fills */
+  --cell-positive: rgba(94, 185, 138, var(--cell-alpha, 0.1));
+  --cell-negative: rgba(201, 106, 106, var(--cell-alpha, 0.1));
+  --cell-label: #dfe4e1;
+  --cell-value-up: #8fd3b0;
+  --cell-value-down: #e2a3a3;
+}
 
 /* ---------- SHARED SECTION (fonts, animations, scrollbar, etc.) ---------- */
 :root {
@@ -670,31 +908,3 @@ body::-webkit-scrollbar,
   width: 0;
   height: 0;
 }
-
-/* ---------- FEY UTILITIES ----------
- * Glass panels appear ONLY on floating/overlay elements (modals,
- * dropdowns, popovers, chart tooltips). Never on static page cards.
- * The inset top highlight is what makes the effect read as glass vs.
- * a plain blur.
- */
-.glass {
-  background: rgba(16, 16, 19, 0.68);
-  backdrop-filter: blur(22px) saturate(140%);
-  -webkit-backdrop-filter: blur(22px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 16px;
-  box-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
-}
-
-/* Ambient glow — soft radial gradients used behind hero/feature cards.
- * Should be almost subliminal (5–6% opacity). If a viewer consciously
- * notices the gradient, it's too strong.
- */
-.ambient-glow {
-  background-image:
-    radial-gradient(ellipse 900px 500px at 15% -5%, rgba(52, 211, 153, 0.055), transparent 60%),
-    radial-gradient(ellipse 700px 500px at 100% 10%, rgba(167, 139, 250, 0.05), transparent 60%);
-}
-
