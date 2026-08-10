@@ -138,6 +138,13 @@ export async function GET(req: NextRequest) {
   }
 
   items.sort((a, b) => {
+    // When a sector filter is requested, bring matching items to the front
+    // so pagination lands on matching rows first.
+    if (sector !== "all") {
+      const aMatch = a.sector === sector ? 0 : 1;
+      const bMatch = b.sector === sector ? 0 : 1;
+      if (aMatch !== bMatch) return aMatch - bMatch;
+    }
     if (a.type !== b.type) {
       const order: Record<AssetType, number> = { stock: 0, etf: 1, crypto: 2 };
       return order[a.type] - order[b.type];
@@ -177,8 +184,13 @@ export async function GET(req: NextRequest) {
   }
 
   // Post-enrichment sector filter for B3-only entries.
+  // When a sector filter is requested, hide B3-only entries that have
+  // sector === '—' (didn't get enriched / no sector data). IBOV entries
+  // always have a real sector, so they pass through correctly.
   const filteredSlice =
-    sector === "all" ? slice : slice.filter((it) => it.sector === sector);
+    sector === "all"
+      ? slice
+      : slice.filter((it) => it.sector !== "—" && it.sector === sector);
 
   return NextResponse.json({
     items: filteredSlice,
