@@ -39,6 +39,7 @@ function normalizeExchange(raw: string): ExchangeKey {
 }
 
 export async function GET(req: NextRequest) {
+  console.log('[/api/assets/list] query:', req.nextUrl.searchParams.toString());
   const sp = req.nextUrl.searchParams;
 
   const offset = parseInt(sp.get("offset") ?? "0", 10);
