@@ -1,22 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFundamentalsBatch } from "@/lib/fundamentals";
-import { getAssetType } from "@/lib/assets";
-import { getFinvizStock } from "@/lib/finviz";
-import { IBOV_BY_SYMBOL } from "@/lib/ibovespa";
 import { getBrapiQuoteBatch } from "@/lib/brapi-quote-batch";
 import { isBrazilianTicker } from "@/lib/brapi";
+import { IBOV_BY_SYMBOL } from "@/lib/ibovespa";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
-
-function parseFinvizMarketCap(value: string | undefined): number | null {
-  if (!value || value === "-") return null;
-  const match = value.replace(/,/g, "").match(/^(-?[\d.]+)([TBMG])?$/i);
-  if (!match) return null;
-  const amount = Number(match[1]);
-  const multiplier = { T: 1e12, B: 1e9, M: 1e6, G: 1e9 }[match[2]?.toUpperCase() as "T" | "B" | "M" | "G"] ?? 1;
-  return Number.isFinite(amount) ? amount * multiplier : null;
-}
 
 export async function GET(req: NextRequest) {
   const symbols = (req.nextUrl.searchParams.get("symbols") ?? "")
@@ -29,122 +17,61 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "no symbols" }, { status: 400 });
   }
 
-  // Partition: BR tickers go to Brapi (better data for BDRs / B3 specifics),
-  // US tickers keep the existing Yahoo/Finnhub/SEC/Finviz pipeline.
-  const brSymbols = symbols.filter((s) => isBrazilianTicker(s));
-  const usSymbols = symbols.filter((s) => !isBrazilianTicker(s));
-
-  // Fan out the two sources in parallel.
-  const [brapiMap, fundMap, finvizResults] = await Promise.all([
-    brSymbols.length > 0 ? getBrapiQuoteBatch(brSymbols) : Promise.resolve(new Map()),
-    usSymbols.length > 0 ? getFundamentalsBatch(usSymbols) : Promise.resolve(new Map()),
-    Promise.allSettled(usSymbols.map((sym) => getFinvizStock(sym))),
-  ]);
-
-  const finvizBySymbol = new Map<string, Awaited<ReturnType<typeof getFinvizStock>> | null>();
-  finvizResults.forEach((result, index) => {
-    finvizBySymbol.set(
-      usSymbols[index].toUpperCase(),
-      result.status === "fulfilled" ? result.value : null,
-    );
-  });
+  // Single source of truth: Brapi Pro (covers SP500 + B3).
+  // Yahoo/Finnhub only used as fallback inside brapi-quote-batch when
+  // Brapi doesn't have a symbol.
+  const quoteMap = await getBrapiQuoteBatch(symbols);
 
   try {
     const rows = symbols.map((sym) => {
       const upper = sym.toUpperCase();
+      const b = quoteMap.get(upper);
       const isBr = isBrazilianTicker(upper);
 
-      if (isBr) {
-        // BR path: Brapi.
-        const b = brapiMap.get(upper);
-        if (!b) {
-          // Brapi failed (no data for this ticker) — return placeholder so the
-          // table renders an "—" instead of crashing.
-          return {
-            symbol: upper,
-            type: getAssetType(upper),
-            sector: IBOV_BY_SYMBOL[upper]?.sector ?? "—",
-            quote: null,
-            metrics: { marketCap: null },
-          };
-        }
-        const f = b.quote;
+      if (!b) {
         return {
           symbol: upper,
-          type: "stock",
-          sector: b.sector ?? IBOV_BY_SYMBOL[upper]?.sector ?? "—",
-          quote: f
-            ? {
-                symbol: upper,
-                price: f.price ?? 0,
-                prevClose: f.prevClose ?? 0,
-                change: f.change ?? 0,
-                changePercent: f.changePercent ?? 0,
-                currency: f.currency || "BRL",
-                dayHigh: f.dayHigh ?? 0,
-                dayLow: f.dayLow ?? 0,
-                dayOpen: f.dayOpen ?? 0,
-                volume: f.volume ?? 0,
-                fiftyTwoWeekHigh: f.fiftyTwoWeekHigh ?? 0,
-                fiftyTwoWeekLow: f.fiftyTwoWeekLow ?? 0,
-              }
-            : null,
-          metrics: {
-            marketCap: b.metrics?.marketCap ?? null,
-            pe: b.metrics?.pe ?? null,
-            pb: b.metrics?.pb ?? null,
-            roe: b.metrics?.roe ?? null,
-            roic: null,
-            netMargin: null,
-            operatingMargin: null,
-            eps: null,
-            bookValuePerShare: null,
-            dividendYield: null,
-          },
+          type: "stock" as const,
+          sector: IBOV_BY_SYMBOL[upper]?.sector ?? "—",
+          quote: null,
+          metrics: { marketCap: null },
         };
       }
 
-      // US path: legacy Yahoo/Finnhub/SEC pipeline.
-      const f = fundMap.get(upper);
-      const sector = f?.sector ?? "—";
-      const currency = "USD";
+      const q = b;
+      const currency = q.currency || (isBr ? "BRL" : "USD");
+      const sector = q.sector ?? IBOV_BY_SYMBOL[upper]?.sector ?? "—";
+
       return {
         symbol: upper,
-        type: getAssetType(upper),
+        type: "stock" as const,
         sector,
-        quote: f
-          ? {
-              symbol: upper,
-              price: f.price,
-              prevClose: f.prevClose,
-              change: f.change,
-              changePercent: f.changePercent,
-              currency,
-              dayHigh: f.dayHigh,
-              dayLow: f.dayLow,
-              dayOpen: 0,
-              volume: f.volume,
-              fiftyTwoWeekHigh: f.fiftyTwoWeekHigh,
-              fiftyTwoWeekLow: f.fiftyTwoWeekLow,
-            }
-          : null,
-        metrics: f
-          ? {
-              pe: f.pe,
-              pb: f.pb,
-              roe: f.roe,
-              roic: f.roic,
-              netMargin: f.netMargin,
-              operatingMargin: f.operatingMargin,
-              marketCap:
-                f.marketCap ?? parseFinvizMarketCap(finvizBySymbol.get(upper)?.snapshot["Market Cap"]),
-              eps: f.eps,
-              bookValuePerShare: f.bookValuePerShare,
-              dividendYield: null,
-            }
-          : {
-              marketCap: parseFinvizMarketCap(finvizBySymbol.get(upper)?.snapshot["Market Cap"]),
-            },
+        quote: {
+          symbol: upper,
+          price: q.price ?? 0,
+          prevClose: q.prevClose ?? 0,
+          change: q.change ?? 0,
+          changePercent: q.changePercent ?? 0,
+          currency,
+          dayHigh: q.dayHigh ?? 0,
+          dayLow: q.dayLow ?? 0,
+          dayOpen: q.dayOpen ?? 0,
+          volume: q.volume ?? 0,
+          fiftyTwoWeekHigh: q.fiftyTwoWeekHigh ?? 0,
+          fiftyTwoWeekLow: q.fiftyTwoWeekLow ?? 0,
+        },
+        metrics: {
+          marketCap: q.marketCap ?? null,
+          pe: null,
+          pb: null,
+          roe: null,
+          roic: null,
+          netMargin: null,
+          operatingMargin: null,
+          eps: null,
+          bookValuePerShare: null,
+          dividendYield: null,
+        },
       };
     });
 

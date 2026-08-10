@@ -28,15 +28,18 @@ type NavItem = {
   explicit?: "build";
 };
 
+const BR = "\u{1F1E7}\u{1F1F7}";
+
 const NAV: NavItem[] = [
   { href: "/", label: "Dashboard" },
   {
     href: "/market",
     label: "Market",
     subitems: [
-      { href: "/market/stocks", label: "Stocks", description: "Ações S&P 500" },
-      { href: "/crypto", label: "Crypto", description: "Top 20 via CMC" },
-      { href: "/market/etfs", label: "ETFs", description: "ETFs listados" },
+      { href: "/market/stocks", label: "Stocks (US)", description: "Ações S&P 500" },
+      { href: "/market/fiis", label: `FIIs ${BR}`, description: "Fundos imobiliários B3" },
+      { href: "/market/etfs", label: `ETFs ${BR}`, description: "ETFs listados na B3" },
+      { href: "/market/bdrs", label: `BDRs ${BR}`, description: "Brazilian Depositary Receipts" },
     ],
   },
   { href: "/indices", label: "Indices" },
@@ -76,7 +79,6 @@ export function TopNav() {
       .catch(() => setUser(null));
   }, []);
 
-  // Market status clock (updates every second, no flash — formatted on render only)
   useEffect(() => {
     const update = () => {
       const d = new Date();
@@ -90,7 +92,6 @@ export function TopNav() {
     return () => clearInterval(t);
   }, []);
 
-  // Market status: weekdays 13:30–20:00 UTC = NYSE open. Simple heuristic.
   const marketOpen = (() => {
     const d = new Date();
     const day = d.getUTCDay();
@@ -139,10 +140,8 @@ export function TopNav() {
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 bg-canvas">
-      {/* ============= TIER 1: identity + search (60px, canvas bg) ============= */}
       <div className="h-[60px] border-b border-hairline-strong">
         <div className="h-full max-w-[1920px] mx-auto px-8 flex items-center justify-between">
-          {/* Logo (left) */}
           <Link
             href="/"
             className="flex items-center gap-[11px] press transition-opacity hover:opacity-70"
@@ -157,19 +156,16 @@ export function TopNav() {
             </span>
           </Link>
 
-          {/* Search (centre, 520px) */}
           <div className="hidden md:block w-[520px]">
             <SearchBar />
           </div>
 
-          {/* Right cluster */}
           <div className="flex items-center gap-[14px]">
             <Suspense fallback={null}>
               <MarketToggle className="hidden lg:inline-flex" />
             </Suspense>
             <ThemeToggle />
 
-            {/* User avatar (always rendered; popover if logged in) */}
             <div ref={userRef} className="relative hidden md:block">
               {user ? (
                 <button
@@ -220,7 +216,6 @@ export function TopNav() {
               )}
             </div>
 
-            {/* CTA (Ledger spec — btn-primary class) */}
             {user ? (
               <Link href="/portfolios/new" className="hidden md:inline-flex btn-primary">
                 New portfolio
@@ -231,7 +226,6 @@ export function TopNav() {
               </Link>
             )}
 
-            {/* Mobile menu trigger */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className="md:hidden w-9 h-9 flex items-center justify-center text-ink hover:bg-surface-elevated transition-colors duration-150 press"
@@ -243,10 +237,8 @@ export function TopNav() {
         </div>
       </div>
 
-      {/* ============= TIER 2: nav + market status (42px, canvas-soft bg) ============= */}
       <div className="h-[42px] bg-canvas-soft border-b border-hairline-strong">
         <div className="h-full max-w-[1920px] mx-auto px-8 flex items-center justify-between">
-          {/* Nav (5 items, mono uppercase) */}
           <nav className="hidden md:flex items-stretch h-full">
             {NAV.map((item) => {
               const active =
@@ -281,7 +273,7 @@ export function TopNav() {
                     {isBuild && <Construction className="w-3 h-3" />}
                     {item.label}
                     {hasSub && (
-                      <span className="text-[8px] opacity-60 leading-none -mt-px">▾</span>
+                      <span className="text-[8px] opacity-60 leading-none -mt-px">�</span>
                     )}
                   </Link>
 
@@ -328,7 +320,6 @@ export function TopNav() {
               );
             })}
 
-            {/* Build WIP chip */}
             <div className="flex items-center pl-2">
               <span className="label-s border border-hairline-strong px-1.5 py-0.5 text-faint">
                 WIP
@@ -336,7 +327,6 @@ export function TopNav() {
             </div>
           </nav>
 
-          {/* Right: market status */}
           <div className="hidden md:flex items-center gap-[10px] label text-faint">
             <span
               className={cn(
@@ -354,7 +344,6 @@ export function TopNav() {
         </div>
       </div>
 
-      {/* ============= MOBILE MENU ============= */}
       {mobileOpen && (
         <div className="md:hidden absolute top-[102px] inset-x-0 bg-canvas border-b border-hairline-strong shadow-lg animate-slide-down max-h-[calc(100vh-6rem)] overflow-y-auto">
           <nav className="px-6 py-4 space-y-1">

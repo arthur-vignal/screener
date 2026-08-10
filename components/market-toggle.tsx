@@ -4,20 +4,19 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 import { cn } from "@/lib/utils";
 
-export type Market = "global" | "us" | "br";
+export type Market = "us" | "br";
 
 const OPTIONS: Array<{ value: Market; label: string; flag: string; short: string }> = [
-  { value: "global", label: "Global", flag: "🌐", short: "Global" },
   { value: "us", label: "US", flag: "🇺🇸", short: "US" },
   { value: "br", label: "Brasil", flag: "🇧🇷", short: "BR" },
 ];
 
 /**
- * MarketToggle — 3-way selector (Global / US / Brasil).
+ * MarketToggle — 2-way selector (US / Brasil).
  *
  * Different behavior per route:
- *  - On `/` (the dashboard): toggles ?dashboard=br|us|global (drives the dashboard mode).
- *  - On any other route: toggles ?market=br|us|global (legacy filter used by /market/*).
+ *  - On `/` (the dashboard): toggles ?dashboard=br|us (drives the dashboard mode).
+ *  - On any other route: toggles ?market=br|us (legacy filter used by /market/*).
  *
  * State is URL-driven so it's bookmarkable and survives refreshes.
  */
@@ -26,7 +25,6 @@ export function MarketToggle({ className }: { className?: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Determine which param the current route uses.
   const isDashboard = pathname === "/";
   const current: Market = isDashboard
     ? normalizeDashboard(searchParams.get("dashboard"))
@@ -36,11 +34,7 @@ export function MarketToggle({ className }: { className?: string }) {
     (next: Market) => {
       const params = new URLSearchParams(searchParams.toString());
       const paramKey = isDashboard ? "dashboard" : "market";
-      if (next === "global") {
-        params.delete(paramKey);
-      } else {
-        params.set(paramKey, next);
-      }
+      params.set(paramKey, next);
       const qs = params.toString();
       router.push(qs ? `${pathname}?${qs}` : pathname);
     },
@@ -83,12 +77,9 @@ export function MarketToggle({ className }: { className?: string }) {
 }
 
 function normalizeMarket(raw: string | null): Market {
-  if (raw === "us" || raw === "br") return raw;
-  return "global";
+  return raw === "br" ? "br" : "us";
 }
 
 function normalizeDashboard(raw: string | null): Market {
-  if (raw === "br") return "br";
-  if (raw === "us") return "us";
-  return "global";
+  return raw === "br" ? "br" : "us";
 }

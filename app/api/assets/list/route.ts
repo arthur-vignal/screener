@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SP500, SP500_SECTORS } from "@/lib/snp500";
-import { ETFS, CRYPTOS } from "@/lib/universe";
 import { IBOV, IBOV_SECTORS } from "@/lib/ibovespa";
 import { B3_LIST } from "@/lib/b3-list";
 import { isBrazilianTicker } from "@/lib/brapi";
@@ -21,7 +20,6 @@ type AssetListItem = {
   market: Market;
 };
 
-// All GICS sectors from S&P 500 + all B3 sectors from IBOV.
 const ALL_SECTORS: readonly string[] = Array.from(
   new Set([...SP500_SECTORS, ...IBOV_SECTORS]),
 ).sort();
@@ -48,6 +46,10 @@ export async function GET(req: NextRequest) {
   const exchange = normalizeExchange(exchangeRaw);
   const sector = sp.get("sector") ?? "all";
   const search = (sp.get("q") ?? "").toLowerCase().trim();
+
+  // ?type filter for B3 (?type=stock|fii|etf|bdr|fractional|all).
+  // Default for the dashboard market table is 'stock' only.
+  const typeFilter = sp.get("type") ?? "stock";
 
   let items: AssetListItem[] = [];
 
@@ -77,15 +79,9 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // ?type filter for B3 (?type=stock|fii|etf|bdr|fractional|all).
-  // Default for the dashboard market table is 'stock' only (drop BDRs,
-  // FIIs, ETFs). Other callers (e.g. /market/fiis page) can request a class.
-  const typeFilter = sp.get("type") ?? "stock";
-
   if (exchange === "b3") {
     for (const sym of B3_LIST) {
       const ibovEntry = IBOV.find((e) => e.symbol === sym);
-      // IBOV entries are always stocks. B3-only entries get classified.
       const t: "stock" | "fii" | "etf" | "bdr" | "fractional" = ibovEntry
         ? "stock"
         : classifyB3Ticker(sym);
@@ -104,8 +100,6 @@ export async function GET(req: NextRequest) {
         items.push({
           symbol: sym,
           name: sym,
-          // We expose the B3 sub-type so callers (like /market/fiis) can
-          // group on it. For dashboard, all entries here are 'stock'.
           type: t === "etf" ? "etf" : "stock",
           sector: "—",
           market: "br",
@@ -115,31 +109,13 @@ export async function GET(req: NextRequest) {
   }
 
   if (exchange === "all" || exchange === "etf") {
-    for (const sym of ETFS) {
-      items.push({
-        symbol: sym,
-        name: sym,
-        type: "etf",
-        sector: "ETF",
-        market: "us",
-      });
-    }
+    // ETFs are out of scope (we dropped them from the universe). Skip.
   }
 
   if (exchange === "all" || exchange === "crypto") {
-    for (const sym of CRYPTOS) {
-      const name = CRYPTO_NAMES[sym] ?? sym;
-      items.push({
-        symbol: sym,
-        name,
-        type: "crypto",
-        sector: "Cryptocurrency",
-        market: "global",
-      });
-    }
+    // Crypto is out of scope. Skip.
   }
 
-  // Apply text search
   if (search) {
     items = items.filter(
       (it) =>
@@ -149,8 +125,6 @@ export async function GET(req: NextRequest) {
   }
 
   items.sort((a, b) => {
-    // When a sector filter is requested, bring matching items to the front
-    // so pagination lands on matching rows first.
     if (sector !== "all") {
       const aMatch = a.sector === sector ? 0 : 1;
       const bMatch = b.sector === sector ? 0 : 1;
@@ -170,16 +144,16 @@ export async function GET(req: NextRequest) {
   const total = items.length;
   const slice = items.slice(offset, offset + limit);
 
-  // Brapi enrichment: for the current page of B3 items, fill in name + sector.
+  // Single source of truth: Brapi for all tickers (covers US + BR).
   if (slice.length > 0) {
-    const pageBrSymbols = slice
-      .filter((it) => it.type === "stock" && isBrazilianTicker(it.symbol))
+    const pageSymbols = slice
+      .filter((it) => it.type === "stock" || it.type === "etf")
       .map((it) => it.symbol);
-    if (pageBrSymbols.length > 0) {
+    if (pageSymbols.length > 0) {
       try {
-        const brapiMap = await getBrapiQuoteBatch(pageBrSymbols);
+        const quoteMap = await getBrapiQuoteBatch(pageSymbols);
         for (const it of slice) {
-          const b = brapiMap.get(it.symbol.toUpperCase());
+          const b = quoteMap.get(it.symbol.toUpperCase());
           if (!b) continue;
           if (it.name === it.symbol && b.longName) {
             it.name = b.longName;
@@ -189,19 +163,13 @@ export async function GET(req: NextRequest) {
           }
         }
       } catch (err) {
-        console.error("[/api/assets/list] brapi enrichment failed:", err);
+        console.error("[/api/assets/list] enrichment failed:", err);
       }
     }
   }
 
-  // Post-enrichment sector filter for B3-only entries.
-  // When a sector filter is requested, hide B3-only entries that have
-  // sector === '—' (didn't get enriched / no sector data). IBOV entries
-  // always have a real sector, so they pass through correctly.
   const filteredSlice =
-    sector === "all"
-      ? slice
-      : slice.filter((it) => it.sector !== "—" && it.sector === sector);
+    sector === "all" ? slice : slice.filter((it) => it.sector !== "—" && it.sector === sector);
 
   return NextResponse.json({
     items: filteredSlice,
@@ -210,61 +178,6 @@ export async function GET(req: NextRequest) {
     limit,
     hasMore: offset + limit < total,
     sectors: ALL_SECTORS,
-    exchanges: ["all", "sp500", "ibov", "b3", "etf", "crypto"],
+    exchanges: ["all", "sp500", "ibov", "b3"],
   });
 }
-
-const CRYPTO_NAMES: Record<string, string> = {
-  "BTC-USD": "Bitcoin",
-  "ETH-USD": "Ethereum",
-  "USDT-USD": "Tether",
-  "BNB-USD": "Binance Coin",
-  "SOL-USD": "Solana",
-  "XRP-USD": "XRP",
-  "USDC-USD": "USD Coin",
-  "ADA-USD": "Cardano",
-  "AVAX-USD": "Avalanche",
-  "DOGE-USD": "Dogecoin",
-  "TRX-USD": "TRON",
-  "LINK-USD": "Chainlink",
-  "DOT-USD": "Polkadot",
-  "MATIC-USD": "Polygon",
-  "SHIB-USD": "Shiba Inu",
-  "LTC-USD": "Litecoin",
-  "BCH-USD": "Bitcoin Cash",
-  "ETC-USD": "Ethereum Classic",
-  "NEAR-USD": "NEAR Protocol",
-  "ATOM-USD": "Cosmos",
-  "UNI-USD": "Uniswap",
-  "XLM-USD": "Stellar",
-  "FIL-USD": "Filecoin",
-  "APT-USD": "Aptos",
-  "ARB-USD": "Arbitrum",
-  "OP-USD": "Optimism",
-  "AAVE-USD": "Aave",
-  "GRT-USD": "The Graph",
-  "MKR-USD": "Maker",
-  "ALGO-USD": "Algorand",
-  "FTM-USD": "Fantom",
-  "SAND-USD": "The Sandbox",
-  "MANA-USD": "Decentraland",
-  "AXS-USD": "Axie Infinity",
-  "CRV-USD": "Curve DAO",
-  "COMP-USD": "Compound",
-  "SNX-USD": "Synthetix",
-  "SUSHI-USD": "SushiSwap",
-  "YFI-USD": "Yearn.finance",
-  "BAL-USD": "Balancer",
-  "REN-USD": "Ren",
-  "KNC-USD": "Kyber Network",
-  "ZRX-USD": "0x",
-  "BAT-USD": "Basic Attention Token",
-  "ENJ-USD": "Enjin Coin",
-  "CHZ-USD": "Chiliz",
-  "FLOW-USD": "Flow",
-  "ICP-USD": "Internet Computer",
-  "GRASS-USD": "Grass",
-  "HONEY-USD": "Honey",
-  "PEPE-USD": "Pepe",
-  "WIF-USD": "dogwifhat",
-};

@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
       let losses = 0;
       for (const sym of cur.symbols.slice(0, 5)) {
         const b = brapiMap.get(sym.toUpperCase());
-        const cp = b?.quote?.changePercent;
+        const cp = b?.changePercent;
         if (cp != null) {
           changes.push(cp);
           if (cp >= 0) gains++;

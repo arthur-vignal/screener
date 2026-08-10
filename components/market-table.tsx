@@ -45,18 +45,18 @@ const COLUMNS = [
 
 type ColKey = (typeof COLUMNS)[number]["key"];
 
-const DEFAULT_VISIBLE: ColKey[] = ["asset", "sector", "price", "1d", "30d", "mcap", "vol", "spark"];
+const DEFAULT_VISIBLE: ColKey[] = ["asset", "sector", "price", "1d", "30d", "mcap", "vol"];
 
 /**
  * MarketTable — Ledger spec. Owns the dashboard page.
  * 10-column grid with sort, column chips, pagination, sparklines, market cap bars.
  */
-export function MarketTable({ sectorFilter, market: marketProp }: { sectorFilter?: string | null; market?: "us" | "br" | "global" }) {
+export function MarketTable({ sectorFilter, market: marketProp }: { sectorFilter?: string | null; market?: "us" | "br" }) {
   const searchParams = useSearchParams();
-  const market = marketProp ?? (() => {
+  const market: "us" | "br" = marketProp ?? ((() => {
     const r = searchParams.get("market");
-    return r === "us" || r === "br" ? r : "global";
-  })();
+    return r === "br" ? "br" : "us";
+  })());
 
   const [page, setPage] = useState(0);
   const limit = 50;
@@ -83,7 +83,7 @@ export function MarketTable({ sectorFilter, market: marketProp }: { sectorFilter
     //   us     -> "sp500"
     //   br     -> "b3"    (full B3 list, broader than IBOV)
     const exchangeParam =
-      market === "br" ? "b3" : market === "us" ? "sp500" : "all";
+      market === "br" ? "b3" : "sp500";
     const params = new URLSearchParams({
       offset: String(page * limit),
       limit: String(limit),

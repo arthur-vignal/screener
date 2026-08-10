@@ -373,6 +373,13 @@ export default function IndexDetailPage({
               </div>
             )}
 
+            {/* B3 index chart — variation in points */}
+            {isB3 && b3Index && (
+              <div className="px-8 py-6 border-b border-hairline-strong">
+                <IndexPointChart b3Index={b3Index} />
+              </div>
+            )}
+
             {/* Constituents */}
             <div className="px-8 py-6">
               <div className="flex items-baseline justify-between mb-4">
@@ -669,5 +676,119 @@ function B3ConstituentsTable({ b3Index }: { b3Index: any }) {
         </tfoot>
       </table>
     </div>
+  );
+}
+
+/**
+ * IndexPointChart — line chart of an index's value over time, showing
+ * variation in points (e.g., IBOV 130.000 -> 131.200 = +1.200 pts).
+ *
+ * Synthetic data for now (lib/b3-indices has no historical series).
+ * Wire to /api/indices/[id]/chart for real points when Brapi or B3
+ * historical feed is available.
+ */
+function IndexPointChart({ b3Index }: { b3Index: any }) {
+  const [range, setRange] = useState<string>("6M");
+  const [points, setPoints] = useState<Array<{ date: string; close: number }> | null>(null);
+  const [summary, setSummary] = useState<{ first: number; last: number; change: number; changePercent: number } | null>(null);
+
+  useEffect(() => {
+    setPoints(null);
+    fetch(`/api/indices/${b3Index.code.toLowerCase()}/chart?range=${range}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setPoints(d.points ?? []);
+        setSummary(d.summary ?? null);
+      })
+      .catch(() => setPoints([]));
+  }, [b3Index.code, range]);
+
+  const positive = (summary?.change ?? 0) >= 0;
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-3">
+        <h2 className="font-display text-[18px] text-ink tracking-[-0.03em]">
+          Variação em pontos
+        </h2>
+        <div className="flex gap-1.5">
+          {["1M", "3M", "6M", "1Y", "5Y"].map((r) => (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              className={
+                "label-s px-2 py-0.5 border press " +
+                (range === r
+                  ? "border-ink text-ink bg-surface-elevated"
+                  : "border-hairline-strong text-muted hover:text-ink")
+              }
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {summary && (
+        <div className="flex items-baseline gap-4 mb-3">
+          <div className="num num-lg text-ink">
+            {summary.last.toLocaleString("pt-BR")}
+          </div>
+          <div
+            className={
+              "num text-[13px] font-medium " +
+              (positive ? "text-positive" : "text-negative")
+            }
+          >
+            {positive ? "+" : "−"}
+            {Math.abs(summary.change).toLocaleString("pt-BR")} pts
+            <span className="ml-2 text-faint">
+              ({positive ? "+" : "−"}
+              {Math.abs(summary.changePercent).toFixed(2)}%)
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="h-40">
+        {!points ? (
+          <div className="h-full flex items-center justify-center label-s text-muted">
+            Carregando…
+          </div>
+        ) : (
+          <SparkPreview points={points} positive={positive} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Lightweight inline SVG sparkline for index chart preview. */
+function SparkPreview({
+  points,
+  positive,
+}: {
+  points: Array<{ date: string; close: number }>;
+  positive: boolean;
+}) {
+  const w = 800;
+  const h = 160;
+  if (points.length < 2) return null;
+  const min = Math.min(...points.map((p) => p.close));
+  const max = Math.max(...points.map((p) => p.close));
+  const range = max - min || 1;
+  const stepX = w / (points.length - 1);
+  const path = points
+    .map((p, i) => {
+      const x = i * stepX;
+      const y = h - ((p.close - min) / range) * h;
+      return `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
+    })
+    .join(" ");
+  const color = positive ? "var(--positive)" : "var(--negative)";
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-full" preserveAspectRatio="none">
+      <path d={path} stroke={color} strokeWidth="1.5" fill="none" vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }

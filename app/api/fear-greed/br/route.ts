@@ -55,7 +55,7 @@ export async function GET() {
     const movers = { up: 0, down: 0, total: 0 };
     for (const sym of sampleSymbols) {
       const b = brapiMap.get(sym.toUpperCase());
-      const cp = b?.quote?.changePercent;
+      const cp = b?.changePercent;
       if (cp == null) continue;
       momenta.push(cp);
       movers.total++;

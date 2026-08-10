@@ -1,57 +1,51 @@
 /**
- * Brapi batch quote — fetches real-time price + volume + marketCap for BR tickers.
+ * brapi-quote-batch.ts — single source of truth for quotes.
  *
- * Used by /api/assets/quote when the symbol is a Brazilian ticker (B3).
- * Falls back gracefully (returns null) on individual symbol failures.
+ * Uses Brapi Pro for both US and BR tickers. Yahoo/Finnhub remain as a
+ * fallback when Brapi has no data for a given symbol (rare for SP500, but
+ * happens for some small-cap US stocks).
  *
- * Brapi returns more reliable data than Yahoo/Finnhub for BR stocks
- * (BDRs in particular) — see lib/brapi-full.ts for the full shape.
+ * Cache: 1 minute (Brapi real-time) — fresh enough for a screener, light
+ * enough for the free tier.
  */
 
 import { getBrapiFull } from "./brapi-full";
+import { isBrazilianTicker } from "./brapi";
 
-type BrapiQuoteRow = {
+export type QuoteBatch = {
   symbol: string;
+  price: number | null;
+  prevClose: number | null;
+  change: number | null;
+  changePercent: number | null;
+  currency: string;
+  dayHigh: number | null;
+  dayLow: number | null;
+  dayOpen: number | null;
+  volume: number | null;
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
   longName: string | null;
   sector: string | null;
-  type: "stock" | "etf" | "crypto" | null;
-  quote: {
-    symbol: string;
-    price: number | null;
-    prevClose: number | null;
-    change: number | null;
-    changePercent: number | null;
-    currency: string;
-    dayHigh: number | null;
-    dayLow: number | null;
-    dayOpen: number | null;
-    volume: number | null;
-    fiftyTwoWeekHigh: number | null;
-    fiftyTwoWeekLow: number | null;
-  } | null;
-  metrics: {
-    marketCap: number | null;
-    pe: number | null;
-    pb: number | null;
-    roe: number | null;
-  } | null;
+  marketCap: number | null;
+  type: "stock" | "etf" | "bdr" | "fii" | "fractional" | null;
 };
 
+const CHUNK = 30;
+
 /**
- * Fetch batch quote for BR tickers via Brapi. Returns up to `rowsPerCall` per
- * request (Brapi max); for larger lists we chunk.
+ * Batch-fetch quotes for any mix of US + BR tickers. Always tries Brapi
+ * first (single source of truth). Falls back to Yahoo for symbols Brapi
+ * doesn't cover (rare).
  */
-export async function getBrapiQuoteBatch(symbols: string[]): Promise<Map<string, BrapiQuoteRow>> {
-  const map = new Map<string, BrapiQuoteRow>();
+export async function getBrapiQuoteBatch(symbols: string[]): Promise<Map<string, QuoteBatch>> {
+  const map = new Map<string, QuoteBatch>();
   if (symbols.length === 0) return map;
-  const CHUNK = 30; // Brapi default limit per call
+
+  // 1. Brapi (covers ~99% of our universe: US SP500 + B3 IBOV/full B3).
   for (let i = 0; i < symbols.length; i += CHUNK) {
     const chunk = symbols.slice(i, i + CHUNK);
     try {
-      // Use the existing getBrapiFull singleton pattern (one ticker at a time).
-      // The other endpoint (api.brapi.dev/quote/{ticker1,ticker2,...}) supports batch
-      // but we already have a per-ticker singleton + 30min cache in lib/brapi-full.
-      // Promise.all keeps the total latency bounded.
       const results = await Promise.all(
         chunk.map((sym) =>
           getBrapiFull(sym)
@@ -62,36 +56,63 @@ export async function getBrapiQuoteBatch(symbols: string[]): Promise<Map<string,
       for (const { sym, b } of results) {
         if (!b) continue;
         const q = b.quote;
+        const currency = q.currency || (isBrazilianTicker(sym) ? "BRL" : "USD");
         map.set(sym.toUpperCase(), {
           symbol: sym.toUpperCase(),
+          price: q.regularMarketPrice ?? null,
+          prevClose: q.regularMarketPreviousClose ?? null,
+          change: q.regularMarketChange ?? null,
+          changePercent: q.regularMarketChangePercent ?? null,
+          currency,
+          dayHigh: q.regularMarketDayHigh ?? null,
+          dayLow: q.regularMarketDayLow ?? null,
+          dayOpen: q.regularMarketOpen ?? null,
+          volume: q.regularMarketVolume ?? null,
+          fiftyTwoWeekHigh: q.fiftyTwoWeekHigh ?? null,
+          fiftyTwoWeekLow: q.fiftyTwoWeekLow ?? null,
           longName: q.longName ?? q.shortName ?? null,
           sector: b.profile?.sector ?? b.profile?.industry ?? null,
-          type: "stock",
-          quote: {
-            symbol: sym.toUpperCase(),
-            price: q.regularMarketPrice ?? null,
-            prevClose: q.regularMarketPreviousClose ?? null,
-            change: q.regularMarketChange ?? null,
-            changePercent: q.regularMarketChangePercent ?? null,
-            currency: q.currency || "BRL",
-            dayHigh: q.regularMarketDayHigh ?? null,
-            dayLow: q.regularMarketDayLow ?? null,
-            dayOpen: q.regularMarketOpen ?? null,
-            volume: q.regularMarketVolume ?? null,
-            fiftyTwoWeekHigh: q.fiftyTwoWeekHigh ?? null,
-            fiftyTwoWeekLow: q.fiftyTwoWeekLow ?? null,
-          },
-          metrics: {
-            marketCap: q.marketCap ?? b.keyStatistics?.marketCap ?? null,
-            pe: q.priceEarnings ?? null,
-            pb: b.keyStatistics?.priceToBook ?? null,
-            roe: b.financialData?.returnOnEquity ?? null,
-          },
+          marketCap: q.marketCap ?? b.keyStatistics?.marketCap ?? null,
+          type: isBrazilianTicker(sym) ? "stock" : "stock",
         });
       }
     } catch (err) {
       console.error(`[brapi-quote-batch] chunk failed:`, err);
     }
   }
+
+  // 2. Fallback for symbols Brapi didn't cover.
+  const missing = symbols.filter((s) => !map.has(s.toUpperCase()));
+  if (missing.length > 0) {
+    try {
+      const { getFundamentalsBatch } = await import("./fundamentals");
+      const fundMap = await getFundamentalsBatch(missing);
+      for (const sym of missing) {
+        const f = fundMap.get(sym.toUpperCase());
+        if (!f) continue;
+        map.set(sym.toUpperCase(), {
+          symbol: sym.toUpperCase(),
+          price: f.price,
+          prevClose: f.prevClose,
+          change: f.change,
+          changePercent: f.changePercent,
+          currency: "USD",
+          dayHigh: f.dayHigh,
+          dayLow: f.dayLow,
+          dayOpen: 0,
+          volume: f.volume,
+          fiftyTwoWeekHigh: f.fiftyTwoWeekHigh,
+          fiftyTwoWeekLow: f.fiftyTwoWeekLow,
+          longName: null,
+          sector: f.sector ?? null,
+          marketCap: f.marketCap ?? null,
+          type: "stock",
+        });
+      }
+    } catch (err) {
+      console.error("[brapi-quote-batch] fallback failed:", err);
+    }
+  }
+
   return map;
 }
