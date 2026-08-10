@@ -70,10 +70,10 @@ export function MarketTable({ sectorFilter, market: marketProp }: { sectorFilter
   });
   const [pastChanges, setPastChanges] = useState<Record<string, { d7: number; d30: number }>>({});
 
-  // Reset page when sector filter changes
+  // Reset page when sector filter OR market changes
   useEffect(() => {
     setPage(0);
-  }, [sectorFilter]);
+  }, [sectorFilter, market]);
 
   // Fetch page of assets
   useEffect(() => {
@@ -104,7 +104,7 @@ export function MarketTable({ sectorFilter, market: marketProp }: { sectorFilter
     return () => {
       abort = true;
     };
-  }, [page, sectorFilter]);
+  }, [page, sectorFilter, market]);
 
   // Batch quote for visible symbols
   useEffect(() => {
