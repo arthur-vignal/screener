@@ -17,11 +17,10 @@ type AssetListItem = {
   name: string;
   type: AssetType;
   sector: string;
-  market: Market; // "us" | "br" — crypto is treated as its own bucket
+  market: Market;
 };
 
 // All GICS sectors from S&P 500 + all B3 sectors from IBOV.
-// We present the union so the user can filter by either taxonomy.
 const ALL_SECTORS: readonly string[] = Array.from(
   new Set([...SP500_SECTORS, ...IBOV_SECTORS]),
 ).sort();
@@ -31,7 +30,7 @@ type ExchangeKey = "all" | "sp500" | "ibov" | "b3" | "etf" | "crypto";
 function normalizeExchange(raw: string): ExchangeKey {
   const r = raw.toLowerCase();
   if (r === "us") return "sp500";
-  if (r === "br") return "b3"; // /market/br uses 'br' -> full B3 list
+  if (r === "br") return "b3";
   if (r === "ibov") return "ibov";
   if (r === "b3") return "b3";
   if (r === "global" || r === "all") return "all";
@@ -42,7 +41,6 @@ function normalizeExchange(raw: string): ExchangeKey {
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
 
-  // Filters
   const offset = parseInt(sp.get("offset") ?? "0", 10);
   const limit = Math.min(parseInt(sp.get("limit") ?? "50", 10), 500);
   const exchangeRaw = sp.get("exchange") ?? "all";
@@ -50,12 +48,8 @@ export async function GET(req: NextRequest) {
   const sector = sp.get("sector") ?? "all";
   const search = (sp.get("q") ?? "").toLowerCase().trim();
 
-  // Build the symbol list for the requested exchange first, with rich data
-  // baked in (name + sector) from the static universe. B3-only entries are
-  // placeholders — they'll be enriched from Brapi in a second pass.
   let items: AssetListItem[] = [];
 
-  // US stocks (S&P 500)
   if (exchange === "all" || exchange === "sp500") {
     for (const e of SP500) {
       if (sector !== "all" && e.sector !== sector) continue;
@@ -69,7 +63,6 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Brazil stocks (IBOV — carteira teorica vigente)
   if (exchange === "all" || exchange === "ibov") {
     for (const e of IBOV) {
       if (sector !== "all" && e.sector !== sector) continue;
@@ -83,9 +76,6 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Brazil stocks (full B3 list — broader than IBOV). IBOV entries above
-  // already have rich data; B3-only entries get placeholder name/sector here
-  // and are enriched from Brapi below.
   if (exchange === "b3") {
     for (const sym of B3_LIST) {
       const ibovEntry = IBOV.find((e) => e.symbol === sym);
@@ -104,9 +94,9 @@ export async function GET(req: NextRequest) {
         // applied AFTER enrichment so the sector param can be honored.
         items.push({
           symbol: sym,
-          name: sym, // enriched from Brapi below
+          name: sym,
           type: "stock",
-          sector: "—", // enriched from Brapi below
+          sector: "—",
           market: "br",
         });
       }
@@ -117,7 +107,7 @@ export async function GET(req: NextRequest) {
     for (const sym of ETFS) {
       items.push({
         symbol: sym,
-        name: sym, // ETFs need separate name lookup; use symbol for now
+        name: sym,
         type: "etf",
         sector: "ETF",
         market: "us",
@@ -147,8 +137,6 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Sort: stocks first (alphabetic), then ETFs, then cryptos.
-  // Within stocks: US first (alphabetic), then BR (alphabetic).
   items.sort((a, b) => {
     if (a.type !== b.type) {
       const order: Record<AssetType, number> = { stock: 0, etf: 1, crypto: 2 };
@@ -161,11 +149,10 @@ export async function GET(req: NextRequest) {
     return a.symbol.localeCompare(b.symbol);
   });
 
-  // Enrichment pass: for the current page of B3 items, hit Brapi once to
-  // fill in name + sector. Only the page slice is enriched (max 30) to keep
-  // this fast; pagination re-triggers the fetch as the user pages.
   const total = items.length;
   const slice = items.slice(offset, offset + limit);
+
+  // Brapi enrichment: for the current page of B3 items, fill in name + sector.
   if (slice.length > 0) {
     const pageBrSymbols = slice
       .filter((it) => it.type === "stock" && isBrazilianTicker(it.symbol))
@@ -189,8 +176,12 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Post-enrichment sector filter for B3-only entries.
+  const filteredSlice =
+    sector === "all" ? slice : slice.filter((it) => it.sector === sector);
+
   return NextResponse.json({
-    items: slice,
+    items: filteredSlice,
     total,
     offset,
     limit,
