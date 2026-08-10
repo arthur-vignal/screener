@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Loader2, Lock, Plus } from "lucide-react";
 import Link from "next/link";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { RichFundamentalsTable } from "@/components/rich-fundamentals-table";
 import useSWR from "swr";
 import {
@@ -705,6 +705,16 @@ function IndexPointChart({ b3Index }: { b3Index: any }) {
   const positive = (summary?.change ?? 0) >= 0;
   const color = positive ? "var(--positive)" : "var(--negative)";
 
+  // Tight Y-axis range so the line doesn't look flat. 1% padding each side.
+  const yDomain: [number, number] = useMemo(() => {
+    if (!points || points.length === 0) return [0, 1];
+    const closes = points.map((p) => p.close);
+    const min = Math.min(...closes);
+    const max = Math.max(...closes);
+    const pad = (max - min || max * 0.01) * 0.05;
+    return [Math.floor(min - pad), Math.ceil(max + pad)];
+  }, [points]);
+
   return (
     <div>
       <div className="flex items-baseline justify-between mb-3">
@@ -781,6 +791,8 @@ function IndexPointChart({ b3Index }: { b3Index: any }) {
                 tickFormatter={(v: number) => v.toLocaleString("pt-BR")}
                 width={64}
                 orientation="right"
+                domain={yDomain}
+                allowDataOverflow={false}
               />
               <Tooltip
                 contentStyle={{

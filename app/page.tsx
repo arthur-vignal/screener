@@ -1,112 +1,151 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { SectorRibbon } from "@/components/sector-ribbon";
-import { MarketTable } from "@/components/market-table";
-import { FearGreedPanel, NewsRail, SulfurPortfoliosRail } from "@/components/right-rail";
-import { FearGreedGaugeBR } from "@/components/fear-greed-br";
-
-type DashboardMode = "us" | "br";
-
-const DASHBOARD_TITLES: Record<DashboardMode, { title: string; subtitle: string; flag: string }> = {
-  us: {
-    title: "US Markets",
-    subtitle: "Ações do S&P 500 com preços em tempo real (Yahoo Finance), variação de 24h, market cap e volume.",
-    flag: "🇺🇸",
-  },
-  br: {
-    title: "Mercado Brasileiro",
-    subtitle: "Todas as ações listadas na B3, com preços em tempo real (via Brapi Pro), variação de 24h e volume. Use os filtros de setor para navegar.",
-    flag: "🇧🇷",
-  },
-};
+import Link from "next/link";
+import { ArrowRight, BarChart3, Building2, Newspaper, TrendingUp, Wallet } from "lucide-react";
 
 /**
- * normalizeMode — default is BR (matches the spec: open the site and you land
- * on the Brazilian dashboard). Pass ?dashboard=us to switch.
+ * Landing page — root URL /. Lets the visitor choose a destination:
+ *   - BR dashboard (?dashboard=br)
+ *   - US dashboard (?dashboard=us)
+ *   - Markets overview (/market/br or /market/us)
+ *   - Indices (/indices)
+ *
+ * The default dashboard moved to /dashboard or /?dashboard=br|us.
  */
-function normalizeMode(raw: string | null): DashboardMode {
-  return raw === "us" ? "us" : "br";
-}
-
-export default function DashboardPage() {
+export default function LandingPage() {
   return (
-    <Suspense fallback={<DashboardFallback />}>
-      <DashboardInner />
-    </Suspense>
-  );
-}
-
-function DashboardFallback() {
-  return (
-    <div className="max-w-[1920px] mx-auto bg-canvas text-ink p-7">
-      <div className="label-s label-muted-2">Carregando…</div>
-    </div>
-  );
-}
-
-function DashboardInner() {
-  const searchParams = useSearchParams();
-  const mode: DashboardMode = normalizeMode(searchParams.get("dashboard"));
-  const meta = DASHBOARD_TITLES[mode];
-
-  const [sector, setSector] = useState<string | null>(null);
-
-  return (
-    <div className="max-w-[1920px] mx-auto bg-canvas text-ink">
-      {/* Dashboard hero — title + subtitle */}
-      <div className="px-8 pt-[26px] pb-[14px] border-b border-hairline-strong">
-        <h1 className="font-display text-[32px] md:text-[40px] text-ink tracking-tight">
-          {meta.flag} {meta.title}
-        </h1>
-        <p className="text-body text-sm mt-1 max-w-2xl">{meta.subtitle}</p>
-      </div>
-
-      {/* Sector ribbon — click filters the table below */}
-      <SectorRibbon
-        onSectorChange={setSector}
-        activeSector={sector}
-        market={mode}
-      />
-
-      {/* Main split — table + rail */}
-      <div
-        className="grid"
-        style={{ gridTemplateColumns: "1fr 340px" }}
-      >
-        {/* Left — Market table */}
-        <div className="border-r border-hairline-strong">
-          <MarketTable sectorFilter={sector} market={mode} />
+    <div className="px-3 md:px-4 py-6 md:py-10 max-w-[1920px]">
+      {/* Hero */}
+      <div className="border-b border-hairline-strong pb-10 mb-10">
+        <div className="flex items-center gap-[11px] mb-4">
+          <div className="w-[28px] h-[28px] bg-ink flex items-center justify-center">
+            <span className="font-display text-[18px] text-canvas leading-none font-bold">
+              S
+            </span>
+          </div>
+          <span className="font-display text-[24px] text-ink leading-none tracking-[-0.03em]">
+            Sulfur<span className="bg-brand text-brand-on px-[3px] ml-[1px]">.io</span>
+          </span>
         </div>
+        <h1 className="font-display text-[40px] md:text-[56px] text-ink tracking-[-0.03em] max-w-[20ch] leading-[1.05]">
+          O mercado numa só tela.
+        </h1>
+        <p className="text-body text-base mt-4 max-w-2xl leading-relaxed">
+          Screener de ações US + B3 com valuation oficial (Brapi Pro), índices
+          curados, portfólios, notícias e Fear & Greed. Tudo num único lugar.
+        </p>
+      </div>
 
-        {/* Right — 340px rail */}
-        <aside className="px-6 py-7 space-y-[18px]">
-          {mode === "br" ? (
-            <RailBlock>
-              <BrDashboardRail />
-            </RailBlock>
-          ) : (
-            <RailBlock>
-              <FearGreedPanel />
-            </RailBlock>
-          )}
-          <RailBlock>
-            <NewsRail />
-          </RailBlock>
-          <RailBlock>
-            <SulfurPortfoliosRail />
-          </RailBlock>
-        </aside>
+      {/* Two main destinations */}
+      <h2 className="font-display text-[20px] text-ink tracking-[-0.02em] mb-4">
+        Escolha um mercado
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+        <Link
+          href="/?dashboard=br"
+          className="group border border-hairline-strong bg-surface-elevated p-7 hover-lift"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-[28px] leading-none">🇧🇷</span>
+            <h3 className="font-display text-[24px] text-ink group-hover:text-brand-deep transition-colors">
+              Mercado Brasileiro
+            </h3>
+          </div>
+          <p className="text-body text-sm mb-5 leading-relaxed">
+            Todas as ações listadas na B3 (1.184+), com preços em tempo real via
+            Brapi Pro, variação de 24h, market cap, volume e Fear & Greed BR.
+          </p>
+          <div className="label-s text-brand-deep inline-flex items-center gap-1">
+            Acessar dashboard
+            <ArrowRight className="w-3 h-3" />
+          </div>
+        </Link>
+
+        <Link
+          href="/?dashboard=us"
+          className="group border border-hairline-strong bg-surface-elevated p-7 hover-lift"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-[28px] leading-none">🇺🇸</span>
+            <h3 className="font-display text-[24px] text-ink group-hover:text-brand-deep transition-colors">
+              US Markets
+            </h3>
+          </div>
+          <p className="text-body text-sm mb-5 leading-relaxed">
+            Ações S&P 500 com preços em tempo real (Brapi Pro), variação de 24h,
+            market cap, volume e Fear & Greed Index.
+          </p>
+          <div className="label-s text-brand-deep inline-flex items-center gap-1">
+            Acessar dashboard
+            <ArrowRight className="w-3 h-3" />
+          </div>
+        </Link>
+      </div>
+
+      {/* Other tools */}
+      <h2 className="font-display text-[20px] text-ink tracking-[-0.02em] mb-4">
+        Outras ferramentas
+      </h2>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <ToolCard
+          href="/market/br"
+          icon={BarChart3}
+          title="Mercado BR"
+          subtitle="Ações, FIIs, ETFs e BDRs"
+        />
+        <ToolCard
+          href="/market/us"
+          icon={Building2}
+          title="Mercado US"
+          subtitle="S&P 500 e ETFs"
+        />
+        <ToolCard
+          href="/indices"
+          icon={TrendingUp}
+          title="Índices"
+          subtitle="B3 + custom"
+        />
+        <ToolCard
+          href="/news"
+          icon={Newspaper}
+          title="Notícias"
+          subtitle="Por ativo"
+        />
+        <ToolCard
+          href="/portfolios"
+          icon={Wallet}
+          title="Portfólios"
+          subtitle="Crie e acompanhe"
+        />
+      </div>
+
+      <div className="mt-12 pt-6 border-t border-hairline text-xs text-muted">
+        Dados via Brapi Pro + B3 + CVM (oficial). Yields: 1 cache min, 30 min
+        para cotações históricas.
       </div>
     </div>
   );
 }
 
-function RailBlock({ children }: { children: React.ReactNode }) {
-  return <div className="border-t border-hairline-strong pt-[18px]">{children}</div>;
-}
-
-function BrDashboardRail() {
-  return <FearGreedGaugeBR />;
+function ToolCard({
+  href,
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  href: string;
+  icon: typeof Building2;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group border border-hairline-strong bg-surface p-5 hover-lift"
+    >
+      <Icon className="w-5 h-5 text-muted group-hover:text-brand-deep transition-colors mb-2" />
+      <div className="font-medium text-ink text-sm">{title}</div>
+      <div className="text-[11px] text-muted mt-0.5">{subtitle}</div>
+    </Link>
+  );
 }

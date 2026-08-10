@@ -32,13 +32,13 @@ export function MarketToggle({ className }: { className?: string }) {
 
   const setMarket = useCallback(
     (next: Market) => {
-      const params = new URLSearchParams(searchParams.toString());
-      const paramKey = isDashboard ? "dashboard" : "market";
-      params.set(paramKey, next);
-      const qs = params.toString();
-      router.push(qs ? `${pathname}?${qs}` : pathname);
+      // Always navigate to the dashboard route (root with ?dashboard=).
+      // This is the canonical home for both BR and US dashboards.
+      const params = new URLSearchParams();
+      params.set("dashboard", next);
+      router.push(`/?${params.toString()}`);
     },
-    [pathname, router, searchParams, isDashboard],
+    [router],
   );
 
   return (
@@ -80,6 +80,8 @@ function normalizeMarket(raw: string | null): Market {
   return raw === "br" ? "br" : "us";
 }
 
+// Single normalizer — both `/market/...` and `/?dashboard=...` use the same
+// ?dashboard= or ?market= param semantics, so one helper covers both.
 function normalizeDashboard(raw: string | null): Market {
   return raw === "br" ? "br" : "us";
 }

@@ -1,21 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchAssets, getAllSymbols, AssetType } from "@/lib/assets";
+import { searchAssets, AssetType } from "@/lib/assets";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q") ?? "";
-  const typesParam = searchParams.get("types") ?? "stock,etf,crypto";
+  const typesParam = searchParams.get("types") ?? "stock,etf";
   const types = typesParam.split(",") as AssetType[];
 
   if (!q.trim()) {
-    return NextResponse.json({
-      results: getAllSymbols().slice(0, 30).map((s) => ({ symbol: s, name: s })),
-      count: 0,
-    });
+    return NextResponse.json({ results: [], count: 0 });
   }
 
   const results = searchAssets(q, types);
-  return NextResponse.json({ results, count: results.length });
+
+  // Each result gets an /asset/<symbol> href so the SearchBar can navigate.
+  const enriched = results.map((r) => ({
+    ...r,
+    href: `/asset/${encodeURIComponent(r.symbol)}`,
+  }));
+
+  return NextResponse.json({ results: enriched, count: enriched.length });
 }
