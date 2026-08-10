@@ -217,7 +217,7 @@ export const NavbarLogo = () => {
           />
         </svg>
       </span>
-      <span className="font-semibold tracking-tight text-foreground">Meridiano</span>
+      <span className="font-semibold tracking-tight text-foreground">Sulfur.io</span>
     </a>
   )
 }

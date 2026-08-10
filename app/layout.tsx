@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { TopNav } from "@/components/top-nav";
-import { PageFade } from "@/components/page-fade";
-import { SelectionProvider } from "@/components/ui/selection-context";
-import { MultiSelectToolbar } from "@/components/ui/multi-select-toolbar";
 
 // Inter — UI sans (kept)
 const inter = localFont({
@@ -43,6 +39,7 @@ export const metadata: Metadata = {
   description: "Plataforma de análise de mercados financeiros — stocks, crypto, ETFs, portfolios e índices",
 };
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -54,13 +51,7 @@ export default function RootLayout({
       className={`dark ${inter.variable} ${archia.variable} ${geistMono.variable} ${commitMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-canvas text-ink">
-        <SelectionProvider>
-          <TopNav />
-          <main className="pt-[102px]">
-            <PageFade>{children}</PageFade>
-          </main>
-          <MultiSelectToolbar />
-        </SelectionProvider>
+        {children}
       </body>
     </html>
   );
