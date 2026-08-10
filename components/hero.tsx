@@ -3,6 +3,7 @@
 import { motion } from "motion/react"
 import { AuroraBackground } from "@/components/ui/aurora-background"
 import { EncryptedText } from "@/components/ui/encrypted-text"
+import { HoverBorderGradient } from "@/components/ui/hover-border-gradient"
 
 export function Hero() {
   return (
@@ -21,7 +22,7 @@ export function Hero() {
           Dados de mercado em tempo real
         </motion.div>
 
-        <h1 className="max-w-4xl text-balance font-mono text-4xl font-bold leading-tight tracking-tight text-foreground md:text-6xl lg:text-7xl">
+        <h1 className="max-w-4xl text-balance font-montserrat text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground md:text-6xl lg:text-7xl" style={{ fontFamily: "var(--font-montserrat)" }}>
           <EncryptedText
             text="Uma nova forma de analisar"
             revealDelayMs={45}
@@ -57,12 +58,13 @@ export function Hero() {
           transition={{ delay: 3, duration: 0.7, ease: "easeOut" }}
           className="mt-10 flex flex-col items-center gap-3 sm:flex-row"
         >
-          <a
-            href="#planos"
-            className="w-full rounded-full bg-primary px-7 py-3 text-sm font-semibold text-primary-foreground shadow-lg transition hover:-translate-y-0.5 sm:w-auto"
+          <HoverBorderGradient
+            containerClassName="rounded-full"
+            as="button"
+            className="dark:bg-black bg-white text-black dark:text-white flex items-center space-x-2 px-7 py-3 text-sm font-semibold"
           >
-            Começar análise gratuita
-          </a>
+            <span>Começar análise gratuita</span>
+          </HoverBorderGradient>
           <a
             href="#recursos"
             className="w-full rounded-full border border-border bg-card/50 px-7 py-3 text-sm font-semibold text-foreground backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-card sm:w-auto"
