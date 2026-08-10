@@ -5,6 +5,9 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { cn, formatPercent, formatCompact } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SP500_SECTORS } from "@/lib/snp500";
+import { SectorRibbon } from "@/components/sector-ribbon";
+import { NewsRail, SulfurPortfoliosRail } from "@/components/right-rail";
 
 type Quote = {
   price: number;
@@ -13,194 +16,240 @@ type Quote = {
   currency: string;
 };
 
-type PreviewItem = {
+type Item = {
   symbol: string;
-  longName?: string | null;
-  sector?: string | null;
+  name: string;
+  sector: string;
+  type: "stock" | "etf" | "crypto";
+  market: "us" | "br" | "global";
 };
 
-const SECTIONS = [
-  {
-    key: "stock",
-    title: "Stocks (S&P 500)",
-    subtitle: "Top ações da S&P 500 — paginada em /market/stocks.",
-    href: "/market/stocks",
-    accent: "text-brand-deep",
-  },
-  {
-    key: "etf",
-    title: "ETFs (US)",
-    subtitle: "ETFs listados nos EUA — spy, voo, qqq, etc.",
-    href: "/market/etfs",
-    accent: "text-warning",
-  },
-];
+type Row = { symbol: string; quote: Quote | null };
+type ListResponse = { items: Item[]; total: number; hasMore: boolean };
+
+const US = "\u{1F1FA}\u{1F1F8}";
 
 export default function UsMarketOverview() {
   return (
-    <div className="px-3 md:px-4 py-3 md:py-4 max-w-[1920px]">
-      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-        <div>
-          <h1 className="font-display text-3xl md:text-4xl text-ink tracking-tight">
-            US Markets 🇺🇸
-          </h1>
-          <p className="text-body text-sm mt-1 max-w-2xl">
-            Visão geral dos mercados dos EUA: ações S&P 500 e ETFs. Cada card
-            mostra os 5 ativos mais relevantes da categoria; clique para ver
-            a lista completa.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {SECTIONS.map((s) => (
-          <Suspense key={s.key} fallback={<PreviewFallback />}>
-            <PreviewSection section={s} />
-          </Suspense>
-        ))}
-      </div>
-    </div>
+    <Suspense fallback={<UsMarketFallback />}>
+      <UsMarketInner />
+    </Suspense>
   );
 }
 
-function PreviewFallback() {
+function UsMarketFallback() {
   return (
-    <div className="border border-hairline-strong p-5">
-      <Skeleton className="h-5 w-32 mb-2" />
-      <Skeleton className="h-3 w-48 mb-4" />
-      <div className="space-y-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-7" />
-        ))}
+    <div className="px-3 md:px-4 py-3 md:py-4 max-w-[1920px]">
+      <div className="label-s label-muted-2 mb-3">Carregando…</div>
+      <Skeleton className="h-32 mb-3" />
+      <div className="grid grid-cols-[1fr_320px] gap-3">
+        <Skeleton className="h-72" />
+        <Skeleton className="h-72" />
       </div>
     </div>
   );
 }
 
-function PreviewSection({
-  section,
-}: {
-  section: { key: string; title: string; subtitle: string; href: string; accent: string };
-}) {
-  const [rows, setRows] = useState<
-    Array<{ symbol: string; name: string; price: number; change: number; volume: number; sector: string }>
-  >([]);
-  const [loaded, setLoaded] = useState(false);
+function UsMarketInner() {
+  const [page, setPage] = useState(0);
+  const [sector, setSector] = useState<string | null>(null);
+  const [items, setItems] = useState<Item[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [quotes, setQuotes] = useState<Record<string, Quote>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const LIMIT = 30;
+
+  useEffect(() => {
+    setPage(0);
+  }, [sector]);
 
   useEffect(() => {
     let cancelled = false;
+    setIsLoading(true);
+
     const params = new URLSearchParams({
-      exchange: section.key === "etf" ? "etf" : "sp500",
-      offset: "0",
-      limit: "5",
+      offset: String(page * LIMIT),
+      limit: String(LIMIT),
+      exchange: "sp500",
     });
+    if (sector && sector !== "Todos") params.set("sector", sector);
 
     fetch(`/api/assets/list?${params}`)
       .then((r) => r.json())
-      .then((listData) => {
+      .then((d) => {
         if (cancelled) return;
-        const symbols = (listData.items ?? []).map((it: PreviewItem) => it.symbol).join(",");
-        if (!symbols) {
-          setLoaded(true);
-          return;
-        }
-        return fetch(`/api/assets/quote?symbols=${encodeURIComponent(symbols)}`)
-          .then((r) => r.json())
-          .then((quoteData) => {
-            if (cancelled) return;
-            const qBySym = new Map<string, Quote>();
-            for (const row of quoteData.rows ?? []) {
-              if (row.quote) {
-                qBySym.set(row.symbol, {
-                  price: row.quote.price,
-                  changePercent: row.quote.changePercent,
-                  volume: row.quote.volume,
-                  currency: row.quote.currency ?? "USD",
-                });
-              }
-            }
-            const merged = (listData.items ?? []).map((it: PreviewItem) => {
-              const q = qBySym.get(it.symbol);
-              return {
-                symbol: it.symbol,
-                name: it.longName ?? it.symbol,
-                price: q?.price ?? 0,
-                change: q?.changePercent ?? 0,
-                volume: q?.volume ?? 0,
-                sector: it.sector ?? "",
-              };
-            });
-            setRows(merged);
-            setLoaded(true);
-          });
+        setItems(d.items ?? []);
+        setTotal(d.total ?? 0);
       })
-      .catch(() => setLoaded(true));
-
+      .catch(() => {
+        if (!cancelled) {
+          setItems([]);
+          setTotal(0);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, [section.key]);
+  }, [page, sector]);
+
+  useEffect(() => {
+    if (!items || items.length === 0) return;
+    const syms = items.map((i) => i.symbol).join(",");
+    fetch(`/api/assets/quote?symbols=${encodeURIComponent(syms)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const map: Record<string, Quote> = {};
+        for (const row of (d.rows ?? []) as Row[]) {
+          if (row.quote) {
+            map[row.symbol] = {
+              price: row.quote.price,
+              changePercent: row.quote.changePercent,
+              volume: row.quote.volume,
+              currency: row.quote.currency ?? "USD",
+            };
+          }
+        }
+        setQuotes(map);
+      })
+      .catch(() => {});
+  }, [items]);
+
+  const totalPages = Math.max(1, Math.ceil(total / LIMIT));
 
   return (
-    <div className="border border-hairline-strong bg-surface-elevated p-5 hover-lift">
-      <div className="flex items-start justify-between mb-2.5">
-        <div>
-          <h2 className={cn("font-medium text-[17px]", section.accent)}>
-            {section.title}
-          </h2>
-          <p className="text-xs text-muted mt-1 max-w-md">{section.subtitle}</p>
-        </div>
-        <Link
-          href={section.href}
-          className="label-s text-muted hover:text-ink inline-flex items-center gap-1 press"
-        >
-          Ver todos
-          <ArrowRight className="w-3 h-3" />
-        </Link>
-      </div>
+    <div className="max-w-[1920px] mx-auto bg-canvas text-ink">
+      <SectorRibbon
+        onSectorChange={(s) => setSector(s)}
+        activeSector={sector}
+        market="us"
+      />
 
-      {!loaded ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-7" />
-          ))}
-        </div>
-      ) : rows.length === 0 ? (
-        <div className="label-s text-muted py-4 text-center">Sem dados.</div>
-      ) : (
-        <div className="border-t border-hairline">
-          {rows.map((r, i) => (
-            <Link
-              key={r.symbol}
-              href={`/asset/${encodeURIComponent(r.symbol)}`}
-              className={cn(
-                "grid grid-cols-[60px_1fr_80px_70px] items-center h-7 px-1 press hover-row",
-                i !== rows.length - 1 && "border-b border-hairline",
-              )}
-            >
-              <div className="num text-[12px] text-ink font-semibold">{r.symbol}</div>
-              <div className="text-[10.5px] text-muted truncate">{r.name}</div>
-              <div className="num text-[11.5px] text-ink text-right">
-                {r.price ? `$${r.price.toFixed(2)}` : "—"}
+      <div
+        className="grid"
+        style={{ gridTemplateColumns: "1fr 340px" }}
+      >
+        <div className="border-r border-hairline-strong">
+          <div className="px-7 pt-5 pb-[10px] flex items-baseline justify-between">
+            <h2 className="font-display text-[19px] text-ink tracking-[-0.03em]">
+              Mercado {US}
+            </h2>
+            <span className="label-s label-muted-2">
+              {total > 0 ? `${total.toLocaleString("en-US")} ativos` : "\u2014"}
+            </span>
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-px bg-canvas">
+              {Array.from({ length: LIMIT }).map((_, i) => (
+                <div key={i} className="h-[46px] shimmer" />
+              ))}
+            </div>
+          ) : !items || items.length === 0 ? (
+            <div className="px-7 py-10 text-center label-s text-muted">
+              Nenhum ativo encontrado.
+            </div>
+          ) : (
+            <div className="bg-canvas-soft border-t border-b border-hairline-strong">
+              <div className="grid grid-cols-[44px_1fr_110px_100px_88px_100px] items-center h-8 px-7 label-s label-muted-2">
+                <div className="num text-faint">#</div>
+                <div>Ticker</div>
+                <div>Setor</div>
+                <div className="text-right">Preço</div>
+                <div className="text-right">24h</div>
+                <div className="text-right">Volume</div>
               </div>
-              <div
-                className={cn(
-                  "num text-[11px] text-right font-medium",
-                  r.change === 0
-                    ? "text-faint"
-                    : r.change > 0
-                      ? "text-positive"
-                      : "text-negative",
-                )}
+              {items.map((it, i) => {
+                const q = quotes[it.symbol];
+                return (
+                  <Link
+                    key={it.symbol}
+                    href={`/asset/${encodeURIComponent(it.symbol)}`}
+                    className="grid grid-cols-[44px_1fr_110px_100px_88px_100px] items-center h-[46px] px-7 border-t border-hairline hover-row press animate-fade-up"
+                    style={{ animationDelay: `${i * 20}ms` }}
+                  >
+                    <div className="num text-faint text-[10.5px]">
+                      {String(i + 1 + page * LIMIT).padStart(3, "0")}
+                    </div>
+                    <div className="flex items-center gap-[11px] min-w-0">
+                      <div className="w-[22px] h-[22px] bg-surface flex items-center justify-center num text-[9px] text-ink shrink-0">
+                        {it.symbol.slice(0, 4)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="num text-[12.5px] text-ink truncate">
+                          {it.symbol}
+                        </div>
+                        <div className="text-[10.5px] text-muted truncate">
+                          {it.name}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-[11.5px] text-muted truncate">
+                      {it.sector}
+                    </div>
+                    <div className="num text-[12.5px] text-ink text-right">
+                      {q ? `$${q.price.toFixed(2)}` : "\u2014"}
+                    </div>
+                    <div
+                      className={cn(
+                        "num text-[12px] text-right font-medium",
+                        q ? (q.changePercent >= 0 ? "text-positive" : "text-negative") : "text-faint",
+                      )}
+                    >
+                      {q ? formatPercent(q.changePercent) : "\u2014"}
+                    </div>
+                    <div className="num text-[12px] text-muted text-right">
+                      {q && q.volume > 0 ? formatCompact(q.volume) : "\u2014"}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="px-7 py-4 flex items-center justify-between border-t border-hairline-strong">
+            <div className="label-s label-muted-2">
+              Showing {total === 0 ? 0 : page * LIMIT + 1}
+              {"\u2014"}
+              {Math.min(total, (page + 1) * LIMIT)} of {total.toLocaleString("en-US")}
+            </div>
+            <div className="flex items-stretch border border-hairline-strong">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="px-3 py-1.5 label-s text-muted hover:text-ink disabled:text-disabled press border-r border-hairline-strong"
               >
-                {r.change
-                  ? `${r.change > 0 ? "+" : "−"}${Math.abs(r.change).toFixed(2)}%`
-                  : "—"}
-              </div>
-            </Link>
-          ))}
+                Prev
+              </button>
+              <span className="px-3 py-1.5 label-s text-muted">
+                {page + 1} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                className="px-3 py-1.5 label-s text-muted hover:text-ink disabled:text-disabled press border-l border-hairline-strong"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
-      )}
+
+        <aside className="px-6 py-7 space-y-[18px]">
+          <RailBlock>
+            <NewsRail />
+          </RailBlock>
+          <RailBlock>
+            <SulfurPortfoliosRail />
+          </RailBlock>
+        </aside>
+      </div>
     </div>
   );
+}
+
+function RailBlock({ children }: { children: React.ReactNode }) {
+  return <div className="border-t border-hairline-strong pt-[18px]">{children}</div>;
 }

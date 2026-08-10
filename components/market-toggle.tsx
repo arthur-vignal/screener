@@ -32,11 +32,8 @@ export function MarketToggle({ className }: { className?: string }) {
 
   const setMarket = useCallback(
     (next: Market) => {
-      // Always navigate to the dashboard route (root with ?dashboard=).
-      // This is the canonical home for both BR and US dashboards.
-      const params = new URLSearchParams();
-      params.set("dashboard", next);
-      router.push(`/?${params.toString()}`);
+      // Toggle between the BR and US market overview pages.
+      router.push(next === "br" ? "/market/br" : "/market/us");
     },
     [router],
   );
