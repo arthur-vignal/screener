@@ -40,6 +40,8 @@ export function classifyB3Ticker(
   // ETFs typically have a 4-letter root + "11" (e.g. BOVA11, IVVB11, BBSD11).
   // Both are 6 chars. Sector from Brapi disambiguates: "Fundos Imobiliários" => FII.
   if (clean.endsWith("11")) {
+    // Known ETFs (Brapi confirms type=etf) take priority over FII.
+    if (KNOWN_B3_ETFS.has(clean)) return "etf";
     if (hint?.sector === "Fundos Imobiliários") return "fii";
     // If longName contains "Fundo de Investimento Imobiliário" or "FII"
     if (
@@ -68,6 +70,14 @@ export function classifyB3Ticker(
 /**
  * Known FII roots — used to bias classification. Optional, kept for future use.
  */
+export const KNOWN_B3_ETFS: ReadonlySet<string> = new Set([
+  "BOVA11", "BOVV11", "BOVX11", "IVVB11", "SMAL11",
+  "BBSD11", "ECOO11", "PIBB11", "BRAX11", "MATB11",
+  "DIVO11", "FIND11", "GOVE11", "ISUS11", "EURP11",
+  "AGBH11", "XFIX11", "IMAB11", "IRFM11", "NTNB11",
+  "BTCI11",
+]);
+
 export const KNOWN_FII_ROOTS: ReadonlySet<string> = new Set([
   "HGLG", "XPML", "HGRU", "BCFF", "KNRI", "BTLG", "VISC", "MXRF", "IRDM",
   "XPIN", "GGRC", "VGIR", "CPTS", "PVBI", "HABT", "RECT", "BARI", "HGBS",

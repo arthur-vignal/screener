@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import {
   Menu,
@@ -60,10 +60,39 @@ const NAV: NavItem[] = [
   },
 ];
 
+/**
+ * Resolves the right /market entry point based on the current ?market= query.
+ * Default BR (matches the default dashboard).
+ */
+function marketHref(sp: URLSearchParams | null): string {
+  const m = sp?.get("market");
+  if (m === "us") return "/market/stocks";
+  // BR (default) and everything else -> /market/br overview.
+  return "/market/br";
+}
+
 type Session = { userId: string; username: string };
 
 export function TopNav() {
+  return (
+    <Suspense fallback={<TopNavSkeleton />}>
+      <TopNavInner />
+    </Suspense>
+  );
+}
+
+function TopNavSkeleton() {
+  return (
+    <header className="fixed top-0 inset-x-0 z-50 bg-canvas">
+      <div className="h-[60px] border-b border-hairline-strong" />
+      <div className="h-[42px] bg-canvas-soft border-b border-hairline-strong" />
+    </header>
+  );
+}
+
+function TopNavInner() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<Session | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -256,7 +285,7 @@ export function TopNav() {
                   onMouseLeave={() => hasSub && scheduleCloseSubmenu()}
                 >
                   <Link
-                    href={item.href}
+                    href={item.label === "Market" ? marketHref(searchParams) : item.href}
                     onClick={() => {
                       if (hasSub) setOpenDropdown(null);
                     }}
@@ -273,7 +302,7 @@ export function TopNav() {
                     {isBuild && <Construction className="w-3 h-3" />}
                     {item.label}
                     {hasSub && (
-                      <span className="text-[8px] opacity-60 leading-none -mt-px">�</span>
+                      <span className="text-[8px] opacity-60 leading-none -mt-px">{"▾"}</span>
                     )}
                   </Link>
 
