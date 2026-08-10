@@ -35,10 +35,12 @@ const NAV: NavItem[] = [
     label: "Market",
     subitems: [
       { href: "/market/stocks", label: "Stocks", description: "Ações S&P 500" },
+      { href: "/market/br", label: "Brasil 🇧🇷", description: "Todas as ações B3" },
       { href: "/crypto", label: "Crypto", description: "Top 20 via CMC" },
       { href: "/market/etfs", label: "ETFs", description: "ETFs listados" },
     ],
   },
+  { href: "/indices", label: "Indices" },
   {
     href: "/portfolios",
     label: "Portfolios",

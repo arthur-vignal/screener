@@ -1,13 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { MacroStrip } from "@/components/macro-strip";
 import { SectorRibbon } from "@/components/sector-ribbon";
 import { MarketTable } from "@/components/market-table";
 import { FearGreedPanel, NewsRail, SulfurPortfoliosRail } from "@/components/right-rail";
-import { MacroPanel } from "@/components/macro-panel";
-import { SectorHeatmap } from "@/components/sector-heatmap";
-import { CorrelationHeatmap } from "@/components/correlation-heatmap";
 
 /**
  * Dashboard — Ledger spec (1b direction).
@@ -24,10 +20,7 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-[1920px] mx-auto bg-canvas text-ink">
-      {/* Macro strip — first thing the eye hits */}
-      <MacroStrip />
-
-      {/* Sector ribbon — replaces treemap */}
+      {/* Sector ribbon — click filters the table below */}
       <SectorRibbon onSectorChange={setSector} activeSector={sector} />
 
       {/* Main split — table + rail */}
@@ -53,14 +46,6 @@ export default function DashboardPage() {
           </RailBlock>
         </aside>
       </div>
-
-      <section className="border-t border-hairline-strong px-7 py-7 space-y-5">
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-          <MacroPanel />
-          <SectorHeatmap />
-        </div>
-        <CorrelationHeatmap />
-      </section>
     </div>
   );
 }
