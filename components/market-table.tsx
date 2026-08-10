@@ -78,7 +78,12 @@ export function MarketTable({ sectorFilter, market: marketProp }: { sectorFilter
   // Fetch page of assets
   useEffect(() => {
     let abort = false;
-    const exchangeParam = market === "br" ? "ibov" : "sp500";
+    // Map dashboard market to backend exchange key.
+    //   global -> "all"  (US S&P 500 + BR IBOV, mixed)
+    //   us     -> "sp500"
+    //   br     -> "b3"    (full B3 list, broader than IBOV)
+    const exchangeParam =
+      market === "br" ? "b3" : market === "us" ? "sp500" : "all";
     const params = new URLSearchParams({
       offset: String(page * limit),
       limit: String(limit),
