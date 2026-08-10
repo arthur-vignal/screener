@@ -17,7 +17,8 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-manrope);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -97,73 +98,85 @@
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Fey palette — extracted from Fey UI Kit V1.0 (Figma community file) */
+  --background: #070709;          /* deepest canvas */
+  --foreground: #eeeff1;          /* primary text */
+  --card: #101116;                /* card surface */
+  --card-foreground: #eeeff1;
+  --popover: #131419;
+  --popover-foreground: #eeeff1;
+  --primary: #489ffa;              /* accent blue */
+  --primary-foreground: #070709;
+  --secondary: #1a1b20;            /* secondary surface */
+  --secondary-foreground: #eeeff1;
+  --muted: #16181c;
+  --muted-foreground: #7d8b96;    /* secondary text */
+  --accent: #1f2427;              /* accent surface */
+  --accent-foreground: #eeeff1;
+  --destructive: #d84f68;          /* red coral */
+  --border: rgba(238, 239, 241, 0.08);  /* hairline */
+  --input: rgba(238, 239, 241, 0.12);
+  --ring: #489ffa;
+  /* Chart series — Fey desaturated palette */
+  --chart-1: #489ffa;              /* accent blue */
+  --chart-2: #4dbe95;              /* teal/mint */
+  --chart-3: #8085ff;              /* indigo bright */
+  --chart-4: #c88fcf;              /* purple */
+  --chart-5: #f6c86a;              /* amber */
+  --chart-6: #54bbf7;              /* sky blue */
+  --chart-7: #eeaa99;              /* peach */
+  --chart-8: #e9ec89;              /* olive */
+  /* Sidebar */
+  --sidebar: #101116;
+  --sidebar-foreground: #eeeff1;
+  --sidebar-primary: #489ffa;
+  --sidebar-primary-foreground: #070709;
+  --sidebar-accent: #1a1b20;
+  --sidebar-accent-foreground: #eeeff1;
+  --sidebar-border: rgba(238, 239, 241, 0.08);
+  --sidebar-ring: #489ffa;
+  /* Brand tokens for charts */
+  --positive: #4dbe95;
+  --positive-soft: rgba(77, 190, 149, 0.13);
+  --negative: #d84f68;
+  --negative-soft: rgba(216, 79, 104, 0.13);
+  --warning: #f6c86a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
     color-scheme: dark;
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --background: #070709;
+    --foreground: #eeeff1;
+    --card: #101116;
+    --card-foreground: #eeeff1;
+    --popover: #131419;
+    --popover-foreground: #eeeff1;
+    --primary: #489ffa;
+    --primary-foreground: #070709;
+    --secondary: #1a1b20;
+    --secondary-foreground: #eeeff1;
+    --muted: #16181c;
+    --muted-foreground: #7d8b96;
+    --accent: #1f2427;
+    --accent-foreground: #eeeff1;
+    --destructive: #d84f68;
+    --border: rgba(238, 239, 241, 0.08);
+    --input: rgba(238, 239, 241, 0.12);
+    --ring: #489ffa;
+    --chart-1: #489ffa;
+    --chart-2: #4dbe95;
+    --chart-3: #8085ff;
+    --chart-4: #c88fcf;
+    --chart-5: #f6c86a;
+    --sidebar: #101116;
+    --sidebar-foreground: #eeeff1;
+    --sidebar-primary: #489ffa;
+    --sidebar-primary-foreground: #070709;
+    --sidebar-accent: #1a1b20;
+    --sidebar-accent-foreground: #eeeff1;
+    --sidebar-border: rgba(238, 239, 241, 0.08);
+    --sidebar-ring: #489ffa;
   }
 }
 

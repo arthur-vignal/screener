@@ -1,0 +1,124 @@
+{
+  "file": "Fey UI kit V1.0 (unofficial) - Community (Community)",
+  "figma_file_key": "NZdLUqdpN6XqsTrAFRhKjZ",
+  "pages": [
+    {
+      "name": "\ud83d\ude80 Get Started",
+      "id": "304:989",
+      "elements": 1
+    },
+    {
+      "name": "\ud83d\udda5\ufe0f Screens",
+      "id": "340:1597",
+      "elements": [
+        "Preferences (421:5552)",
+        "Analysis (435:12305)",
+        "Preferences/payments (423:2393)",
+        "Graphs (427:5846)",
+        "Detail (443:234092)",
+        "What's happening (447:305513)",
+        "Website/Choose your plan (447:312899)"
+      ]
+    },
+    {
+      "name": "\ud83e\uddf1 Foundations",
+      "id": "401:104683",
+      "elements": [
+        "Colors",
+        "Typography",
+        "Sidebar",
+        "Icons",
+        "Illustrations",
+        "Tags",
+        "Tab",
+        "Alert",
+        "Check box",
+        "Toggle",
+        "Companies",
+        "Button"
+      ]
+    },
+    {
+      "name": "\ud83d\udd39 Elements",
+      "id": "0:1",
+      "elements": [
+        "Search box",
+        "Preferences card",
+        "Pricing plans card",
+        "News cards",
+        "Table Row",
+        "Charts",
+        "Placeholder"
+      ]
+    }
+  ],
+  "colors": {
+    "greys_text_strokes": [
+      "#eeeff1",
+      "#d0d0d0",
+      "#b5bdc3",
+      "#99a4ac",
+      "#7d8b96",
+      "#64717b",
+      "#4d575f",
+      "#363e43",
+      "#1f2427",
+      "#070709",
+      "#101116",
+      "#131419",
+      "#16181c",
+      "#1a1b20"
+    ],
+    "bg": [
+      "#101116",
+      "#131419",
+      "#16181c",
+      "#1a1b20",
+      "#070709",
+      "#1f2427",
+      "#363e43",
+      "#4d575f"
+    ],
+    "accent_blue": "#489ffa",
+    "sky_blue": "#54bbf7",
+    "indigo": "#6166dc",
+    "indigo_bright": "#8085ff",
+    "purple": "#c88fcf",
+    "teal_mint": "#4dbe95",
+    "red_coral": "#d84f68",
+    "olive_yellow_light": "#e9ec89",
+    "amber_yellow": "#f6c86a",
+    "peach_orange_light": "#eeaa99",
+    "terracotta": "#c27c58",
+    "brown_dark": "#9b5b38",
+    "steel_blue": "#7489b5",
+    "warm_grey": "#868f97",
+    "neutral_grey": "#a7a7a9"
+  },
+  "typography": {
+    "display": {
+      "family": "Calibre",
+      "weight": 600,
+      "size_hero": 64,
+      "size_h1": 54,
+      "ls_hero": -1.27,
+      "ls_h1": 0,
+      "color_primary": "#eeeff1"
+    },
+    "body": {
+      "family": "Calibre",
+      "weight": 400,
+      "size": 24,
+      "ls": 0,
+      "color_primary": "#7d8b96",
+      "color_link": "#489ffa"
+    },
+    "ui": {
+      "family": "Manrope",
+      "weight": 500,
+      "size_label": 10,
+      "size_button": 12,
+      "ls": 0.4
+    }
+  }
+}

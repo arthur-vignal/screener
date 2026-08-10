@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Montserrat } from "next/font/google";
+
 import localFont from "next/font/local";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 
 // Inter — UI sans (kept)
@@ -35,12 +36,14 @@ const commitMono = localFont({
   weight: "400",
 });
 
-// Montserrat — display headline (landing)
-const montserrat = Montserrat({
+// Manrope — display + UI typography (Fey UI Kit)
+// Calibre (Fey display font) is not on Google Fonts; Manrope is the
+// closest visual match per the Figma file's metadata.
+const manrope = Manrope({
   subsets: ["latin"],
-  variable: "--font-montserrat",
+  variable: "--font-manrope",
   display: "swap",
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -57,7 +60,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${archia.variable} ${geistMono.variable} ${commitMono.variable} ${montserrat.variable} h-full antialiased`}
+      className={`dark ${inter.variable} ${archia.variable} ${geistMono.variable} ${commitMono.variable} ${manrope.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-canvas text-ink">
         {children}
