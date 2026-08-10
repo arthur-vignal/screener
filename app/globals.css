@@ -889,3 +889,22 @@ textarea,
 .rounded-full {
   border-radius: 9999px !important;
 }
+
+
+/* ---------- HIDE SCROLLBARS VISUALLY ---------- */
+/* Hide the scrollbar chrome on every scrollable element while keeping
+   scrolling functional. -webkit- targets Chrome/Safari/Edge; the
+   scrollbar-width / -ms-overflow-style properties target Firefox and
+   legacy IE/Edge. */
+html,
+body,
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ / old Edge */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}

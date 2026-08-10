@@ -56,7 +56,7 @@ function BrMarketInner() {
   const [total, setTotal] = useState(0);
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const LIMIT = 18;
+  const LIMIT = 30;
 
   useEffect(() => {
     setPage(0);
@@ -166,7 +166,7 @@ function BrMarketInner() {
                   <Link
                     key={it.symbol}
                     href={`/asset/${encodeURIComponent(it.symbol)}`}
-                    className="grid grid-cols-[44px_1fr_110px_100px_88px_100px] items-center h-[36px] px-7 border-t border-hairline hover-row press animate-fade-up"
+                    className="grid grid-cols-[44px_1fr_110px_100px_88px_100px] items-center h-[46px] px-7 border-t border-hairline hover-row press animate-fade-up"
                     style={{ animationDelay: `${i * 20}ms` }}
                   >
                     <div className="num text-faint text-[10.5px]">
