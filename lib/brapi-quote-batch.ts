@@ -29,6 +29,9 @@ export type QuoteBatch = {
   sector: string | null;
   marketCap: number | null;
   type: "stock" | "etf" | "bdr" | "fii" | "fractional" | null;
+  // Fundamentals returned by Brapi /quote for free with fundamental=true
+  earningsPerShare: number | null;
+  priceEarnings: number | null;
 };
 
 const CHUNK = 30;
@@ -74,6 +77,8 @@ export async function getBrapiQuoteBatch(symbols: string[]): Promise<Map<string,
           sector: b.profile?.sector ?? b.profile?.industry ?? null,
           marketCap: q.marketCap ?? b.keyStatistics?.marketCap ?? null,
           type: isBrazilianTicker(sym) ? "stock" : "stock",
+          earningsPerShare: q.earningsPerShare ?? null,
+          priceEarnings: q.priceEarnings ?? null,
         });
       }
     } catch (err) {
@@ -107,6 +112,8 @@ export async function getBrapiQuoteBatch(symbols: string[]): Promise<Map<string,
           sector: f.sector ?? null,
           marketCap: f.marketCap ?? null,
           type: "stock",
+          earningsPerShare: null,
+          priceEarnings: null,
         });
       }
     } catch (err) {

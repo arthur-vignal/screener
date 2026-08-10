@@ -46,11 +46,9 @@ const NAV: NavItem[] = [
     subitems: [
       { href: "/market/br", label: `Mercado BR ${BR}`, description: "Ações, FIIs, ETFs, BDRs" },
       { href: "/market/us", label: `Mercado US ${US}`, description: "S&P 500 + ETFs" },
-      { href: "/market/stocks", label: "Stocks (US)", description: "Lista paginada S&P 500" },
       { href: "/market/fiis", label: `FIIs ${BR}`, description: "Fundos imobiliários B3" },
       { href: "/market/etfs", label: `ETFs ${BR}`, description: "ETFs listados na B3" },
       { href: "/market/bdrs", label: `BDRs ${BR}`, description: "Brazilian Depositary Receipts" },
-      { href: "/crypto", label: "Crypto", description: "Top criptoativos" },
       { href: "/market/sectors", label: "Setores", description: "Heatmap setorial" },
       { href: "/indices", label: "Índices", description: "B3 oficiais + custom" },
     ],
