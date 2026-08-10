@@ -22,54 +22,89 @@ type SubItem = {
 };
 
 type NavItem = {
-  href: string;
+  href?: string;
   label: string;
   subitems?: SubItem[];
   explicit?: "build";
 };
 
 const BR = "\u{1F1E7}\u{1F1F7}";
+const US = "\u{1F1FA}\u{1F1F8}";
 
+/**
+ * Top nav reorganised by INTENTION (mercado / juros / análise / portfólios /
+ * notícias / dashboard) rather than by asset class. Scales better as new
+ * feature blocks land (juros & derivativos, comps setoriais, etc).
+ */
 const NAV: NavItem[] = [
   { href: "/", label: "Dashboard" },
+
+  // 1) Mercado — every sub-market + sector heatmap + índices (no longer
+  //    a top-level item).
   {
-    href: "/market",
-    label: "Market",
+    label: "Mercado",
     subitems: [
-      { href: "/market/stocks", label: "Stocks (US)", description: "Ações S&P 500" },
+      { href: "/market/br", label: `Mercado BR ${BR}`, description: "Ações, FIIs, ETFs, BDRs" },
+      { href: "/market/us", label: `Mercado US ${US}`, description: "S&P 500 + ETFs" },
+      { href: "/market/stocks", label: "Stocks (US)", description: "Lista paginada S&P 500" },
       { href: "/market/fiis", label: `FIIs ${BR}`, description: "Fundos imobiliários B3" },
       { href: "/market/etfs", label: `ETFs ${BR}`, description: "ETFs listados na B3" },
       { href: "/market/bdrs", label: `BDRs ${BR}`, description: "Brazilian Depositary Receipts" },
+      { href: "/crypto", label: "Crypto", description: "Top criptoativos" },
+      { href: "/market/sectors", label: "Setores", description: "Heatmap setorial" },
+      { href: "/indices", label: "Índices", description: "B3 oficiais + custom" },
     ],
   },
-  { href: "/indices", label: "Indices" },
+
+  // 2) Juros & Derivativos — differentiator. Macro BR, Copom Watch, options,
+  //    Tesouro Direto, breakeven de inflação.
   {
-    href: "/portfolios",
-    label: "Portfolios",
+    label: "Juros & Derivativos",
     subitems: [
-      { href: "/portfolios/sulfur", label: "Sulfur", description: "Portfolios curados" },
-      { href: "/portfolios/my", label: "My Portfolios", description: "Os que você criou" },
-      { href: "/portfolios/public", label: "Public", description: "Portfolios públicos" },
+      { href: "/macro", label: "Painel Macro BR", description: "Selic, CDI, IPCA, IGP-M, IBC-Br, PIB, Desemprego" },
+      { href: "/copom", label: "Curva de Juros / Copom Watch", description: "DI1 forward rates por reunião" },
+      { href: "/options", label: "Opções", description: "Gregas, payoff diagrams, smile/skew" },
+      { href: "/tesouro", label: "Tesouro Direto", description: "Pré, IPCA+ (NTN-B), Selic" },
+      { href: "/breakeven", label: "Breakeven IPCA", description: "Inflação implícita vs realizada" },
     ],
   },
-  { href: "/news", label: "News" },
+
+  // 3) Análise — fundamentalista, técnica, comparador, correlação, comps,
+  //    raio-x FII, fear & greed.
+  {
+    label: "Análise",
+    subitems: [
+      { href: "/screener", label: "Screener avançado", description: "Multi-critério (P/L, P/VP, ROE, EV/EBITDA…)" },
+      { href: "/analysis", label: "Técnica", description: "RSI, MACD, médias, bandas" },
+      { href: "/compare", label: "Comparar", description: "Side-by-side 2-5 tickers" },
+      { href: "/correlation", label: "Correlação", description: "Cross-asset matrix" },
+      { href: "/comps", label: "Comps setoriais", description: "Tabela + radar de múltiplos" },
+      { href: "/fii-xray", label: "Raio-X de FII", description: "Vacância, imóveis, inadimplência" },
+      { href: "/fear-greed", label: "Fear & Greed", description: "Índice de sentimento" },
+    ],
+  },
+
+  // 4) Portfólios — Sulfur / Meus / Públicos / Calendário de Proventos (novo).
+  {
+    label: "Portfólios",
+    subitems: [
+      { href: "/portfolios/sulfur", label: "Sulfur", description: "Portfólios curados" },
+      { href: "/portfolios/my", label: "Meus", description: "Os que você criou" },
+      { href: "/portfolios/public", label: "Públicos", description: "Portfólios públicos" },
+      { href: "/dividends", label: "Calendário de Proventos", description: "Dividendos + JCP + FIIs" },
+    ],
+  },
+
+  // 5) Notícias — unchanged.
+  { href: "/news", label: "Notícias" },
+
+  // 6) Build — WIP, kept for now.
   {
     href: "/build",
     label: "Build",
     explicit: "build",
   },
 ];
-
-/**
- * Resolves the right /market entry point based on the current ?market= query.
- * Default BR (matches the default dashboard).
- */
-function marketHref(sp: URLSearchParams | null): string {
-  const m = sp?.get("market");
-  if (m === "us") return "/market/stocks";
-  // BR (default) and everything else -> /market/br overview.
-  return "/market/br";
-}
 
 type Session = { userId: string; username: string };
 
@@ -165,6 +200,18 @@ function TopNavInner() {
     setUser(null);
     setMenuOpen(false);
     window.location.href = "/";
+  }
+
+  /**
+   * marketHref — Market menu's primary entry. Reads current ?market= (set by
+   * the MarketToggle on /?dashboard=*) and routes accordingly.
+   *   ?market=us  -> /market/us
+   *   default BR  -> /market/br
+   */
+  function marketHref(): string {
+    const m = searchParams?.get("market");
+    if (m === "us") return "/market/us";
+    return "/market/br";
   }
 
   return (
@@ -277,6 +324,10 @@ function TopNavInner() {
               const hasSub = item.subitems && item.subitems.length > 0;
               const isBuild = item.explicit === "build";
 
+              // Items with submenus render as buttons (not Links) to avoid
+              // accidentally navigating when the user clicks the label.
+              const isMenu = !!hasSub;
+
               return (
                 <div
                   key={item.label}
@@ -284,27 +335,53 @@ function TopNavInner() {
                   onMouseEnter={() => hasSub && openSubmenu(item.label)}
                   onMouseLeave={() => hasSub && scheduleCloseSubmenu()}
                 >
-                  <Link
-                    href={item.label === "Market" ? marketHref(searchParams) : item.href}
-                    onClick={() => {
-                      if (hasSub) setOpenDropdown(null);
-                    }}
-                    className={cn(
-                      "flex items-center gap-1 px-[18px] h-full label transition-colors duration-150 press",
-                      active
-                        ? "text-ink"
-                        : isBuild
-                          ? "text-faint hover:text-muted"
-                          : "text-muted hover:text-ink",
-                    )}
-                    style={active ? { boxShadow: "inset 0 -2px 0 var(--brand-deep)" } : undefined}
-                  >
-                    {isBuild && <Construction className="w-3 h-3" />}
-                    {item.label}
-                    {hasSub && (
-                      <span className="text-[8px] opacity-60 leading-none -mt-px">{"▾"}</span>
-                    )}
-                  </Link>
+                  {isMenu ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenDropdown(isOpen ? null : item.label)
+                      }
+                      className={cn(
+                        "flex items-center gap-1 px-[14px] h-full label transition-colors duration-150 press",
+                        active
+                          ? "text-ink"
+                          : isBuild
+                            ? "text-faint hover:text-muted"
+                            : "text-muted hover:text-ink",
+                      )}
+                      style={
+                        active
+                          ? { boxShadow: "inset 0 -2px 0 var(--brand-deep)" }
+                          : undefined
+                      }
+                    >
+                      {isBuild && <Construction className="w-3 h-3" />}
+                      {item.label}
+                      <span className="text-[8px] opacity-60 leading-none -mt-px">
+                        {"\u25be"}
+                      </span>
+                    </button>
+                  ) : (
+                    <Link
+                      href={item.href!}
+                      className={cn(
+                        "flex items-center gap-1 px-[14px] h-full label transition-colors duration-150 press",
+                        active
+                          ? "text-ink"
+                          : isBuild
+                            ? "text-faint hover:text-muted"
+                            : "text-muted hover:text-ink",
+                      )}
+                      style={
+                        active
+                          ? { boxShadow: "inset 0 -2px 0 var(--brand-deep)" }
+                          : undefined
+                      }
+                    >
+                      {isBuild && <Construction className="w-3 h-3" />}
+                      {item.label}
+                    </Link>
+                  )}
 
                   {hasSub && isOpen && (
                     <div
@@ -312,16 +389,20 @@ function TopNavInner() {
                       onMouseEnter={() => openSubmenu(item.label)}
                       onMouseLeave={scheduleCloseSubmenu}
                     >
-                      <div className="bg-surface border border-hairline-strong border-t-0 shadow-lg py-1 min-w-[280px]">
+                      <div className="bg-surface border border-hairline-strong border-t-0 shadow-lg py-1 min-w-[280px] max-h-[70vh] overflow-y-auto">
                         {item.subitems!.map((sub) => {
-                          const subActive = pathname.startsWith(sub.href.split("?")[0]);
+                          const subActive = pathname.startsWith(
+                            sub.href.split("?")[0],
+                          );
                           return (
                             <Link
                               key={sub.href}
                               href={sub.href}
                               className={cn(
                                 "flex items-start gap-3 px-4 py-2.5 transition-colors duration-150",
-                                subActive ? "bg-surface-elevated" : "hover:bg-surface-elevated",
+                                subActive
+                                  ? "bg-surface-elevated"
+                                  : "hover:bg-surface-elevated",
                               )}
                             >
                               <div className="flex-1 min-w-0">
@@ -391,22 +472,28 @@ function TopNavInner() {
               const active = pathname === item.href;
               return (
                 <div key={item.label}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2.5 text-sm transition-colors duration-150",
-                      active
-                        ? "bg-surface-elevated text-brand-deep font-medium"
-                        : isBuild
-                          ? "text-faint"
-                          : "text-ink hover:bg-surface-elevated",
-                    )}
-                  >
-                    {isBuild && <Construction className="w-3 h-3" />}
-                    {item.label}
-                  </Link>
+                  {item.href ? (
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2.5 text-sm transition-colors duration-150",
+                        active
+                          ? "bg-surface-elevated text-brand-deep font-medium"
+                          : isBuild
+                            ? "text-faint"
+                            : "text-ink hover:bg-surface-elevated",
+                      )}
+                    >
+                      {isBuild && <Construction className="w-3 h-3" />}
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <div className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-widest text-muted font-medium">
+                      {item.label}
+                    </div>
+                  )}
                   {item.subitems && (
-                    <div className="ml-4 mt-0.5 space-y-0.5">
+                    <div className="ml-4 mt-0.5 mb-2 space-y-0.5">
                       {item.subitems.map((sub) => (
                         <Link
                           key={sub.href}
