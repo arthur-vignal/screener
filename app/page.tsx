@@ -1,151 +1,245 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BarChart3, Building2, Newspaper, TrendingUp, Wallet } from "lucide-react";
+import { AuroraBackground } from "@/components/landing/aurora-background";
+import { LandingNav } from "@/components/landing/landing-nav";
+import { BlurReveal } from "@/components/landing/blur-reveal";
+import { CometCard } from "@/components/landing/comet-card";
+import { LiquidGlassButton } from "@/components/landing/liquid-glass-button";
+import { LoginModal } from "@/components/landing/login-modal";
+import { WelcomeScreen } from "@/components/landing/welcome-screen";
+import {
+  LANDING_FEATURES,
+  LANDING_STATS,
+} from "@/lib/landing-tokens";
 
 /**
- * Landing page — root URL /. Lets the visitor choose a destination:
- *   - BR dashboard (?dashboard=br)
- *   - US dashboard (?dashboard=us)
- *   - Markets overview (/market/br or /market/us)
- *   - Indices (/indices)
+ * Landing page (/) — first surface the visitor sees. New design:
+ * aurora background, blur-reveal hero, 16-card comet grid, liquid-glass
+ * CTAs, Fey-style login modal, encrypted welcome screen.
  *
- * The default dashboard moved to /dashboard or /?dashboard=br|us.
+ * State machine:
+ *   - view = "landing"   → show landing
+ *   - view = "login"     → show landing + login modal (click on any CTA)
+ *   - view = "welcome"   → show encrypted welcome (after signup success)
+ *   - view = "dashboard" → redirect to /?dashboard=br
  */
 export default function LandingPage() {
+  const [view, setView] = useState<
+    "landing" | "login" | "welcome" | "dashboard"
+  >("landing");
+  const [loggedUsername, setLoggedUsername] = useState<string>("");
+
+  function openLogin() {
+    setView("login");
+  }
+  function closeLogin() {
+    setView("landing");
+  }
+  function onSignupSuccess(username: string) {
+    setLoggedUsername(username || "convidado");
+    setView("welcome");
+  }
+  function continueToDashboard() {
+    window.location.href = "/?dashboard=br";
+  }
+
   return (
-    <div className="px-3 md:px-4 py-6 md:py-10 max-w-[1920px]">
-      {/* Hero */}
-      <div className="border-b border-hairline-strong pb-10 mb-10">
-        <div className="flex items-center gap-[11px] mb-4">
-          <div className="w-[28px] h-[28px] bg-ink flex items-center justify-center">
-            <span className="font-display text-[18px] text-canvas leading-none font-bold">
-              S
-            </span>
-          </div>
-          <span className="font-display text-[24px] text-ink leading-none tracking-[-0.03em]">
-            Sulfur<span className="bg-brand text-brand-on px-[3px] ml-[1px]">.io</span>
-          </span>
-        </div>
-        <h1 className="font-display text-[40px] md:text-[56px] text-ink tracking-[-0.03em] max-w-[20ch] leading-[1.05]">
-          O mercado numa só tela.
-        </h1>
-        <p className="text-body text-base mt-4 max-w-2xl leading-relaxed">
-          Screener de ações US + B3 com valuation oficial (Brapi Pro), índices
-          curados, portfólios, notícias e Fear & Greed. Tudo num único lugar.
-        </p>
-      </div>
+    <>
+      <AuroraBackground />
 
-      {/* Two main destinations */}
-      <h2 className="font-display text-[20px] text-ink tracking-[-0.02em] mb-4">
-        Escolha um mercado
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-        <Link
-          href="/market/br"
-          className="group border border-hairline-strong bg-surface-elevated p-7 hover-lift"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-[28px] leading-none">🇧🇷</span>
-            <h3 className="font-display text-[24px] text-ink group-hover:text-brand-deep transition-colors">
-              Mercado Brasileiro
-            </h3>
-          </div>
-          <p className="text-body text-sm mb-5 leading-relaxed">
-            Todas as ações listadas na B3 (1.184+), com preços em tempo real via
-            Brapi Pro, variação de 24h, market cap, volume e Fear & Greed BR.
-          </p>
-          <div className="label-s text-brand-deep inline-flex items-center gap-1">
-            Acessar dashboard
-            <ArrowRight className="w-3 h-3" />
-          </div>
-        </Link>
+      {/* Top nav */}
+      <LandingNav onOpenLogin={openLogin} />
 
-        <Link
-          href="/market/us"
-          className="group border border-hairline-strong bg-surface-elevated p-7 hover-lift"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-[28px] leading-none">🇺🇸</span>
-            <h3 className="font-display text-[24px] text-ink group-hover:text-brand-deep transition-colors">
-              US Markets
-            </h3>
-          </div>
-          <p className="text-body text-sm mb-5 leading-relaxed">
-            Ações S&P 500 com preços em tempo real (Brapi Pro), variação de 24h,
-            market cap, volume e Fear & Greed Index.
-          </p>
-          <div className="label-s text-brand-deep inline-flex items-center gap-1">
-            Acessar dashboard
-            <ArrowRight className="w-3 h-3" />
-          </div>
-        </Link>
-      </div>
+      {/* Main landing content */}
+      {view !== "welcome" && (
+        <main className="relative z-10 pt-14">
+          {/* HERO */}
+          <section
+            id="home"
+            className="relative px-6 pt-32 pb-24 max-w-[1100px] mx-auto text-center"
+          >
+            <div className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-[#65666e] mb-6">
+              v2.0 — agora com Brapi Pro
+            </div>
+            <h1 className="font-display text-[44px] md:text-[72px] leading-[1.05] tracking-[-0.04em] text-white">
+              <BlurReveal as="span" delay={120}>
+                Uma nova forma de analisar
+              </BlurReveal>
+              <br />
+              <BlurReveal as="span" delay={420}>
+                o mercado financeiro
+              </BlurReveal>
+            </h1>
+            <BlurReveal
+              as="p"
+              delay={700}
+              className="mt-6 font-mono text-[15px] text-[#9a9ba3] tracking-tight max-w-xl mx-auto"
+            >
+              Construído por quem entende.
+            </BlurReveal>
+            <div className="mt-10 flex items-center justify-center gap-3">
+              <LiquidGlassButton onClick={openLogin} className="px-8 py-3.5">
+                Acessar
+              </LiquidGlassButton>
+              <Link
+                href="#features"
+                className="text-[13px] text-[#9a9ba3] hover:text-white transition-colors press inline-flex items-center gap-1.5"
+              >
+                Ver features →
+              </Link>
+            </div>
 
-      {/* Other tools */}
-      <h2 className="font-display text-[20px] text-ink tracking-[-0.02em] mb-4">
-        Outras ferramentas
-      </h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <ToolCard
-          href="/market/br"
-          icon={BarChart3}
-          title="Mercado BR"
-          subtitle="Ações, FIIs, ETFs e BDRs"
-        />
-        <ToolCard
-          href="/market/us"
-          icon={Building2}
-          title="Mercado US"
-          subtitle="S&P 500 e ETFs"
-        />
-        <ToolCard
-          href="/indices"
-          icon={TrendingUp}
-          title="Índices"
-          subtitle="B3 + custom"
-        />
-        <ToolCard
-          href="/news"
-          icon={Newspaper}
-          title="Notícias"
-          subtitle="Por ativo"
-        />
-        <ToolCard
-          href="/portfolios"
-          icon={Wallet}
-          title="Portfólios"
-          subtitle="Crie e acompanhe"
-        />
-      </div>
+            {/* Mini live sparkline — small IBOV-style preview to convey "live data". */}
+            <MiniSparkline />
+          </section>
 
-      <div className="mt-12 pt-6 border-t border-hairline text-xs text-muted">
-        Dados via Brapi Pro + B3 + CVM (oficial). Yields: 1 cache min, 30 min
-        para cotações históricas.
-      </div>
-    </div>
+          {/* STATS STRIP */}
+          <section className="relative px-6 max-w-[1280px] mx-auto pb-16">
+            <div
+              className="grid grid-cols-2 md:grid-cols-5 gap-px rounded-2xl overflow-hidden"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.07)",
+              }}
+            >
+              {LANDING_STATS.map((s, i) => (
+                <div
+                  key={i}
+                  className="px-5 py-5 text-center"
+                  style={{
+                    background: "#131316",
+                  }}
+                >
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#65666e]">
+                    {s.label}
+                  </div>
+                  <div className="mt-1.5 font-display text-[24px] text-white">
+                    {s.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* FEATURES GRID 4x4 */}
+          <section
+            id="features"
+            className="relative px-6 max-w-[1280px] mx-auto pb-20"
+          >
+            <div className="text-center mb-10">
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-[#65666e] mb-3">
+                Tudo o que você precisa
+              </div>
+              <h2 className="font-display text-[36px] md:text-[44px] tracking-[-0.02em] text-white">
+                Tudo em um lugar só.
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {LANDING_FEATURES.map((f) => (
+                <CometCard
+                  key={f.title}
+                  title={f.title}
+                  description={f.description}
+                  accent={f.accent}
+                />
+              ))}
+            </div>
+          </section>
+
+          {/* FINAL CTA + PREÇO */}
+          <section
+            id="preco"
+            className="relative px-6 max-w-[1100px] mx-auto pb-32 pt-16 text-center"
+          >
+            <h2 className="font-display text-[36px] md:text-[44px] tracking-[-0.02em] text-white">
+              Sem custo. Sem cadastro de cartão.
+            </h2>
+            <p className="mt-4 text-[14px] text-[#9a9ba3] max-w-xl mx-auto">
+              A Sulfur é mantida por quem investe com ela. Os dados vêm de fontes
+              públicas (B3, CVM, Brapi, FGV). Sem assinatura, sem limite de uso.
+            </p>
+            <div className="mt-8">
+              <LiquidGlassButton onClick={openLogin} className="px-10 py-3.5 text-[15px]">
+                Acessar
+              </LiquidGlassButton>
+            </div>
+            <p className="mt-3 font-mono text-[10.5px] uppercase tracking-[0.18em] text-[#65666e]">
+              1.184 ativos · 503 S&P 500 · 4 índices B3
+            </p>
+          </section>
+
+          {/* FOOTER */}
+          <footer
+            id="sobre"
+            className="px-6 max-w-[1280px] mx-auto pb-12 pt-8 text-center"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
+          >
+            <p className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-[#65666e]">
+              Sulfur.io · 2026 · Construído por quem entende
+            </p>
+          </footer>
+        </main>
+      )}
+
+      <LoginModal
+        open={view === "login"}
+        onClose={closeLogin}
+        onSuccess={onSignupSuccess}
+      />
+
+      {view === "welcome" && (
+        <WelcomeScreen
+          username={loggedUsername}
+          onContinue={continueToDashboard}
+        />
+      )}
+    </>
   );
 }
 
-function ToolCard({
-  href,
-  icon: Icon,
-  title,
-  subtitle,
-}: {
-  href: string;
-  icon: typeof Building2;
-  title: string;
-  subtitle: string;
-}) {
+/* Small inline sparkline shown in the hero — purely decorative; conveys
+ * "live market data" without faking real numbers. */
+function MiniSparkline() {
+  // Sinusoidal walk with small noise to feel "market-like".
+  const points = Array.from({ length: 80 }, (_, i) => {
+    const t = i / 79;
+    const v = 100 + Math.sin(t * 9) * 8 + Math.cos(t * 27) * 4 + (Math.random() - 0.5) * 2;
+    return { x: t * 100, y: 50 - (v - 100) * 2.4 };
+  });
+  const path = points
+    .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(2)},${p.y.toFixed(2)}`)
+    .join(" ");
   return (
-    <Link
-      href={href}
-      className="group border border-hairline-strong bg-surface p-5 hover-lift"
+    <div
+      className="mt-12 mx-auto h-[110px] max-w-[560px] rounded-lg overflow-hidden"
+      style={{
+        background: "rgba(19,19,22,0.5)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        backdropFilter: "blur(8px)",
+      }}
     >
-      <Icon className="w-5 h-5 text-muted group-hover:text-brand-deep transition-colors mb-2" />
-      <div className="font-medium text-ink text-sm">{title}</div>
-      <div className="text-[11px] text-muted mt-0.5">{subtitle}</div>
-    </Link>
+      <svg
+        viewBox="0 0 100 50"
+        preserveAspectRatio="none"
+        className="w-full h-full"
+      >
+        <defs>
+          <linearGradient id="miniLine" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#a78bfa" />
+            <stop offset="50%" stopColor="#e8935b" />
+            <stop offset="100%" stopColor="#3fbfb0" />
+          </linearGradient>
+        </defs>
+        <path
+          d={path}
+          stroke="url(#miniLine)"
+          strokeWidth="0.7"
+          fill="none"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+    </div>
   );
 }
