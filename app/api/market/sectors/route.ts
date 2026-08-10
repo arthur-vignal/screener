@@ -23,12 +23,8 @@ export async function GET(req: NextRequest) {
   const isBr = marketRaw === "br";
 
   if (isBr) {
-    // BR path: IBOV entries have sector; B3-only entries get sector
-    // classification via Brapi (best-effort). For aggregation purposes, we
-    // bucket by sector from IBOV list. B3-only tickers fall into "—" sector
-    // and are skipped from sector breakdown (they still show up in the
-    // overall market view).
-    const ibovBySymbol = new Map(IBOV.map((e) => [e.symbol, e.sector]));
+    // BR path: bucket IBOV tickers by sector, sample 5 per sector, fetch
+    // quotes via Brapi, and aggregate change%.
     const sectors = new Map<string, { count: number; symbols: string[] }>();
     for (const e of IBOV) {
       const s = e.sector;
@@ -37,25 +33,50 @@ export async function GET(req: NextRequest) {
       cur.count++;
       cur.symbols.push(e.symbol);
     }
-    // Sample 5 tickers per IBOV sector (matches the US version's breadth)
     const sampleSymbols: string[] = [];
     for (const { symbols } of sectors.values()) {
       sampleSymbols.push(...symbols.slice(0, 5));
     }
-    // Skip quotes for now (avoids Brapi rate limits); sector ribbon will
-    // show 0% for BR — that's fine as a placeholder until we wire a
-    // Brapi sector-aggregator endpoint. The market table on the dashboard
-    // is the source of truth for BR price action.
+    // Fetch Brapi quotes for the sample to compute real avgChange.
+    const { getBrapiQuoteBatch } = await import("@/lib/brapi-quote-batch");
+    const brapiMap = await getBrapiQuoteBatch(sampleSymbols);
+
     const sectorsOut = IBOV_SECTORS.map((s) => {
       const cur = sectors.get(s);
+      if (!cur) {
+        return {
+          sector: s,
+          count: 0,
+          avgChange: 0,
+          gainers: 0,
+          losers: 0,
+          volume: 0,
+          topMovers: [] as { symbol: string; changePercent: number }[],
+        };
+      }
+      const changes: number[] = [];
+      const movers: { symbol: string; changePercent: number }[] = [];
+      let gains = 0;
+      let losses = 0;
+      for (const sym of cur.symbols.slice(0, 5)) {
+        const b = brapiMap.get(sym.toUpperCase());
+        const cp = b?.quote?.changePercent;
+        if (cp != null) {
+          changes.push(cp);
+          if (cp >= 0) gains++;
+          else losses++;
+          movers.push({ symbol: sym, changePercent: cp });
+        }
+      }
+      movers.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
       return {
         sector: s,
-        count: cur?.count ?? 0,
-        avgChange: 0,
-        gainers: 0,
-        losers: 0,
+        count: cur.count,
+        avgChange: changes.length > 0 ? changes.reduce((a, b) => a + b, 0) / changes.length : 0,
+        gainers: gains,
+        losers: losses,
         volume: 0,
-        topMovers: [] as { symbol: string; changePercent: number }[],
+        topMovers: movers.slice(0, 3),
       };
     });
     return NextResponse.json({ sectors: sectorsOut });

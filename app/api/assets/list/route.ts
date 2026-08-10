@@ -90,6 +90,8 @@ export async function GET(req: NextRequest) {
     for (const sym of B3_LIST) {
       const ibovEntry = IBOV.find((e) => e.symbol === sym);
       if (ibovEntry) {
+        // IBOV entries have a known sector; honor the sector filter here.
+        if (sector !== "all" && ibovEntry.sector !== sector) continue;
         items.push({
           symbol: ibovEntry.symbol,
           name: ibovEntry.name,
@@ -98,6 +100,8 @@ export async function GET(req: NextRequest) {
           market: "br",
         });
       } else {
+        // B3-only entries get a real sector via Brapi below. The filter is
+        // applied AFTER enrichment so the sector param can be honored.
         items.push({
           symbol: sym,
           name: sym, // enriched from Brapi below
