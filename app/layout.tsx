@@ -51,7 +51,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${archia.variable} ${geistMono.variable} ${commitMono.variable} h-full antialiased`}
+      className={`dark ${inter.variable} ${archia.variable} ${geistMono.variable} ${commitMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-canvas text-ink">
         <SelectionProvider>
