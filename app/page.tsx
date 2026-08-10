@@ -42,7 +42,7 @@ export default function LandingPage() {
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
         <Link
-          href="/?dashboard=br"
+          href="/market/br"
           className="group border border-hairline-strong bg-surface-elevated p-7 hover-lift"
         >
           <div className="flex items-center gap-3 mb-3">
@@ -62,7 +62,7 @@ export default function LandingPage() {
         </Link>
 
         <Link
-          href="/?dashboard=us"
+          href="/market/us"
           className="group border border-hairline-strong bg-surface-elevated p-7 hover-lift"
         >
           <div className="flex items-center gap-3 mb-3">

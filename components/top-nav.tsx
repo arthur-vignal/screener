@@ -13,7 +13,6 @@ import {
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SearchBar } from "@/components/search-bar";
-import { MarketToggle } from "@/components/market-toggle";
 
 type SubItem = {
   href: string;
@@ -200,19 +199,7 @@ function TopNavInner() {
     window.location.href = "/";
   }
 
-  /**
-   * marketHref — Market menu's primary entry. Reads current ?market= (set by
-   * the MarketToggle on /?dashboard=*) and routes accordingly.
-   *   ?market=us  -> /market/us
-   *   default BR  -> /market/br
-   */
-  function marketHref(): string {
-    const m = searchParams?.get("market");
-    if (m === "us") return "/market/us";
-    return "/market/br";
-  }
-
-  return (
+return (
     <header className="fixed top-0 inset-x-0 z-50 bg-canvas">
       <div className="h-[60px] border-b border-hairline-strong">
         <div className="h-full max-w-[1920px] mx-auto px-8 flex items-center justify-between">
@@ -235,9 +222,6 @@ function TopNavInner() {
           </div>
 
           <div className="flex items-center gap-[14px]">
-            <Suspense fallback={null}>
-              <MarketToggle className="hidden lg:inline-flex" />
-            </Suspense>
             <ThemeToggle />
 
             <div ref={userRef} className="relative hidden md:block">
@@ -459,11 +443,6 @@ function TopNavInner() {
               <SearchBar />
             </div>
 
-            <div className="pb-3">
-              <Suspense fallback={null}>
-                <MarketToggle />
-              </Suspense>
-            </div>
 
             {NAV.map((item) => {
               const isBuild = item.explicit === "build";
