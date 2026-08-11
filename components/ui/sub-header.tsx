@@ -37,7 +37,7 @@ export function SubHeader() {
   const [clock, setClock] = useState(brTime());
   const [open, setOpen] = useState(isB3Open());
   const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [name, setName] = useState<string>("Convidado");
+  const [name, setName] = useState<string>("");
 
   // Fetch current user (the cookie set by /api/auth/{signup,login} is
   // httpOnly, so we hit /api/auth/me to read it back as JSON).
@@ -112,6 +112,14 @@ function TypedName({ name }: { name: string }) {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
+    // Wait until we actually have a real username from /api/auth/me.
+    // Don't render anything (not even the greeting line) until then,
+    // so the user never sees a flash of "Convidado".
+    if (!name) {
+      setTyped("");
+      setDone(false);
+      return;
+    }
     setTyped("");
     setDone(false);
     let i = 0;
@@ -125,6 +133,9 @@ function TypedName({ name }: { name: string }) {
     }, 50);
     return () => clearInterval(interval);
   }, [name]);
+
+  // Don't render the greeting at all until the username has loaded.
+  if (!name) return null;
 
   return (
     <span className="font-medium text-foreground">

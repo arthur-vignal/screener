@@ -69,8 +69,7 @@ export function AnimatedFloatingDock({
       onMouseMove={(e) => mouseX.set(e.pageX)}
       onMouseLeave={() => mouseX.set(Infinity)}
       className={cn(
-        "fixed bottom-6 left-1/2 z-50 -translate-x-1/2 flex items-end gap-2 rounded-2xl px-3 py-3",
-        "bg-white/10 dark:bg-black/30 backdrop-blur-md border border-white/10",
+        "fixed bottom-6 left-1/2 z-50 -translate-x-1/2 flex items-end gap-3",
         className,
       )}
       initial={{ width: 56, opacity: 0 }}
@@ -157,7 +156,7 @@ function AnimatedDockIcon({
               onClick={item.onClick}
               onMouseEnter={() => setHovered(true)}
               onMouseLeave={() => setHovered(false)}
-              className="absolute inset-0 flex items-center justify-center rounded-full bg-gray-200 dark:bg-neutral-800"
+              className="absolute inset-0 flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-foreground transition-colors"
             >
               <AnimatePresence>
                 {hovered && (
@@ -165,15 +164,13 @@ function AnimatedDockIcon({
                     initial={{ opacity: 0, y: 10, x: "-50%" }}
                     animate={{ opacity: 1, y: 0, x: "-50%" }}
                     exit={{ opacity: 0, y: 2, x: "-50%" }}
-                    className="absolute -top-8 left-1/2 w-fit rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs whitespace-pre text-neutral-700 dark:border-neutral-900 dark:bg-neutral-800 dark:text-white"
+                    className="absolute -top-8 left-1/2 w-fit rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs whitespace-pre text-neutral-700 dark:border-neutral-900 dark:bg-neutral-800 dark:text-white pointer-events-none whitespace-nowrap"
                   >
                     {item.title}
                   </motion.div>
                 )}
               </AnimatePresence>
-              <span className="flex items-center justify-center text-neutral-500 dark:text-neutral-400">
-                {item.icon}
-              </span>
+              {item.icon}
             </Link>
           </motion.div>
         </motion.div>
