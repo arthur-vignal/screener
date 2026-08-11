@@ -69,7 +69,8 @@ export function AnimatedFloatingDock({
       onMouseMove={(e) => mouseX.set(e.pageX)}
       onMouseLeave={() => mouseX.set(Infinity)}
       className={cn(
-        "fixed bottom-6 left-1/2 z-50 -translate-x-1/2 flex items-end gap-3",
+        "fixed bottom-6 left-1/2 z-50 -translate-x-1/2 flex items-end gap-3 rounded-2xl px-3 py-3",
+        "bg-black/30 border border-white/10 backdrop-blur-md",
         className,
       )}
       initial={{ width: 56, opacity: 0 }}
@@ -156,7 +157,7 @@ function AnimatedDockIcon({
               onClick={item.onClick}
               onMouseEnter={() => setHovered(true)}
               onMouseLeave={() => setHovered(false)}
-              className="absolute inset-0 flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-foreground transition-colors"
+              className="absolute inset-0 flex items-center justify-center rounded-full bg-neutral-800 hover:bg-neutral-700 transition-colors"
             >
               <AnimatePresence>
                 {hovered && (
@@ -170,7 +171,9 @@ function AnimatedDockIcon({
                   </motion.div>
                 )}
               </AnimatePresence>
-              {item.icon}
+              <span className="flex items-center justify-center text-neutral-400">
+                {item.icon}
+              </span>
             </Link>
           </motion.div>
         </motion.div>
