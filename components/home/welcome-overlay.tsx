@@ -30,15 +30,11 @@ export function WelcomeOverlay({
   const [phase, setPhase] = useState<"typing" | "hold" | "exit">("typing");
 
   const prefix = "Bem vindo(a), ";
-  const totalText = `${prefix}${username}`;
+  const totalText = `${prefix}${username || "amigo"}`;
 
   useEffect(() => {
     if (phase !== "typing") return;
-    if (!username) {
-      // No username yet, skip the typewriter and just exit after a moment.
-      const t = setTimeout(() => setPhase("exit"), 600);
-      return () => clearTimeout(t);
-    }
+    // Always type at least the prefix so the user sees the welcome.
     let i = 0;
     const interval = setInterval(() => {
       i += 1;
@@ -49,7 +45,7 @@ export function WelcomeOverlay({
       }
     }, 42);
     return () => clearInterval(interval);
-  }, [phase, totalText, username]);
+  }, [phase, totalText]);
 
   useEffect(() => {
     if (phase === "hold") {
