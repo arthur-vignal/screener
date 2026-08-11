@@ -70,7 +70,7 @@ export function PortfolioWidget() {
 
   const top = Array.from(holdings.values())
     .sort((a, b) => b.weight - a.weight)
-    .slice(0, 6);
+    .slice(0, 4);
   const symbols = top.map((h) => h.symbol).join(",");
 
   const { data: quotesData } = useSWR<{ rows: QuoteRow[] }>(
@@ -125,13 +125,13 @@ export function PortfolioWidget() {
           </div>
         )}
         {!isLoading && top.length === 0 && (
-          <div className="px-6 py-10 text-center">
-            <p className="text-[13px] text-muted-foreground">
+          <div className="px-6 py-6 text-center">
+            <p className="text-[12.5px] text-muted-foreground">
               Você ainda não tem um portfolio.
             </p>
             <Link
               href="/portfolios/mine"
-              className="inline-flex items-center gap-1.5 mt-3 text-[12px] text-foreground hover:underline"
+              className="inline-flex items-center gap-1.5 mt-2 text-[11.5px] text-foreground hover:underline"
             >
               Criar portfolio <ArrowRight className="h-3 w-3" />
             </Link>

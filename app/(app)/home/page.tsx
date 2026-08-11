@@ -59,10 +59,11 @@ export default function HomePage() {
       }}
     >
       <motion.main
-        className="max-w-[1400px] mx-auto px-6 pt-6 pb-32 grid gap-6"
+        className="max-w-[1400px] mx-auto px-6 pt-6 pb-12 grid gap-6"
         style={{
           gridTemplateColumns: "minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr)",
-          gridTemplateRows: "1fr 1fr",
+          gridTemplateRows: "minmax(0, 405px) minmax(0, 405px)",
+          height: "calc(100vh - 64px)",
           gridTemplateAreas: `
             "portfolio market news"
             "highlight  market news"

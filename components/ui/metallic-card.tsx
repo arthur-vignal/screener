@@ -19,11 +19,9 @@ import { cn } from "@/lib/utils";
 export function MetallicCard({
   children,
   className,
-  shimmer = true,
 }: {
   children: React.ReactNode;
   className?: string;
-  shimmer?: boolean;
 }) {
   return (
     <motion.div
@@ -57,24 +55,7 @@ export function MetallicCard({
         }}
       />
 
-      {/* Slow shimmer that travels diagonally */}
-      {shimmer && (
-        <motion.div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.02) 48%, rgba(255,255,255,0.04) 50%, rgba(255,255,255,0.02) 52%, transparent 70%)",
-            backgroundSize: "300% 100%",
-          }}
-          animate={{ backgroundPosition: ["0% 0%", "300% 0%"] }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        />
-      )}
+
 
       <div className="relative z-[1] h-full flex flex-col">
         {children}
