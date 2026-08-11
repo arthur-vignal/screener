@@ -75,10 +75,7 @@ export function SubHeader() {
   }, [theme]);
 
   return (
-    <header
-      className="sticky top-0 z-30 border-b border-white/10 backdrop-blur-md"
-      style={{ background: "rgba(0,0,0,0.30)" }}
-    >
+    <header className="sticky top-0 z-30">
       <div className="max-w-[1400px] mx-auto px-6 h-14 flex items-center justify-between">
         <div className="text-[14px] text-foreground">
           Olá,{" "}
@@ -109,15 +106,15 @@ export function SubHeader() {
   );
 }
 
-/* ---- TypedName: typewriter effect on the username ---- */
+/* ---- TypedName: typewriter effect on the username ----
+   Renders the username in UPPERCASE with a 'shiny' gradient that
+   sweeps across the text. Falls back to nothing until /api/auth/me
+   returns a real name (no flash of 'Convidado'). */
 function TypedName({ name }: { name: string }) {
   const [typed, setTyped] = useState("");
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    // Wait until we actually have a real username from /api/auth/me.
-    // Don't render anything (not even the greeting line) until then,
-    // so the user never sees a flash of "Convidado".
     if (!name) {
       setTyped("");
       setDone(false);
@@ -137,20 +134,46 @@ function TypedName({ name }: { name: string }) {
     return () => clearInterval(interval);
   }, [name]);
 
-  // Don't render the greeting at all until the username has loaded.
   if (!name) return null;
 
   return (
-    <span className="font-medium text-foreground">
-      {typed}
+    <span className="relative inline-block">
+      <span
+        className="font-medium tracking-tight"
+        style={{
+          backgroundImage:
+            "linear-gradient(110deg, #e5e7eb 0%, #ffffff 35%, #c7d2fe 50%, #ffffff 65%, #e5e7eb 100%)",
+          backgroundSize: "300% 100%",
+          WebkitBackgroundClip: "text",
+          backgroundClip: "text",
+          color: "transparent",
+          animation: done
+            ? "typed-shine 6s linear infinite"
+            : "none",
+          textTransform: "uppercase",
+          letterSpacing: "0.04em",
+        }}
+      >
+        {typed}
+      </span>
       {!done && (
         <motion.span
           aria-hidden
-          className="inline-block w-[2px] h-[1em] align-middle ml-0.5 bg-foreground"
+          className="inline-block w-[2px] h-[1em] align-middle ml-0.5 bg-foreground/80"
           animate={{ opacity: [1, 0, 1] }}
           transition={{ duration: 0.85, repeat: Infinity, ease: "linear" }}
         />
       )}
+      <style jsx global>{`
+        @keyframes typed-shine {
+          0% {
+            background-position: 0% 0%;
+          }
+          100% {
+            background-position: 300% 0%;
+          }
+        }
+      `}</style>
     </span>
   );
 }

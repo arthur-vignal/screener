@@ -45,8 +45,12 @@ export function DayHighlight() {
         <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
           Data do dia
         </p>
-        <p className="text-[12px] text-muted-foreground mt-0.5">
-          principal notícia do dia
+        <p className="text-[12.5px] text-foreground/85 mt-1 tabular-nums">
+          {new Date().toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          })}
         </p>
       </div>
 

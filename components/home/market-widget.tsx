@@ -11,10 +11,11 @@
  * Data: /api/assets/list?exchange=b3&limit=200 + /api/assets/quote
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import useSWR from "swr";
+import { ChevronDown, Check } from "lucide-react";
 import { MetallicCard } from "@/components/ui/metallic-card";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +42,7 @@ type QuoteRow = {
   } | null;
 };
 
-const TABS = [
+const MARKETS = [
   { id: "stock", label: "Ações" },
   { id: "etf", label: "ETFs" },
   { id: "bdr", label: "BDRs" },
@@ -49,7 +50,30 @@ const TABS = [
 ] as const;
 
 export function MarketWidget() {
-  const [active, setActive] = useState<(typeof TABS)[number]["id"]>("stock");
+  const [active, setActive] = useState<(typeof MARKETS)[number]["id"]>("stock");
+  const [open, setOpen] = useState(false);
+  const ddRef = useRef<HTMLDivElement | null>(null);
+
+  // Close on click outside / Escape.
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (!open) return;
+      if (ddRef.current && !ddRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    if (open) {
+      document.addEventListener("mousedown", onClick);
+      document.addEventListener("keydown", onKey);
+    }
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   const { data: listData } = useSWR<{ items: AssetRow[] }>(
     `/api/assets/list?exchange=b3&limit=200`,
@@ -72,7 +96,7 @@ export function MarketWidget() {
 
   return (
     <MetallicCard className="h-full">
-      {/* Header + filter pills */}
+      {/* Header + dropdown */}
       <div className="px-6 pt-5 pb-3 border-b border-border flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -82,21 +106,67 @@ export function MarketWidget() {
             maiores variações
           </p>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setActive(t.id)}
-              className={cn(
-                "cursor-pointer px-3 py-1.5 rounded-full text-[11px] uppercase tracking-[0.10em] transition-all",
-                active === t.id
-                  ? "bg-foreground/10 text-foreground border border-foreground/20"
-                  : "border border-border text-muted-foreground hover:bg-muted/40 hover:text-foreground",
-              )}
+        <div className="relative shrink-0" ref={ddRef}>
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className={cn(
+              "cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] tracking-wide",
+              "border border-border bg-foreground/5 hover:bg-foreground/10 transition-colors text-foreground",
+            )}
+            aria-haspopup="listbox"
+            aria-expanded={open}
+          >
+            <span className="font-medium">{MARKETS.find((m) => m.id === active)?.label}</span>
+            <motion.span
+              animate={{ rotate: open ? 180 : 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="inline-flex"
             >
-              {t.label}
-            </button>
-          ))}
+              <ChevronDown className="h-3.5 w-3.5" />
+            </motion.span>
+          </button>
+          <AnimatePresence>
+            {open && (
+              <motion.ul
+                initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+                className="absolute right-0 top-[calc(100%+6px)] z-30 min-w-[140px] py-1 rounded-xl border border-white/10 backdrop-blur-md"
+                style={{
+                  background: "rgba(15,15,18,0.92)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                }}
+                role="listbox"
+              >
+                {MARKETS.map((m) => (
+                  <li key={m.id}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={active === m.id}
+                      onClick={() => {
+                        setActive(m.id);
+                        setOpen(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between gap-2 px-3.5 py-2 text-[12px] cursor-pointer transition-colors",
+                        active === m.id
+                          ? "text-foreground bg-foreground/5"
+                          : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
+                      )}
+                    >
+                      <span>{m.label}</span>
+                      {active === m.id && (
+                        <Check className="h-3.5 w-3.5 text-foreground/80" />
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </motion.ul>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

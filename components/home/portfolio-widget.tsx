@@ -93,11 +93,11 @@ export function PortfolioWidget() {
       {/* Header */}
       <div className="px-6 pt-5 pb-4 border-b border-border flex items-baseline justify-between">
         <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            Seu portfolio
+          <p className="text-[12.5px] text-foreground/85 leading-tight">
+            Hoje seu portfolio valorizou
           </p>
-          <p className="text-[12px] text-muted-foreground mt-0.5">
-            valorizou hoje
+          <p className="text-[11px] text-muted-foreground mt-0.5 tracking-wide">
+            no dia
           </p>
         </div>
         <p

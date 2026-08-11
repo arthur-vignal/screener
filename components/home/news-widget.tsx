@@ -50,11 +50,8 @@ export function NewsWidget() {
   return (
     <MetallicCard className="h-full">
       <div className="px-6 pt-5 pb-3 border-b border-border">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-          Notícias
-        </p>
-        <p className="text-[12px] text-muted-foreground mt-0.5">
-          e análises
+        <p className="text-[12.5px] text-foreground/85">
+          Notícias e análises do dia
         </p>
       </div>
 
