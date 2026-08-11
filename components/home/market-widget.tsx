@@ -15,6 +15,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import useSWR from "swr";
+import { MetallicCard } from "@/components/ui/metallic-card";
 import { cn } from "@/lib/utils";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -70,7 +71,7 @@ export function MarketWidget() {
   );
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden h-full flex flex-col">
+    <MetallicCard className="h-full">
       {/* Header + filter pills */}
       <div className="px-6 pt-5 pb-3 border-b border-border flex items-center justify-between gap-3">
         <div className="min-w-0">
@@ -172,6 +173,6 @@ export function MarketWidget() {
           </p>
         )}
       </div>
-    </div>
+    </MetallicCard>
   );
 }

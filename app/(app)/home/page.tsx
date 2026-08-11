@@ -51,13 +51,17 @@ const DOCK_ITEMS = [
 export default function HomePage() {
   return (
     <div
-      className="min-h-screen bg-background text-foreground"
-      style={{ fontFamily: "var(--font-manrope)" }}
+      className="min-h-screen text-foreground"
+      style={{
+        fontFamily: "var(--font-manrope)",
+        background:
+          "radial-gradient(circle at 50% 0%, #f4f4f5 0%, #ececef 60%, #e1e2e6 100%)",
+      }}
     >
       <motion.main
         className="max-w-[1400px] mx-auto px-6 pt-6 pb-32 grid gap-6"
         style={{
-          gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1fr)",
+          gridTemplateColumns: "minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr)",
           gridTemplateRows: "1fr 1fr",
           gridTemplateAreas: `
             "portfolio market news"

@@ -15,6 +15,7 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import useSWR from "swr";
+import { MetallicCard } from "@/components/ui/metallic-card";
 import { ArrowRight } from "lucide-react";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -88,7 +89,7 @@ export function PortfolioWidget() {
   }, 0);
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden h-full flex flex-col">
+    <MetallicCard className="h-full">
       {/* Header */}
       <div className="px-6 pt-5 pb-4 border-b border-border flex items-baseline justify-between">
         <div className="min-w-0">
@@ -208,6 +209,6 @@ export function PortfolioWidget() {
         acessar portfolio
         <ArrowRight className="h-3.5 w-3.5" />
       </Link>
-    </div>
+    </MetallicCard>
   );
 }

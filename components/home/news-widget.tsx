@@ -10,6 +10,7 @@
 
 import { motion } from "motion/react";
 import useSWR from "swr";
+import { MetallicCard } from "@/components/ui/metallic-card";
 import { ExternalLink, Clock } from "lucide-react";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -47,7 +48,7 @@ export function NewsWidget() {
   const items = (data?.news ?? []).slice(0, 14);
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden h-full flex flex-col">
+    <MetallicCard className="h-full">
       <div className="px-6 pt-5 pb-3 border-b border-border">
         <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
           Notícias
@@ -106,6 +107,6 @@ export function NewsWidget() {
           })}
         </motion.ul>
       </div>
-    </div>
+    </MetallicCard>
   );
 }

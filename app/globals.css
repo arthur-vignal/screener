@@ -99,9 +99,9 @@
 .dark {
   color-scheme: dark;
   /* Fey palette — extracted from Fey UI Kit V1.0 (Figma community file) */
-  --background: #070709;          /* deepest canvas */
-  --foreground: #eeeff1;          /* primary text */
-  --card: #101116;                /* card surface */
+  --background: #ececef;          /* canvas (was: deepest canvas) */
+  --foreground: #0a0a0c;          /* primary text (was: eeeff1) */
+  --card: #14151a;                /* card surface (metallic) */
   --card-foreground: #eeeff1;
   --popover: #131419;
   --popover-foreground: #eeeff1;
@@ -109,13 +109,13 @@
   --primary-foreground: #070709;
   --secondary: #1a1b20;            /* secondary surface */
   --secondary-foreground: #eeeff1;
-  --muted: #16181c;
-  --muted-foreground: #7d8b96;    /* secondary text */
+  --muted: #2a2c33;                /* muted surface (metallic tone) */
+  --muted-foreground: #9ba1a8;    /* secondary text */
   --accent: #1f2427;              /* accent surface */
   --accent-foreground: #eeeff1;
   --destructive: #d84f68;          /* red coral */
-  --border: rgba(238, 239, 241, 0.08);  /* hairline */
-  --input: rgba(238, 239, 241, 0.12);
+  --border: rgba(238, 239, 241, 0.10);  /* hairline (was 0.08) */
+  --input: rgba(238, 239, 241, 0.14);
   --ring: #489ffa;
   /* Chart series — Fey desaturated palette */
   --chart-1: #489ffa;              /* accent blue */
