@@ -190,7 +190,11 @@
 }
 
 /* Lock horizontal scroll globally — page is a single, static
-   full-bleed layout. */
+   full-bleed layout. The html/body must be fully transparent so
+   any layout-level component (SubHeader, dock etc.) never
+   inherits a body colour. */
 html, body {
   overflow-x: hidden;
+  background: transparent !important;
+  background-color: transparent !important;
 }
