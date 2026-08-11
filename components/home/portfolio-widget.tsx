@@ -12,6 +12,7 @@
  * Empty state if the user has no holdings.
  */
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import useSWR from "swr";
@@ -90,12 +91,13 @@ export function PortfolioWidget() {
 
   return (
     <MetallicCard className="h-full">
-      {/* Header — greeting + % side by side. Keep one line. */}
+      {/* Header — time-aware greeting + portfolio day-return %. */}
       <div className="px-6 pt-5 pb-4 border-b border-border flex items-baseline justify-between gap-2">
         <p
-          className="text-[12.5px] text-foreground/90 leading-tight whitespace-nowrap min-w-0 truncate"
+          className="text-[12.5px] text-foreground/90 leading-tight min-w-0 flex-1"
         >
-          Hoje seu portfolio valorizou
+          {greetingFor(new Date().getHours())},{" "}
+          <UserFirstName />, seu portfolio valorizou:
         </p>
         <p
           className="text-[28px] leading-none tracking-tight font-semibold tabular-nums shrink-0"
@@ -208,4 +210,40 @@ export function PortfolioWidget() {
       </Link>
     </MetallicCard>
   );
+}
+
+/* ---- Time-aware greeting (BRT) ---- */
+function greetingFor(hour: number): string {
+  if (hour < 6) return "Boa madrugada";
+  if (hour < 12) return "Bom dia";
+  if (hour < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
+/* ---- UserFirstName — fetches /api/auth/me and shows the first
+   word of the username, capitalised. Empty until /api/auth/me
+   resolves. Falls back to "voce" so the sentence still reads. */
+function UserFirstName() {
+  const [first, setFirst] = useState<string>("");
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const r = await fetch("/api/auth/me", { cache: "no-store" });
+        if (!r.ok) return;
+        const data = (await r.json()) as { user?: { username?: string } };
+        if (!cancelled && data.user?.username) {
+          const name = data.user.username;
+          setFirst(name.charAt(0).toUpperCase() + name.slice(1));
+        }
+      } catch {
+        // ignore
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return <span className="text-foreground">{first || "você"}</span>;
 }

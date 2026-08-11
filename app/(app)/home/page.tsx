@@ -32,8 +32,10 @@ import {
   Search as SearchIcon,
 } from "lucide-react";
 
+import { useEffect, useState } from "react";
 import { AnimatedFloatingDock } from "@/components/ui/animated-floating-dock";
 import { HeaderOverlay } from "@/components/ui/header-overlay";
+import { WelcomeOverlay } from "@/components/home/welcome-overlay";
 import { PortfolioWidget } from "@/components/home/portfolio-widget";
 import { MarketWidget } from "@/components/home/market-widget";
 import { NewsWidget } from "@/components/home/news-widget";
@@ -50,6 +52,31 @@ const DOCK_ITEMS = [
 ];
 
 export default function HomePage() {
+  const [welcomeOpen, setWelcomeOpen] = useState(true);
+  const [welcomeName, setWelcomeName] = useState<string>("");
+
+  // Fetch the username once on mount so the welcome typewriter
+  // has a name to type as soon as the overlay paints.
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const r = await fetch("/api/auth/me", { cache: "no-store" });
+        if (!r.ok) return;
+        const data = (await r.json()) as { user?: { username?: string } };
+        if (!cancelled && data.user?.username) {
+          setWelcomeName(data.user.username);
+        }
+      } catch {
+        // ignore
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div
       className="min-h-screen text-foreground overflow-x-hidden"
