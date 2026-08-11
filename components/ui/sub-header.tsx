@@ -32,10 +32,31 @@ function isB3Open(): boolean {
   return min >= 10 * 60 && min <= 17 * 60 + 30;
 }
 
-export function SubHeader({ name = "Convidado" }: { name?: string }) {
+export function SubHeader() {
   const [clock, setClock] = useState(brTime());
   const [open, setOpen] = useState(isB3Open());
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [name, setName] = useState<string>("Convidado");
+
+  // Fetch current user (the cookie set by /api/auth/{signup,login} is
+  // httpOnly, so we hit /api/auth/me to read it back as JSON).
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const r = await fetch("/api/auth/me", { cache: "no-store" });
+        if (!r.ok) return;
+        const data = (await r.json()) as { user?: { username?: string } };
+        if (!cancelled && data.user?.username) setName(data.user.username);
+      } catch {
+        // not logged in; keep the default greeting
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => {

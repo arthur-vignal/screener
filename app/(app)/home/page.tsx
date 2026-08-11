@@ -168,43 +168,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "var(--font-manrope)" }}>
-      <header className="sticky top-0 z-30 backdrop-blur-md bg-background/60 border-b border-border">
-        <div className="max-w-[1400px] mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/home" className="flex items-center gap-2.5">
-            <span className="w-6 h-6 bg-foreground text-background flex items-center justify-center rounded">
-              <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
-                <path
-                  d="M3 17l5-5 4 4 7-8"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-            <span className="text-[15px] font-medium tracking-tight">Olá, Victor</span>
-          </Link>
-          <div className="flex items-center gap-4 text-[13px] text-muted-foreground">
-            <span className="inline-flex items-center gap-2">
-              <Clock className="h-3.5 w-3.5" />
-              {clock}
-            </span>
-            <span>O mercado está {open ? "aberto" : "fechado"}</span>
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="ml-2 p-1.5 rounded-md hover:bg-muted transition-colors"
-              aria-label="Alternar tema"
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
-
       <main
         className="max-w-[1400px] mx-auto px-6 pt-6 pb-32 grid gap-6"
         style={{ gridTemplateColumns: "minmax(0, 1.6fr) minmax(0, 1fr)" }}
