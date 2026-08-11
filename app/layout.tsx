@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import localFont from "next/font/local";
-import { Manrope } from "next/font/google";
+import { Manrope, Archivo_Black } from "next/font/google";
 import "./globals.css";
 
 // Inter — UI sans (kept)
@@ -37,8 +37,6 @@ const commitMono = localFont({
 });
 
 // Manrope — display + UI typography (Fey UI Kit)
-// Calibre (Fey display font) is not on Google Fonts; Manrope is the
-// closest visual match per the Figma file's metadata.
 const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-manrope",
@@ -46,11 +44,19 @@ const manrope = Manrope({
   weight: ["300", "400", "500", "600", "700", "800"],
 });
 
+// Archivo Black — heavyweight display for hero headlines
+const archivoBlack = Archivo_Black({
+  subsets: ["latin"],
+  variable: "--font-archivo-black",
+  display: "swap",
+  weight: "400",
+});
+
 export const metadata: Metadata = {
   title: "Sulfur.io",
-  description: "Plataforma de análise de mercados financeiros — stocks, crypto, ETFs, portfolios e índices",
+  description:
+    "Plataforma de análise de mercados financeiros — stocks, crypto, ETFs, portfolios e índices",
 };
-
 
 export default function RootLayout({
   children,
@@ -60,7 +66,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${archia.variable} ${geistMono.variable} ${commitMono.variable} ${manrope.variable} h-full antialiased`}
+      className={`dark ${inter.variable} ${archia.variable} ${geistMono.variable} ${commitMono.variable} ${manrope.variable} ${archivoBlack.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-canvas text-ink">
         {children}
