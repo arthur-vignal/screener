@@ -55,7 +55,7 @@ export default function HomePage() {
       style={{
         fontFamily: "var(--font-manrope)",
         background:
-          "radial-gradient(circle at 50% 0%, #c8c9cd 0%, #b8b9bd 60%, #a8a9ad 100%)",
+          "linear-gradient(135deg, #0a0a0c 0%, #14151a 60%, #0a0a0c 100%)",
       }}
     >
       <motion.main

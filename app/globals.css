@@ -99,8 +99,8 @@
 .dark {
   color-scheme: dark;
   /* Fey palette — extracted from Fey UI Kit V1.0 (Figma community file) */
-  --background: #b8b9bd;          /* canvas (medium grey) */
-  --foreground: #0a0a0c;          /* primary text */
+  --background: #070709;          /* page canvas (matches dock backdrop) */
+  --foreground: #eeeff1;          /* primary text (back to light) */
   --card: #0e0f13;                /* card surface (darker metallic) */
   --card-foreground: #eeeff1;
   --popover: #131419;

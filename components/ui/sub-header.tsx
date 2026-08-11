@@ -75,7 +75,10 @@ export function SubHeader() {
   }, [theme]);
 
   return (
-    <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
+    <header
+      className="sticky top-0 z-30 border-b border-white/10 backdrop-blur-md"
+      style={{ background: "rgba(0,0,0,0.30)" }}
+    >
       <div className="max-w-[1400px] mx-auto px-6 h-14 flex items-center justify-between">
         <div className="text-[14px] text-foreground">
           Olá,{" "}
