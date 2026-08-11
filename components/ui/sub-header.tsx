@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from "react";
 import { Moon, Sun, Clock } from "lucide-react";
+import { motion } from "motion/react";
 
 function brTime() {
   return new Date().toLocaleTimeString("pt-BR", {
@@ -78,7 +79,7 @@ export function SubHeader() {
       <div className="max-w-[1400px] mx-auto px-6 h-14 flex items-center justify-between">
         <div className="text-[14px] text-foreground">
           Olá,{" "}
-          <span className="font-medium text-foreground">{name}</span>
+          <TypedName name={name} />
         </div>
         <div className="flex items-center gap-4 text-[12.5px] text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
@@ -102,5 +103,40 @@ export function SubHeader() {
         </div>
       </div>
     </header>
+  );
+}
+
+/* ---- TypedName: typewriter effect on the username ---- */
+function TypedName({ name }: { name: string }) {
+  const [typed, setTyped] = useState("");
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    setTyped("");
+    setDone(false);
+    let i = 0;
+    const interval = setInterval(() => {
+      i += 1;
+      setTyped(name.slice(0, i));
+      if (i >= name.length) {
+        clearInterval(interval);
+        setDone(true);
+      }
+    }, 50);
+    return () => clearInterval(interval);
+  }, [name]);
+
+  return (
+    <span className="font-medium text-foreground">
+      {typed}
+      {!done && (
+        <motion.span
+          aria-hidden
+          className="inline-block w-[2px] h-[1em] align-middle ml-0.5 bg-foreground"
+          animate={{ opacity: [1, 0, 1] }}
+          transition={{ duration: 0.85, repeat: Infinity, ease: "linear" }}
+        />
+      )}
+    </span>
   );
 }

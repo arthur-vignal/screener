@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { motion } from "motion/react";
 import Link from "next/link";
 import {
   ResponsiveContainer,
@@ -34,7 +35,7 @@ import {
   Sun,
   Clock,
 } from "lucide-react";
-import { FloatingDock, type FloatingDockItem } from "@/components/ui/floating-dock";
+import { AnimatedFloatingDock, type AnimatedFloatingDockItem } from "@/components/ui/animated-floating-dock";
 
 const BR = "\u{1F1E7}\u{1F1F7}";
 
@@ -156,7 +157,7 @@ export default function HomePage() {
     }
   }, [theme]);
 
-  const dockItems: FloatingDockItem[] = [
+  const dockItems: AnimatedFloatingDockItem[] = [
     { title: "Home", icon: <Home className="h-5 w-5" />, href: "/home" },
     { title: "Análise", icon: <Compass className="h-5 w-5" />, href: "/analysis" },
     { title: "Calendário", icon: <Calendar className="h-5 w-5" />, href: "/dividends" },
@@ -168,27 +169,46 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "var(--font-manrope)" }}>
-      <main
+      <motion.main
         className="max-w-[1400px] mx-auto px-6 pt-6 pb-32 grid gap-6"
         style={{ gridTemplateColumns: "minmax(0, 1.6fr) minmax(0, 1fr)" }}
+        initial="hidden"
+        animate="show"
+        variants={{
+          hidden: {},
+          show: { transition: { staggerChildren: 0.16, delayChildren: 0.5 } },
+        }}
       >
         <section className="space-y-6">
-          <SentimentWidget />
-          <SectorWidget sectors={SECTORS} />
+          <StaggerOnMount>
+            <SentimentWidget />
+          </StaggerOnMount>
+          <StaggerOnMount>
+            <SectorWidget sectors={SECTORS} />
+          </StaggerOnMount>
         </section>
         <section className="space-y-6">
-          <RecapWidget />
-          <NewsWidget items={NEWS} />
+          <StaggerOnMount>
+            <RecapWidget />
+          </StaggerOnMount>
+          <StaggerOnMount>
+            <NewsWidget items={NEWS} />
+          </StaggerOnMount>
         </section>
-      </main>
+      </motion.main>
 
       <div className="fixed bottom-4 inset-x-0 z-50 flex justify-center pointer-events-none">
         <div className="pointer-events-auto">
-          <FloatingDock items={dockItems} />
+          <AnimatedFloatingDock items={dockItems} />
         </div>
       </div>
 
-      <footer className="max-w-[1400px] mx-auto px-6 pb-8 pt-12 flex items-center justify-between text-xs text-muted-foreground">
+      <motion.footer
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.6, duration: 0.5, ease: "easeOut" }}
+        className="max-w-[1400px] mx-auto px-6 pb-8 pt-12 flex items-center justify-between text-xs text-muted-foreground"
+      >
         <span className="inline-flex items-center gap-2">
           <span className="w-5 h-5 bg-foreground text-background flex items-center justify-center rounded">
             <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3">
@@ -204,7 +224,7 @@ export default function HomePage() {
           Sulfur
         </span>
         <span>Sulfur.io · 2026</span>
-      </footer>
+      </motion.footer>
     </div>
   );
 }
@@ -417,5 +437,24 @@ function NewsRow({ item }: { item: NewsItem }) {
         </span>
       </div>
     </div>
+  );
+}
+
+/* ---- StaggerOnMount: wraps a child so it fades + slides up on mount.
+   Driven by the parent stagger via the `hidden` / `show` variants. */
+function StaggerOnMount({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      variants={{
+        hidden: { opacity: 0, y: 16 },
+        show: {
+          opacity: 1,
+          y: 0,
+          transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] },
+        },
+      }}
+    >
+      {children}
+    </motion.div>
   );
 }
