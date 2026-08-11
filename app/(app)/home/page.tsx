@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 
 import { AnimatedFloatingDock } from "@/components/ui/animated-floating-dock";
+import { HeaderOverlay } from "@/components/ui/header-overlay";
 import { PortfolioWidget } from "@/components/home/portfolio-widget";
 import { MarketWidget } from "@/components/home/market-widget";
 import { NewsWidget } from "@/components/home/news-widget";

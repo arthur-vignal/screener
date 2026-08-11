@@ -3,7 +3,6 @@
 import { PageFade } from "@/components/page-fade";
 import { SelectionProvider } from "@/components/ui/selection-context";
 import { MultiSelectToolbar } from "@/components/ui/multi-select-toolbar";
-import { SubHeader } from "@/components/ui/sub-header";
 
 /**
  * Layout for the main app (everything except the public landing +
@@ -22,7 +21,6 @@ export default function AppLayout({
 }) {
   return (
     <SelectionProvider>
-      <SubHeader />
       <main>
         <PageFade>{children}</PageFade>
       </main>
