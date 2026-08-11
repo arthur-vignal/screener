@@ -91,14 +91,14 @@ export function PortfolioWidget() {
   return (
     <MetallicCard className="h-full">
       {/* Header */}
-      <div className="px-6 pt-5 pb-4 border-b border-border flex items-baseline justify-between">
+      <div className="px-6 pt-5 pb-4 border-b border-border flex items-baseline justify-between gap-3">
         <p
-          className="text-[14px] text-foreground/90 leading-tight"
+          className="text-[14px] text-foreground/90 leading-tight whitespace-nowrap min-w-0 truncate"
         >
           Hoje seu portfolio valorizou
         </p>
         <p
-          className="text-[36px] leading-none tracking-tight font-semibold tabular-nums"
+          className="text-[36px] leading-none tracking-tight font-semibold tabular-nums shrink-0"
           style={{
             color: dayReturnPct >= 0 ? "#10b981" : "#f43f5e",
           }}
