@@ -86,3 +86,5 @@ npm start
 5. Overlays (RSI, etc) default OFF, transição suave.
 6. Performance > estética vazia.
 
+// trigger
+// trigger Tue, Aug 11, 2026  1:47:39 PM
