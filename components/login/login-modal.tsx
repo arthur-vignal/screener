@@ -3,30 +3,34 @@
 /**
  * LoginModal (stepper) - one-field-at-a-time auth UI inspired by
  * Typeform + the Fey reference. The modal sits on the blurred
- * backdrop but renders each field on its own line, animated in/out
- * with framer-motion's AnimatePresence + slide+fade transitions.
+ * backdrop. Title is constant; subtitle changes per stage.
  *
  * Stages:
- *   1. name  -> Seu nome           (arrow advances to email)
- *   2. email -> Account email      (arrow advances to password)
- *   3. password -> Senha           (Enter or arrow submits)
- *   4. review -> [Criar conta] + [Continuar com Google]
- *
- * No card wrapper. Each stage animates in independently.
+ *   1. name      -> "Para começar, digite seu nome"
+ *   2. email     -> "Para começar, digite seu email"
+ *   3. password  -> "Para começar, crie uma senha"
+ *   4. review    -> summary chips + final submit + Google
  */
 
 import {
   useEffect,
   useRef,
   useState,
-  type ReactNode,
   type FormEvent,
+  type ReactNode,
 } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, ArrowRight } from "lucide-react";
+import { X, ArrowRight, Eye, EyeOff } from "lucide-react";
 
 type Mode = "signup" | "login";
 type Stage = "name" | "email" | "password" | "review";
+
+const STAGE_PROMPTS: Record<Stage, string> = {
+  name: "Para começar, digite seu nome",
+  email: "Para começar, digite seu email",
+  password: "Para começar, crie uma senha",
+  review: "Confirme seus dados para continuar",
+};
 
 export function LoginModal({
   open,
@@ -126,7 +130,6 @@ export function LoginModal({
     window.location.href = "/api/auth/google/start";
   }
 
-  // Drive the stage transitions with Enter (advance) and Shift+Tab (back)
   function onKeyDownField(e: React.KeyboardEvent) {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -146,13 +149,16 @@ export function LoginModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
-          onClick={onClose}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-start px-6 pt-24 md:pt-32"
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          // Click on the backdrop closes; clicks on the inner content are stopped
+          onClick={(e) => {
+            if (e.target === e.currentTarget) onClose();
+          }}
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center px-6 py-8"
           style={{
-            background: "rgba(10, 10, 12, 0.45)",
-            backdropFilter: "blur(28px) saturate(140%)",
-            WebkitBackdropFilter: "blur(28px) saturate(140%)",
+            background: "rgba(10, 10, 12, 0.55)",
+            backdropFilter: "blur(48px) saturate(140%)",
+            WebkitBackdropFilter: "blur(48px) saturate(140%)",
           }}
         >
           {/* Center radial halo (Fey touch) */}
@@ -163,7 +169,7 @@ export function LoginModal({
               width: 520,
               height: 520,
               background:
-                "radial-gradient(circle, rgba(167,139,250,0.20) 0%, rgba(232,147,91,0.10) 35%, transparent 65%)",
+                "radial-gradient(circle, rgba(167,139,250,0.22) 0%, rgba(232,147,91,0.12) 35%, transparent 65%)",
               filter: "blur(20px)",
             }}
           />
@@ -171,20 +177,15 @@ export function LoginModal({
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="absolute top-5 right-5 text-white/50 hover:text-white transition-colors"
+            className="absolute top-5 right-5 text-white/50 hover:text-white transition-colors z-10"
           >
             <X className="w-4 h-4" />
           </button>
 
-          {/* Header — title + subtitle (always present, doesn't change) */}
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="w-full max-w-[420px] text-center mb-10"
-          >
+          {/* Header — title is constant; subtitle changes per stage */}
+          <div className="w-full max-w-[440px] text-center mb-8">
             <h2
-              className="font-display text-[28px] tracking-tight leading-tight"
+              className="font-display text-[30px] tracking-tight leading-tight"
               style={{
                 background:
                   "linear-gradient(135deg, #fff 0%, #d8b4fe 50%, #fbcfe8 100%)",
@@ -195,15 +196,22 @@ export function LoginModal({
             >
               {mode === "signup" ? "Welcome to Sulfur" : "Bem-vindo de volta"}
             </h2>
-            <p className="mt-1.5 text-[13px] text-white/55">
-              {mode === "signup"
-                ? "Para começar, crie sua conta."
-                : "Entre com seu email para continuar."}
-            </p>
-          </motion.div>
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={stage}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="mt-2 text-[13.5px] text-white/60"
+              >
+                {STAGE_PROMPTS[stage]}
+              </motion.p>
+            </AnimatePresence>
+          </div>
 
           {/* Stepper content (no card) */}
-          <div className="w-full max-w-[420px]">
+          <div className="w-full max-w-[440px]">
             <AnimatePresence mode="wait">
               {stage === "name" && (
                 <Field
@@ -216,7 +224,6 @@ export function LoginModal({
                   onSubmit={advance}
                   canAdvance={name.trim().length > 0}
                   onKeyDown={onKeyDownField}
-                  inputRef={(el) => (window._stageName = el)}
                 />
               )}
               {stage === "email" && (
@@ -230,13 +237,12 @@ export function LoginModal({
                   onSubmit={advance}
                   canAdvance={email.includes("@")}
                   onKeyDown={onKeyDownField}
-                  showArrow
                 />
               )}
               {stage === "password" && (
                 <Field
                   key="password"
-                  placeholder="Senha"
+                  placeholder="Crie uma senha"
                   value={password}
                   onChange={setPassword}
                   type="password"
@@ -246,7 +252,6 @@ export function LoginModal({
                   onSubmit={() => setStage("review")}
                   canAdvance={password.length > 0}
                   onKeyDown={onKeyDownField}
-                  showArrow
                   passwordReveal
                 />
               )}
@@ -264,7 +269,7 @@ export function LoginModal({
                   onEdit={back}
                   onSwitchMode={() => {
                     setMode(mode === "signup" ? "login" : "signup");
-                    setStage(mode === "signup" ? "email" : "email");
+                    setStage("email");
                   }}
                 />
               )}
@@ -286,9 +291,7 @@ function Field({
   onSubmit,
   canAdvance,
   onKeyDown,
-  showArrow = true,
   passwordReveal = false,
-  inputRef,
 }: {
   placeholder: string;
   value: string;
@@ -298,14 +301,11 @@ function Field({
   onSubmit: () => void;
   canAdvance: boolean;
   onKeyDown?: (e: React.KeyboardEvent) => void;
-  showArrow?: boolean;
   passwordReveal?: boolean;
-  inputRef?: (el: HTMLInputElement | null) => void;
 }) {
   const ref = useRef<HTMLInputElement | null>(null);
   const [reveal, setReveal] = useState(false);
 
-  // Auto-focus on mount
   useEffect(() => {
     ref.current?.focus();
   }, []);
@@ -315,7 +315,7 @@ function Field({
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -24 }}
-      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit();
@@ -323,25 +323,22 @@ function Field({
       className="w-full"
     >
       <div
-        className="flex items-center gap-2 rounded-full px-4 h-12 transition-all"
+        className="flex items-center gap-2 rounded-full pl-5 pr-2 h-12 transition-all"
         style={{
-          background: "rgba(255,255,255,0.04)",
+          background: "rgba(255,255,255,0.05)",
           backdropFilter: "blur(14px) saturate(160%)",
           WebkitBackdropFilter: "blur(14px) saturate(160%)",
           border: canAdvance
-            ? "1px solid rgba(255,255,255,0.14)"
-            : "1px solid rgba(255,255,255,0.08)",
+            ? "1px solid rgba(255,255,255,0.18)"
+            : "1px solid rgba(255,255,255,0.10)",
           boxShadow: canAdvance
-            ? "0 0 0 4px rgba(167,139,250,0.10), inset 0 1px 0 rgba(255,255,255,0.10)"
+            ? "0 0 0 4px rgba(167,139,250,0.12), inset 0 1px 0 rgba(255,255,255,0.10)"
             : "inset 0 1px 0 rgba(255,255,255,0.06)",
           transition: "border 250ms ease, box-shadow 250ms ease",
         }}
       >
         <input
-          ref={(el) => {
-            ref.current = el;
-            inputRef?.(el);
-          }}
+          ref={ref}
           type={passwordReveal && reveal ? "text" : type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -349,46 +346,48 @@ function Field({
           autoComplete={autoComplete}
           onKeyDown={onKeyDown}
           required
-          className="flex-1 bg-transparent text-[14px] text-white placeholder:text-white/40 outline-none"
+          className="flex-1 min-w-0 bg-transparent text-[14px] text-white placeholder:text-white/40 outline-none"
         />
         {passwordReveal && (
           <button
             type="button"
-            onClick={() => setReveal((r) => !r)}
-            className="text-[10.5px] text-white/50 hover:text-white/80 transition-colors px-1.5"
-            tabIndex={-1}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setReveal((r) => !r);
+            }}
+            aria-label={reveal ? "Ocultar senha" : "Mostrar senha"}
+            className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white/55 hover:text-white hover:bg-white/10 transition-colors"
           >
-            {reveal ? "OCULTAR" : "MOSTRAR"}
+            {reveal ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         )}
-        {showArrow && (
-          <motion.button
-            type="submit"
-            aria-label="Avançar"
-            disabled={!canAdvance}
-            className="w-7 h-7 rounded-full flex items-center justify-center transition-all"
-            style={{
-              background: canAdvance
-                ? "rgba(255,255,255,0.10)"
-                : "rgba(255,255,255,0.04)",
-              border: canAdvance
-                ? "1px solid rgba(255,255,255,0.18)"
-                : "1px solid rgba(255,255,255,0.06)",
-              color: canAdvance ? "#fff" : "rgba(255,255,255,0.40)",
-            }}
-            whileHover={canAdvance ? { scale: 1.05 } : undefined}
-            whileTap={canAdvance ? { scale: 0.95 } : undefined}
-            transition={{ type: "spring", stiffness: 400, damping: 22 }}
-          >
-            <ArrowRight className="w-3.5 h-3.5" />
-          </motion.button>
-        )}
+        <motion.button
+          type="submit"
+          aria-label="Avançar"
+          disabled={!canAdvance}
+          className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all"
+          style={{
+            background: canAdvance
+              ? "rgba(255,255,255,0.12)"
+              : "rgba(255,255,255,0.04)",
+            border: canAdvance
+              ? "1px solid rgba(255,255,255,0.20)"
+              : "1px solid rgba(255,255,255,0.06)",
+            color: canAdvance ? "#fff" : "rgba(255,255,255,0.40)",
+          }}
+          whileHover={canAdvance ? { scale: 1.05 } : undefined}
+          whileTap={canAdvance ? { scale: 0.95 } : undefined}
+          transition={{ type: "spring", stiffness: 400, damping: 22 }}
+        >
+          <ArrowRight className="w-4 h-4" />
+        </motion.button>
       </div>
     </motion.form>
   );
 }
 
-/* ---- ReviewStep: shows summary + final submit + Google button ---- */
+/* ---- ReviewStep ---- */
 function ReviewStep({
   name,
   email,
@@ -417,10 +416,9 @@ function ReviewStep({
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -24 }}
-      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className="w-full space-y-3"
     >
-      {/* Summary chips (clickable to edit) */}
       <div className="space-y-1.5">
         <ReviewChip label="Nome" value={name} onEdit={onEdit} />
         <ReviewChip label="Email" value={email} onEdit={onEdit} />
@@ -432,7 +430,6 @@ function ReviewStep({
         </div>
       )}
 
-      {/* Final submit */}
       <motion.button
         onClick={onSubmit}
         disabled={submitting}
@@ -449,11 +446,7 @@ function ReviewStep({
             "inset 0 1px 0 rgba(255,255,255,0.16), 0 8px 24px rgba(0,0,0,0.30)",
         }}
       >
-        {submitting
-          ? "..."
-          : mode === "signup"
-            ? "Criar conta"
-            : "Entrar"}
+        {submitting ? "..." : mode === "signup" ? "Criar conta" : "Entrar"}
       </motion.button>
 
       <div className="flex items-center gap-3 my-1">
@@ -550,7 +543,6 @@ function ReviewChip({
   );
 }
 
-/* ---- Google "G" icon, simplified ---- */
 function GoogleG() {
   return (
     <svg
@@ -578,11 +570,4 @@ function GoogleG() {
       />
     </svg>
   );
-}
-
-// Helper so we can store the latest input ref on window during animation
-declare global {
-  interface Window {
-    _stageName?: HTMLInputElement | null;
-  }
 }

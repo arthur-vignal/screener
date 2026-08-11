@@ -1,20 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import { EncryptedText } from "@/components/ui/encrypted-text";
 import { LiquidGlassHoverButton } from "@/components/ui/liquid-glass-hover-button";
 import { LoginModal } from "@/components/login/login-modal";
+import { WelcomeScreen } from "@/components/login/welcome-screen";
 
 export function Hero() {
   const [showLogin, setShowLogin] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
 
   function handleSuccess(user: { username: string }) {
-    // Persist a tiny client-side flag so the next render can redirect
-    if (typeof window !== "undefined") {
-      window.location.href = "/home";
-    }
+    setShowLogin(false);
+    // tiny delay so the modal close animation lands first
+    setTimeout(() => setUsername(user.username), 350);
   }
 
   return (
@@ -22,8 +23,6 @@ export function Hero() {
       <div
         className="relative z-10 flex flex-col items-center justify-center px-6 pt-32 pb-24 text-center"
         style={{
-          // When the login modal opens, blur the hero behind the overlay.
-          // The overlay does its own backdrop-filter; we just reduce motion.
           filter: showLogin ? "blur(2px)" : "none",
           transition: "filter 400ms ease",
           pointerEvents: showLogin ? "none" : "auto",
@@ -93,6 +92,17 @@ export function Hero() {
         onClose={() => setShowLogin(false)}
         onSuccess={handleSuccess}
       />
+
+      {username && (
+        <WelcomeScreen
+          username={username}
+          onDone={() => {
+            if (typeof window !== "undefined") {
+              window.location.href = "/home";
+            }
+          }}
+        />
+      )}
     </AuroraBackground>
   );
 }
