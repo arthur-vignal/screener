@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import { EncryptedText } from "@/components/ui/encrypted-text";
@@ -9,6 +10,7 @@ import { LoginModal } from "@/components/login/login-modal";
 import { WelcomeScreen } from "@/components/login/welcome-screen";
 
 export function Hero() {
+  const router = useRouter();
   const [showLogin, setShowLogin] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
 
@@ -78,7 +80,7 @@ export function Hero() {
             className="px-8 py-3.5 text-sm"
             onClick={(e) => {
               e.preventDefault();
-              setShowLogin(true);
+              router.push("/login");
             }}
           >
             Acessar

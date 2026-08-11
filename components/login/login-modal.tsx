@@ -39,11 +39,18 @@ export function LoginModal({
   initialMode = "signup",
   onClose,
   onSuccess,
+  showGoogleOnlyOnFirstStage = false,
 }: {
   open: boolean;
   initialMode?: Mode;
   onClose: () => void;
   onSuccess?: (user: { username: string }) => void;
+  /**
+   * If true, the Google button is only shown on the first stage
+   * (name). Otherwise it shows on every stage. Default false to
+   * keep the existing behaviour.
+   */
+  showGoogleOnlyOnFirstStage?: boolean;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [stage, setStage] = useState<Stage>("name");
@@ -261,24 +268,26 @@ export function LoginModal({
             </AnimatePresence>
           </div>
 
-          {/* Google button — shown from the start, between subtitle and field */}
-          <motion.button
-            onClick={handleGoogle}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            transition={{ type: "spring", stiffness: 400, damping: 22 }}
-            className="mt-5 cursor-pointer w-full max-w-[440px] h-11 rounded-full text-[13.5px] font-medium text-white inline-flex items-center justify-center gap-2.5 transition-all"
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              backdropFilter: "blur(16px) saturate(180%)",
-              WebkitBackdropFilter: "blur(16px) saturate(180%)",
-              border: "1px solid rgba(255,255,255,0.10)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
-            }}
-          >
-            <GoogleG />
-            Continuar com Google
-          </motion.button>
+          {/* Google button — on first stage only when showGoogleOnlyOnFirstStage */}
+          {(!showGoogleOnlyOnFirstStage || stage === "name") && (
+            <motion.button
+              onClick={handleGoogle}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              transition={{ type: "spring", stiffness: 400, damping: 22 }}
+              className="mt-5 cursor-pointer w-full max-w-[440px] h-11 rounded-full text-[13.5px] font-medium text-white inline-flex items-center justify-center gap-2.5 transition-all"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                backdropFilter: "blur(16px) saturate(180%)",
+                WebkitBackdropFilter: "blur(16px) saturate(180%)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+              }}
+            >
+              <GoogleG />
+              Continuar com Google
+            </motion.button>
+          )}
 
           {/* Mode switch + Terms footer */}
           <div className="mt-6 text-center text-[12px] text-white/50">
