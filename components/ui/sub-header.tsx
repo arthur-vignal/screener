@@ -75,7 +75,10 @@ export function SubHeader() {
   }, [theme]);
 
   return (
-    <header className="sticky top-0 z-30">
+    <header
+      className="sticky top-0 z-30"
+      style={{ background: "transparent" }}
+    >
       <div className="max-w-[1400px] mx-auto px-6 h-14 flex items-center justify-between">
         <div className="text-[14px] text-foreground">
           Olá,{" "}
@@ -122,11 +125,12 @@ function TypedName({ name }: { name: string }) {
     }
     setTyped("");
     setDone(false);
+    const display = name.charAt(0).toUpperCase() + name.slice(1);
     let i = 0;
     const interval = setInterval(() => {
       i += 1;
-      setTyped(name.slice(0, i));
-      if (i >= name.length) {
+      setTyped(display.slice(0, i));
+      if (i >= display.length) {
         clearInterval(interval);
         setDone(true);
       }
@@ -150,8 +154,6 @@ function TypedName({ name }: { name: string }) {
           animation: done
             ? "typed-shine 6s linear infinite"
             : "none",
-          textTransform: "uppercase",
-          letterSpacing: "0.04em",
         }}
       >
         {typed}

@@ -92,16 +92,13 @@ export function PortfolioWidget() {
     <MetallicCard className="h-full">
       {/* Header */}
       <div className="px-6 pt-5 pb-4 border-b border-border flex items-baseline justify-between">
-        <div className="min-w-0">
-          <p className="text-[12.5px] text-foreground/85 leading-tight">
-            Hoje seu portfolio valorizou
-          </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5 tracking-wide">
-            no dia
-          </p>
-        </div>
         <p
-          className="text-[28px] leading-none tracking-tight font-medium tabular-nums"
+          className="text-[14px] text-foreground/90 leading-tight"
+        >
+          Hoje seu portfolio valorizou
+        </p>
+        <p
+          className="text-[36px] leading-none tracking-tight font-semibold tabular-nums"
           style={{
             color: dayReturnPct >= 0 ? "#10b981" : "#f43f5e",
           }}

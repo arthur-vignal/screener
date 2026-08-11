@@ -96,16 +96,8 @@ export function MarketWidget() {
 
   return (
     <MetallicCard className="h-full">
-      {/* Header + dropdown */}
-      <div className="px-6 pt-5 pb-3 border-b border-border flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            Mercado B3
-          </p>
-          <p className="text-[12px] text-muted-foreground mt-0.5">
-            maiores variações
-          </p>
-        </div>
+      {/* Header: only the dropdown */}
+      <div className="px-6 pt-5 pb-3 border-b border-border flex items-center justify-end gap-3">
         <div className="relative shrink-0" ref={ddRef}>
           <button
             type="button"
