@@ -91,7 +91,9 @@ export function LoginModal({
   async function handleSubmit(e?: FormEvent) {
     if (e) e.preventDefault();
     if (submitting) return;
-    if (!name || !email || !password) return;
+    // In login mode only email + password are required (no name).
+    if (mode === "signup" && (!name || !email || !password)) return;
+    if (mode === "login" && (!email || !password)) return;
     setError(null);
     setSubmitting(true);
     try {
@@ -290,6 +292,22 @@ export function LoginModal({
               )}
             </AnimatePresence>
           </div>
+
+          {/* Error message */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                key="login-error"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2 }}
+                className="mt-4 max-w-[440px] w-full text-[12px] text-[#f2555f] bg-[rgba(242,85,95,0.10)] border border-[rgba(242,85,95,0.28)] rounded-md px-3 py-2"
+              >
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Google button — on first stage only when showGoogleOnlyOnFirstStage */}
           {(!showGoogleOnlyOnFirstStage || stage === "name") && (
