@@ -19,10 +19,12 @@ export function LiquidGlassHoverButton({
   children,
   className,
   href = "#",
+  onClick,
 }: {
   children: ReactNode;
   className?: string;
   href?: string;
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }) {
   const ref = useRef<HTMLAnchorElement | null>(null);
   const [hovered, setHovered] = useState(false);
@@ -39,6 +41,7 @@ export function LiquidGlassHoverButton({
     <Link
       href={href}
       ref={ref}
+      onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onMouseMove={onMove}
