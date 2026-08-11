@@ -41,7 +41,7 @@ export function MetallicCard({
       )}
       style={{
         background:
-          "linear-gradient(135deg, #0f1014 0%, #1c1d22 30%, #14151a 55%, #232429 80%, #0e0f13 100%)",
+          "linear-gradient(135deg, #08090c 0%, #15161b 30%, #0d0e12 55%, #1c1d22 80%, #07080b 100%)",
         border: "1px solid rgba(255,255,255,0.06)",
         boxShadow:
           "inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 rgba(0,0,0,0.4), 0 10px 30px rgba(0,0,0,0.45)",
@@ -53,7 +53,7 @@ export function MetallicCard({
         className="pointer-events-none absolute inset-0 opacity-70"
         style={{
           background:
-            "linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0) 18%, rgba(255,255,255,0) 82%, rgba(255,255,255,0.025) 100%)",
+            "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0) 18%, rgba(255,255,255,0) 82%, rgba(255,255,255,0.015) 100%)",
         }}
       />
 
@@ -64,12 +64,12 @@ export function MetallicCard({
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.06) 48%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.06) 52%, transparent 70%)",
+              "linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.02) 48%, rgba(255,255,255,0.04) 50%, rgba(255,255,255,0.02) 52%, transparent 70%)",
             backgroundSize: "300% 100%",
           }}
           animate={{ backgroundPosition: ["0% 0%", "300% 0%"] }}
           transition={{
-            duration: 9,
+            duration: 12,
             repeat: Infinity,
             ease: "linear",
           }}
