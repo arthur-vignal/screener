@@ -86,6 +86,13 @@ export default function HomePage() {
           "linear-gradient(135deg, #0a0a0c 0%, #14151a 60%, #0a0a0c 100%)",
       }}
     >
+      <HeaderOverlay />
+      {welcomeOpen && (
+        <WelcomeOverlay
+          username={welcomeName}
+          onDone={() => setWelcomeOpen(false)}
+        />
+      )}
       <motion.main
         className="max-w-[1400px] mx-auto px-6 pt-6 pb-12 grid gap-6"
         style={{
