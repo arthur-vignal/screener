@@ -1,19 +1,16 @@
 "use client";
 
 /**
- * LoginModal (stepper) - one-field-at-a-time auth UI inspired by
- * Typeform + the Fey reference. The modal sits on the blurred
- * backdrop. Title is constant; subtitle changes per stage.
+ * LoginModal (stepper) - one-field-at-a-time auth UI.
  *
  * Stages (signup):
- *   1. name      -> "Para comecar, digite seu nome"
- *                     (Continuar com Google also visible)
- *   2. email     -> "Para comecar, digite seu email"
- *   3. password  -> "Para comecar, crie uma senha"
- *                   (submit on Enter or arrow; no review step)
+ *   1. name     -> "Para comecar, digite seu nome"
+ *   2. email    -> "Para comecar, digite seu email"   (back -> name)
+ *   3. password -> "Para comecar, crie uma senha"      (back -> email)
  *
- * After the password is submitted the modal closes, the welcome
- * screen takes over.
+ * Back button is rendered above each field on stages 2 and 3.
+ * Submit on the password stage fires the actual /api/auth/{signup,login}
+ * request. While submitting, the arrow button shows a spinner.
  */
 
 import {
@@ -23,7 +20,7 @@ import {
   type FormEvent,
 } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowRight, Eye, EyeOff, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, X } from "lucide-react";
 
 type Mode = "signup" | "login";
 type Stage = "name" | "email" | "password";
@@ -45,11 +42,6 @@ export function LoginModal({
   initialMode?: Mode;
   onClose: () => void;
   onSuccess?: (user: { username: string }) => void;
-  /**
-   * If true, the Google button is only shown on the first stage
-   * (name). Otherwise it shows on every stage. Default false to
-   * keep the existing behaviour.
-   */
   showGoogleOnlyOnFirstStage?: boolean;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -86,16 +78,19 @@ export function LoginModal({
     } else if (stage === "email" && email.includes("@")) {
       setStage("password");
     }
-    // password stage never advances on its own - it submits
   }
 
   function back() {
-    if (stage === "password") setStage("email");
-    else if (stage === "email") setStage("name");
+    if (stage === "password") {
+      setStage("email");
+    } else if (stage === "email") {
+      setStage("name");
+    }
   }
 
   async function handleSubmit(e?: FormEvent) {
-    e?.preventDefault();
+    if (e) e.preventDefault();
+    if (submitting) return;
     if (!name || !email || !password) return;
     setError(null);
     setSubmitting(true);
@@ -124,7 +119,6 @@ export function LoginModal({
         setSubmitting(false);
         return;
       }
-      // Hand off to WelcomeScreen
       onSuccess?.({
         username: data.user?.username ?? name ?? email.split("@")[0],
       });
@@ -141,8 +135,11 @@ export function LoginModal({
   function onKeyDownField(e: React.KeyboardEvent) {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (stage === "password") handleSubmit();
-      else advance();
+      if (stage === "password") {
+        handleSubmit();
+      } else {
+        advance();
+      }
     } else if (e.key === "Escape" && stage !== "name") {
       e.preventDefault();
       back();
@@ -221,49 +218,75 @@ export function LoginModal({
           <div className="w-full max-w-[440px]">
             <AnimatePresence mode="wait">
               {stage === "name" && (
-                <Field
-                  key="name"
-                  placeholder="Seu nome"
-                  value={name}
-                  onChange={setName}
-                  type="text"
-                  autoComplete="name"
-                  onSubmit={advance}
-                  canAdvance={name.trim().length > 0}
-                  onKeyDown={onKeyDownField}
-                  showArrow
-                />
+                <motion.div
+                  key="name-stage"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <Field
+                    key="name"
+                    placeholder="Seu nome"
+                    value={name}
+                    onChange={setName}
+                    type="text"
+                    autoComplete="name"
+                    onSubmit={advance}
+                    canAdvance={name.trim().length > 0}
+                    onKeyDown={onKeyDownField}
+                    showArrow
+                  />
+                </motion.div>
               )}
               {stage === "email" && (
-                <Field
-                  key="email"
-                  placeholder="Account email"
-                  value={email}
-                  onChange={setEmail}
-                  type="email"
-                  autoComplete="email"
-                  onSubmit={advance}
-                  canAdvance={email.includes("@")}
-                  onKeyDown={onKeyDownField}
-                  showArrow
-                />
+                <motion.div
+                  key="email-stage"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <BackChip onClick={back} />
+                  <Field
+                    key="email"
+                    placeholder="Account email"
+                    value={email}
+                    onChange={setEmail}
+                    type="email"
+                    autoComplete="email"
+                    onSubmit={advance}
+                    canAdvance={email.includes("@")}
+                    onKeyDown={onKeyDownField}
+                    showArrow
+                  />
+                </motion.div>
               )}
               {stage === "password" && (
-                <Field
-                  key="password"
-                  placeholder="Crie uma senha"
-                  value={password}
-                  onChange={setPassword}
-                  type="password"
-                  autoComplete={
-                    mode === "signup" ? "new-password" : "current-password"
-                  }
-                  onSubmit={() => handleSubmit()}
-                  canAdvance={password.length > 0 && !submitting}
-                  onKeyDown={onKeyDownField}
-                  passwordReveal
-                  submitting={submitting}
-                />
+                <motion.div
+                  key="password-stage"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <BackChip onClick={back} />
+                  <Field
+                    key="password"
+                    placeholder="Crie uma senha"
+                    value={password}
+                    onChange={setPassword}
+                    type="password"
+                    autoComplete={
+                      mode === "signup" ? "new-password" : "current-password"
+                    }
+                    onSubmit={() => handleSubmit()}
+                    canAdvance={password.length > 0 && !submitting}
+                    onKeyDown={onKeyDownField}
+                    passwordReveal
+                    submitting={submitting}
+                  />
+                </motion.div>
               )}
             </AnimatePresence>
           </div>
@@ -332,6 +355,24 @@ export function LoginModal({
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+/* ---- BackChip: small "voltar" pill above the field ---- */
+function BackChip({ onClick }: { onClick: () => void }) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      initial={{ opacity: 0, x: -4 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -4 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className="cursor-pointer inline-flex items-center gap-1.5 text-[11.5px] text-white/50 hover:text-white transition-colors mb-2"
+    >
+      <ArrowLeft className="w-3 h-3" />
+      Voltar
+    </motion.button>
   );
 }
 
@@ -405,7 +446,7 @@ function Field({
           onKeyDown={onKeyDown}
           required
           disabled={submitting}
-          className="flex-1 min-w-0 bg-transparent text-[14px] text-white placeholder:text-white/40 outline-none"
+          className="flex-1 min-w-0 bg-transparent text-[14px] text-white placeholder:text-white/40 outline-none cursor-pointer"
         />
         {passwordReveal && (
           <button
