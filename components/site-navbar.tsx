@@ -30,18 +30,7 @@ export function SiteNavbar() {
         <NavbarLogo />
         <NavItems items={navItems} />
         <div className="flex items-center gap-2">
-          <LiquidGlassButton
-            variant="ghost"
-            className="px-4 py-2 text-[13px]"
-          >
-            Entrar
-          </LiquidGlassButton>
-          <LiquidGlassButton
-            variant="default"
-            className="px-4 py-2 text-[13px]"
-          >
-            Começar agora
-          </LiquidGlassButton>
+
         </div>
       </NavBody>
 
@@ -63,22 +52,7 @@ export function SiteNavbar() {
               <span className="block">{item.name}</span>
             </a>
           ))}
-          <div className="flex w-full flex-col gap-3 pt-2">
-            <LiquidGlassButton
-              variant="ghost"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="w-full px-4 py-2.5 text-sm"
-            >
-              Entrar
-            </LiquidGlassButton>
-            <LiquidGlassButton
-              variant="default"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="w-full px-4 py-2.5 text-sm"
-            >
-              Começar agora
-            </LiquidGlassButton>
-          </div>
+
         </MobileNavMenu>
       </MobileNav>
     </Navbar>
