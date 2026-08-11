@@ -188,3 +188,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Lock horizontal scroll globally — page is a single, static
+   full-bleed layout. */
+html, body {
+  overflow-x: hidden;
+}

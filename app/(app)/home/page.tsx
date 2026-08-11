@@ -51,7 +51,7 @@ const DOCK_ITEMS = [
 export default function HomePage() {
   return (
     <div
-      className="min-h-screen text-foreground"
+      className="min-h-screen text-foreground overflow-x-hidden"
       style={{
         fontFamily: "var(--font-manrope)",
         background:
@@ -108,28 +108,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <motion.footer
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.6, duration: 0.5, ease: "easeOut" }}
-        className="max-w-[1400px] mx-auto px-6 pb-8 pt-12 flex items-center justify-between text-xs text-muted-foreground"
-      >
-        <span className="inline-flex items-center gap-2">
-          <span className="w-5 h-5 bg-foreground text-background flex items-center justify-center rounded">
-            <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3">
-              <path
-                d="M3 17l5-5 4 4 7-8"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-          Sulfur
-        </span>
-        <span>Sulfur.io · 2026</span>
-      </motion.footer>
+
     </div>
   );
 }
