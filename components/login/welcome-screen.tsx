@@ -2,13 +2,14 @@
 
 /**
  * WelcomeScreen — full-bleed overlay shown right after a successful
- * signup/login. Background is a black -> gray gradient with a heavy
+ * signup/login. Background is a gray->black gradient with a heavy
  * blur layer over whatever is behind. The greeting
  *   "Bem vindo(a), {username}"
- * is rendered with a typewriter effect: "Bem vindo(a)," appears in
+ * is rendered with a typewriter effect: "Bem vindo(a)" appears in
  * regular weight, then ", {username}" in bold. After a beat, the
- * whole line fades out, the blur eases off, and the underlying home
- * page becomes visible.
+ * whole line fades out, the backdrop-filter eases from 32px -> 0px
+ * over ~0.9s, revealing the home underneath. The welcome unmounts
+ * when the blur reaches 0, and onDone fires (which navigates to /home).
  */
 
 import { useEffect, useState } from "react";
@@ -26,7 +27,7 @@ export function WelcomeScreen({
   const prefix = "Bem vindo(a), ";
   const totalText = `${prefix}${username}`;
 
-  // Typewriter effect
+  // Typewriter
   useEffect(() => {
     if (phase !== "typing") return;
     let i = 0;
@@ -37,27 +38,26 @@ export function WelcomeScreen({
         clearInterval(interval);
         setPhase("hold");
       }
-    }, 38);
+    }, 42);
     return () => clearInterval(interval);
   }, [phase, totalText]);
 
-  // Hold for 1.4s, then exit
+  // Hold for 1.2s, then start exit
   useEffect(() => {
     if (phase === "hold") {
-      const t = setTimeout(() => setPhase("exit"), 1400);
+      const t = setTimeout(() => setPhase("exit"), 1200);
       return () => clearTimeout(t);
     }
   }, [phase]);
 
-  // After exit animation, fire onDone
+  // When the exit animation ends, call onDone
   useEffect(() => {
     if (phase === "exit") {
-      const t = setTimeout(() => onDone(), 750);
+      const t = setTimeout(() => onDone(), 950);
       return () => clearTimeout(t);
     }
   }, [phase, onDone]);
 
-  // Split typed text into prefix and username
   const prefixDone = typed.length >= prefix.length;
   const restTyped = prefixDone ? typed.slice(prefix.length) : "";
 
@@ -66,74 +66,73 @@ export function WelcomeScreen({
       <motion.div
         key="welcome"
         initial={{ opacity: 0 }}
-          animate={{
-            opacity: 1,
-            // The backdrop blur eases from 0 -> 32px while we're typing,
-            // and eases back to 0 when the welcome screen exits.
-            backdropFilter: phase === "exit" ? "blur(0px)" : "blur(32px)",
-          }}
-          exit={{ opacity: 0 }}
-          transition={{
-            opacity: { duration: phase === "exit" ? 0.6 : 0.4 },
-            backdropFilter: { duration: 0.7 },
-          }}
-          className="fixed inset-0 z-[200] flex flex-col items-center justify-center"
+        animate={{
+          opacity: phase === "exit" ? 0 : 1,
+          // The backdrop blur eases from 0 -> 36px while typing,
+          // and from 36px -> 0 when the welcome screen exits. This
+          // restores the underlying page (home) on exit.
+          backdropFilter:
+            phase === "exit" ? "blur(0px)" : "blur(36px)",
+        }}
+        exit={{ opacity: 0 }}
+        transition={{
+          opacity: {
+            duration: phase === "exit" ? 0.9 : 0.45,
+            ease: "easeInOut",
+          },
+          backdropFilter: { duration: 0.9, ease: "easeInOut" },
+        }}
+        style={{
+          WebkitBackdropFilter:
+            phase === "exit" ? "blur(0px)" : "blur(36px)",
+          transition: "WebkitBackdropFilter 0.9s easeInOut",
+        }}
+        className="fixed inset-0 z-[200] flex flex-col items-center justify-center"
+      >
+        {/* Gray->black gradient with a subtle moving light */}
+        <motion.div
+          aria-hidden
+          className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(135deg, #0a0a0c 0%, #18181b 50%, #0a0a0c 100%)",
+              "linear-gradient(135deg, #1f1f23 0%, #0a0a0c 60%, #18181b 100%)",
           }}
-        >
-          {/* Subtle moving light */}
-          <motion.div
-            aria-hidden
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(circle at 50% 50%, rgba(255,255,255,0.04) 0%, transparent 60%)",
-            }}
-            animate={{ opacity: [0.6, 1, 0.6] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          />
+        />
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05) 0%, transparent 60%)",
+          }}
+          animate={{ opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        />
 
-          <div className="text-center max-w-2xl px-6">
-            <div
-              className="text-[28px] md:text-[40px] tracking-tight leading-[1.15] text-white"
-              style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}
-            >
-              <span style={{ fontWeight: 400 }}>
-                {prefixDone ? prefix : typed}
-                {phase === "typing" && (
-                  <span
-                    aria-hidden
-                    className="inline-block w-[2px] h-[1em] align-middle ml-1"
-                    style={{
-                      background: "rgba(255,255,255,0.85)",
-                      animation: "welcome-blink 0.85s steps(2) infinite",
-                    }}
-                  />
-                )}
-              </span>
-              {prefixDone && (
-                <>
-                  <span style={{ fontWeight: 400 }}> </span>
-                  <span style={{ fontWeight: 700 }}>{restTyped}</span>
-                </>
+        <div className="relative text-center max-w-2xl px-6">
+          <div
+            className="text-[22px] md:text-[28px] tracking-tight leading-[1.3] text-white"
+            style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}
+          >
+            <span style={{ fontWeight: 400 }}>
+              {prefixDone ? prefix : typed}
+              {phase === "typing" && (
+                <motion.span
+                  aria-hidden
+                  className="inline-block w-[2px] h-[1em] align-middle ml-1 bg-white"
+                  animate={{ opacity: [1, 0, 1] }}
+                  transition={{ duration: 0.85, repeat: Infinity, ease: "linear" }}
+                />
               )}
-            </div>
+            </span>
+            {prefixDone && (
+              <>
+                <span style={{ fontWeight: 400 }}> </span>
+                <span style={{ fontWeight: 700 }}>{restTyped}</span>
+              </>
+            )}
           </div>
-
-          <style jsx global>{`
-            @keyframes welcome-blink {
-              0%,
-              50% {
-                opacity: 1;
-              }
-              50.01%,
-              100% {
-                opacity: 0;
-              }
-            }
-          `}</style>
+        </div>
       </motion.div>
     </AnimatePresence>
   );

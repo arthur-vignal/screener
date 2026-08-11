@@ -5,11 +5,15 @@
  * Typeform + the Fey reference. The modal sits on the blurred
  * backdrop. Title is constant; subtitle changes per stage.
  *
- * Stages:
- *   1. name      -> "Para começar, digite seu nome"
- *   2. email     -> "Para começar, digite seu email"
- *   3. password  -> "Para começar, crie uma senha"
- *   4. review    -> summary chips + final submit + Google
+ * Stages (signup):
+ *   1. name      -> "Para comecar, digite seu nome"
+ *                     (Continuar com Google also visible)
+ *   2. email     -> "Para comecar, digite seu email"
+ *   3. password  -> "Para comecar, crie uma senha"
+ *                   (submit on Enter or arrow; no review step)
+ *
+ * After the password is submitted the modal closes, the welcome
+ * screen takes over.
  */
 
 import {
@@ -17,19 +21,17 @@ import {
   useRef,
   useState,
   type FormEvent,
-  type ReactNode,
 } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, X } from "lucide-react";
 
 type Mode = "signup" | "login";
-type Stage = "name" | "email" | "password" | "review";
+type Stage = "name" | "email" | "password";
 
 const STAGE_PROMPTS: Record<Stage, string> = {
-  name: "Para começar, digite seu nome",
-  email: "Para começar, digite seu email",
-  password: "Para começar, crie uma senha",
-  review: "Confirme seus dados para continuar",
+  name: "Para comecar, digite seu nome",
+  email: "Para comecar, digite seu email",
+  password: "Para comecar, crie uma senha",
 };
 
 export function LoginModal({
@@ -76,19 +78,18 @@ export function LoginModal({
       setStage("email");
     } else if (stage === "email" && email.includes("@")) {
       setStage("password");
-    } else if (stage === "password" && password.length > 0) {
-      setStage("review");
     }
+    // password stage never advances on its own - it submits
   }
 
   function back() {
     if (stage === "password") setStage("email");
     else if (stage === "email") setStage("name");
-    else if (stage === "review") setStage("password");
   }
 
   async function handleSubmit(e?: FormEvent) {
     e?.preventDefault();
+    if (!name || !email || !password) return;
     setError(null);
     setSubmitting(true);
     try {
@@ -116,7 +117,7 @@ export function LoginModal({
         setSubmitting(false);
         return;
       }
-      setSubmitting(false);
+      // Hand off to WelcomeScreen
       onSuccess?.({
         username: data.user?.username ?? name ?? email.split("@")[0],
       });
@@ -133,7 +134,7 @@ export function LoginModal({
   function onKeyDownField(e: React.KeyboardEvent) {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (stage === "review") handleSubmit();
+      if (stage === "password") handleSubmit();
       else advance();
     } else if (e.key === "Escape" && stage !== "name") {
       e.preventDefault();
@@ -150,7 +151,6 @@ export function LoginModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          // Click on the backdrop closes; clicks on the inner content are stopped
           onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
           }}
@@ -161,7 +161,7 @@ export function LoginModal({
             WebkitBackdropFilter: "blur(48px) saturate(140%)",
           }}
         >
-          {/* Center radial halo (Fey touch) */}
+          {/* Center radial halo */}
           <div
             aria-hidden
             className="pointer-events-none fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
@@ -177,12 +177,12 @@ export function LoginModal({
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="absolute top-5 right-5 text-white/50 hover:text-white transition-colors z-10"
+            className="absolute top-5 right-5 text-white/50 hover:text-white transition-colors z-10 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
 
-          {/* Header — title is constant; subtitle changes per stage */}
+          {/* Header */}
           <div className="w-full max-w-[440px] text-center mb-8">
             <h2
               className="font-display text-[30px] tracking-tight leading-tight"
@@ -210,7 +210,7 @@ export function LoginModal({
             </AnimatePresence>
           </div>
 
-          {/* Stepper content (no card) */}
+          {/* Stepper content */}
           <div className="w-full max-w-[440px]">
             <AnimatePresence mode="wait">
               {stage === "name" && (
@@ -224,6 +224,7 @@ export function LoginModal({
                   onSubmit={advance}
                   canAdvance={name.trim().length > 0}
                   onKeyDown={onKeyDownField}
+                  showArrow
                 />
               )}
               {stage === "email" && (
@@ -237,6 +238,7 @@ export function LoginModal({
                   onSubmit={advance}
                   canAdvance={email.includes("@")}
                   onKeyDown={onKeyDownField}
+                  showArrow
                 />
               )}
               {stage === "password" && (
@@ -249,32 +251,75 @@ export function LoginModal({
                   autoComplete={
                     mode === "signup" ? "new-password" : "current-password"
                   }
-                  onSubmit={() => setStage("review")}
-                  canAdvance={password.length > 0}
+                  onSubmit={() => handleSubmit()}
+                  canAdvance={password.length > 0 && !submitting}
                   onKeyDown={onKeyDownField}
                   passwordReveal
-                />
-              )}
-              {stage === "review" && (
-                <ReviewStep
-                  key="review"
-                  name={name}
-                  email={email}
-                  password={password}
-                  mode={mode}
                   submitting={submitting}
-                  error={error}
-                  onSubmit={handleSubmit}
-                  onGoogle={handleGoogle}
-                  onEdit={back}
-                  onSwitchMode={() => {
-                    setMode(mode === "signup" ? "login" : "signup");
-                    setStage("email");
-                  }}
                 />
               )}
             </AnimatePresence>
           </div>
+
+          {/* Google button — shown from the start, between subtitle and field */}
+          <motion.button
+            onClick={handleGoogle}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            transition={{ type: "spring", stiffness: 400, damping: 22 }}
+            className="mt-5 cursor-pointer w-full max-w-[440px] h-11 rounded-full text-[13.5px] font-medium text-white inline-flex items-center justify-center gap-2.5 transition-all"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              backdropFilter: "blur(16px) saturate(180%)",
+              WebkitBackdropFilter: "blur(16px) saturate(180%)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+            }}
+          >
+            <GoogleG />
+            Continuar com Google
+          </motion.button>
+
+          {/* Mode switch + Terms footer */}
+          <div className="mt-6 text-center text-[12px] text-white/50">
+            {mode === "signup" ? (
+              <>
+                Já tem conta?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("login");
+                    setStage("email");
+                  }}
+                  className="text-white hover:text-[#a78bfa] transition-colors cursor-pointer"
+                >
+                  Entrar
+                </button>
+              </>
+            ) : (
+              <>
+                Não tem conta?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("signup");
+                    setStage("name");
+                  }}
+                  className="text-white hover:text-[#a78bfa] transition-colors cursor-pointer"
+                >
+                  Criar uma
+                </button>
+              </>
+            )}
+          </div>
+
+          <p className="mt-4 text-center text-[10.5px] text-white/30">
+            Ao continuar, você concorda com nossos{" "}
+            <a href="#" className="underline hover:text-white/60">
+              Termos de Serviço
+            </a>
+            .
+          </p>
         </motion.div>
       )}
     </AnimatePresence>
@@ -292,6 +337,8 @@ function Field({
   canAdvance,
   onKeyDown,
   passwordReveal = false,
+  submitting = false,
+  showArrow = true,
 }: {
   placeholder: string;
   value: string;
@@ -302,6 +349,8 @@ function Field({
   canAdvance: boolean;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   passwordReveal?: boolean;
+  submitting?: boolean;
+  showArrow?: boolean;
 }) {
   const ref = useRef<HTMLInputElement | null>(null);
   const [reveal, setReveal] = useState(false);
@@ -346,6 +395,7 @@ function Field({
           autoComplete={autoComplete}
           onKeyDown={onKeyDown}
           required
+          disabled={submitting}
           className="flex-1 min-w-0 bg-transparent text-[14px] text-white placeholder:text-white/40 outline-none"
         />
         {passwordReveal && (
@@ -357,189 +407,39 @@ function Field({
               setReveal((r) => !r);
             }}
             aria-label={reveal ? "Ocultar senha" : "Mostrar senha"}
-            className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white/55 hover:text-white hover:bg-white/10 transition-colors"
+            className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white/55 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
           >
             {reveal ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         )}
-        <motion.button
-          type="submit"
-          aria-label="Avançar"
-          disabled={!canAdvance}
-          className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all"
-          style={{
-            background: canAdvance
-              ? "rgba(255,255,255,0.12)"
-              : "rgba(255,255,255,0.04)",
-            border: canAdvance
-              ? "1px solid rgba(255,255,255,0.20)"
-              : "1px solid rgba(255,255,255,0.06)",
-            color: canAdvance ? "#fff" : "rgba(255,255,255,0.40)",
-          }}
-          whileHover={canAdvance ? { scale: 1.05 } : undefined}
-          whileTap={canAdvance ? { scale: 0.95 } : undefined}
-          transition={{ type: "spring", stiffness: 400, damping: 22 }}
-        >
-          <ArrowRight className="w-4 h-4" />
-        </motion.button>
-      </div>
-    </motion.form>
-  );
-}
-
-/* ---- ReviewStep ---- */
-function ReviewStep({
-  name,
-  email,
-  password,
-  mode,
-  submitting,
-  error,
-  onSubmit,
-  onGoogle,
-  onEdit,
-  onSwitchMode,
-}: {
-  name: string;
-  email: string;
-  password: string;
-  mode: Mode;
-  submitting: boolean;
-  error: string | null;
-  onSubmit: () => void;
-  onGoogle: () => void;
-  onEdit: () => void;
-  onSwitchMode: () => void;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -24 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="w-full space-y-3"
-    >
-      <div className="space-y-1.5">
-        <ReviewChip label="Nome" value={name} onEdit={onEdit} />
-        <ReviewChip label="Email" value={email} onEdit={onEdit} />
-      </div>
-
-      {error && (
-        <div className="text-[12px] text-[#f2555f] bg-[rgba(242,85,95,0.10)] border border-[rgba(242,85,95,0.26)] rounded-md px-3 py-2">
-          {error}
-        </div>
-      )}
-
-      <motion.button
-        onClick={onSubmit}
-        disabled={submitting}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
-        transition={{ type: "spring", stiffness: 400, damping: 22 }}
-        className="w-full h-12 rounded-full text-[14px] font-semibold text-white inline-flex items-center justify-center transition-all disabled:opacity-50"
-        style={{
-          background: "rgba(255,255,255,0.10)",
-          backdropFilter: "blur(16px) saturate(180%)",
-          WebkitBackdropFilter: "blur(16px) saturate(180%)",
-          border: "1px solid rgba(255,255,255,0.18)",
-          boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.16), 0 8px 24px rgba(0,0,0,0.30)",
-        }}
-      >
-        {submitting ? "..." : mode === "signup" ? "Criar conta" : "Entrar"}
-      </motion.button>
-
-      <div className="flex items-center gap-3 my-1">
-        <div className="flex-1 h-px bg-white/10" />
-        <span className="text-[10.5px] text-white/40 tracking-wider">OU</span>
-        <div className="flex-1 h-px bg-white/10" />
-      </div>
-
-      <motion.button
-        onClick={onGoogle}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
-        transition={{ type: "spring", stiffness: 400, damping: 22 }}
-        className="w-full h-12 rounded-full text-[14px] font-medium text-white inline-flex items-center justify-center gap-2.5 transition-all"
-        style={{
-          background: "rgba(255,255,255,0.04)",
-          backdropFilter: "blur(16px) saturate(180%)",
-          WebkitBackdropFilter: "blur(16px) saturate(180%)",
-          border: "1px solid rgba(255,255,255,0.10)",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
-        }}
-      >
-        <GoogleG />
-        Continuar com Google
-      </motion.button>
-
-      <div className="text-center text-[12px] text-white/50 pt-1">
-        {mode === "signup" ? (
-          <>
-            Já tem conta?{" "}
-            <button
-              type="button"
-              onClick={onSwitchMode}
-              className="text-white hover:text-[#a78bfa] transition-colors"
-            >
-              Entrar
-            </button>
-          </>
-        ) : (
-          <>
-            Não tem conta?{" "}
-            <button
-              type="button"
-              onClick={onSwitchMode}
-              className="text-white hover:text-[#a78bfa] transition-colors"
-            >
-              Criar uma
-            </button>
-          </>
+        {showArrow && (
+          <motion.button
+            type="submit"
+            aria-label="Avançar"
+            disabled={!canAdvance}
+            className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed"
+            style={{
+              background: canAdvance
+                ? "rgba(255,255,255,0.12)"
+                : "rgba(255,255,255,0.04)",
+              border: canAdvance
+                ? "1px solid rgba(255,255,255,0.20)"
+                : "1px solid rgba(255,255,255,0.06)",
+              color: canAdvance ? "#fff" : "rgba(255,255,255,0.40)",
+            }}
+            whileHover={canAdvance ? { scale: 1.05 } : undefined}
+            whileTap={canAdvance ? { scale: 0.95 } : undefined}
+            transition={{ type: "spring", stiffness: 400, damping: 22 }}
+          >
+            {submitting ? (
+              <span className="block w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            ) : (
+              <ArrowRight className="w-4 h-4" />
+            )}
+          </motion.button>
         )}
       </div>
-
-      <p className="text-center text-[10.5px] text-white/30 pt-2">
-        Ao continuar, você concorda com nossos{" "}
-        <a href="#" className="underline hover:text-white/60">
-          Termos de Serviço
-        </a>
-        .
-      </p>
-    </motion.div>
-  );
-}
-
-function ReviewChip({
-  label,
-  value,
-  onEdit,
-}: {
-  label: string;
-  value: string;
-  onEdit: () => void;
-}) {
-  return (
-    <motion.button
-      type="button"
-      onClick={onEdit}
-      whileHover={{ scale: 1.005 }}
-      className="w-full flex items-center gap-3 rounded-full px-4 h-10 text-left"
-      style={{
-        background: "rgba(255,255,255,0.03)",
-        backdropFilter: "blur(10px) saturate(160%)",
-        WebkitBackdropFilter: "blur(10px) saturate(160%)",
-        border: "1px solid rgba(255,255,255,0.06)",
-      }}
-    >
-      <span className="text-[10.5px] uppercase tracking-wider text-white/40 w-12 shrink-0">
-        {label}
-      </span>
-      <span className="text-[13.5px] text-white truncate flex-1">{value}</span>
-      <span className="text-[10.5px] text-white/30 hover:text-white/60 transition-colors">
-        EDITAR
-      </span>
-    </motion.button>
+    </motion.form>
   );
 }
 
