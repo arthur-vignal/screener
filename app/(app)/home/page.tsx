@@ -35,6 +35,7 @@ import {
 import { useEffect, useState } from "react";
 import { AnimatedFloatingDock } from "@/components/ui/animated-floating-dock";
 import { WelcomeOverlay } from "@/components/home/welcome-overlay";
+import { HeaderOverlay } from "@/components/ui/header-overlay";
 import { PortfolioWidget } from "@/components/home/portfolio-widget";
 import { MarketWidget } from "@/components/home/market-widget";
 import { NewsWidget } from "@/components/home/news-widget";
@@ -91,6 +92,9 @@ export default function HomePage() {
           onDone={() => setWelcomeOpen(false)}
         />
       )}
+      <div className="fixed bottom-6 left-6 z-40 pointer-events-auto">
+        <HeaderOverlay />
+      </div>
       <motion.main
         className="max-w-[1400px] mx-auto px-6 pt-6 pb-12 grid gap-6"
         style={{

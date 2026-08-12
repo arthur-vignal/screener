@@ -75,31 +75,30 @@ export function HeaderOverlay() {
   }, []);
 
   return (
-    <div className="flex items-center justify-between gap-3 w-full">
-      <div className="text-[12.5px] text-foreground/90 min-w-0 truncate">
-        Olá,{" "}
-        <TypedName name={name} />
-      </div>
-      <div className="flex items-center gap-3 text-[11.5px] text-muted-foreground shrink-0">
-        <span className="inline-flex items-center gap-1.5 tabular-nums">
-          <Clock className="h-3 w-3" />
-          {clock}
-        </span>
-        <span className="hidden md:inline">
-          {open ? "aberto" : "fechado"}
-        </span>
-        <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="ml-1 p-1 rounded-md hover:bg-white/5 transition-colors cursor-pointer"
-          aria-label="Alternar tema"
-        >
-          {theme === "dark" ? (
-            <Sun className="h-3.5 w-3.5" />
-          ) : (
-            <Moon className="h-3.5 w-3.5" />
-          )}
-        </button>
-      </div>
+    <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
+      <span className="inline-flex items-center gap-1.5 tabular-nums">
+        <Clock className="h-3.5 w-3.5" />
+        {clock}
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span
+          aria-hidden
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ background: open ? "#4ade80" : "#f87171" }}
+        />
+        {open ? "Mercado aberto" : "Mercado fechado"}
+      </span>
+      <button
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        className="p-1.5 rounded-md hover:bg-white/5 transition-colors cursor-pointer"
+        aria-label="Alternar tema"
+      >
+        {theme === "dark" ? (
+          <Sun className="h-4 w-4" />
+        ) : (
+          <Moon className="h-4 w-4" />
+        )}
+      </button>
     </div>
   );
 }

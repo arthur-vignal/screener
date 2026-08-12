@@ -10,7 +10,6 @@
 
 import { motion } from "motion/react";
 import useSWR from "swr";
-import { HeaderOverlay } from "@/components/ui/header-overlay";
 import { MetallicCard } from "@/components/ui/metallic-card";
 import { ExternalLink, Clock } from "lucide-react";
 
@@ -51,7 +50,9 @@ export function NewsWidget() {
   return (
     <MetallicCard className="h-full">
       <div className="px-6 pt-5 pb-3 border-b border-border">
-        <HeaderOverlay />
+        <p className="text-[12.5px] text-foreground/85">
+          Notícias e análises do dia
+        </p>
       </div>
 
       <div className="flex-1 overflow-y-auto">
