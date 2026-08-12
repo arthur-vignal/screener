@@ -433,13 +433,13 @@ export async function getBrapiCandles(
   range: "1mo" | "3mo" | "6mo" | "1y" | "2y" | "5y" = "1y",
   interval: "1d" | "1wk" | "1mo" = "1d",
 ): Promise<BrapiCandle[]> {
-  return cached(`brapi:candles:${ticker}:${range}:${interval}`, 1800, async () => {
+  return cached(`brapi:candles:${ticker}:${range}:${interval}`, 300, async () => {
     const r = await fetchBrapi(`/api/quote/${encodeURIComponent(ticker)}`, { range, interval });
     if (!r.ok) throw new Error(`brapi ${r.status}`);
     const data = (await r.json()) as BrapiResponse;
     const raw = data.results?.[0];
     if (!raw) throw new Error("brapi: no data");
-    return (raw.historicalDataPrice ?? []).map((c) => ({
+    const candles = (raw.historicalDataPrice ?? []).map((c) => ({
       date: new Date(c.date * 1000).toISOString().slice(0, 10),
       timestamp: c.date * 1000,
       open: c.open,
@@ -449,5 +449,13 @@ export async function getBrapiCandles(
       adjClose: c.adjustedClose,
       volume: c.volume,
     }));
+    // Defensive: if brapi returned [] for an IBOV/B3 ticker that SHOULD have
+    // data, log a warning so we notice instead of silently caching empty.
+    // Cache layer already won't cache empty arrays (see lib/cache.ts), so this
+    // will be retried next request.
+    if (candles.length === 0) {
+      console.warn(`[brapi] empty candles for ${ticker} (range=${range})`);
+    }
+    return candles;
   });
 }
