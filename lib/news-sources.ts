@@ -1,15 +1,16 @@
 /**
  * Multi-source news aggregator for assets.
- * Sources (in priority order):
- *   1. Yahoo Finance News (aggregates Reuters, AP, Bloomberg, CNBC, WSJ, FT, MarketWatch)
- *   2. Google News RSS (raw query, no API key required)
- *   3. SEC EDGAR filings (for US stocks)
+ *
+ * Brazilian tickers (B3): Google News RSS filtered through a hard whitelist
+ *   of verified B3/BR-market sources — InfoMoney, Valor, Money Times,
+ *   NeoFeed, Brazil Journal, B3 official. No Yahoo, no generic Google.
+ *
+ * US tickers: SEC EDGAR filings only (10-K/10-Q/8-K). No Yahoo Finance.
  *
  * Designed to fetch in parallel with timeouts and de-dup by headline URL.
  */
 
 import { cached } from "./cache";
-import { getFinvizStock } from "./finviz";
 
 export type NewsItem = {
   id: string;
@@ -24,59 +25,50 @@ export type NewsItem = {
 
 const YAHOO_HOST = "https://query2.finance.yahoo.com";
 
-async function fetchYahoo(ticker: string): Promise<NewsItem[]> {
-  try {
-    const r = await fetch(
-      `${YAHOO_HOST}/xhr/ncp?queryRef=newsAll&serviceKey=ncp_fin&tickers=${encodeURIComponent(ticker)}&count=20&lang=en-US&region=US`,
-      {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        },
-        signal: AbortSignal.timeout(6000),
-      },
-    );
-    if (!r.ok) return [];
-    const data = await r.json();
-    type YahooItem = {
-      id?: string;
-      content?: {
-        title?: string;
-        summary?: string;
-        pubDate?: string;
-        displayTime?: string;
-        provider?: { displayName?: string };
-        canonicalUrl?: { url?: string; host?: string };
-        finance?: { stockTickers?: string[] };
-      };
-    };
-    const items: YahooItem[] =
-      data?.data?.timeline?.items ?? data?.data?.stream ?? [];
-    return items.map((n) => {
-      const c = n.content ?? {};
-      return {
-        id: `yahoo:${n.id ?? ""}:${c.canonicalUrl?.url ?? Math.random()}`,
-        headline: c.title ?? "",
-        summary: c.summary ?? "",
-        source: c.provider?.displayName ?? c.canonicalUrl?.host ?? "Yahoo",
-        url: c.canonicalUrl?.url ?? "#",
-        datetime: c.displayTime ? new Date(c.displayTime).getTime() / 1000 : 0,
-        category: "yahoo",
-        relatedTickers: c.finance?.stockTickers ?? [],
-      };
-    });
-  } catch {
-    return [];
-  }
+/**
+ * Whitelist of trusted Brazilian financial-news hosts. Host match is
+ * substring-based on the <source url="..."> attribute of each RSS item
+ * (the publisher that Google News attributes the story to), with a
+ * fallback to the resolved <link> host. Anything outside this set is
+ * discarded.
+ */
+const BR_VERIFIED_HOSTS: readonly string[] = [
+  "infomoney.com.br",
+  "valor.globo.com",
+  "valor.com.br",
+  "moneytimes.com.br",
+  "neofeed.com.br",
+  "braziljournal.com",
+  "b3.com.br",
+];
+
+function hostMatchesWhitelist(host: string): boolean {
+  const h = host.toLowerCase();
+  return BR_VERIFIED_HOSTS.some((w) => h === w || h.endsWith("." + w));
 }
 
-async function fetchGoogle(ticker: string, isCrypto: boolean): Promise<NewsItem[]> {
+/**
+ * Lightweight Portuguese-vs-English heuristic. Returns true when the
+ * headline looks Portuguese (has any diacritic or common PT-BR token).
+ * English headlines are discarded.
+ */
+function looksPortuguese(headline: string): boolean {
+  // Diacritics common to PT-BR
+  if (/[áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]/.test(headline)) return true;
+  // Common PT-BR stopwords that don't overlap with English usage
+  if (/\b(ações|ação|mercado|dividendo|balanço|faturamento|empresa|empresas|investidor|investidores|lucro|prejuízo|valor|negociação|negociações|ações|índices|índice|fii|fundos|imposto|juro|juros|selic|ibovespa|dólar|real|b3|brasil|brasileiro|brasileira|negociadas|negociado|cotação|cotacoes|fechamento|abertura|alta|baixa|queda|subida|recorde|máxima|mínima|saldo|resultado|resultados|trimestre|anual|semestral|estimativa|projeção|projeções|recomendação|recomendações|compra|venda|manutenção|peso|papel|papeis)\b/i.test(
+    headline,
+  ))
+    return true;
+  return false;
+}
+
+async function fetchBrazilianVerified(ticker: string): Promise<NewsItem[]> {
+  const upper = ticker.toUpperCase();
   try {
-    // Google News RSS — query like "AAPL stock" or "bitcoin"
-    const q = isCrypto
-      ? `${ticker.replace("-USD", "")} cryptocurrency`
-      : `${ticker} stock news`;
-    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`;
+    // Query Google News RSS restricted to the 6 trusted B3/BR hosts.
+    const q = `${upper} (B3 OR acoes OR "mercado financeiro") site:infomoney.com.br OR site:valor.globo.com OR site:valor.com.br OR site:moneytimes.com.br OR site:neofeed.com.br OR site:braziljournal.com OR site:b3.com.br`;
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
     const r = await fetch(url, {
       headers: {
         "User-Agent":
@@ -87,14 +79,17 @@ async function fetchGoogle(ticker: string, isCrypto: boolean): Promise<NewsItem[
     if (!r.ok) return [];
     const xml = await r.text();
 
-    // Simple regex-based XML parse — RSS is well-formed
     const items: NewsItem[] = [];
     const itemMatches = xml.match(/<item[\s\S]*?<\/item>/g) ?? [];
-    for (const item of itemMatches.slice(0, 15)) {
+    for (const item of itemMatches.slice(0, 25)) {
       const titleMatch = item.match(/<title>([\s\S]*?)<\/title>/);
-      const linkMatch = item.match(/<link\/>(.*?)<\/link>/) ?? item.match(/<link>([\s\S]*?)<\/link>/);
+      const linkMatch =
+        item.match(/<link\/>\s*([^<\s]+)/) ??
+        item.match(/<link>([\s\S]*?)<\/link>/);
       const pubDateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
-      const sourceMatch = item.match(/<source[^>]*>([\s\S]*?)<\/source>/);
+      const sourceUrlMatch = item.match(
+        /<source[^>]*url="([^"]+)"[^>]*>([\s\S]*?)<\/source>/,
+      );
 
       if (!titleMatch) continue;
       const headline = titleMatch[1]
@@ -104,23 +99,57 @@ async function fetchGoogle(ticker: string, isCrypto: boolean): Promise<NewsItem[
       const link = linkMatch?.[1]?.trim() ?? "#";
       const pubDate = pubDateMatch?.[1]?.trim() ?? "";
       const datetime = pubDate ? new Date(pubDate).getTime() / 1000 : 0;
-      const sourceRaw = sourceMatch?.[1]?.replace(/<!\[CDATA\[/g, "").replace(/\]\]>/g, "").trim() ?? "Google News";
+      const sourceDisplay =
+        sourceUrlMatch?.[2]
+          ?.replace(/<!\[CDATA\[/g, "")
+          .replace(/\]\]>/g, "")
+          .trim() ?? "Verificado";
+      const sourceUrl = sourceUrlMatch?.[1] ?? link;
+
+      // Whitelist filter — check the source url host first, then the link host.
+      let sourceHost = "";
+      try {
+        sourceHost = new URL(sourceUrl).hostname.toLowerCase();
+      } catch {
+        sourceHost = "";
+      }
+      let linkHost = "";
+      try {
+        linkHost = new URL(link).hostname.toLowerCase();
+      } catch {
+        linkHost = "";
+      }
+      // Special case: Google News redirector link (news.google.com) — trust
+      // the <source url> host in that case.
+      const isGoogleRedirect =
+        linkHost === "news.google.com" || linkHost.endsWith(".news.google.com");
+      const candidateHost = isGoogleRedirect ? sourceHost : linkHost || sourceHost;
+      if (!candidateHost || !hostMatchesWhitelist(candidateHost)) continue;
+
+      // Drop English headlines (BR-only policy).
+      if (!looksPortuguese(headline)) continue;
 
       items.push({
-        id: `google:${link}`,
+        id: `br:${candidateHost}:${link}`,
         headline,
         summary: "",
-        source: sourceRaw,
-        url: link,
+        source: sourceDisplay,
+        url: isGoogleRedirect ? sourceUrl : link,
         datetime,
-        category: "google",
-        relatedTickers: [ticker],
+        category: "br-verified",
+        relatedTickers: [upper],
       });
     }
     return items;
   } catch {
     return [];
   }
+}
+
+async function fetchGoogle(_ticker: string, _isCrypto: boolean): Promise<NewsItem[]> {
+  // Disabled: BR-only verified-source policy. Generic Google News RSS is
+  // intentionally not used to avoid leaking unverified publishers.
+  return [];
 }
 
 async function fetchSEC(ticker: string): Promise<NewsItem[]> {
@@ -179,6 +208,11 @@ function dedupeAndSort(items: NewsItem[]): NewsItem[] {
 
 /**
  * Fetch news from all sources for a ticker.
+ *
+ * BR tickers (B3 suffix like PETR4, VALE3): only the 6 verified BR portals
+ *   (InfoMoney, Valor, Money Times, NeoFeed, Brazil Journal, B3).
+ * US tickers: SEC EDGAR filings only.
+ *
  * Returns up to `limit` items, deduplicated, sorted by recency.
  */
 export async function fetchNewsForTicker(
@@ -186,19 +220,13 @@ export async function fetchNewsForTicker(
   limit = 25,
 ): Promise<NewsItem[]> {
   const upper = ticker.toUpperCase();
-  const isCrypto = upper.includes("-USD");
+  const isBrazilian = /^[A-Z]{4}\d{1,2}$/.test(upper);
 
-  // Try cache first
   return cached(`news-multi:${upper}`, 180, async () => {
-    const [finviz, yahoo, google, sec] = await Promise.all([
-      isCrypto ? Promise.resolve([]) : getFinvizStock(upper).then((x) => x.news).catch(() => []),
-      fetchYahoo(upper),
-      fetchGoogle(upper, isCrypto),
-      isCrypto ? Promise.resolve([]) : fetchSEC(upper),
-    ]);
-
-    const merged = [...finviz, ...yahoo, ...google, ...sec];
-    return dedupeAndSort(merged).slice(0, limit);
+    const items: NewsItem[] = isBrazilian
+      ? await fetchBrazilianVerified(upper)
+      : await fetchSEC(upper);
+    return dedupeAndSort(items).slice(0, limit);
   });
 }
 

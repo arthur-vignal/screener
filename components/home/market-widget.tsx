@@ -35,6 +35,8 @@ type QuoteRow = {
   quote: {
     price: number;
     changePercent: number;
+    changePercent7d?: number | null;
+    changePercent30d?: number | null;
     volume: number;
     marketCap?: number;
     fiftyTwoWeekHigh?: number;
@@ -186,6 +188,8 @@ export function MarketWidget() {
           {filtered.map((row) => {
             const q = quotes.get(row.symbol)?.quote;
             const ch = q?.changePercent ?? 0;
+            const ch7 = q?.changePercent7d ?? null;
+            const ch30 = q?.changePercent30d ?? null;
             return (
               <motion.li
                 key={row.symbol}
@@ -216,11 +220,17 @@ export function MarketWidget() {
                   >
                     {q ? `${ch >= 0 ? "+" : ""}${ch.toFixed(2)}%` : "—"}
                   </p>
-                  <p className="text-[12px] tabular-nums text-right text-muted-foreground">
-                    —
+                  <p
+                    className="text-[12px] tabular-nums text-right"
+                    style={{ color: ch7 == null ? undefined : ch7 >= 0 ? "#10b981" : "#f43f5e" }}
+                  >
+                    {ch7 == null ? "—" : `${ch7 >= 0 ? "+" : ""}${ch7.toFixed(2)}%`}
                   </p>
-                  <p className="text-[12px] tabular-nums text-right text-muted-foreground">
-                    —
+                  <p
+                    className="text-[12px] tabular-nums text-right"
+                    style={{ color: ch30 == null ? undefined : ch30 >= 0 ? "#10b981" : "#f43f5e" }}
+                  >
+                    {ch30 == null ? "—" : `${ch30 >= 0 ? "+" : ""}${ch30.toFixed(2)}%`}
                   </p>
                   <p className="text-[12px] tabular-nums text-right text-muted-foreground">
                     {q?.volume

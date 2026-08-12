@@ -32,7 +32,70 @@ export type QuoteBatch = {
   // Fundamentals returned by Brapi /quote for free with fundamental=true
   earningsPerShare: number | null;
   priceEarnings: number | null;
+  // 7d / 30d percent change vs current price, computed from brapi
+  // /quote candles (range=1mo, interval=1d). Null when history unavailable.
+  changePercent7d: number | null;
+  changePercent30d: number | null;
 };
+
+/**
+ * Fetch the 1mo daily candle series from Brapi for one ticker and compute
+ * 7d / 30d % change vs the latest close. Returns null when history is empty
+ * or the upstream fails.
+ *
+ * Cached for 1h (1mo series doesn't change intra-day for retail purposes).
+ */
+async function getBrapiCandlesChange(
+  symbol: string,
+  currentPrice: number | null,
+): Promise<{ changePercent7d: number | null; changePercent30d: number | null }> {
+  const { getBrapiCandles } = await import("./brapi");
+  const candles = await getBrapiCandles(symbol, "1mo", "1d");
+  if (!candles || candles.length === 0) {
+    return { changePercent7d: null, changePercent30d: null };
+  }
+  // Filter out candles with null/0 close (brapi sometimes has gaps).
+  const valid = candles.filter((c) => c.close != null && c.close > 0);
+  if (valid.length === 0) {
+    return { changePercent7d: null, changePercent30d: null };
+  }
+
+  const priceBase = currentPrice ?? valid[valid.length - 1].close;
+  if (!priceBase || priceBase <= 0) {
+    return { changePercent7d: null, changePercent30d: null };
+  }
+
+  // Pick the candle closest to 7 calendar days ago and 30 calendar days ago
+  // (Brapi candles are sorted ascending by date).
+  const lastDate = new Date(valid[valid.length - 1].timestamp);
+  const target7 = lastDate.getTime() - 7 * 24 * 60 * 60 * 1000;
+  const target30 = lastDate.getTime() - 30 * 24 * 60 * 60 * 1000;
+
+  function pickClosest(targetMs: number): number | null {
+    let best: number | null = null;
+    let bestDelta = Infinity;
+    for (const c of valid) {
+      const delta = Math.abs(c.timestamp - targetMs);
+      if (delta < bestDelta) {
+        bestDelta = delta;
+        best = c.close;
+      }
+    }
+    return best;
+  }
+
+  const close7 = pickClosest(target7);
+  const close30 = pickClosest(target30);
+
+  const pct = (base: number, ref: number | null) =>
+    ref == null || ref <= 0 ? null : ((base - ref) / ref) * 100;
+
+  return {
+    changePercent7d: pct(priceBase, close7),
+    changePercent30d: pct(priceBase, close30),
+  };
+}
+
 
 const CHUNK = 30;
 
@@ -56,10 +119,26 @@ export async function getBrapiQuoteBatch(symbols: string[]): Promise<Map<string,
             .catch(() => ({ sym, b: null as Awaited<ReturnType<typeof getBrapiFull>> | null })),
         ),
       );
+      // Fetch 1mo candles in parallel for each symbol so we can compute 7d/30d %.
+      const candleResults = await Promise.all(
+        chunk.map((sym) =>
+          getBrapiCandlesChange(sym, null)
+            .then((c) => ({ sym, c }))
+            .catch(() => ({ sym, c: { changePercent7d: null, changePercent30d: null } })),
+        ),
+      );
+      const candleMap = new Map(
+        candleResults.map((r) => [r.sym.toUpperCase(), r.c]),
+      );
+
       for (const { sym, b } of results) {
         if (!b) continue;
         const q = b.quote;
         const currency = q.currency || (isBrazilianTicker(sym) ? "BRL" : "USD");
+        const candles = candleMap.get(sym.toUpperCase()) ?? {
+          changePercent7d: null,
+          changePercent30d: null,
+        };
         map.set(sym.toUpperCase(), {
           symbol: sym.toUpperCase(),
           price: q.regularMarketPrice ?? null,
@@ -79,6 +158,8 @@ export async function getBrapiQuoteBatch(symbols: string[]): Promise<Map<string,
           type: isBrazilianTicker(sym) ? "stock" : "stock",
           earningsPerShare: q.earningsPerShare ?? null,
           priceEarnings: q.priceEarnings ?? null,
+          changePercent7d: candles.changePercent7d,
+          changePercent30d: candles.changePercent30d,
         });
       }
     } catch (err) {
@@ -114,6 +195,8 @@ export async function getBrapiQuoteBatch(symbols: string[]): Promise<Map<string,
           type: "stock",
           earningsPerShare: null,
           priceEarnings: null,
+          changePercent7d: null,
+          changePercent30d: null,
         });
       }
     } catch (err) {
