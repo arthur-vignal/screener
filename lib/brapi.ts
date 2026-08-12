@@ -314,7 +314,10 @@ export async function getBrapiFundamentals(
 }
 
 function getToken(): string {
-  return process.env.BRAPI_API_TOKEN ?? "";
+  // Prefer BRAPI_TOKEN (used elsewhere in the codebase: brapi-full.ts,
+  // brapi-dividends.ts, brapi-macro.ts, brapi-curve.ts, brapi-correlation.ts).
+  // Fall back to BRAPI_API_TOKEN for backwards compatibility, then empty.
+  return process.env.BRAPI_TOKEN ?? process.env.BRAPI_API_TOKEN ?? "";
 }
 
 function normalize(raw: BrapiRawQuote): BrapiQuote {
