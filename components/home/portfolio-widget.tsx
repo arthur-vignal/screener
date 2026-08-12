@@ -91,16 +91,20 @@ export function PortfolioWidget() {
 
   return (
     <MetallicCard className="h-full">
-      {/* Header — time-aware greeting + portfolio day-return %. */}
-      <div className="px-6 pt-5 pb-4 border-b border-border flex items-baseline justify-between gap-2">
+      {/* Header — greeting stacked on 2 lines, % aligned with line 2.
+          The greeting is rendered on the left in a column, the % on
+          the right. items-end so the % sits flush with the baseline
+          of the second line of the greeting. */}
+      <div className="px-6 pt-5 pb-4 border-b border-border flex items-end justify-between gap-3">
+        <div className="min-w-0 flex-1 text-[12.5px] text-foreground/90 leading-snug">
+          <div>
+            {greetingFor(new Date().getHours())},{" "}
+            <UserFirstName />,
+          </div>
+          <div>seu portfolio valorizou:</div>
+        </div>
         <p
-          className="text-[12.5px] text-foreground/90 leading-tight min-w-0 flex-1"
-        >
-          {greetingFor(new Date().getHours())},{" "}
-          <UserFirstName />, seu portfolio valorizou:
-        </p>
-        <p
-          className="text-[28px] leading-none tracking-tight font-semibold tabular-nums shrink-0"
+          className="text-[20px] leading-none tracking-tight font-semibold tabular-nums shrink-0"
           style={{
             color: dayReturnPct >= 0 ? "#10b981" : "#f43f5e",
           }}

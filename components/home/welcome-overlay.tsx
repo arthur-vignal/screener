@@ -34,7 +34,13 @@ export function WelcomeOverlay({
 
   useEffect(() => {
     if (phase !== "typing") return;
-    // Always type at least the prefix so the user sees the welcome.
+    // Wait for a real username before we begin typing. If the fetch
+    // never resolves we bail to exit after 6s so the page is never
+    // stuck behind the overlay.
+    if (!username) {
+      const bail = setTimeout(() => setPhase("exit"), 6000);
+      return () => clearTimeout(bail);
+    }
     let i = 0;
     const interval = setInterval(() => {
       i += 1;
@@ -45,7 +51,7 @@ export function WelcomeOverlay({
       }
     }, 42);
     return () => clearInterval(interval);
-  }, [phase, totalText]);
+  }, [phase, totalText, username]);
 
   useEffect(() => {
     if (phase === "hold") {
