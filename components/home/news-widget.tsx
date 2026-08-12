@@ -51,7 +51,7 @@ export function NewsWidget() {
     <MetallicCard className="h-full">
       <div className="px-6 pt-5 pb-3 border-b border-border">
         <p className="text-[12.5px] text-foreground/85">
-          Notícias e análises do dia
+          Notícias da B3 de portais verificados
         </p>
       </div>
 
