@@ -34,7 +34,6 @@ import {
 
 import { useEffect, useState } from "react";
 import { AnimatedFloatingDock } from "@/components/ui/animated-floating-dock";
-import { HeaderOverlay } from "@/components/ui/header-overlay";
 import { WelcomeOverlay } from "@/components/home/welcome-overlay";
 import { PortfolioWidget } from "@/components/home/portfolio-widget";
 import { MarketWidget } from "@/components/home/market-widget";
@@ -86,7 +85,6 @@ export default function HomePage() {
           "linear-gradient(135deg, #0a0a0c 0%, #14151a 60%, #0a0a0c 100%)",
       }}
     >
-      <HeaderOverlay />
       {welcomeOpen && (
         <WelcomeOverlay
           username={welcomeName}
