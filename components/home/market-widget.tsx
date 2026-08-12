@@ -38,11 +38,28 @@ type QuoteRow = {
     changePercent7d?: number | null;
     changePercent30d?: number | null;
     volume: number;
-    marketCap?: number;
     fiftyTwoWeekHigh?: number;
     fiftyTwoWeekLow?: number;
   } | null;
+  metrics?: {
+    marketCap?: number | null;
+  } | null;
 };
+
+/**
+ * Format a BRL/USD market cap as a short, compact label.
+ * - < 1B  -> "987M" (1 decimal)
+ * - >= 1B -> "234B" (no decimals; finance convention)
+ * - >= 1T -> "1.2T" (1 decimal)
+ */
+function formatMarketCap(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "—";
+  if (value >= 1e12) return `${(value / 1e12).toFixed(1)}T`;
+  if (value >= 1e9) return `${(value / 1e9).toFixed(0)}B`;
+  if (value >= 1e6) return `${(value / 1e6).toFixed(0)}M`;
+  if (value >= 1e3) return `${(value / 1e3).toFixed(0)}K`;
+  return String(Math.round(value));
+}
 
 const MARKETS = [
   { id: "stock", label: "Ações" },
@@ -169,12 +186,13 @@ export function MarketWidget() {
 
       {/* Table */}
       <div className="flex-1 overflow-hidden">
-        <div className="grid grid-cols-[1.5fr_0.55fr_0.55fr_0.55fr_0.7fr] gap-3 px-6 py-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/70 border-b border-border/60">
+        <div className="grid grid-cols-[1.5fr_0.55fr_0.55fr_0.55fr_0.7fr_0.7fr] gap-3 px-6 py-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/70 border-b border-border/60">
           <span>Ativo · Setor</span>
           <span className="text-right">24h</span>
           <span className="text-right">7d</span>
           <span className="text-right">30d</span>
           <span className="text-right">Vol</span>
+          <span className="text-right">Mkt Cap</span>
         </div>
         <motion.ul
           key={active}
@@ -201,7 +219,7 @@ export function MarketWidget() {
               >
                 <Link
                   href={`/asset/${row.symbol}`}
-                  className="grid grid-cols-[1.5fr_0.55fr_0.55fr_0.55fr_0.7fr] gap-3 px-6 py-2.5 hover:bg-muted/40 transition-colors"
+                  className="grid grid-cols-[1.5fr_0.55fr_0.55fr_0.55fr_0.7fr_0.7fr] gap-3 px-6 py-2.5 hover:bg-muted/40 transition-colors"
                 >
                   <div className="min-w-0">
                     <p className="text-[12.5px] font-medium text-foreground truncate">
@@ -233,8 +251,13 @@ export function MarketWidget() {
                     {ch30 == null ? "—" : `${ch30 >= 0 ? "+" : ""}${ch30.toFixed(2)}%`}
                   </p>
                   <p className="text-[12px] tabular-nums text-right text-muted-foreground">
-                    {q?.volume
-                      ? `${(q.volume / 1_000_000).toFixed(0)}M`
+                    {q?.volume != null && q.volume > 0
+                      ? `${(q.volume / 1_000_000).toFixed(1)}M`
+                      : "—"}
+                  </p>
+                  <p className="text-[12px] tabular-nums text-right text-muted-foreground">
+                    {quotes.get(row.symbol)?.metrics?.marketCap != null
+                      ? formatMarketCap(quotes.get(row.symbol)!.metrics!.marketCap!)
                       : "—"}
                   </p>
                 </Link>
