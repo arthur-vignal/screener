@@ -92,7 +92,7 @@ export default function HomePage() {
           onDone={() => setWelcomeOpen(false)}
         />
       )}
-      <div className="fixed bottom-6 left-6 z-40 pointer-events-auto">
+      <div className="fixed bottom-[34px] left-6 z-40 pointer-events-auto">
         <HeaderOverlay />
       </div>
       <motion.main
