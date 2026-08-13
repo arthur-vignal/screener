@@ -77,14 +77,7 @@ npm start
 - ❌ Yahoo `/quoteSummary` (exige crumb cookie, não-autenticado falha)
 - ❌ Token paga de qualquer provider fora do que já está no plano
 
-## Princípios de design
 
-1. UI estilo "Ledger/Linear": tipografia mono pra números, display serif pra títulos, paleta neutra com tinta/superfície/cabelo (hairline), zero `border-radius`, tabelas densas.
-2. News SEMPRE inline via modal — nunca abre link externo.
-3. Range filters = dual-range slider + badge de zona contextual ("Baixa/Média/Alta"), não `<select>`.
-4. Colunas toggleáveis via picker de chips; colunas com 0 valores escondidas.
-5. Overlays (RSI, etc) default OFF, transição suave.
-6. Performance > estética vazia.
 
 // trigger
 // trigger Tue, Aug 11, 2026  1:47:39 PM
