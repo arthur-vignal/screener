@@ -144,7 +144,12 @@ export function MarketWidget() {
   }, [allOfType, query]);
 
   const visible = filtered.slice(0, displayCount);
-  const symbols = visible.map((r) => r.symbol).join(",");
+  // Fetch quotes for the FULL filtered set (current type + current search
+  // query), not just the visible window. SWR keys on the URL which includes
+  // the full symbols list, so once a query returns the data is reused as
+  // the user scrolls. Only typing a new query (which narrows the set)
+  // triggers a refetch; widening back to no query reuses the cache too.
+  const symbols = filtered.map((r) => r.symbol).join(",");
   const hasMore = displayCount < filtered.length;
 
   // Infinite scroll: when sentinel intersects viewport, load next page.

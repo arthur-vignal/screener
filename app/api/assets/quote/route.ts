@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)
-    .slice(0, 100);
+    .slice(0, 500);
 
   if (symbols.length === 0) {
     return NextResponse.json({ error: "no symbols" }, { status: 400 });
