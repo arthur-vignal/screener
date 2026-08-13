@@ -11,11 +11,11 @@
  * Data: /api/assets/list?exchange=b3&limit=200 + /api/assets/quote
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import useSWR from "swr";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, Search, X } from "lucide-react";
 import { MetallicCard } from "@/components/ui/metallic-card";
 import { cn } from "@/lib/utils";
 
@@ -68,12 +68,20 @@ const MARKETS = [
   { id: "fii", label: "FIIs" },
 ] as const;
 
+const PAGE_SIZE = 20;
+
 export function MarketWidget() {
   const [active, setActive] = useState<(typeof MARKETS)[number]["id"]>("stock");
   const [open, setOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   const ddRef = useRef<HTMLDivElement | null>(null);
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  const sentinelRef = useRef<HTMLLIElement | null>(null);
+  const listScrollRef = useRef<HTMLDivElement | null>(null);
 
-  // Close on click outside / Escape.
+  // Close dropdown on click outside / Escape.
   useEffect(() => {
     function onClick(e: MouseEvent) {
       if (!open) return;
@@ -82,7 +90,13 @@ export function MarketWidget() {
       }
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        if (searchOpen) {
+          setSearchOpen(false);
+          setQuery("");
+        }
+      }
     }
     if (open) {
       document.addEventListener("mousedown", onClick);
@@ -92,17 +106,66 @@ export function MarketWidget() {
       document.removeEventListener("mousedown", onClick);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, searchOpen]);
+
+  // Focus the search input when search opens.
+  useEffect(() => {
+    if (searchOpen) {
+      // small delay so the AnimatePresence has time to mount
+      const t = setTimeout(() => searchRef.current?.focus(), 80);
+      return () => clearTimeout(t);
+    }
+  }, [searchOpen]);
+
+  // Reset paging when market filter or search query changes.
+  useEffect(() => {
+    setDisplayCount(PAGE_SIZE);
+    if (listScrollRef.current) listScrollRef.current.scrollTop = 0;
+  }, [active, query]);
 
   const { data: listData } = useSWR<{ items: AssetRow[] }>(
     `/api/assets/list?exchange=b3&limit=200`,
     fetcher,
   );
 
-  const filtered = (listData?.items ?? [])
-    .filter((r) => r.type === active)
-    .slice(0, 10);
-  const symbols = filtered.map((r) => r.symbol).join(",");
+  const allOfType = useMemo(
+    () => (listData?.items ?? []).filter((r) => r.type === active),
+    [listData, active],
+  );
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return allOfType;
+    return allOfType.filter(
+      (r) =>
+        r.symbol.toLowerCase().includes(q) ||
+        (r.name ?? "").toLowerCase().includes(q),
+    );
+  }, [allOfType, query]);
+
+  const visible = filtered.slice(0, displayCount);
+  const symbols = visible.map((r) => r.symbol).join(",");
+  const hasMore = displayCount < filtered.length;
+
+  // Infinite scroll: when sentinel intersects viewport, load next page.
+  useEffect(() => {
+    if (!hasMore) return;
+    const sentinel = sentinelRef.current;
+    const root = listScrollRef.current;
+    if (!sentinel || !root) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            setDisplayCount((c) => Math.min(c + PAGE_SIZE, filtered.length));
+          }
+        }
+      },
+      { root, rootMargin: "0px 0px 80px 0px", threshold: 0 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, filtered.length]);
 
   const { data: quotesData } = useSWR<{ rows: QuoteRow[] }>(
     symbols ? `/api/assets/quote?symbols=${symbols}` : null,
@@ -115,12 +178,61 @@ export function MarketWidget() {
 
   return (
     <MetallicCard className="h-full">
-      {/* Header: title + dropdown */}
+      {/* Header: title + actions (search + market dropdown) */}
       <div className="px-6 pt-5 pb-3 border-b border-border flex items-center justify-between gap-3">
-        <p className="text-[12.5px] text-foreground/90">
+        <p className="text-[12.5px] text-foreground/90 shrink-0">
           Cotações oficiais
         </p>
-        <div className="relative shrink-0" ref={ddRef}>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Inline search: icon button expands into an input */}
+          <div className="relative flex items-center justify-end">
+            <AnimatePresence initial={false} mode="wait">
+              {!searchOpen ? (
+                <motion.button
+                  key="search-icon"
+                  type="button"
+                  onClick={() => setSearchOpen(true)}
+                  aria-label="Buscar ativo"
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.85 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
+                  className="cursor-pointer inline-flex items-center justify-center h-7 w-7 rounded-full border border-border bg-foreground/5 hover:bg-foreground/10 transition-colors text-foreground"
+                >
+                  <Search className="h-3.5 w-3.5" />
+                </motion.button>
+              ) : (
+                <motion.div
+                  key="search-input"
+                  initial={{ width: 32, opacity: 0 }}
+                  animate={{ width: 200, opacity: 1 }}
+                  exit={{ width: 32, opacity: 0 }}
+                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex items-center gap-1.5 h-7 px-2.5 rounded-full border border-border bg-foreground/5 overflow-hidden"
+                >
+                  <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <input
+                    ref={searchRef}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Buscar ticker..."
+                    className="flex-1 min-w-0 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground outline-none"
+                  />
+                  {query && (
+                    <button
+                      type="button"
+                      onClick={() => setQuery("")}
+                      aria-label="Limpar busca"
+                      className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        <div className="relative" ref={ddRef}>
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
@@ -182,11 +294,12 @@ export function MarketWidget() {
             )}
           </AnimatePresence>
         </div>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="flex-1 overflow-hidden">
-        <div className="grid grid-cols-[1.5fr_0.55fr_0.55fr_0.55fr_0.7fr_0.7fr] gap-3 px-6 py-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/70 border-b border-border/60">
+      {/* Table — scrollable body with sticky header */}
+      <div className="flex-1 min-h-0 overflow-y-auto" ref={listScrollRef}>
+        <div className="sticky top-0 z-10 grid grid-cols-[1.5fr_0.55fr_0.55fr_0.55fr_0.7fr_0.7fr] gap-3 px-6 py-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/70 border-b border-border/60 bg-background/80 backdrop-blur-md">
           <span>Ativo · Setor</span>
           <span className="text-right">24h</span>
           <span className="text-right">7d</span>
@@ -195,7 +308,7 @@ export function MarketWidget() {
           <span className="text-right">Mkt Cap</span>
         </div>
         <motion.ul
-          key={active}
+          key={active + ":" + query}
           initial="hidden"
           animate="show"
           variants={{
@@ -203,7 +316,7 @@ export function MarketWidget() {
             show: { transition: { staggerChildren: 0.04 } },
           }}
         >
-          {filtered.map((row) => {
+          {visible.map((row, idx) => {
             const q = quotes.get(row.symbol)?.quote;
             const ch = q?.changePercent ?? 0;
             const ch7 = q?.changePercent7d ?? null;
@@ -264,10 +377,25 @@ export function MarketWidget() {
               </motion.li>
             );
           })}
+          {hasMore && (
+            <li
+              ref={sentinelRef}
+              className="text-center py-3 text-[11px] text-muted-foreground/60"
+            >
+              <motion.span
+                animate={{ opacity: [0.4, 1, 0.4] }}
+                transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+              >
+                Carregando mais...
+              </motion.span>
+            </li>
+          )}
         </motion.ul>
         {filtered.length === 0 && (
           <p className="text-center text-[12px] text-muted-foreground py-8">
-            Sem dados para esta categoria.
+            {query
+              ? `Nenhum resultado para “${query}”.`
+              : "Sem dados para esta categoria."}
           </p>
         )}
       </div>
