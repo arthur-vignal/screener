@@ -167,42 +167,5 @@ export async function getBrapiQuoteBatch(symbols: string[]): Promise<Map<string,
     }
   }
 
-  // 2. Fallback for symbols Brapi didn't cover.
-  const missing = symbols.filter((s) => !map.has(s.toUpperCase()));
-  if (missing.length > 0) {
-    try {
-      const { getFundamentalsBatch } = await import("./fundamentals");
-      const fundMap = await getFundamentalsBatch(missing);
-      for (const sym of missing) {
-        const f = fundMap.get(sym.toUpperCase());
-        if (!f) continue;
-        map.set(sym.toUpperCase(), {
-          symbol: sym.toUpperCase(),
-          price: f.price,
-          prevClose: f.prevClose,
-          change: f.change,
-          changePercent: f.changePercent,
-          currency: "USD",
-          dayHigh: f.dayHigh,
-          dayLow: f.dayLow,
-          dayOpen: 0,
-          volume: f.volume,
-          fiftyTwoWeekHigh: f.fiftyTwoWeekHigh,
-          fiftyTwoWeekLow: f.fiftyTwoWeekLow,
-          longName: null,
-          sector: f.sector ?? null,
-          marketCap: f.marketCap ?? null,
-          type: "stock",
-          earningsPerShare: null,
-          priceEarnings: null,
-          changePercent7d: null,
-          changePercent30d: null,
-        });
-      }
-    } catch (err) {
-      console.error("[brapi-quote-batch] fallback failed:", err);
-    }
-  }
-
   return map;
 }
