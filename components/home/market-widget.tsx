@@ -164,11 +164,12 @@ export function MarketWidget() {
       (entries) => {
         for (const e of entries) {
           if (e.isIntersecting) {
+            console.log(`[infinite-scroll] intersect fired, displayCount=${displayCount}, filtered.length=${filtered.length}`);
             setDisplayCount((c) => Math.min(c + PAGE_SIZE, filtered.length));
           }
         }
       },
-      { root, rootMargin: "0px 0px 80px 0px", threshold: 0 },
+      { root, rootMargin: "0px 0px 400px 0px", threshold: 0 },
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
