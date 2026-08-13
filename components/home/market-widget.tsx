@@ -124,7 +124,7 @@ export function MarketWidget() {
   }, [active, query]);
 
   const { data: listData } = useSWR<{ items: AssetRow[] }>(
-    `/api/assets/list?exchange=b3&limit=200`,
+    `/api/assets/list?exchange=b3&limit=500`,
     fetcher,
   );
 
@@ -164,7 +164,6 @@ export function MarketWidget() {
       (entries) => {
         for (const e of entries) {
           if (e.isIntersecting) {
-            console.log(`[infinite-scroll] intersect fired, displayCount=${displayCount}, filtered.length=${filtered.length}`);
             setDisplayCount((c) => Math.min(c + PAGE_SIZE, filtered.length));
           }
         }
