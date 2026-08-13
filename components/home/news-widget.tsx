@@ -55,7 +55,7 @@ export function NewsWidget() {
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {items.length === 0 && (
           <p className="text-center text-[12px] text-muted-foreground py-8">
             Carregando...

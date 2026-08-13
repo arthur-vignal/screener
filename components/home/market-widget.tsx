@@ -54,10 +54,10 @@ type QuoteRow = {
  */
 function formatMarketCap(value: number): string {
   if (!Number.isFinite(value) || value <= 0) return "—";
-  if (value >= 1e12) return `${(value / 1e12).toFixed(1)}T`;
-  if (value >= 1e9) return `${(value / 1e9).toFixed(0)}B`;
-  if (value >= 1e6) return `${(value / 1e6).toFixed(0)}M`;
-  if (value >= 1e3) return `${(value / 1e3).toFixed(0)}K`;
+  if (value >= 1e12) return `${(value / 1e12).toFixed(2)}T`;
+  if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
+  if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
+  if (value >= 1e3) return `${(value / 1e3).toFixed(2)}K`;
   return String(Math.round(value));
 }
 
@@ -297,8 +297,11 @@ export function MarketWidget() {
         </div>
       </div>
 
-      {/* Table — scrollable body with sticky header */}
-      <div className="flex-1 min-h-0 overflow-y-auto" ref={listScrollRef}>
+      {/* Table — scrollable body with sticky header. Scrollbar hidden. */}
+      <div
+        className="flex-1 min-h-0 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        ref={listScrollRef}
+      >
         <div className="sticky top-0 z-10 grid grid-cols-[1.5fr_0.55fr_0.55fr_0.55fr_0.7fr_0.7fr] gap-3 px-6 py-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/70 border-b border-border/60 bg-background/80 backdrop-blur-md">
           <span>Ativo · Setor</span>
           <span className="text-right">24h</span>
@@ -365,7 +368,7 @@ export function MarketWidget() {
                   </p>
                   <p className="text-[12px] tabular-nums text-right text-muted-foreground">
                     {q?.volume != null && q.volume > 0
-                      ? `${(q.volume / 1_000_000).toFixed(1)}M`
+                      ? `${(q.volume / 1_000_000).toFixed(2)}M`
                       : "—"}
                   </p>
                   <p className="text-[12px] tabular-nums text-right text-muted-foreground">
