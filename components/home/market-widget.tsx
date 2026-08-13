@@ -148,6 +148,8 @@ export function MarketWidget() {
   const hasMore = displayCount < filtered.length;
 
   // Infinite scroll: when sentinel intersects viewport, load next page.
+  // Re-runs every time displayCount changes so the observer attaches to
+  // the freshly-mounted sentinel <li> (motion.ul key remounts it).
   useEffect(() => {
     if (!hasMore) return;
     const sentinel = sentinelRef.current;
@@ -165,7 +167,7 @@ export function MarketWidget() {
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, filtered.length]);
+  }, [hasMore, filtered.length, displayCount]);
 
   const { data: quotesData } = useSWR<{ rows: QuoteRow[] }>(
     symbols ? `/api/assets/quote?symbols=${symbols}` : null,
