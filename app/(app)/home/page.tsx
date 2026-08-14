@@ -96,23 +96,27 @@ export default function HomePage() {
         <HeaderOverlay />
       </div>
       <motion.main
-        className="max-w-[1400px] mx-auto px-6 pt-6 pb-12 grid gap-6"
-        style={{
-          gridTemplateColumns: "minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr)",
-          gridTemplateRows: "minmax(0, 405px) minmax(0, 405px)",
-          height: "calc(100vh - 64px)",
-          gridTemplateAreas: `
-            "portfolio market news"
-            "highlight  market news"
-          `,
-        }}
-        initial="hidden"
-        animate="show"
-        variants={{
-          hidden: {},
-          show: { transition: { staggerChildren: 0.16, delayChildren: 0.5 } },
-        }}
-      >
+      className="max-w-[1400px] mx-auto px-6 pt-6 pb-12 grid gap-6"
+      style={{
+        gridTemplateColumns: "minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr)",
+        gridTemplateRows: "minmax(0, 405px) minmax(0, 405px)",
+        height: "calc(100vh - 64px)",
+        gridTemplateAreas: `
+          "portfolio market news"
+          "highlight  market news"
+        `,
+      }}
+      // While the welcome overlay is open the cards stay in the
+      // 'hidden' variant — content does not animate in until the
+      // overlay finishes and the page becomes visible underneath.
+      // When welcomeOpen flips to false, animate transitions to
+      // 'show' and the stagger plays.
+      animate={welcomeOpen ? "hidden" : "show"}
+      variants={{
+        hidden: {},
+        show: { transition: { staggerChildren: 0.16, delayChildren: 0.1 } },
+      }}
+    >
         <div
           style={{ gridArea: "portfolio" }}
           className="min-h-0"
