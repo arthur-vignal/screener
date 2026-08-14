@@ -8,6 +8,7 @@
  * related tickers.
  */
 
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import useSWR from "swr";
 import { MetallicCard } from "@/components/ui/metallic-card";
@@ -36,6 +37,8 @@ function stripHtml(s: string): string {
 }
 
 export function DayHighlight() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const { data } = useSWR<{ news: NewsItem[] }>(`/api/news/multi`, fetcher);
   const top = (data?.news ?? [])[0];
 
@@ -46,11 +49,13 @@ export function DayHighlight() {
           Data do dia
         </p>
         <p className="text-[12.5px] text-foreground/85 mt-1 tabular-nums">
-          {new Date().toLocaleDateString("pt-BR", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          })}
+          {mounted
+            ? new Date().toLocaleDateString("pt-BR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              })
+            : ""}
         </p>
       </div>
 

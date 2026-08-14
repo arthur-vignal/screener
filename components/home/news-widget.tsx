@@ -8,6 +8,7 @@
  * external-link icon.
  */
 
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import useSWR from "swr";
 import { MetallicCard } from "@/components/ui/metallic-card";
@@ -44,6 +45,8 @@ function timeAgo(ts: number): string {
 }
 
 export function NewsWidget() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const { data } = useSWR<{ news: NewsItem[] }>(`/api/news/multi`, fetcher);
   const items = (data?.news ?? []).slice(0, 14);
 
@@ -94,7 +97,7 @@ export function NewsWidget() {
                     <span className="truncate max-w-[120px]">{n.source}</span>
                     <span className="inline-flex items-center gap-1">
                       <Clock className="h-2.5 w-2.5" />
-                      {timeAgo(n.datetime)}
+                      {(mounted ? timeAgo(n.datetime) : '')}
                     </span>
                     <ExternalLink className="h-2.5 w-2.5 ml-auto opacity-50 group-hover:opacity-100" />
                   </div>

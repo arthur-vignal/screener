@@ -50,6 +50,8 @@ function formatBRL(n: number) {
 }
 
 export function PortfolioWidget() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const { data: portfoliosData, isLoading } = useSWR<{
     portfolios: PortfolioRow[];
   }>("/api/portfolios?scope=mine", fetcher);
@@ -98,7 +100,7 @@ export function PortfolioWidget() {
       <div className="px-6 pt-5 pb-4 border-b border-border flex items-end justify-between gap-3">
         <div className="min-w-0 flex-1 text-[12.5px] text-foreground/90 leading-snug">
           <div>
-            {greetingFor(new Date().getHours())},{" "}
+            {mounted ? greetingFor(new Date().getHours()) : "Olá"},{" "}
             <UserFirstName />,
           </div>
           <div>seu portfolio valorizou:</div>

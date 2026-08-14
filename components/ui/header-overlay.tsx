@@ -36,7 +36,7 @@ function isB3Open(): boolean {
 }
 
 export function HeaderOverlay() {
-  const [clock, setClock] = useState(brTime());
+  const [clock, setClock] = useState("");
   const [open, setOpen] = useState(isB3Open());
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [name, setName] = useState<string>("");
