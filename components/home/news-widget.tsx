@@ -65,7 +65,7 @@ export function NewsWidget() {
           initial="hidden"
           animate="show"
           variants={{
-            hidden: {},
+            hidden: { opacity: 0 },
             show: { transition: { staggerChildren: 0.06 } },
           }}
         >

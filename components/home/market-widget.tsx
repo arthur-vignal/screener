@@ -322,7 +322,7 @@ export function MarketWidget() {
           initial="hidden"
           animate="show"
           variants={{
-            hidden: {},
+            hidden: { opacity: 0 },
             show: { transition: { staggerChildren: 0.04 } },
           }}
         >

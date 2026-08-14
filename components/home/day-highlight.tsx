@@ -61,15 +61,16 @@ export function DayHighlight() {
           </p>
         )}
         {top && (
-          <motion.a
-            href={top.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="block group h-full"
-          >
+        <motion.a
+          href={top.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          variants={{
+            hidden: { opacity: 0, y: 6 },
+            show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+          }}
+          className="block group h-full"
+        >
             <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">
               {top.source}
             </p>

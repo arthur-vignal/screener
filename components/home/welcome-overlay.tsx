@@ -74,11 +74,11 @@ export function WelcomeOverlay({
     <AnimatePresence>
       <motion.div
         key="welcome-overlay"
-        initial={{ opacity: 0 }}
+        initial={{ opacity: 1 }}
         animate={{ opacity: phase === "exit" ? 0 : 1 }}
         exit={{ opacity: 0 }}
         transition={{
-          opacity: { duration: phase === "exit" ? 0.7 : 0.4, ease: "easeInOut" },
+          opacity: { duration: phase === "exit" ? 0.7 : 0, ease: "easeInOut" },
         }}
         className="fixed inset-0 z-[200] flex flex-col items-center justify-center"
         style={{
