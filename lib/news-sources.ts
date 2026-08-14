@@ -63,7 +63,7 @@ function looksPortuguese(headline: string): boolean {
   return false;
 }
 
-async function fetchBrazilianVerified(ticker: string): Promise<NewsItem[]> {
+export async function fetchBrazilianVerified(ticker: string): Promise<NewsItem[]> {
   const upper = ticker.toUpperCase();
   try {
     // Query Google News RSS restricted to the 6 trusted B3/BR hosts.
