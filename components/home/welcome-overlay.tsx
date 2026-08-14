@@ -28,9 +28,14 @@ export function WelcomeOverlay({
 }) {
   const [typed, setTyped] = useState("");
   const [phase, setPhase] = useState<"typing" | "hold" | "exit">("typing");
+  const [mounted, setMounted] = useState(false);
 
   const prefix = "Bem vindo(a), ";
   const totalText = `${prefix}${username || "amigo"}`;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (phase !== "typing") return;
@@ -105,7 +110,7 @@ export function WelcomeOverlay({
           >
             <span style={{ fontWeight: 400 }}>
               {prefixDone ? prefix : typed}
-              {phase === "typing" && (
+              {phase === "typing" && mounted && (
                 <motion.span
                   aria-hidden
                   className="inline-block w-[2px] h-[1em] align-middle ml-1 bg-white"
