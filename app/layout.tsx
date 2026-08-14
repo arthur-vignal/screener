@@ -9,6 +9,7 @@ const inter = localFont({
   src: "../public/fonts/InterVariable.woff2",
   variable: "--font-inter",
   display: "swap",
+  preload: false,
   weight: "100 900",
 });
 
@@ -17,6 +18,7 @@ const archia = localFont({
   src: "../public/fonts/archia/Archia-Regular.woff2",
   variable: "--font-archia",
   display: "swap",
+  preload: false,
   weight: "400",
 });
 
@@ -25,6 +27,7 @@ const geistMono = localFont({
   src: "../public/fonts/geist-mono/GeistMono-Regular.woff2",
   variable: "--font-geist-mono",
   display: "swap",
+  preload: false,
   weight: "400",
 });
 
@@ -33,6 +36,7 @@ const commitMono = localFont({
   src: "../public/fonts/commit-mono/CommitMono-Regular.ttf",
   variable: "--font-commit-mono",
   display: "swap",
+  preload: false,
   weight: "400",
 });
 
@@ -41,6 +45,7 @@ const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-manrope",
   display: "swap",
+  preload: false,
   weight: ["300", "400", "500", "600", "700", "800"],
 });
 
@@ -49,6 +54,7 @@ const archivoBlack = Archivo_Black({
   subsets: ["latin"],
   variable: "--font-archivo-black",
   display: "swap",
+  preload: false,
   weight: "400",
 });
 
