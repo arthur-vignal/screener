@@ -133,9 +133,14 @@ async function getBrapiCandlesRaw(
   interval: "5m" | "15m" | "30m" | "1h" | "1d" | "1wk" | "1mo",
 ): Promise<BrapiCandle[]> {
   // We bypass getBrapiCandles' own cache because we control the
-  // cache key per range+interval above.
+  // cache key per range+interval above. But we DO need to include
+  // the Brapi PRO token, otherwise the upstream returns 401.
+  const token = process.env.BRAPI_TOKEN ?? process.env.BRAPI_API_TOKEN ?? "";
+  const params: Record<string, string> = { range, interval };
+  if (token) params.token = token;
+  const qs = new URLSearchParams(params).toString();
   const r = await fetch(
-    `https://brapi.dev/api/quote/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}`,
+    `https://brapi.dev/api/quote/${encodeURIComponent(symbol)}?${qs}`,
     {
       headers: {
         "User-Agent": "Mozilla/5.0",
