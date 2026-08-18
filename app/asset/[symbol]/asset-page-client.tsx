@@ -143,10 +143,10 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
           onRefresh={() => mutate()}
         />
 
-        {/* Chart + news side-by-side on lg; stacks on smaller screens.
+        {/* Chart + news side-by-side from md (768px, iPad mini) up.
             Chart is 2/3 width, news 1/3 — matches the print reference. */}
-        <div className="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className="lg:col-span-2">
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="md:col-span-2">
             <ChartCard
               symbol={symbol}
               currency={bundle?.currency ?? "BRL"}
@@ -157,7 +157,7 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
               loading={isLoading}
             />
           </div>
-          <div className="lg:col-span-1">
+          <div className="md:col-span-1">
             <NewsCard symbol={symbol} />
           </div>
         </div>
