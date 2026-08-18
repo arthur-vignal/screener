@@ -96,27 +96,25 @@ export default function HomePage() {
         <HeaderOverlay />
       </div>
       <motion.main
-      className="max-w-[1400px] mx-auto px-6 pt-6 pb-12 grid gap-6"
-      style={{
-        gridTemplateColumns: "minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr)",
-        gridTemplateRows: "minmax(0, 405px) minmax(0, 405px)",
-        height: "calc(100vh - 64px)",
-        gridTemplateAreas: `
-          "portfolio market news"
-          "highlight  market news"
-        `,
-      }}
-      // While the welcome overlay is open the cards stay in the
-      // 'hidden' variant — content does not animate in until the
-      // overlay finishes and the page becomes visible underneath.
-      // When welcomeOpen flips to false, animate transitions to
-      // 'show' and the stagger plays.
-      animate={welcomeOpen ? "hidden" : "show"}
-      variants={{
-        hidden: {},
-        show: { transition: { staggerChildren: 0.16, delayChildren: 0.1 } },
-      }}
-    >
+            className="max-w-[1400px] mx-auto px-6 pt-6 pb-12 grid gap-6"
+            style={{
+              gridTemplateColumns: "minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr)",
+              gridTemplateRows: "minmax(0, 405px) minmax(0, 405px)",
+              height: "calc(100vh - 64px)",
+              gridTemplateAreas: `
+                "portfolio market news"
+                "highlight  market news"
+              `,
+            }}
+            // Don't orchestrate via parent variants — each widget
+            // (PortfolioWidget / MarketWidget / NewsWidget /
+            // DayHighlight) drives its own initial/animate so the cards
+            // always paint their content. Without this, framer-motion's
+            // stagger looked for 'hidden'/'show' variants on the children
+            // and parked them at opacity:0 forever (only DayHighlight
+            // declares matching variants, which is why it was the only
+            // card showing data).
+          >
         <div
           style={{ gridArea: "portfolio" }}
           className="min-h-0"
