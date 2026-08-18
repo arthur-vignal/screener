@@ -143,15 +143,24 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
           onRefresh={() => mutate()}
         />
 
-        <ChartCard
-          symbol={symbol}
-          currency={bundle?.currency ?? "BRL"}
-          quote={bundle?.quote ?? null}
-          candles={candles}
-          range={range}
-          onRangeChange={setRange}
-          loading={isLoading}
-        />
+        {/* Chart + news side-by-side on lg; stacks on smaller screens.
+            Chart is 2/3 width, news 1/3 — matches the print reference. */}
+        <div className="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2">
+            <ChartCard
+              symbol={symbol}
+              currency={bundle?.currency ?? "BRL"}
+              quote={bundle?.quote ?? null}
+              candles={candles}
+              range={range}
+              onRangeChange={setRange}
+              loading={isLoading}
+            />
+          </div>
+          <div className="lg:col-span-1">
+            <NewsCard symbol={symbol} />
+          </div>
+        </div>
 
         <MetricsStrip
           currency={bundle?.currency ?? "BRL"}
@@ -159,8 +168,6 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
           quote={bundle?.quote ?? null}
           loading={isLoading}
         />
-
-        <NewsCard symbol={symbol} />
       </div>
     </div>
   );
