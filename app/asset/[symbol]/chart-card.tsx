@@ -56,16 +56,16 @@ type Candle = {
 };
 
 type Quote = {
-  price: number;
-  prevClose: number;
-  change: number;
-  changePercent: number;
-  dayHigh: number;
-  dayLow: number;
-  dayOpen: number;
-  volume: number;
-  fiftyTwoWeekHigh: number;
-  fiftyTwoWeekLow: number;
+  price: number | null;
+  prevClose: number | null;
+  change: number | null;
+  changePercent: number | null;
+  dayHigh: number | null;
+  dayLow: number | null;
+  dayOpen: number | null;
+  volume: number | null;
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
   marketCap: number | null;
 };
 
@@ -86,7 +86,13 @@ export function ChartCard({
   onRangeChange: (r: RangeKey) => void;
   loading: boolean;
 }) {
-  const isUp = (quote?.change ?? 0) >= 0;
+  // Brapi PRO returns different shapes per ticker — some return
+  // just {52wHigh, 52wLow, marketCap} with no live price. Treat any
+  // missing numeric field as null and let the renderer show "—".
+  const change = quote?.change ?? null;
+  const changePercent = quote?.changePercent ?? null;
+  const price = quote?.price ?? null;
+  const isUp = (change ?? 0) >= 0;
   const accent = isUp ? "#10b981" : "#f43f5e";
   const accentFaint = isUp ? "rgba(16,185,129,0.18)" : "rgba(244,63,94,0.18)";
 
@@ -149,23 +155,23 @@ export function ChartCard({
         <div className="flex items-end gap-4">
           <div>
             <p className="text-[44px] md:text-[52px] leading-[0.95] font-semibold tabular-nums tracking-tight">
-              {loading || !quote
-                ? "—"
-                : formatCurrency(quote.price, currency)}
+{loading || price == null
+              ? "—"
+              : formatCurrency(price, currency)}
             </p>
             <div
               className="mt-1 inline-flex items-center gap-2 text-[13px] font-medium tabular-nums"
               style={{ color: accent }}
             >
               <span>
-                {quote
-                  ? `${isUp ? "+" : ""}${formatCurrency(quote.change, currency)}`
-                  : "—"}
+                {change == null
+                  ? "—"
+                  : `${isUp ? "+" : ""}${formatCurrency(change, currency)}`}
               </span>
               <span className="opacity-70">
-                {quote
-                  ? `${isUp ? "+" : ""}${quote.changePercent.toFixed(2)}%`
-                  : ""}
+                {changePercent == null
+                  ? ""
+                  : `${isUp ? "+" : ""}${changePercent.toFixed(2)}%`}
               </span>
               <span className="text-muted-foreground/60 text-[11px] uppercase tracking-[0.18em]">
                 today
@@ -255,7 +261,7 @@ export function ChartCard({
                   );
                 }}
               />
-              {quote?.prevClose ? (
+              {quote?.prevClose != null ? (
                 <ReferenceLine
                   yAxisId="price"
                   y={quote.prevClose}
@@ -322,18 +328,18 @@ export function ChartCard({
       {/* 52w / day-range summary */}
       {quote && (
         <div className="px-6 py-3 border-t border-border/40 grid grid-cols-2 md:grid-cols-4 gap-4 text-[11px]">
-          <Stat label="Day range" value={`${formatCurrency(quote.dayLow, currency)} – ${formatCurrency(quote.dayHigh, currency)}`} />
+          <Stat label="Day range" value={quote.dayLow != null && quote.dayHigh != null ? `${formatCurrency(quote.dayLow, currency)} – ${formatCurrency(quote.dayHigh, currency)}` : "—"} />
           <Stat
             label="52w range"
             value={
-              quote.fiftyTwoWeekLow && quote.fiftyTwoWeekHigh
+              quote.fiftyTwoWeekLow != null && quote.fiftyTwoWeekHigh != null
                 ? `${formatCurrency(quote.fiftyTwoWeekLow, currency)} – ${formatCurrency(quote.fiftyTwoWeekHigh, currency)}`
                 : "—"
             }
           />
           <Stat
             label="Volume"
-            value={quote.volume ? `${(quote.volume / 1_000_000).toFixed(2)}M` : "—"}
+            value={quote.volume != null && quote.volume > 0 ? `${(quote.volume / 1_000_000).toFixed(2)}M` : "—"}
           />
           <Stat
             label="Mkt Cap"
@@ -360,8 +366,8 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 // ── helpers ──────────────────────────────────────────────────
 
-function formatCurrency(v: number, currency: string): string {
-  if (!Number.isFinite(v)) return "—";
+function formatCurrency(v: number | null | undefined, currency: string): string {
+  if (v == null || !Number.isFinite(v)) return "—";
   const symbol = currency === "USD" ? "$" : "R$";
   return `${symbol} ${v.toLocaleString("pt-BR", {
     minimumFractionDigits: 2,

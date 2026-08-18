@@ -34,16 +34,16 @@ type AssetBundle = {
   currency: string;
   marketState: string;
   quote: {
-    price: number;
-    prevClose: number;
-    change: number;
-    changePercent: number;
-    dayHigh: number;
-    dayLow: number;
-    dayOpen: number;
-    volume: number;
-    fiftyTwoWeekHigh: number;
-    fiftyTwoWeekLow: number;
+    price: number | null;
+    prevClose: number | null;
+    change: number | null;
+    changePercent: number | null;
+    dayHigh: number | null;
+    dayLow: number | null;
+    dayOpen: number | null;
+    volume: number | null;
+    fiftyTwoWeekHigh: number | null;
+    fiftyTwoWeekLow: number | null;
     marketCap: number | null;
     marketTime: string | null;
   };

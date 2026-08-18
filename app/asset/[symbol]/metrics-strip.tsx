@@ -25,8 +25,8 @@ type Metrics = {
 
 type Quote = {
   marketCap: number | null;
-  fiftyTwoWeekHigh: number;
-  fiftyTwoWeekLow: number;
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
 };
 
 export function MetricsStrip({
