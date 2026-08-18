@@ -113,10 +113,13 @@ export default function LoginPage() {
               onClose={() => router.push("/")}
               onSuccess={(u) => {
                 // small delay so the close animation lands first
-                setTimeout(() => {
-                  setUsername(u.username);
-                  setPhase("welcome");
-                }, 350);
+                setUsername(u.username);
+                setPhase("welcome");
+                // Belt-and-suspenders: don't rely on WelcomeScreen.onDone
+                // to navigate — user reported the welcome screen never
+                // redirected to /home. Push the route immediately; the
+                // welcome animation continues on top of the new page.
+                setTimeout(() => router.push("/home"), 1400);
               }}
             />
           </motion.div>
