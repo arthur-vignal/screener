@@ -4,10 +4,9 @@ import { getBrapiFundamentals } from "@/lib/brapi";
 /**
  * /api/asset/[symbol] — single ticker bundle.
  *
- * Returns the quote + fundamentals + a default 1y candle series in
- * one round-trip. The client fetches additional ranges via
- * /api/asset/[symbol]/candles?range=… when the user picks a new
- * time-range pill.
+ * Returns the quote + fundamentals. The candle series is fetched
+ * separately via /api/asset/[symbol]/candles?range=… so the
+ * per-range cache can be sliced independently.
  *
  * Cache: 60s for the bundle (quote can change intraday; fundamentals
  * are stable but we re-validate the ticker exists on every refresh).
@@ -72,9 +71,5 @@ export async function GET(
       freeCashflow: fd.freeCashflow ?? ks.freeCashflow ?? null,
       dividendYield: ks.trailingAnnualDividendYield ?? null,
     },
-
-    // Default 1y candles included so the page can paint immediately
-    // on first load. The client refetches when the user changes range.
-    candles: data.candles,
   });
 }

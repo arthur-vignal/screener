@@ -76,27 +76,30 @@ const fetcher = (url: string) => fetch(url).then((r) => {
 export function AssetPageClient({ symbol }: { symbol: string }) {
   const [range, setRange] = useState<RangeKey>("1y");
 
-  // Bundle: quote + metrics + default 1y candles. Auto-refreshes
-  // every 60s so price stays fresh without manual reload.
+  // Quote + metrics only (small, 60s cache). Bundle in the
+  // /api/asset/[symbol] endpoint can hit a stale brapi:full:* cache
+  // entry that has empty historicalDataPrice — splitting candles out
+  // means the metrics still load instantly even if Brapi's candle
+  // path is slow.
   const {
     data: bundle,
     error: bundleError,
     isLoading,
     mutate,
-  } = useSWR<AssetBundle>(
+  } = useSWR<Omit<AssetBundle, "candles">>(
     `/api/asset/${encodeURIComponent(symbol)}`,
     fetcher,
     { refreshInterval: 60_000, revalidateOnFocus: true },
   );
 
-  // Range-specific candles (fetched lazily when user picks a range).
+  // Default 1y candles for the first paint.
   const { data: rangeData } = useSWR<{ candles: AssetBundle["candles"] }>(
-    bundle ? `/api/asset/${encodeURIComponent(symbol)}/candles?range=${range}` : null,
+    `/api/asset/${encodeURIComponent(symbol)}/candles?range=${range}`,
     fetcher,
     { keepPreviousData: true },
   );
 
-  const candles = rangeData?.candles ?? bundle?.candles ?? [];
+  const candles = rangeData?.candles ?? [];
 
   if (bundleError) {
     return (
