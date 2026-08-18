@@ -252,7 +252,7 @@ export function ChartCard({
                 tickLine={false}
               />
               <YAxis
-                yAxisId="price"
+yAxisId="price"
                 domain={yDomain}
                 tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 10 }}
                 axisLine={false}
@@ -260,6 +260,15 @@ export function ChartCard({
                 width={56}
                 tickFormatter={(v) => formatCurrencyShort(v, currency)}
                 orientation="right"
+              />
+              {/* Hidden volume axis: scales so volume bars stay in the
+                  bottom 25% of the chart. Declared BEFORE the <Bar>
+                  so Recharts has the axis when the bar mounts. */}
+              <YAxis
+                yAxisId="volume"
+                orientation="right"
+                hide
+                domain={[0, "dataMax"]}
               />
               <Tooltip
                 cursor={{ stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 }}
@@ -307,12 +316,6 @@ export function ChartCard({
                 fill={accentFaint}
                 radius={[2, 2, 0, 0]}
                 isAnimationActive={false}
-              />
-              <YAxis
-                yAxisId="volume"
-                orientation="right"
-                hide
-                domain={[0, (dataMax: number) => dataMax * 4]}
               />
               <Area
                 yAxisId="price"
