@@ -318,12 +318,12 @@ export function MarketWidget() {
           <span className="text-right">Mkt Cap</span>
         </div>
         <motion.ul
-          key={active + ":" + query}
+key={active + ":" + query}
           initial="hidden"
           animate="show"
           variants={{
             hidden: { opacity: 0 },
-            show: { transition: { staggerChildren: 0.04 } },
+            show: { opacity: 1, transition: { staggerChildren: 0.04 } },
           }}
         >
           {visible.map((row, idx) => {
@@ -334,10 +334,8 @@ export function MarketWidget() {
             return (
               <motion.li
                 key={row.symbol}
-                variants={{
-                  hidden: { opacity: 0, x: -8 },
-                  show: { opacity: 1, x: 0 },
-                }}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
               >
                 <Link

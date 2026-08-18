@@ -65,11 +65,11 @@ export function NewsWidget() {
           </p>
         )}
         <motion.ul
-          initial="hidden"
+initial="hidden"
           animate="show"
           variants={{
             hidden: { opacity: 0 },
-            show: { transition: { staggerChildren: 0.06 } },
+            show: { opacity: 1, transition: { staggerChildren: 0.06 } },
           }}
         >
           {items.map((n) => {
@@ -77,10 +77,8 @@ export function NewsWidget() {
             return (
               <motion.li
                 key={n.id}
-                variants={{
-                  hidden: { opacity: 0, y: 8 },
-                  show: { opacity: 1, y: 0 },
-                }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
                 className="border-b border-border/40 last:border-b-0"
               >
