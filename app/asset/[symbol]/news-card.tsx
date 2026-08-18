@@ -111,8 +111,8 @@ export function NewsCard({ symbol }: { symbol: string }) {
     <motion.section
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut", delay: 0.18 }}
-      className="h-full"
+      transition={{ duration: 0.5, ease: "easeOut", delay: 0.05 }}
+      className="h-fit"
     >
       <div className="rounded-2xl border border-border/60 overflow-hidden"
         style={{

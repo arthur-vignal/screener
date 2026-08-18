@@ -2,23 +2,32 @@
 
 /**
  * ChartCard — price + line chart + time-range pills + previous close
- * reference line + volume bars.
+ * reference line + embedded volume overlay.
  *
- * Layout per the Fey-style reference:
- *   [ PRICE  | +1.23% ]
- *   [ RANGE PILLS .............................. ]
- *   [ LINE CHART (full width, ~280px) ]
- *   [ VOLUME BARS  (subtle, low contrast)       ]
+ * Layout:
+ *   [ PRICE (smaller) | +/- VAR ............... | RANGE PILLS ]
+ *   [ LINE CHART with VOLUME OVERLAY (single SVG, ~340px) ]
+ *   [ Day range | 52w range | Volume | Mkt Cap ]
  *
- * Uses Recharts. We disable the parent variant dance — each path
- * animates on its own initial/animate (see earlier fix on
- * market-widget/news-widget).
+ * Volume is rendered inside the price chart as a low-opacity Bar
+ * pinned to the bottom 25% of the chart area. Y-axis on the right is
+ * the price; volume doesn't get its own axis.
+ *
+ * Time ranges + intervals (server side handles the resample):
+ *   24h  → 5m   (intraday, last 24h)
+ *   7d   → 15m  (last 7 days)
+ *   3m   → 1h   (last 3 months)
+ *   1y   → 4h   (last year)
+ *   5y   → 6h   (last 5 years)
+ *   max  → 6h   (max available)
+ *
+ * If the asset has < 5y history the client hides the 5y pill.
  */
 
 import { motion } from "motion/react";
 import { useMemo } from "react";
 import {
-  AreaChart,
+  ComposedChart,
   Area,
   XAxis,
   YAxis,
@@ -26,19 +35,15 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Bar,
-  BarChart,
-  ComposedChart,
 } from "recharts";
 import { cn } from "@/lib/utils";
 
-export type RangeKey = "1d" | "5d" | "1mo" | "3mo" | "6mo" | "1y" | "5y" | "max";
+export type RangeKey = "24h" | "7d" | "3m" | "1y" | "5y" | "max";
 
 const RANGES: { key: RangeKey; label: string }[] = [
-  { key: "1d", label: "1D" },
-  { key: "5d", label: "5D" },
-  { key: "1mo", label: "1M" },
-  { key: "3mo", label: "3M" },
-  { key: "6mo", label: "6M" },
+  { key: "24h", label: "24h" },
+  { key: "7d", label: "7d" },
+  { key: "3m", label: "3M" },
   { key: "1y", label: "1Y" },
   { key: "5y", label: "5Y" },
   { key: "max", label: "Max" },
@@ -69,6 +74,8 @@ type Quote = {
   marketCap: number | null;
 };
 
+const FIVE_YEARS_MS = 5 * 365 * 24 * 3600 * 1000;
+
 export function ChartCard({
   symbol,
   currency,
@@ -94,7 +101,7 @@ export function ChartCard({
   const price = quote?.price ?? null;
   const isUp = (change ?? 0) >= 0;
   const accent = isUp ? "#10b981" : "#f43f5e";
-  const accentFaint = isUp ? "rgba(16,185,129,0.18)" : "rgba(244,63,94,0.18)";
+  const accentFaint = isUp ? "rgba(16,185,129,0.10)" : "rgba(244,63,94,0.10)";
 
   const data = useMemo(
     () =>
@@ -107,7 +114,15 @@ export function ChartCard({
     [candles],
   );
 
-  // Domain for y-axis — clamp to visible range with some headroom.
+  // Detect ticker history length so we can hide 5Y pill for short
+  // histories (< 5 years since first available candle).
+  const tickerSpanMs =
+    data.length > 1
+      ? data[data.length - 1].ts - data[0].ts
+      : 0;
+  const hide5y = tickerSpanMs > 0 && tickerSpanMs < FIVE_YEARS_MS;
+  const visibleRanges = RANGES.filter((r) => !(hide5y && r.key === "5y"));
+
   const yDomain = useMemo<[number, number]>(() => {
     if (data.length === 0) return [0, 1];
     let min = Infinity;
@@ -133,10 +148,16 @@ export function ChartCard({
 
   const formatTickDate = (ts: number) => {
     const d = new Date(ts);
-    if (range === "1d" || range === "5d") {
+    if (range === "24h") {
       return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
     }
-    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+    if (range === "7d") {
+      return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    }
+    if (range === "3m") {
+      return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+    }
+    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "2-digit" });
   };
 
   return (
@@ -144,23 +165,23 @@ export function ChartCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut", delay: 0.05 }}
-      className="mt-5 rounded-2xl border border-border/60 overflow-hidden relative"
+      className="rounded-2xl border border-border/60 overflow-hidden relative h-full flex flex-col"
       style={{
         background:
           "linear-gradient(135deg, #08090c 0%, #15161b 30%, #0d0e12 55%, #1c1d22 80%, #07080b 100%)",
       }}
     >
-      {/* Price hero — left aligned, above the chart */}
+      {/* Price hero — left aligned, ~40% smaller than v1 */}
       <div className="px-6 pt-5 pb-2 flex items-end justify-between gap-4 flex-wrap">
         <div className="flex items-end gap-4">
           <div>
-            <p className="text-[44px] md:text-[52px] leading-[0.95] font-semibold tabular-nums tracking-tight">
-{loading || price == null
-              ? "—"
-              : formatCurrency(price, currency)}
+            <p className="text-[26px] md:text-[31px] leading-[0.95] font-semibold tabular-nums tracking-tight">
+              {loading || price == null
+                ? "—"
+                : formatCurrency(price, currency)}
             </p>
             <div
-              className="mt-1 inline-flex items-center gap-2 text-[13px] font-medium tabular-nums"
+              className="mt-1 inline-flex items-center gap-2 text-[12px] font-medium tabular-nums"
               style={{ color: accent }}
             >
               <span>
@@ -173,7 +194,7 @@ export function ChartCard({
                   ? ""
                   : `${isUp ? "+" : ""}${changePercent.toFixed(2)}%`}
               </span>
-              <span className="text-muted-foreground/60 text-[11px] uppercase tracking-[0.18em]">
+              <span className="text-muted-foreground/60 text-[10px] uppercase tracking-[0.18em]">
                 today
               </span>
             </div>
@@ -182,7 +203,7 @@ export function ChartCard({
 
         {/* Range pills */}
         <div className="flex items-center gap-1 p-1 rounded-full border border-border/60 bg-background/40 backdrop-blur-md">
-          {RANGES.map((r) => {
+          {visibleRanges.map((r) => {
             const active = r.key === range;
             return (
               <button
@@ -202,8 +223,8 @@ export function ChartCard({
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="px-2 pt-1 pb-2 h-[280px] relative">
+      {/* Chart with embedded volume overlay */}
+      <div className="px-2 pt-1 pb-2 flex-1 min-h-[320px] relative">
         {data.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center text-[12px] text-muted-foreground/60">
             {loading ? "Carregando…" : "Sem dados para este período"}
@@ -244,18 +265,22 @@ export function ChartCard({
                 cursor={{ stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 }}
                 content={({ active, payload }) => {
                   if (!active || !payload || payload.length === 0) return null;
-                  const p = payload[0].payload as { ts: number; close: number };
+                  const p = payload[0].payload as { ts: number; close: number; volume: number };
                   return (
                     <div className="px-2.5 py-1.5 rounded-md border border-border/60 bg-background/90 backdrop-blur-md text-[11px]">
                       <p className="text-muted-foreground">
-                        {new Date(p.ts).toLocaleDateString("pt-BR", {
+                        {new Date(p.ts).toLocaleString("pt-BR", {
                           day: "2-digit",
                           month: "short",
-                          year: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         })}
                       </p>
                       <p className="font-medium tabular-nums">
                         {formatCurrency(p.close, currency)}
+                      </p>
+                      <p className="text-muted-foreground tabular-nums">
+                        Vol {(p.volume / 1_000_000).toFixed(2)}M
                       </p>
                     </div>
                   );
@@ -275,6 +300,20 @@ export function ChartCard({
                   }}
                 />
               ) : null}
+              {/* Volume bars at the bottom 25% of the chart */}
+              <Bar
+                yAxisId="volume"
+                dataKey="volume"
+                fill={accentFaint}
+                radius={[2, 2, 0, 0]}
+                isAnimationActive={false}
+              />
+              <YAxis
+                yAxisId="volume"
+                orientation="right"
+                hide
+                domain={[0, (dataMax: number) => dataMax * 4]}
+              />
               <Area
                 yAxisId="price"
                 type="monotone"
@@ -290,42 +329,7 @@ export function ChartCard({
         )}
       </div>
 
-      {/* Volume strip */}
-      <div className="px-2 h-[60px] -mt-2">
-        {data.length > 0 && (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 0, right: 16, bottom: 4, left: 16 }}>
-              <XAxis dataKey="ts" type="number" domain={["dataMin", "dataMax"]} hide />
-              <YAxis hide domain={[0, "dataMax"]} />
-              <Tooltip
-                cursor={{ fill: "rgba(255,255,255,0.04)" }}
-                content={({ active, payload }) => {
-                  if (!active || !payload || payload.length === 0) return null;
-                  const p = payload[0].payload as { ts: number; volume: number };
-                  return (
-                    <div className="px-2.5 py-1.5 rounded-md border border-border/60 bg-background/90 backdrop-blur-md text-[11px]">
-                      <p className="text-muted-foreground">
-                        {new Date(p.ts).toLocaleDateString("pt-BR")}
-                      </p>
-                      <p className="font-medium tabular-nums">
-                        Vol {(p.volume / 1_000_000).toFixed(2)}M
-                      </p>
-                    </div>
-                  );
-                }}
-              />
-              <Bar
-                dataKey="volume"
-                fill={accentFaint}
-                radius={[2, 2, 0, 0]}
-                isAnimationActive={false}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
-      {/* 52w / day-range summary */}
+      {/* Day-range / 52w / Volume / Mkt cap summary */}
       {quote && (
         <div className="px-6 py-3 border-t border-border/40 grid grid-cols-2 md:grid-cols-4 gap-4 text-[11px]">
           <Stat label="Day range" value={quote.dayLow != null && quote.dayHigh != null ? `${formatCurrency(quote.dayLow, currency)} – ${formatCurrency(quote.dayHigh, currency)}` : "—"} />
@@ -343,9 +347,7 @@ export function ChartCard({
           />
           <Stat
             label="Mkt Cap"
-            value={
-              quote.marketCap ? formatCompactBRL(quote.marketCap) : "—"
-            }
+            value={quote.marketCap ? formatCompactBRL(quote.marketCap) : "—"}
           />
         </div>
       )}

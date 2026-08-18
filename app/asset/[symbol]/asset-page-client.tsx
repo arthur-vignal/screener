@@ -144,8 +144,11 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
         />
 
         {/* Chart + news side-by-side from md (768px, iPad mini) up.
-            Chart is 2/3 width, news 1/3 — matches the print reference. */}
-        <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+            Chart is 2/3 width, news 1/3 — both aligned to the top so
+            the news card header starts at the same y as the chart's
+            price hero. items-start on the parent keeps the news card
+            from stretching full chart height (it scrolls internally). */}
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
           <div className="md:col-span-2">
             <ChartCard
               symbol={symbol}
