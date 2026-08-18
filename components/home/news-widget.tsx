@@ -65,12 +65,10 @@ export function NewsWidget() {
           </p>
         )}
         <motion.ul
-initial="hidden"
-          animate="show"
-          variants={{
-            hidden: { opacity: 0 },
-            show: { opacity: 1, transition: { staggerChildren: 0.06 } },
-          }}
+          /* No parent variants — each li animates itself via its
+             own initial/animate below. Otherwise the ul runs its
+             hidden->show transition on SSR with 0 children and the
+             li that mount after SWR resolves never get animated. */
         >
           {items.map((n) => {
             const headline = stripHtml(n.headline);

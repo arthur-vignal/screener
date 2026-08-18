@@ -318,14 +318,13 @@ export function MarketWidget() {
           <span className="text-right">Mkt Cap</span>
         </div>
         <motion.ul
-key={active + ":" + query}
-          initial="hidden"
-          animate="show"
-          variants={{
-            hidden: { opacity: 0 },
-            show: { opacity: 1, transition: { staggerChildren: 0.04 } },
-          }}
+key={active + ":" + query + ":" + visible.length}
         >
+          {/* No parent variants — children animate themselves via
+              initial/animate below. Otherwise the ul runs its
+              hidden->show transition on SSR with 0 children and
+              the new li that mount after SWR resolves never get
+              animated. */}
           {visible.map((row, idx) => {
             const q = quotes.get(row.symbol)?.quote;
             const ch = q?.changePercent ?? 0;
