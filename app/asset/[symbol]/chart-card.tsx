@@ -226,8 +226,8 @@ export function ChartCard({
       {/* Chart with embedded volume overlay */}
       <div className="px-2 pt-1 pb-2 flex-1 min-h-[320px] relative">
         {data.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center text-[12px] text-muted-foreground/60">
-            {loading ? "Carregando…" : "Sem dados para este período"}
+<div className="absolute inset-0 flex items-center justify-center text-[13px] text-muted-foreground/70 px-6 text-center">
+            {loading ? "Carregando…" : "Não temos informações desse ativo nesse tempo grafico, tente outro!"}
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
