@@ -24,6 +24,7 @@ export async function register() {
     const prefixes = [
       "brapi:candles:",
       "brapi:full:",
+      "brapi-full-v2:",
       "brapi:quote:",
       "brapiIntraday",
       "brapiDaily",

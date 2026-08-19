@@ -489,7 +489,19 @@ export async function getBrapiFull(ticker: string): Promise<BrapiFull | null> {
   const token = getToken();
   if (!token) return null;
   const upper = ticker.toUpperCase();
-  return cached(`brapi:full:${upper}`, 30 * 60, async () => {
+  // NOTE: namespace is "brapi-full-v2:" (NOT "brapi:full:"). The
+  // getBrapiFundamentals() function in lib/brapi.ts uses "brapi:full:"
+  // for the same upstream endpoint but produces a DIFFERENT quote
+  // shape (its own normalize() — { price, dayHigh, ... } vs our
+  // parseQuote() — { regularMarketPrice, regularMarketDayHigh, ... }).
+  // Sharing the cache key between two functions with different output
+  // shapes causes the second caller to receive the wrong shape and
+  // silently drop fields like price/prevClose/volume in the response.
+  // The bug bit us in Aug 2026: prod /api/asset/[symbol] started
+  // returning only 52w + marketCap (the 3 fields that happen to have
+  // the same name in both shapes) while every other quote field came
+  // back null.
+  return cached(`brapi-full-v2:${upper}`, 30 * 60, async () => {
     const url = `${BRAPI_BASE}/quote/${upper}?modules=${FULL_MODULES}&dividends=true&token=${encodeURIComponent(token)}`;
     const r = await fetch(url, { signal: AbortSignal.timeout(25_000) });
     if (!r.ok) {
