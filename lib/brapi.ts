@@ -244,9 +244,15 @@ export async function getBrapiFundamentals(
 ): Promise<BrapiFundamentals | null> {
   const upper = ticker.toUpperCase().replace(/\.SA$/, "");
   return cached(
-    `brapi:full:${upper}`,
-    6 * 3600,
-    async () => {
+      `brapi:full:${upper}`,
+      // 30min (was 6h). A 6h window was poisoning the cache when Brapi
+      // returned a partial response on first deploy — price/change came
+      // back null and got served to every ticker page until the entry
+      // expired. 30min is short enough that the next refresh interval
+      // (60s SWR) re-fetches Brapi regularly, long enough to avoid
+      // hammering the 15 req/min free-tier rate limit.
+      30 * 60,
+      async () => {
       const modules = [
         "defaultKeyStatistics",
         "financialData",
