@@ -166,7 +166,7 @@ export function ChartCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut", delay: 0.05 }}
-      className="rounded-2xl border border-border/60 overflow-hidden relative h-full flex flex-col"
+      className="rounded-2xl border border-border/60 overflow-hidden relative h-full min-h-[480px] flex flex-col"
       style={{
         background:
           "linear-gradient(135deg, #08090c 0%, #15161b 30%, #0d0e12 55%, #1c1d22 80%, #07080b 100%)",

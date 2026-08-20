@@ -144,12 +144,13 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
         />
 
         {/* Chart + news side-by-side from md (768px, iPad mini) up.
-            Chart is 2/3 width, news 1/3 — both aligned to the top so
-            the news card header starts at the same y as the chart's
-            price hero. items-start on the parent keeps the news card
-            from stretching full chart height (it scrolls internally). */}
-        <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
-          <div className="md:col-span-2">
+            Chart is 2/3 width, news 1/3 — both stretched to equal
+            height (items-stretch) so the chart's flex-1 container
+            has a real height to fill; otherwise the Recharts SVG
+            collapses to 0×0 and the chart renders blank. The news
+            card has its own internal scroll (overflow-y-auto). */}
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
+          <div className="md:col-span-2 h-full">
             <ChartCard
               symbol={symbol}
               currency={bundle?.currency ?? "BRL"}
