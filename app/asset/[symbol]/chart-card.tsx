@@ -77,6 +77,26 @@ type Quote = {
 
 const FIVE_YEARS_MS = 5 * 365 * 24 * 3600 * 1000;
 
+/**
+ * Max gap between two consecutive candles before we break the line.
+ * Brapi returns 1 candle per trading session (B3: 10:00–17:45, weekdays
+ * only). Gaps of >1h between candles within a session are anomalous;
+ * any gap > 1h means the market was closed between two points (overnight,
+ * weekend, holiday) and we should NOT draw a flat line through it.
+ *
+ * Why per-range instead of a single constant? Intraday (24h/7d) candles
+ * have a fixed 5m/15m cadence, so a >1h gap is unambiguous. 1y/5y/max
+ * resample to 4h/6h, so a >24h gap is the equivalent break signal.
+ */
+const GAP_BREAK_MS: Record<RangeKey, number> = {
+  "24h": 1 * 3600 * 1000,
+  "7d": 1 * 3600 * 1000,
+  "3m": 4 * 3600 * 1000,
+  "1y": 24 * 3600 * 1000,
+  "5y": 48 * 3600 * 1000,
+  "max": 48 * 3600 * 1000,
+};
+
 export function ChartCard({
   symbol,
   currency,
@@ -104,16 +124,37 @@ export function ChartCard({
   const accent = isUp ? "#10b981" : "#f43f5e";
   const accentFaint = isUp ? "rgba(16,185,129,0.10)" : "rgba(244,63,94,0.10)";
 
-  const data = useMemo(
-    () =>
-      candles.map((c) => ({
+  const data = useMemo(() => {
+    // Build the chart data AND break the line at any gap bigger than
+    // the per-range threshold. We do this by setting `close` to null
+    // on the candle BEFORE the gap, then + Recharts' `connectNulls={false}`
+    // on the <Area> makes the stroke stop at that null and resume on
+    // the next non-null point. Reasoning: setting the *next* candle to
+    // null would still draw a line from the previous one into the gap.
+    const gapBreakMs = GAP_BREAK_MS[range];
+    const out: Array<{ ts: number; date: string; close: number | null; volume: number }> = [];
+    for (let i = 0; i < candles.length; i++) {
+      const c = candles[i];
+      const prev = candles[i - 1];
+      const isFirstAfterGap =
+        prev != null && c.timestamp - prev.timestamp > gapBreakMs;
+      // Copy the previous candle with close=null so the line breaks
+      // at the boundary, unless we already did this for this prev.
+      if (isFirstAfterGap && out.length > 0) {
+        const last = out[out.length - 1];
+        if (last.close != null) {
+          out[out.length - 1] = { ...last, close: null };
+        }
+      }
+      out.push({
         ts: c.timestamp,
         date: c.date,
         close: c.adjClose || c.close,
         volume: c.volume,
-      })),
-    [candles],
-  );
+      });
+    }
+    return out;
+  }, [candles, range]);
 
   // Detect ticker history length so we can hide 5Y pill for short
   // histories (< 5 years since first available candle).
@@ -129,9 +170,11 @@ export function ChartCard({
     let min = Infinity;
     let max = -Infinity;
     for (const d of data) {
+      if (d.close == null) continue;
       if (d.close < min) min = d.close;
       if (d.close > max) max = d.close;
     }
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return [0, 1];
     const pad = (max - min) * 0.08 || max * 0.02 || 1;
     return [Math.max(0, min - pad), max + pad];
   }, [data]);
@@ -150,15 +193,30 @@ export function ChartCard({
   const formatTickDate = (ts: number) => {
     const d = new Date(ts);
     if (range === "24h") {
-      return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      return d.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     }
     if (range === "7d") {
-      return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+      return d.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+      });
     }
     if (range === "3m") {
-      return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+      return d.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "short",
+        year: "2-digit",
+      });
     }
-    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "2-digit" });
+    return d.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "2-digit",
+    });
   };
 
   return (
@@ -282,6 +340,7 @@ yAxisId="price"
                         {new Date(p.ts).toLocaleString("pt-BR", {
                           day: "2-digit",
                           month: "short",
+                          year: "2-digit",
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
@@ -327,6 +386,7 @@ yAxisId="price"
                 fill="url(#priceFill)"
                 isAnimationActive={true}
                 animationDuration={650}
+                connectNulls={false}
               />
             </ComposedChart>
           </ResponsiveContainer>

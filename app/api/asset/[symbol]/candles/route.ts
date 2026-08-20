@@ -81,7 +81,7 @@ async function fetchCandlesForRange(
         getBrapiCandlesRaw(symbol, "5d", "5m"),
       );
       const cutoff = Date.now() - 24 * HOUR;
-      return sliceAndFormat(all.filter((c) => c.timestamp >= cutoff));
+      return sliceAndFormat(filterTradingHours(all.filter((c) => c.timestamp >= cutoff)));
     }
 
     case "7d": {
@@ -90,28 +90,28 @@ async function fetchCandlesForRange(
         getBrapiCandlesRaw(symbol, "1mo", "15m"),
       );
       const cutoff = Date.now() - 7 * 24 * HOUR;
-      return sliceAndFormat(all.filter((c) => c.timestamp >= cutoff));
+      return sliceAndFormat(filterTradingHours(all.filter((c) => c.timestamp >= cutoff)));
     }
 
     case "3m": {
       const all = await cached(`brapiHourly:${symbol}`, 120, () =>
         getBrapiCandlesRaw(symbol, "3mo", "1h"),
       );
-      return sliceAndFormat(all);
+      return sliceAndFormat(filterTradingHours(all));
     }
 
     case "1y": {
       const daily = await cached(`brapiDaily1y:${symbol}`, 300, () =>
         getBrapiCandlesRaw(symbol, "1y", "1d"),
       );
-      return sliceAndFormat(resample(daily, 4 * HOUR));
+      return sliceAndFormat(resample(filterTradingHours(daily), 4 * HOUR));
     }
 
     case "5y": {
       const daily = await cached(`brapiDaily5y:${symbol}`, 300, () =>
         getBrapiCandlesRaw(symbol, "5y", "1d"),
       );
-      return sliceAndFormat(resample(daily, 6 * HOUR));
+      return sliceAndFormat(resample(filterTradingHours(daily), 6 * HOUR));
     }
 
     case "max": {
@@ -122,7 +122,7 @@ async function fetchCandlesForRange(
       const daily = await cached(`brapiDailyMax:${symbol}`, 300, () =>
         getBrapiCandlesRaw(symbol, "5y", "1d"),
       );
-      return sliceAndFormat(resample(daily, 6 * HOUR));
+      return sliceAndFormat(resample(filterTradingHours(daily), 6 * HOUR));
     }
   }
 }
@@ -174,6 +174,27 @@ async function getBrapiCandlesRaw(
     adjClose: c.adjustedClose,
     volume: c.volume,
   }));
+}
+
+/**
+ * Defensive filter — keeps only candles that fall within B3 trading
+ * hours (10:00–17:45 BRT, weekdays only). Brapi already returns candles
+ * within this window, but we filter here so that if the upstream ever
+ * returns an after-hours candle (pre-market, post-market, weekend),
+ * the chart doesn't draw a line that crosses the gap.
+ */
+function filterTradingHours<
+  T extends { timestamp: number },
+>(candles: T[]): T[] {
+  // BRT is UTC-3 (no DST since 2019).
+  const BRT_OFFSET_HOURS = -3;
+  return candles.filter((c) => {
+    const brt = new Date(c.timestamp + BRT_OFFSET_HOURS * 3600 * 1000);
+    const day = brt.getUTCDay(); // 0=Sun, 6=Sat
+    if (day === 0 || day === 6) return false;
+    const t = brt.getUTCHours() * 60 + brt.getUTCMinutes();
+    return t >= 10 * 60 && t <= 17 * 60 + 45;
+  });
 }
 
 /**
