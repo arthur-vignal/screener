@@ -77,26 +77,6 @@ type Quote = {
 
 const FIVE_YEARS_MS = 5 * 365 * 24 * 3600 * 1000;
 
-/**
- * Max gap between two consecutive candles before we break the line.
- * Brapi returns 1 candle per trading session (B3: 10:00–17:45, weekdays
- * only). Gaps of >1h between candles within a session are anomalous;
- * any gap > 1h means the market was closed between two points (overnight,
- * weekend, holiday) and we should NOT draw a flat line through it.
- *
- * Why per-range instead of a single constant? Intraday (24h/7d) candles
- * have a fixed 5m/15m cadence, so a >1h gap is unambiguous. 1y/5y/max
- * resample to 4h/6h, so a >24h gap is the equivalent break signal.
- */
-const GAP_BREAK_MS: Record<RangeKey, number> = {
-  "24h": 1 * 3600 * 1000,
-  "7d": 1 * 3600 * 1000,
-  "3m": 4 * 3600 * 1000,
-  "1y": 24 * 3600 * 1000,
-  "5y": 48 * 3600 * 1000,
-  "max": 48 * 3600 * 1000,
-};
-
 export function ChartCard({
   symbol,
   currency,
@@ -125,42 +105,64 @@ export function ChartCard({
   const accentFaint = isUp ? "rgba(16,185,129,0.10)" : "rgba(244,63,94,0.10)";
 
   const data = useMemo(() => {
-    // Build the chart data AND break the line at any gap bigger than
-    // the per-range threshold. We do this by setting `close` to null
-    // on the candle BEFORE the gap, then + Recharts' `connectNulls={false}`
-    // on the <Area> makes the stroke stop at that null and resume on
-    // the next non-null point. Reasoning: setting the *next* candle to
-    // null would still draw a line from the previous one into the gap.
-    const gapBreakMs = GAP_BREAK_MS[range];
-    const out: Array<{ ts: number; date: string; close: number | null; volume: number }> = [];
-    for (let i = 0; i < candles.length; i++) {
-      const c = candles[i];
-      const prev = candles[i - 1];
-      const isFirstAfterGap =
-        prev != null && c.timestamp - prev.timestamp > gapBreakMs;
-      // Copy the previous candle with close=null so the line breaks
-      // at the boundary, unless we already did this for this prev.
-      if (isFirstAfterGap && out.length > 0) {
-        const last = out[out.length - 1];
-        if (last.close != null) {
-          out[out.length - 1] = { ...last, close: null };
+    // Build chart data with a COMPRESSED time axis.
+    //
+    // Brapi returns candles only inside B3 trading hours (10:00–17:45 BRT,
+    // weekdays). The raw timestamps leave gaps for after-hours, weekends,
+    // and holidays; on a linear time axis those gaps stretch the line
+    // across what looks like a flat horizontal segment (e.g. Fri 17:45 →
+    // Mon 10:00 = 65h of "no price change" drawn as a level line).
+    //
+    // To match Google Finance / TradingView ("Aug 17 → Aug 18 → Aug 19"
+    // ticks evenly spaced, no gap, no flat line), we compress gaps
+    // larger than ONE trading day's worth of intra-day spacing. We
+    // subtract (gap - intraDaySpan) from each subsequent timestamp so
+    // consecutive trading days sit visually adjacent.
+    //
+    // `intraDaySpan` is the largest expected gap between two candles
+    // within the same session. For intraday (5m/15m) it's 15min cadence
+    // so we use 1h to be safe; for the daily-resampled ranges (1y/5y/max)
+    // it's 1 day, so we use 24h. This means weekends and holidays
+    // collapse to a single "next-session" point — no empty space, no
+    // artificial flat line.
+    const intraDaySpanMs: Record<RangeKey, number> = {
+      "24h": 1 * 3600 * 1000,
+      "7d": 1 * 3600 * 1000,
+      "3m": 4 * 3600 * 1000,
+      "1y": 24 * 3600 * 1000,
+      "5y": 24 * 3600 * 1000,
+      "max": 24 * 3600 * 1000,
+    };
+    const span = intraDaySpanMs[range];
+    let offset = 0;
+    let prevTs: number | null = null;
+    return candles.map((c) => {
+      const ts = c.timestamp;
+      if (prevTs != null) {
+        const gap = ts - prevTs;
+        if (gap > span) {
+          // Subtract the over-gap so next session sitts right after the prev.
+          offset += gap - span;
         }
       }
-      out.push({
-        ts: c.timestamp,
+      prevTs = ts;
+      return {
+        ts: ts - offset, // compressed X coordinate
+        ts_real: ts,     // real timestamp for the tooltip / tick formatter
         date: c.date,
         close: c.adjClose || c.close,
         volume: c.volume,
-      });
-    }
-    return out;
+      };
+    });
   }, [candles, range]);
 
   // Detect ticker history length so we can hide 5Y pill for short
-  // histories (< 5 years since first available candle).
+  // histories (< 5 years since first available candle). Use the REAL
+  // timestamps, not the compressed-X coordinate, because the latter
+  // collapses weekends/holidays and is not a fair "history length".
   const tickerSpanMs =
     data.length > 1
-      ? data[data.length - 1].ts - data[0].ts
+      ? data[data.length - 1].ts_real - data[0].ts_real
       : 0;
   const hide5y = tickerSpanMs > 0 && tickerSpanMs < FIVE_YEARS_MS;
   const visibleRanges = RANGES.filter((r) => !(hide5y && r.key === "5y"));
@@ -170,11 +172,9 @@ export function ChartCard({
     let min = Infinity;
     let max = -Infinity;
     for (const d of data) {
-      if (d.close == null) continue;
       if (d.close < min) min = d.close;
       if (d.close > max) max = d.close;
     }
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return [0, 1];
     const pad = (max - min) * 0.08 || max * 0.02 || 1;
     return [Math.max(0, min - pad), max + pad];
   }, [data]);
@@ -183,9 +183,12 @@ export function ChartCard({
     if (data.length < 2) return [];
     const out: number[] = [];
     const n = 5;
+    // Pick 5 evenly spaced candles by index and use the compressed ts
+    // for the tick position. The tickFormatter receives the real ts
+    // (via the candle's ts_real) so the label shows the actual date.
     for (let i = 0; i < n; i++) {
-      const idx = Math.round((data.length - 1) * (i / (n - 1)));
-      out.push(data[idx].ts);
+      const dataIdx = Math.round((data.length - 1) * (i / (n - 1)));
+      out.push(data[dataIdx].ts);
     }
     return out;
   }, [data]);
@@ -305,7 +308,11 @@ export function ChartCard({
                 type="number"
                 domain={["dataMin", "dataMax"]}
                 ticks={xTicks}
-                tickFormatter={formatTickDate}
+                tickFormatter={(compressedTs) => {
+                  // Look up the candle by compressed ts to recover the real ts.
+                  const d = data.find((x) => x.ts === compressedTs);
+                  return formatTickDate(d?.ts_real ?? compressedTs);
+                }}
                 tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 10 }}
                 axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
                 tickLine={false}
@@ -333,11 +340,11 @@ yAxisId="price"
                 cursor={{ stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 }}
                 content={({ active, payload }) => {
                   if (!active || !payload || payload.length === 0) return null;
-                  const p = payload[0].payload as { ts: number; close: number; volume: number };
+                  const p = payload[0].payload as { ts: number; ts_real: number; close: number; volume: number };
                   return (
                     <div className="px-2.5 py-1.5 rounded-md border border-border/60 bg-background/90 backdrop-blur-md text-[11px]">
                       <p className="text-muted-foreground">
-                        {new Date(p.ts).toLocaleString("pt-BR", {
+                        {new Date(p.ts_real).toLocaleString("pt-BR", {
                           day: "2-digit",
                           month: "short",
                           year: "2-digit",
@@ -386,7 +393,6 @@ yAxisId="price"
                 fill="url(#priceFill)"
                 isAnimationActive={true}
                 animationDuration={650}
-                connectNulls={false}
               />
             </ComposedChart>
           </ResponsiveContainer>
