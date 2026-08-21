@@ -150,33 +150,21 @@ async function getBrapiCandlesRaw(
     },
   );
   if (!r.ok) throw new Error(`brapi ${r.status}`);
-  const rawBody = await r.text();
-  let data: {
+  const data = (await r.json()) as {
     results?: Array<{
-      historicalDataPrice?: Array<unknown>;
+      historicalDataPrice?: Array<{
+        date: number;
+        open: number;
+        high: number;
+        low: number;
+        close: number;
+        adjustedClose: number;
+        volume: number;
+      }>;
     }>;
-  } = {};
-  try {
-    data = JSON.parse(rawBody);
-  } catch (e) {
-    console.warn(`[candles] brapi returned non-JSON for ${symbol} ${range} ${interval}: ${rawBody.slice(0, 200)}`);
-    return [];
-  }
-  const histArr = data.results?.[0]?.historicalDataPrice;
-  const raw = histArr ?? [];
-  // TEMPORARY diagnostic: log every call so we can see what brapi actually returns
-  console.warn(
-    `[candles] ${symbol} ${range} ${interval} | tokenLen=${token.length} | status=${r.status} | body=${rawBody.length}b | resultsLen=${data.results?.length ?? 0} | histLen=${histArr?.length ?? 'none'} | keys=${Object.keys(data).join(',')}`,
-  );
-  return (raw as Array<{
-    date: number;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    adjustedClose: number;
-    volume: number;
-  }>).map((c) => ({
+  };
+  const raw = data.results?.[0]?.historicalDataPrice ?? [];
+  return raw.map((c) => ({
     date: new Date(c.date * 1000).toISOString().slice(0, 10),
     timestamp: c.date * 1000,
     open: c.open,
@@ -189,11 +177,20 @@ async function getBrapiCandlesRaw(
 }
 
 /**
- * Defensive filter — keeps only candles that fall within B3 trading
- * hours (10:00–17:45 BRT, weekdays only). Brapi already returns candles
- * within this window, but we filter here so that if the upstream ever
- * returns an after-hours candle (pre-market, post-market, weekend),
- * the chart doesn't draw a line that crosses the gap.
+ * Defensive filter — drops candles that fall outside B3 trading hours.
+ * Brapi already returns candles within the trading window, so this is
+ * a no-op for intraday data.
+ *
+ * Two regimes:
+ *  - Intraday (5m, 15m, 1h): timestamp is the actual trade time, so
+ *    we drop anything outside 10:00–17:45 BRT or on weekends.
+ *  - Daily (1d): brapi timestamps the candle at 00:00 BRT = 03:00 UTC,
+ *    which after our BRT shift becomes 00:00 UTC. That fails the
+ *    10:00–17:45 hour check and would drop EVERY daily candle — so for
+ *    daily candles we only filter weekends.
+ *
+ * We detect "daily" by checking if the BRT-aligned timestamp sits at
+ * the 00:00 mark. If so, it's a daily bucket and we only skip weekends.
  */
 function filterTradingHours<
   T extends { timestamp: number },
@@ -204,7 +201,12 @@ function filterTradingHours<
     const brt = new Date(c.timestamp + BRT_OFFSET_HOURS * 3600 * 1000);
     const day = brt.getUTCDay(); // 0=Sun, 6=Sat
     if (day === 0 || day === 6) return false;
-    const t = brt.getUTCHours() * 60 + brt.getUTCMinutes();
+    const h = brt.getUTCHours();
+    const m = brt.getUTCMinutes();
+    // Daily candles land at 00:00 BRT (UTC after shift). Skip the hour
+    // check for those — they're aggregated over the whole session.
+    if (h === 0 && m === 0) return true;
+    const t = h * 60 + m;
     return t >= 10 * 60 && t <= 17 * 60 + 45;
   });
 }
