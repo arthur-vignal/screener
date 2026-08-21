@@ -129,11 +129,10 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
       className="min-h-screen text-foreground overflow-x-hidden"
       style={{
         fontFamily: "var(--font-manrope)",
-        background:
-          "linear-gradient(135deg, #0a0a0c 0%, #14151a 60%, #0a0a0c 100%)",
+        background: "#0a0a0c",
       }}
     >
-      <div className="max-w-[1440px] mx-auto px-6 pt-6 pb-32">
+      <div className="max-w-[1600px] mx-auto px-8 pt-5 pb-12">
         <AssetHeader
           symbol={symbol}
           sector={bundle?.sector ?? null}
@@ -149,7 +148,7 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
             has a real height to fill; otherwise the Recharts SVG
             collapses to 0×0 and the chart renders blank. The news
             card has its own internal scroll (overflow-y-auto). */}
-        <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
           <div className="md:col-span-2 h-full">
             <ChartCard
               symbol={symbol}
@@ -200,7 +199,7 @@ function AssetHeader({
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="flex items-center justify-between gap-4 pb-5 border-b border-border/40"
+      className="flex items-center justify-between gap-4 pb-4 border-b border-border/40"
     >
       <div className="flex items-center gap-3 min-w-0">
         <Link

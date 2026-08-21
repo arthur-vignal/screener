@@ -223,18 +223,14 @@ export function ChartCard({
   };
 
   return (
-    <motion.section
+    <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut", delay: 0.05 }}
-      className="rounded-2xl border border-border/60 overflow-hidden relative h-full min-h-[480px] flex flex-col"
-      style={{
-        background:
-          "linear-gradient(135deg, #08090c 0%, #15161b 30%, #0d0e12 55%, #1c1d22 80%, #07080b 100%)",
-      }}
+      className="relative h-full min-h-[64vh] flex flex-col"
     >
-      {/* Price hero — left aligned, ~40% smaller than v1 */}
-      <div className="px-6 pt-5 pb-2 flex items-end justify-between gap-4 flex-wrap">
+      {/* Price hero — left aligned */}
+      <div className="px-2 pt-2 pb-3 flex items-end justify-between gap-4 flex-wrap">
         <div className="flex items-end gap-4">
           <div>
             <p className="text-[26px] md:text-[31px] leading-[0.95] font-semibold tabular-nums tracking-tight">
@@ -286,7 +282,7 @@ export function ChartCard({
       </div>
 
       {/* Chart with embedded volume overlay */}
-      <div className="px-2 pt-1 pb-2 flex-1 min-h-[320px] relative">
+      <div className="px-0 pt-1 pb-2 flex-1 min-h-[320px] relative">
         {data.length === 0 ? (
 <div className="absolute inset-0 flex items-center justify-center text-[13px] text-muted-foreground/70 px-6 text-center">
             {loading ? "Carregando…" : "Não temos informações desse ativo nesse tempo grafico, tente outro!"}
@@ -297,12 +293,6 @@ export function ChartCard({
               data={data}
               margin={{ top: 8, right: 16, bottom: 0, left: 16 }}
             >
-              <defs>
-                <linearGradient id="priceFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={accent} stopOpacity={0.35} />
-                  <stop offset="100%" stopColor={accent} stopOpacity={0} />
-                </linearGradient>
-              </defs>
               <XAxis
                 dataKey="ts"
                 type="number"
@@ -342,7 +332,7 @@ yAxisId="price"
                   if (!active || !payload || payload.length === 0) return null;
                   const p = payload[0].payload as { ts: number; ts_real: number; close: number; volume: number };
                   return (
-                    <div className="px-2.5 py-1.5 rounded-md border border-border/60 bg-background/90 backdrop-blur-md text-[11px]">
+                    <div className="px-3 py-2 rounded-lg bg-background/70 backdrop-blur-md text-[11px]">
                       <p className="text-muted-foreground">
                         {new Date(p.ts_real).toLocaleString("pt-BR", {
                           day: "2-digit",
@@ -366,13 +356,13 @@ yAxisId="price"
                 <ReferenceLine
                   yAxisId="price"
                   y={quote.prevClose}
-                  stroke="rgba(255,255,255,0.18)"
+                  stroke="rgba(255,255,255,0.25)"
                   strokeDasharray="3 3"
                   label={{
                     value: "Prev close",
                     position: "insideTopRight",
-                    fill: "rgba(255,255,255,0.35)",
-                    fontSize: 9,
+                    fill: "rgba(255,255,255,0.4)",
+                    fontSize: 10,
                   }}
                 />
               ) : null}
@@ -388,9 +378,9 @@ yAxisId="price"
                 yAxisId="price"
                 type="monotone"
                 dataKey="close"
-                stroke={accent}
-                strokeWidth={1.6}
-                fill="url(#priceFill)"
+                stroke="#ffffff"
+                strokeWidth={1}
+                fill="rgba(255,255,255,0.04)"
                 isAnimationActive={true}
                 animationDuration={650}
               />
@@ -399,9 +389,9 @@ yAxisId="price"
         )}
       </div>
 
-      {/* Day-range / 52w / Volume / Mkt cap summary */}
+      {/* Day-range / 52w / Volume / Mkt cap summary — flat stats below, no card */}
       {quote && (
-        <div className="px-6 py-3 border-t border-border/40 grid grid-cols-2 md:grid-cols-4 gap-4 text-[11px]">
+        <div className="px-2 pt-4 pb-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3 text-[11px]">
           <Stat label="Day range" value={quote.dayLow != null && quote.dayHigh != null ? `${formatCurrency(quote.dayLow, currency)} – ${formatCurrency(quote.dayHigh, currency)}` : "—"} />
           <Stat
             label="52w range"
@@ -421,7 +411,7 @@ yAxisId="price"
           />
         </div>
       )}
-    </motion.section>
+    </motion.div>
   );
 }
 
