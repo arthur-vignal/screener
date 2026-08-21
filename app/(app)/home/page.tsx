@@ -52,8 +52,20 @@ const DOCK_ITEMS = [
 ];
 
 export default function HomePage() {
-  const [welcomeOpen, setWelcomeOpen] = useState(true);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [welcomeName, setWelcomeName] = useState<string>("");
+
+  // Decide whether to show the welcome overlay. We use localStorage so
+  // the welcome only appears on the first time a user reaches /home on
+  // this device — subsequent visits skip the typewriter and go straight
+  // to the dashboard. SSR can't read localStorage, so we start with
+  // welcomeOpen=false and flip it on inside this effect.
+  useEffect(() => {
+    const seen = window.localStorage.getItem("home-welcome-seen");
+    if (!seen) {
+      setWelcomeOpen(true);
+    }
+  }, []);
 
   // Fetch the username once on mount so the welcome typewriter
   // has a name to type as soon as the overlay paints.
@@ -89,7 +101,16 @@ export default function HomePage() {
       {welcomeOpen && (
         <WelcomeOverlay
           username={welcomeName}
-          onDone={() => setWelcomeOpen(false)}
+          onDone={() => {
+            // Mark the welcome as seen so it doesn't replay on next visit.
+            try {
+              window.localStorage.setItem("home-welcome-seen", "1");
+            } catch {
+              // localStorage may be unavailable (e.g. private mode); fall
+              // through to in-memory dismiss so the UI still clears.
+            }
+            setWelcomeOpen(false);
+          }}
         />
       )}
       <div className="fixed bottom-[34px] left-6 z-40 pointer-events-auto">
