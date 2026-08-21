@@ -150,21 +150,33 @@ async function getBrapiCandlesRaw(
     },
   );
   if (!r.ok) throw new Error(`brapi ${r.status}`);
-  const data = (await r.json()) as {
+  const rawBody = await r.text();
+  let data: {
     results?: Array<{
-      historicalDataPrice?: Array<{
-        date: number;
-        open: number;
-        high: number;
-        low: number;
-        close: number;
-        adjustedClose: number;
-        volume: number;
-      }>;
+      historicalDataPrice?: Array<unknown>;
     }>;
-  };
-  const raw = data.results?.[0]?.historicalDataPrice ?? [];
-  return raw.map((c) => ({
+  } = {};
+  try {
+    data = JSON.parse(rawBody);
+  } catch (e) {
+    console.warn(`[candles] brapi returned non-JSON for ${symbol} ${range} ${interval}: ${rawBody.slice(0, 200)}`);
+    return [];
+  }
+  const histArr = data.results?.[0]?.historicalDataPrice;
+  const raw = histArr ?? [];
+  // TEMPORARY diagnostic: log every call so we can see what brapi actually returns
+  console.warn(
+    `[candles] ${symbol} ${range} ${interval} | tokenLen=${token.length} | status=${r.status} | body=${rawBody.length}b | resultsLen=${data.results?.length ?? 0} | histLen=${histArr?.length ?? 'none'} | keys=${Object.keys(data).join(',')}`,
+  );
+  return (raw as Array<{
+    date: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    adjustedClose: number;
+    volume: number;
+  }>).map((c) => ({
     date: new Date(c.date * 1000).toISOString().slice(0, 10),
     timestamp: c.date * 1000,
     open: c.open,
