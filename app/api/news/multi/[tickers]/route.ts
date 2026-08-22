@@ -23,7 +23,7 @@ export async function GET(
 
     // Limit per request
     const limited = tickers.slice(0, 30);
-    const news = await fetchNewsForTickers(limited, 3, 30);
+    const news = await fetchNewsForTickers(limited, 10, 30);
     return NextResponse.json({ news });
   } catch (err) {
     return NextResponse.json(

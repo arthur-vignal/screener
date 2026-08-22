@@ -103,8 +103,12 @@ export function NewsCard({ symbol }: { symbol: string }) {
   const all = data?.news ?? [];
 
   const items = useMemo(() => {
-    if (tab === "all") return all.slice(0, 5);
-    return all.filter((n) => classify(n) === tab).slice(0, 5);
+    // Per-ticker news feed is sparse — fetchNewsForTickers pulls 10 per
+    // ticker but the upstream Google News query rarely returns that many
+    // for a single B3 stock. Show everything we got rather than
+    // capping at 5, which would leave the card looking empty.
+    if (tab === "all") return all;
+    return all.filter((n) => classify(n) === tab);
   }, [all, tab]);
 
   return (
@@ -112,9 +116,9 @@ export function NewsCard({ symbol }: { symbol: string }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut", delay: 0.05 }}
-      className="h-full"
+      className="h-full flex flex-col"
     >
-      <div className="rounded-2xl border border-border/60 overflow-hidden"
+      <div className="rounded-2xl border border-border/60 overflow-hidden flex flex-col h-full"
         style={{
           background:
             "linear-gradient(135deg, #08090c 0%, #15161b 30%, #0d0e12 55%, #1c1d22 80%, #07080b 100%)",
@@ -145,7 +149,7 @@ export function NewsCard({ symbol }: { symbol: string }) {
           </div>
         </header>
 
-        <div className="divide-y divide-border/40">
+        <div className="divide-y divide-border/40 flex-1 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {isLoading ? (
             <div className="px-5 py-6 text-center text-[12px] text-muted-foreground/60">
               Carregando…
