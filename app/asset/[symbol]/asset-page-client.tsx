@@ -132,7 +132,7 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
         background: "#0a0a0c",
       }}
     >
-      <div className="max-w-[1600px] mx-auto px-8 pt-5 pb-12">
+      <div className="px-1 pt-5 pb-12">
         <AssetHeader
           symbol={symbol}
           sector={bundle?.sector ?? null}

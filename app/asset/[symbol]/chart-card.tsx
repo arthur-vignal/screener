@@ -167,6 +167,25 @@ export function ChartCard({
   const hide5y = tickerSpanMs > 0 && tickerSpanMs < FIVE_YEARS_MS;
   const visibleRanges = RANGES.filter((r) => !(hide5y && r.key === "5y"));
 
+  // Cap the volume-bar domain at the 95th-percentile volume * 1.2 so
+  // a single outlier candle doesn't stretch the rest of the bars to a
+  // sliver. Without this, a post-earnings spike or IPO surge makes
+  // everyday bars invisible against the chart floor.
+  const volumeMax = useMemo(() => {
+    const volumes = candles
+      .map((c) => c.volume)
+      .filter((v) => Number.isFinite(v) && v > 0)
+      .sort((a, b) => a - b);
+    if (volumes.length >= 20) {
+      const p95 = volumes[Math.floor(volumes.length * 0.95)];
+      return p95 * 1.2;
+    }
+    if (volumes.length > 0) {
+      return volumes[volumes.length - 1] * 1.2;
+    }
+    return 1;
+  }, [candles]);
+
   const yDomain = useMemo<[number, number]>(() => {
     if (data.length === 0) return [0, 1];
     let min = Infinity;
@@ -317,14 +336,14 @@ yAxisId="price"
                 tickFormatter={(v) => formatCurrencyShort(v, currency)}
                 orientation="right"
               />
-              {/* Hidden volume axis: scales so volume bars stay in the
-                  bottom 25% of the chart. Declared BEFORE the <Bar>
-                  so Recharts has the axis when the bar mounts. */}
+              {/* Hidden volume axis. Domain is capped at the 95th-percentile
+                  volume * 1.2 so outlier candles don't stretch the rest
+                  of the bars to a sliver. See volumeMax memo below. */}
               <YAxis
                 yAxisId="volume"
                 orientation="right"
                 hide
-                domain={[0, "dataMax"]}
+                domain={[0, volumeMax]}
               />
               <Tooltip
                 cursor={{ stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 }}
