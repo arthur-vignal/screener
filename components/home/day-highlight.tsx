@@ -44,7 +44,7 @@ export function DayHighlight() {
 
   return (
     <MetallicCard className="h-full">
-      <div className="px-2 pt-5 pb-3 border-b border-border">
+      <div className="px-6 pt-5 pb-3 border-b border-border">
         <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
           Data do dia
         </p>
@@ -59,7 +59,7 @@ export function DayHighlight() {
         </p>
       </div>
 
-      <div className="flex-1 px-2 py-5">
+      <div className="flex-1 px-6 py-5">
         {!top && (
           <p className="text-center text-[12px] text-muted-foreground py-6">
             Carregando...

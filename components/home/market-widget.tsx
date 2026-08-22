@@ -186,7 +186,7 @@ export function MarketWidget() {
   return (
     <MetallicCard className="h-full">
       {/* Header: title + actions (search + market dropdown) */}
-      <div className="px-2 pt-5 pb-3 border-b border-border flex items-center justify-between gap-3">
+      <div className="px-6 pt-5 pb-3 border-b border-border flex items-center justify-between gap-3">
         <p className="text-[12.5px] text-foreground/90 shrink-0">
           Cotações oficiais
         </p>
@@ -215,7 +215,7 @@ export function MarketWidget() {
                   animate={{ width: 200, opacity: 1 }}
                   exit={{ width: 32, opacity: 0 }}
                   transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex items-center gap-1.5 h-7 px-2.5 rounded-full border border-border bg-foreground/5 overflow-hidden"
+                  className="flex items-center gap-1.5 h-7 px-6.5 rounded-full border border-border bg-foreground/5 overflow-hidden"
                 >
                   <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <input
@@ -309,7 +309,7 @@ export function MarketWidget() {
         className="flex-1 min-h-0 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         ref={listScrollRef}
       >
-        <div className="sticky top-0 z-10 grid grid-cols-[1.5fr_0.55fr_0.55fr_0.55fr_0.7fr_0.7fr] gap-3 px-2 py-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground/70 border-b border-border/60 bg-background/80 backdrop-blur-md">
+        <div className="sticky top-0 z-10 grid grid-cols-[1.5fr_0.55fr_0.55fr_0.55fr_0.7fr_0.7fr] gap-3 px-6 py-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground/70 border-b border-border/60 bg-background/80 backdrop-blur-md">
           <span>Ativo · Setor</span>
           <span className="text-right">24h</span>
           <span className="text-right">7d</span>
@@ -339,7 +339,7 @@ key={active + ":" + query + ":" + visible.length}
               >
                 <Link
                   href={`/asset/${row.symbol}`}
-                  className="grid grid-cols-[1.5fr_0.55fr_0.55fr_0.55fr_0.7fr_0.7fr] gap-3 px-2 py-2.5 hover:bg-muted/40 transition-colors"
+                  className="grid grid-cols-[1.5fr_0.55fr_0.55fr_0.55fr_0.7fr_0.7fr] gap-3 px-6 py-2.5 hover:bg-muted/40 transition-colors"
                 >
                   <div className="min-w-0">
                     <p className="text-[22px] font-semibold text-foreground truncate">
