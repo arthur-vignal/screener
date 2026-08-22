@@ -75,7 +75,7 @@ export function HeaderOverlay() {
   }, []);
 
   return (
-    <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
+    <div className="flex items-center gap-4 text-[24px] text-muted-foreground">
       <span className="inline-flex items-center gap-1.5 tabular-nums">
         <Clock className="h-3.5 w-3.5" />
         {clock}

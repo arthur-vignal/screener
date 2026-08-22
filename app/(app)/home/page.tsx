@@ -119,7 +119,7 @@ export default function HomePage() {
         <HeaderOverlay />
       </div>
       <motion.main
-            className="max-w-[1600px] mx-auto px-8 pt-5 pb-6 grid gap-6"
+            className="max-w-[1600px] mx-auto px-2 pt-5 pb-6 grid gap-6"
             style={{
               // Three columns, full viewport height minus the header
               // overlay band. Bottom dock floats over the market column;

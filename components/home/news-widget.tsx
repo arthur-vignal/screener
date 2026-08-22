@@ -52,7 +52,7 @@ export function NewsWidget() {
 
   return (
     <MetallicCard className="h-full">
-      <div className="px-6 pt-5 pb-3 border-b border-border">
+      <div className="px-2 pt-5 pb-3 border-b border-border">
         <p className="text-[12.5px] text-foreground/85">
           Notícias da B3 de portais verificados
         </p>
@@ -84,7 +84,7 @@ export function NewsWidget() {
                   href={n.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block px-6 py-3 hover:bg-muted/40 transition-colors group"
+                  className="block px-2 py-3 hover:bg-muted/40 transition-colors group"
                 >
                   <p className="text-[12.5px] text-foreground/90 leading-snug line-clamp-3 group-hover:text-foreground transition-colors">
                     {headline}
