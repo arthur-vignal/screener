@@ -69,8 +69,8 @@ export function AnimatedFloatingDock({
       onMouseMove={(e) => mouseX.set(e.pageX)}
       onMouseLeave={() => mouseX.set(Infinity)}
       className={cn(
-        "fixed bottom-6 left-1/2 z-50 -translate-x-1/2 flex items-end gap-3 rounded-2xl px-3 py-3",
-        "bg-black/30 border border-white/10 backdrop-blur-md",
+        "fixed bottom-8 left-1/2 z-50 -translate-x-1/2 flex items-end gap-4 rounded-2xl px-4 py-4",
+        "bg-black/40 border border-white/10 backdrop-blur-md",
         className,
       )}
       initial={{ width: 56, opacity: 0 }}
@@ -117,8 +117,8 @@ function AnimatedDockIcon({
     return val - bounds.x - bounds.width / 2;
   });
 
-  const widthTransform = useTransform(distance, [-150, 0, 150], [40, 70, 40]);
-  const heightTransform = useTransform(distance, [-150, 0, 150], [40, 70, 40]);
+  const widthTransform = useTransform(distance, [-150, 0, 150], [56, 88, 56]);
+  const heightTransform = useTransform(distance, [-150, 0, 150], [56, 88, 56]);
   const widthIcon = useSpring(widthTransform, {
     mass: 0.1,
     stiffness: 150,

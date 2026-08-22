@@ -42,13 +42,13 @@ import { NewsWidget } from "@/components/home/news-widget";
 import { DayHighlight } from "@/components/home/day-highlight";
 
 const DOCK_ITEMS = [
-  { title: "Home", href: "/home", icon: <HomeIcon className="h-4 w-4" /> },
-  { title: "Análise", href: "/analysis", icon: <BarChart3 className="h-4 w-4" /> },
-  { title: "Calendário", href: "/calendar", icon: <Calendar className="h-4 w-4" /> },
-  { title: "Portfólios", href: "/portfolios/public", icon: <Briefcase className="h-4 w-4" /> },
-  { title: "Mensagens", href: "/messages", icon: <Mail className="h-4 w-4" /> },
-  { title: "Alertas", href: "/alerts", icon: <Bell className="h-4 w-4" /> },
-  { title: "Buscar", href: "/search", icon: <SearchIcon className="h-4 w-4" /> },
+  { title: "Home", href: "/home", icon: <HomeIcon className="h-6 w-6" /> },
+  { title: "Análise", href: "/analysis", icon: <BarChart3 className="h-6 w-6" /> },
+  { title: "Calendário", href: "/calendar", icon: <Calendar className="h-6 w-6" /> },
+  { title: "Portfólios", href: "/portfolios/public", icon: <Briefcase className="h-6 w-6" /> },
+  { title: "Mensagens", href: "/messages", icon: <Mail className="h-6 w-6" /> },
+  { title: "Alertas", href: "/alerts", icon: <Bell className="h-6 w-6" /> },
+  { title: "Buscar", href: "/search", icon: <SearchIcon className="h-6 w-6" /> },
 ];
 
 export default function HomePage() {
