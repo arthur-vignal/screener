@@ -119,46 +119,41 @@ export default function HomePage() {
         <HeaderOverlay />
       </div>
       <motion.main
-            className="max-w-[1400px] mx-auto px-6 pt-6 pb-12 grid gap-6"
+            className="max-w-[1600px] mx-auto px-8 pt-5 pb-6 grid gap-6"
             style={{
+              // Three columns, full viewport height. Left column is
+              // narrower (1fr) and split between portfolio + day-highlight.
+              // Middle is widest (2fr), right stays 1fr.
               gridTemplateColumns: "minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr)",
-              gridTemplateRows: "minmax(0, 405px) minmax(0, 405px)",
-              height: "calc(100vh - 64px)",
+              gridTemplateRows: "1fr 1fr",
+              height: "calc(100vh - 220px)",
               gridTemplateAreas: `
                 "portfolio market news"
                 "highlight  market news"
               `,
             }}
-            // Don't orchestrate via parent variants — each widget
-            // (PortfolioWidget / MarketWidget / NewsWidget /
-            // DayHighlight) drives its own initial/animate so the cards
-            // always paint their content. Without this, framer-motion's
-            // stagger looked for 'hidden'/'show' variants on the children
-            // and parked them at opacity:0 forever (only DayHighlight
-            // declares matching variants, which is why it was the only
-            // card showing data).
           >
         <div
           style={{ gridArea: "portfolio" }}
-          className="min-h-0"
+          className="min-h-0 h-full"
         >
           <PortfolioWidget />
         </div>
         <div
           style={{ gridArea: "market" }}
-          className="min-h-0 row-span-2"
+          className="min-h-0 h-full"
         >
           <MarketWidget />
         </div>
         <div
           style={{ gridArea: "news" }}
-          className="min-h-0 row-span-2"
+          className="min-h-0 h-full"
         >
           <NewsWidget />
         </div>
         <div
           style={{ gridArea: "highlight" }}
-          className="min-h-0"
+          className="min-h-0 h-full"
         >
           <DayHighlight />
         </div>
