@@ -160,7 +160,7 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
               loading={isLoading}
             />
           </div>
-          <div className="md:col-span-1">
+          <div className="md:col-span-1 h-full">
             <NewsCard symbol={symbol} />
           </div>
         </div>

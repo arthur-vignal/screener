@@ -104,6 +104,25 @@ export function ChartCard({
   const accent = isUp ? "#10b981" : "#f43f5e";
   const accentFaint = isUp ? "rgba(16,185,129,0.10)" : "rgba(244,63,94,0.10)";
 
+  // Cap the volume-bar domain at the 95th-percentile volume * 1.2 so
+  // a single outlier candle doesn't stretch the rest of the bars to a
+  // sliver. Without this, a post-earnings spike or IPO surge makes
+  // everyday bars invisible against the chart floor.
+  const volumeMax = useMemo(() => {
+    const volumes = candles
+      .map((c) => c.volume)
+      .filter((v) => Number.isFinite(v) && v > 0)
+      .sort((a, b) => a - b);
+    if (volumes.length >= 20) {
+      const p95 = volumes[Math.floor(volumes.length * 0.95)];
+      return p95 * 1.2;
+    }
+    if (volumes.length > 0) {
+      return volumes[volumes.length - 1] * 1.2;
+    }
+    return 1;
+  }, [candles]);
+
   const data = useMemo(() => {
     // Build chart data with a COMPRESSED time axis.
     //
@@ -156,6 +175,44 @@ export function ChartCard({
     });
   }, [candles, range]);
 
+  // Volume bars are plotted on the price YAxis but at a small fraction of
+  // the price range, so they sit at the bottom of the chart and never
+  // overlap the price line. We compute a `volumeY` per candle that maps
+  // volume → 0..0.15 of (priceMax - priceMin, measured against the
+  // close-only yDomain above). Using close-only yDomain (no padding) so
+  // the math is predictable.
+  const dataWithVolumeY = useMemo<Array<{
+    ts: number;
+    ts_real: number;
+    date: string;
+    close: number;
+    volume: number;
+    volumeY: number;
+  }>>(() => {
+    if (data.length === 0 || volumeMax <= 0) {
+      return data.map((d) => ({ ...d, volumeY: 0 }));
+    }
+    const closes = data.map((d) => d.close).filter((c): c is number => c != null);
+    if (closes.length === 0) {
+      return data.map((d) => ({ ...d, volumeY: 0 }));
+    }
+    const minC = Math.min(...closes);
+    const maxC = Math.max(...closes);
+    const rangeC = maxC - minC || maxC || 1;
+    return data.map((d) => ({
+      ts: d.ts,
+      ts_real: d.ts_real,
+      date: d.date,
+      close: d.close,
+      volume: d.volume,
+      // Map volume → 0..0.15 of price range, starting from priceMin
+      // (so bars rise from the bottom of the chart).
+      volumeY: minC + (Math.min(d.volume, volumeMax) / volumeMax) * rangeC * 0.15,
+    }));
+  }, [data, volumeMax]);
+
+
+
   // Detect ticker history length so we can hide 5Y pill for short
   // histories (< 5 years since first available candle). Use the REAL
   // timestamps, not the compressed-X coordinate, because the latter
@@ -166,25 +223,6 @@ export function ChartCard({
       : 0;
   const hide5y = tickerSpanMs > 0 && tickerSpanMs < FIVE_YEARS_MS;
   const visibleRanges = RANGES.filter((r) => !(hide5y && r.key === "5y"));
-
-  // Cap the volume-bar domain at the 95th-percentile volume * 1.2 so
-  // a single outlier candle doesn't stretch the rest of the bars to a
-  // sliver. Without this, a post-earnings spike or IPO surge makes
-  // everyday bars invisible against the chart floor.
-  const volumeMax = useMemo(() => {
-    const volumes = candles
-      .map((c) => c.volume)
-      .filter((v) => Number.isFinite(v) && v > 0)
-      .sort((a, b) => a - b);
-    if (volumes.length >= 20) {
-      const p95 = volumes[Math.floor(volumes.length * 0.95)];
-      return p95 * 1.2;
-    }
-    if (volumes.length > 0) {
-      return volumes[volumes.length - 1] * 1.2;
-    }
-    return 1;
-  }, [candles]);
 
   const yDomain = useMemo<[number, number]>(() => {
     if (data.length === 0) return [0, 1];
@@ -198,6 +236,34 @@ export function ChartCard({
     return [Math.max(0, min - pad), max + pad];
   }, [data]);
 
+  // When yDomain is computed (with its 8% padding), shift each
+  // volumeY by the same padding offset so the bars still anchor
+  // visually at the bottom of the chart area. Without this, the
+  // bars would float up away from the X-axis when the yDomain
+  // extends below the actual minimum price.
+  const finalData = useMemo<Array<{
+    ts: number;
+    ts_real: number;
+    date: string;
+    close: number;
+    volume: number;
+    volumeY: number;
+  }>>(() => {
+    const [yMin] = yDomain;
+    const closes = data.map((d) => d.close).filter((c): c is number => c != null);
+    if (closes.length === 0) return dataWithVolumeY;
+    const minC = Math.min(...closes);
+    const offset = yMin - minC; // how far below the min close the yDomain starts
+    if (offset === 0) return dataWithVolumeY;
+    return dataWithVolumeY.map((d) => ({
+      ts: d.ts,
+      ts_real: d.ts_real,
+      date: d.date,
+      close: d.close,
+      volume: d.volume,
+      volumeY: (d.volumeY ?? 0) + offset,
+    }));
+  }, [dataWithVolumeY, yDomain, data]);
   const xTicks = useMemo(() => {
     if (data.length < 2) return [];
     const out: number[] = [];
@@ -309,7 +375,7 @@ export function ChartCard({
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
-              data={data}
+              data={finalData}
               margin={{ top: 8, right: 16, bottom: 0, left: 16 }}
             >
               <XAxis
@@ -336,15 +402,9 @@ yAxisId="price"
                 tickFormatter={(v) => formatCurrencyShort(v, currency)}
                 orientation="right"
               />
-              {/* Hidden volume axis. Domain is capped at the 95th-percentile
-                  volume * 1.2 so outlier candles don't stretch the rest
-                  of the bars to a sliver. See volumeMax memo below. */}
-              <YAxis
-                yAxisId="volume"
-                orientation="right"
-                hide
-                domain={[0, volumeMax]}
-              />
+              {/* (Volume axis removed; volume bars now render on the
+                  price YAxis via the volumeY data field, capped at 15%
+                  of the price range to keep the price line clean.) */}
               <Tooltip
                 cursor={{ stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 }}
                 content={({ active, payload }) => {
@@ -385,10 +445,13 @@ yAxisId="price"
                   }}
                 />
               ) : null}
-              {/* Volume bars at the bottom 25% of the chart */}
+              {/* Volume bars rendered on the price YAxis at a fixed
+                  fraction (15%) of the price range. volumeY is computed
+                  in dataWithVolumeY to land at minC..minC+15%·range so the
+                  bars sit at the bottom of the chart. */}
               <Bar
-                yAxisId="volume"
-                dataKey="volume"
+                yAxisId="price"
+                dataKey="volumeY"
                 fill={accentFaint}
                 radius={[2, 2, 0, 0]}
                 isAnimationActive={false}
