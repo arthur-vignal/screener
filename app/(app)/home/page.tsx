@@ -121,12 +121,14 @@ export default function HomePage() {
       <motion.main
             className="max-w-[1600px] mx-auto px-8 pt-5 pb-6 grid gap-6"
             style={{
-              // Three columns, full viewport height. Left column is
-              // narrower (1fr) and split between portfolio + day-highlight.
-              // Middle is widest (2fr), right stays 1fr.
+              // Three columns, full viewport height minus the header
+              // overlay band. Bottom dock floats over the market column;
+              // user confirmed that's fine since it sits at the centre
+              // of the page and visually balances the layout. No external
+              // page scroll — each card has its own internal scroll.
               gridTemplateColumns: "minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr)",
               gridTemplateRows: "1fr 1fr",
-              height: "calc(100vh - 220px)",
+              height: "calc(100vh - 64px)",
               gridTemplateAreas: `
                 "portfolio market news"
                 "highlight  market news"

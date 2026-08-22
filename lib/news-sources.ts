@@ -40,6 +40,16 @@ const BR_VERIFIED_HOSTS: readonly string[] = [
   "neofeed.com.br",
   "braziljournal.com",
   "b3.com.br",
+  // Additional trusted Brazilian financial outlets surfaced via
+  // expanded news query. These all cover B3/macro and have editorial
+  // standards comparable to the original six.
+  "estadao.com.br",
+  "suno.com.br",
+  "investidor10.com.br",
+  "bpmoney.com.br",
+  "br.investing.com",
+  "exame.com",
+  "exame.invest",
 ];
 
 function hostMatchesWhitelist(host: string): boolean {
@@ -66,9 +76,14 @@ function looksPortuguese(headline: string): boolean {
 export async function fetchBrazilianVerified(ticker: string): Promise<NewsItem[]> {
   const upper = ticker.toUpperCase();
   try {
-    // Query Google News RSS restricted to the 6 trusted B3/BR hosts.
-    const q = `${upper} (B3 OR acoes OR "mercado financeiro") site:infomoney.com.br OR site:valor.globo.com OR site:valor.com.br OR site:moneytimes.com.br OR site:neofeed.com.br OR site:braziljournal.com OR site:b3.com.br`;
-    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+    // Query Google News RSS restricted to Brazilian Portuguese sources.
+    // We let Google return any source, then the host-whitelist filter
+    // below drops anything that isn't one of the verified B3/BR outlets.
+    // Using "OR site:..." in the q parameter causes Google News to
+    // return very few results (the operator stack truncates the index),
+    // so we keep the query simple and rely on the post-filter instead.
+    const q = `${upper} B3 ações`;
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=pt-BR&gl=BR&ceid=BR:pt-419&when=7d`;
     const r = await fetch(url, {
       headers: {
         "User-Agent":
