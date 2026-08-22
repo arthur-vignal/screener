@@ -56,12 +56,13 @@ export default function HomePage() {
   const [welcomeName, setWelcomeName] = useState<string>("");
 
   // Decide whether to show the welcome overlay. We use localStorage so
-  // the welcome only appears on the first time a user reaches /home on
-  // this device — subsequent visits skip the typewriter and go straight
-  // to the dashboard. SSR can't read localStorage, so we start with
-  // welcomeOpen=false and flip it on inside this effect.
+  // the welcome only appears once per day on this device. SSR can't
+  // read localStorage, so we start with welcomeOpen=false and flip it
+  // on inside this effect. The key embeds today's date so a new day
+  // produces a fresh null and the welcome plays again.
   useEffect(() => {
-    const seen = window.localStorage.getItem("home-welcome-seen");
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const seen = window.localStorage.getItem(`home-welcome-seen:${today}`);
     if (!seen) {
       setWelcomeOpen(true);
     }
@@ -102,9 +103,10 @@ export default function HomePage() {
         <WelcomeOverlay
           username={welcomeName}
           onDone={() => {
-            // Mark the welcome as seen so it doesn't replay on next visit.
+            // Mark today as seen so the welcome doesn't replay until tomorrow.
             try {
-              window.localStorage.setItem("home-welcome-seen", "1");
+              const today = new Date().toISOString().slice(0, 10);
+              window.localStorage.setItem(`home-welcome-seen:${today}`, "1");
             } catch {
               // localStorage may be unavailable (e.g. private mode); fall
               // through to in-memory dismiss so the UI still clears.
