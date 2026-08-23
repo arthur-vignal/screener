@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import {
   fetchStatusInvest,
-  fetchFundsExplorer,
   fetchSmallcaps,
   fetchBrazilianVerified,
   type NewsItem,
@@ -11,9 +10,8 @@ import { tagNewsItem } from "@/lib/news-tagger";
 /**
  * GET /api/news/multi
  *
- * Multi-source B3 news across three high-quality portals:
+ * Multi-source B3 news across two high-quality portals:
  *  - Status Invest (análise fundamentalista)
- *  - Funds Explorer (análise de FIIs)
  *  - Smallcaps (small caps brasileiras)
  *  - Plus a Google News tail from the seed tickers to keep
  *    fresh coverage of the most-active B3 names.
@@ -33,9 +31,8 @@ const SEED_TICKERS = [
 export async function GET() {
   try {
     // Fetch the three dedicated portals in parallel.
-    const [statusNews, fundsNews, smallcapsNews] = await Promise.all([
+    const [statusNews, smallcapsNews] = await Promise.all([
       fetchStatusInvest().catch(() => []),
-      fetchFundsExplorer().catch(() => []),
       fetchSmallcaps().catch(() => []),
     ]);
 
@@ -55,7 +52,6 @@ export async function GET() {
 
     const merged: NewsItem[] = [
       ...statusNews,
-      ...fundsNews,
       ...smallcapsNews,
       ...googleNews,
     ];

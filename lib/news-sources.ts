@@ -400,15 +400,6 @@ export async function fetchStatusInvest(): Promise<NewsItem[]> {
 }
 
 /**
- * Funds Explorer — análise e dados de FIIs.
- * https://www.fundsexplorer.com.br/feed
- */
-export async function fetchFundsExplorer(): Promise<NewsItem[]> {
-  const items = await fetchRssFeed("https://www.fundsexplorer.com.br/feed");
-  return rssItemsToNews(items, "Funds Explorer", "br-fii-analysis");
-}
-
-/**
  * Smallcaps — cobertura de small caps brasileiras.
  * https://smallcaps.com.br/feed
  */
