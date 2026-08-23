@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchBrazilianVerified } from "@/lib/news-sources";
+import { fetchBrazilianVerified, type NewsItem } from "@/lib/news-sources";
 
 /**
  * GET /api/news/multi
@@ -42,12 +42,21 @@ const SEED_TICKERS = [
 
 export async function GET() {
   try {
-    // Fetch each seed ticker in parallel, then merge + dedupe.
-    const perTicker = await Promise.all(
-      SEED_TICKERS.map((t) =>
-        fetchBrazilianVerified(t).catch(() => []),
-      ),
-    );
+    // Batch the ticker fetches to avoid hitting Google News rate limits.
+    // 55 tickers all at once → IP-based throttle, half returning [].
+    // 5 tickers at a time with a 250ms gap → manageable per chunk.
+    const BATCH = 5;
+    const perTicker: NewsItem[] = [];
+    for (let i = 0; i < SEED_TICKERS.length; i += BATCH) {
+      const slice = SEED_TICKERS.slice(i, i + BATCH);
+      const batchResults = await Promise.all(
+        slice.map((t) => fetchBrazilianVerified(t).catch(() => [])),
+      );
+      perTicker.push(...batchResults.flat());
+      if (i + BATCH < SEED_TICKERS.length) {
+        await new Promise((r) => setTimeout(r, 250));
+      }
+    }
     const merged = perTicker.flat();
 
     // Dedupe by URL so the same story is not listed twice.
