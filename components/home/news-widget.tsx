@@ -13,6 +13,8 @@ import { motion } from "motion/react";
 import useSWR from "swr";
 import { MetallicCard } from "@/components/ui/metallic-card";
 import { ExternalLink, Clock } from "lucide-react";
+import { tagTickers } from "@/lib/news-tagger";
+import { renderHeadline } from "@/components/news/headline-with-tickers";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -22,6 +24,7 @@ type NewsItem = {
   source: string;
   url: string;
   datetime: number;
+  relatedTickers?: string[];
 };
 
 function stripHtml(s: string): string {
@@ -87,7 +90,7 @@ export function NewsWidget() {
                   className="block px-6 py-3 hover:bg-muted/40 transition-colors group"
                 >
                   <p className="text-[12.5px] text-foreground/90 leading-snug line-clamp-3 group-hover:text-foreground transition-colors">
-                    {headline}
+                    {renderHeadline(headline, tagTickers(headline).matches)}
                   </p>
                   <div className="flex items-center gap-2 mt-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                     <span className="truncate max-w-[120px]">{n.source}</span>

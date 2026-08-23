@@ -17,6 +17,8 @@ import useSWR from "swr";
 import { motion } from "motion/react";
 import { useMemo, useState, useEffect } from "react";
 import { ExternalLink, Clock } from "lucide-react";
+import { tagTickers } from "@/lib/news-tagger";
+import { renderHeadline } from "@/components/news/headline-with-tickers";
 import { cn } from "@/lib/utils";
 
 type NewsItem = {
@@ -167,8 +169,8 @@ export function NewsCard({ symbol }: { symbol: string }) {
                 rel="noopener noreferrer"
                 className="block px-5 py-3 hover:bg-foreground/[0.03] transition-colors group"
               >
-                <p className="text-[13px] text-foreground/90 leading-snug line-clamp-2 group-hover:text-foreground transition-colors">
-                  {stripHtml(n.headline)}
+                <p className="text-[13px] text-foreground/90 leading-snug group-hover:text-foreground transition-colors">
+                  {renderHeadline(stripHtml(n.headline), tagTickers(stripHtml(n.headline)).matches)}
                 </p>
                 <div className="mt-1.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                   <span className="truncate max-w-[140px]">{n.source}</span>

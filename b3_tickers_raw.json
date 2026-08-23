@@ -1,0 +1,2389 @@
+[
+  {
+    "symbol": "AALR3",
+    "name": "Allianca Saude e Participacoes SA - ALLIAR",
+    "type": "stock",
+    "sector": "Saúde",
+    "market": "br"
+  },
+  {
+    "symbol": "ABCB4",
+    "name": "Banco ABC Brasil SA Conv Pfd",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "ABEV3",
+    "name": "Ambev S/A",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "AERI3",
+    "name": "Aeris Industria e Comercio de Equipamentos para Geracao deEnergia S.A.",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "AGRO3",
+    "name": "BrasilAgro Cia Brasileira de Propriedades Agricolas",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "AGXY3",
+    "name": "Agrogalaxy Participacoes SA",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "AHEB3",
+    "name": "São Paulo Turismo S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "ALLD3",
+    "name": "Allied Tecnologia SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "ALOS3",
+    "name": "Allos",
+    "type": "stock",
+    "sector": "Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "ALPA3",
+    "name": "Alpargatas SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "ALPA4",
+    "name": "Alpargatas SA Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "ALPK3",
+    "name": "Allpark Empreendimentos Participacoes e Servicos S.A.",
+    "type": "stock",
+    "sector": "Serviços",
+    "market": "br"
+  },
+  {
+    "symbol": "ALUP3",
+    "name": "Alupar Investimento SA",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "ALUP4",
+    "name": "Alupar Investimento SA Pfd Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "AMAR3",
+    "name": "Marisa Lojas S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "AMBP3",
+    "name": "Ambipar Participacoes e Empreendimentos SA",
+    "type": "stock",
+    "sector": "Saneamento",
+    "market": "br"
+  },
+  {
+    "symbol": "AMER3",
+    "name": "Americanas SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "AMOB3",
+    "name": "Automob Participacoes S.A",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "ANIM3",
+    "name": "Anima Holding SA",
+    "type": "stock",
+    "sector": "Educação",
+    "market": "br"
+  },
+  {
+    "symbol": "ARML3",
+    "name": "Armac Locacao Logistica e Servicos SA",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "ARND3",
+    "name": "Arandu Investimentos S.A",
+    "type": "stock",
+    "sector": "Tecnologia",
+    "market": "br"
+  },
+  {
+    "symbol": "ASAI3",
+    "name": "Assaí",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "ATED3",
+    "name": "Atom Educacao e Editora S.A.",
+    "type": "stock",
+    "sector": "Educação",
+    "market": "br"
+  },
+  {
+    "symbol": "AUAU3",
+    "name": "Uniao Pet Participacoes SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "AURA33",
+    "name": "Aura Minerals Inc Shs Unsponsored Brazilian Depositary Receipt Repr 1 Sh",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "AURE3",
+    "name": "Auren Energia",
+    "type": "stock",
+    "sector": "Utilidades Públicas",
+    "market": "br"
+  },
+  {
+    "symbol": "AXIA3",
+    "name": "Axia Energia",
+    "type": "stock",
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "market": "br"
+  },
+  {
+    "symbol": "AXIA7",
+    "name": "AXIA Energia SA Non-Cum Perp Pfd Registered Shs C",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "AZEV3",
+    "name": "Azevedo & Travassos SA",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "AZEV4",
+    "name": "Azevedo & Travassos SA Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "AZTE3",
+    "name": "Azevedo & Travassos Energia S.A",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "AZUL3",
+    "name": "Azul S.A.",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "AZUL97",
+    "name": "Azul S.A.",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "AZUL98",
+    "name": "Azul S.A.",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "AZZA3",
+    "name": "Azzas 2154",
+    "type": "stock",
+    "sector": "Comércio",
+    "market": "br"
+  },
+  {
+    "symbol": "BAZA3",
+    "name": "Banco da Amazonia S.A.",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "BBAS3",
+    "name": "Banco do Brasil",
+    "type": "stock",
+    "sector": "Financeiro",
+    "market": "br"
+  },
+  {
+    "symbol": "BBDC3",
+    "name": "Bradesco ON",
+    "type": "stock",
+    "sector": "Financeiro",
+    "market": "br"
+  },
+  {
+    "symbol": "BBDC4",
+    "name": "Bradesco PN",
+    "type": "stock",
+    "sector": "Financeiro",
+    "market": "br"
+  },
+  {
+    "symbol": "BBSE3",
+    "name": "BB Seguridade",
+    "type": "stock",
+    "sector": "Financeiro",
+    "market": "br"
+  },
+  {
+    "symbol": "BDLL3",
+    "name": "Bardella SA Industrias Mecanicas",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "BEEF3",
+    "name": "Minerva",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "BEES3",
+    "name": "Banestes S.A. - Banco do Estado do Espirito Santo",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "BEES4",
+    "name": "Banestes SA Banco do Estado do Espirito Santo Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "BGIP3",
+    "name": "Banco do Estado de Sergipe SA - Banese",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "BGIP4",
+    "name": "Banco do Estado de Sergipe SA - Banese Non-Cum Perp Pfd Registered Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "BHIA3",
+    "name": "Grupo Casas Bahia S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "BIED3",
+    "name": "Bioma Educacao SA",
+    "type": "stock",
+    "sector": "Educação",
+    "market": "br"
+  },
+  {
+    "symbol": "BIOM3",
+    "name": "Biomm SA",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "BLAU3",
+    "name": "Blau Farmaceutica SA",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "BMEB3",
+    "name": "BCO Mercantil do Brasil SA",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "BMEB4",
+    "name": "BCO Mercantil do Brasil SA Non-Cum Perp Pfd Registered Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "BMGB4",
+    "name": "Banco Bmg SA BMG Pfd Registered Shs -144A- Reg S",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "BMKS3",
+    "name": "Bicicletas Monark S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "BMOB3",
+    "name": "Bemobi Mobile Tech SA",
+    "type": "stock",
+    "sector": "Tecnologia",
+    "market": "br"
+  },
+  {
+    "symbol": "BNBR3",
+    "name": "Banco do Nordeste do Brasil S.A.",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "BOBR4",
+    "name": "Bombril S.A.Non-Cum Perp Pfd Registered Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "BPAC11",
+    "name": "BTG Pactual",
+    "type": "stock",
+    "sector": "Financeiro",
+    "market": "br"
+  },
+  {
+    "symbol": "BPAC3",
+    "name": "Banco BTG Pactual SA",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "BPAC5",
+    "name": "Banco BTG Pactual SA Pfd A",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "BRAP3",
+    "name": "Bradespar S.A.",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "BRAP4",
+    "name": "Bradespar",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "BRAV3",
+    "name": "Brava",
+    "type": "stock",
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "market": "br"
+  },
+  {
+    "symbol": "BRKM3",
+    "name": "Braskem S.A.",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "BRKM5",
+    "name": "Braskem",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "BRSR3",
+    "name": "Banco do Estado do Rio Grande do Sul SA",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "BRSR6",
+    "name": "Banco do Estado do Rio Grande do Sul SA Pfd Series B",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "BRST3",
+    "name": "Brisanet Servicos de Telecomunicacoes S.A.",
+    "type": "stock",
+    "sector": "Telecomunicações",
+    "market": "br"
+  },
+  {
+    "symbol": "BSLI3",
+    "name": "BRB Banco de Brasilia SA",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "BSLI4",
+    "name": "BRB Banco de Brasilia SA Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "CAMB3",
+    "name": "Cambuci SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "CAML3",
+    "name": "Camil Alimentos SA",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "CASH3",
+    "name": "Meliuz SA",
+    "type": "stock",
+    "sector": "Tecnologia",
+    "market": "br"
+  },
+  {
+    "symbol": "CBAV3",
+    "name": "Companhia Brasileira de Aluminio",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "CEAB3",
+    "name": "C&A Modas",
+    "type": "stock",
+    "sector": "Comércio",
+    "market": "br"
+  },
+  {
+    "symbol": "CEBR3",
+    "name": "Companhia Energetica de Brasilia - CEB",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "CEBR5",
+    "name": "Companhia Energetica de Brasilia - CEB Pfd A",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "CEBR6",
+    "name": "Companhia Energetica de Brasilia - CEB Pfd B",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "CEDO4",
+    "name": "Cia. de Fiacao e Tecidos Cedro e Cachoeira Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "CGAS3",
+    "name": "Companhia de Gas de Sao Paulo - COMGAS",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "CGAS5",
+    "name": "Companhia de Gas de Sao Paulo - COMGAS Pfd Registered A",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "CGRA3",
+    "name": "Grazziotin S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "CGRA4",
+    "name": "Grazziotin S.A. Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "CLSC3",
+    "name": "Centrais Eletricas de Santa Catarina S.A.",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "CLSC4",
+    "name": "Centrais Eletricas de Santa Catarina SA Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "CMIG3",
+    "name": "Companhia Energetica de Minas Gerais SA",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "CMIG4",
+    "name": "Cemig",
+    "type": "stock",
+    "sector": "Utilidades Públicas",
+    "market": "br"
+  },
+  {
+    "symbol": "CMIN3",
+    "name": "CSN Mineração",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "COCE3",
+    "name": "Companhia Energetica do Ceara-COELCE",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "COCE5",
+    "name": "Companhia Energetica do Ceara-COELCE Pfd A",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "COGN3",
+    "name": "Cogna Educação",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "CPFE3",
+    "name": "CPFL Energia",
+    "type": "stock",
+    "sector": "Utilidades Públicas",
+    "market": "br"
+  },
+  {
+    "symbol": "CPLE3",
+    "name": "Copel",
+    "type": "stock",
+    "sector": "Utilidades Públicas",
+    "market": "br"
+  },
+  {
+    "symbol": "CRPG5",
+    "name": "Tronox Pigmentos do Brasil SA Pfd Registered Shs A",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "CSAN3",
+    "name": "Cosan",
+    "type": "stock",
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "market": "br"
+  },
+  {
+    "symbol": "CSED3",
+    "name": "Cruzeiro do Sul Educacional SA",
+    "type": "stock",
+    "sector": "Educação",
+    "market": "br"
+  },
+  {
+    "symbol": "CSMG3",
+    "name": "Copasa",
+    "type": "stock",
+    "sector": "Utilidades Públicas",
+    "market": "br"
+  },
+  {
+    "symbol": "CSNA3",
+    "name": "Siderúrgica Nacional",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "CSUD3",
+    "name": "CSU Digital SA",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "CTKA4",
+    "name": "Karsten S.A.Non-Cum Perp Pfd Registered Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "CURY3",
+    "name": "Cury",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "CVCB3",
+    "name": "CVC Brasil Operadora e Agencia de Viagens SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "CXSE3",
+    "name": "Caixa Seguridade",
+    "type": "stock",
+    "sector": "Financeiro",
+    "market": "br"
+  },
+  {
+    "symbol": "CYRE3",
+    "name": "Cyrela Realty",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "CYRE4",
+    "name": "Cyrela Brazil Realty SA Empreendimentos e Participacoes Pfd shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "DASA3",
+    "name": "Diagnosticos da America S.A.",
+    "type": "stock",
+    "sector": "Saúde",
+    "market": "br"
+  },
+  {
+    "symbol": "DESK3",
+    "name": "Desktop SA",
+    "type": "stock",
+    "sector": "Telecomunicações",
+    "market": "br"
+  },
+  {
+    "symbol": "DEXP3",
+    "name": "Dexxos Participacoes SA",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "DEXP4",
+    "name": "Dexxos Participacoes SA Pref",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "DIRR3",
+    "name": "Direcional",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "DMVF3",
+    "name": "D1000 Varejo Farma Participacoes SA",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "DOTZ3",
+    "name": "Dotz SA",
+    "type": "stock",
+    "sector": "Serviços",
+    "market": "br"
+  },
+  {
+    "symbol": "DXCO3",
+    "name": "Dexco SA",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "EALT3",
+    "name": "Electro Aco Altona SA",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "EALT4",
+    "name": "Electro Aco Altona SA Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "ECOM3",
+    "name": "Economatica SA",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "ECOR3",
+    "name": "EcoRodovias Infraestrutura e Logistica S.A.",
+    "type": "stock",
+    "sector": "Infraestrutura",
+    "market": "br"
+  },
+  {
+    "symbol": "EGIE3",
+    "name": "Engie Brasil",
+    "type": "stock",
+    "sector": "Utilidades Públicas",
+    "market": "br"
+  },
+  {
+    "symbol": "EKTR4",
+    "name": "Elektro Redes S.A. Pfd Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "EMAE4",
+    "name": "EMAE-Empresa Metropolitana de Aguas e Energia SA Pfd Registered",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "EMBJ3",
+    "name": "Embraer",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "ENEV3",
+    "name": "Eneva",
+    "type": "stock",
+    "sector": "Utilidades Públicas",
+    "market": "br"
+  },
+  {
+    "symbol": "ENGI11",
+    "name": "Energisa",
+    "type": "stock",
+    "sector": "Utilidades Públicas",
+    "market": "br"
+  },
+  {
+    "symbol": "ENGI3",
+    "name": "Energisa SA",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "ENGI4",
+    "name": "Energisa SA Pfd Shs Non-Voting",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "ENJU3",
+    "name": "Enjoei SA",
+    "type": "stock",
+    "sector": "Tecnologia",
+    "market": "br"
+  },
+  {
+    "symbol": "ENMT3",
+    "name": "Energisa Mato Grosso - Distribuidora de Energia Sa",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "ENMT4",
+    "name": "Energisa Mato Grosso - Distribuidora de Energia Sa Pfd Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "EPAR3",
+    "name": "Embpar Participacoes SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "EQPA3",
+    "name": "Equatorial Para Distribuidora de Energia SA",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "EQTL3",
+    "name": "Equatorial",
+    "type": "stock",
+    "sector": "Utilidades Públicas",
+    "market": "br"
+  },
+  {
+    "symbol": "ESPA3",
+    "name": "MPM Corporeos SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "ETER3",
+    "name": "Eternit S.A.",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "EUCA3",
+    "name": "Eucatex S.A. Industria e Comercio",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "EUCA4",
+    "name": "Eucatex S.A. Industria E Comercio Non-Cum Perp Pfd Registered Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "EVEB31",
+    "name": "Eve Holding Inc Unsponsored BDR Repr 1 Sh",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "EVEN3",
+    "name": "Even Construtora E Incorporadora S.A.",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "EVTC31",
+    "name": "EVERTEC, Inc. Shs Sponsored Brazilian Depositary Receipt Repr 1 Sh",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "EZTC3",
+    "name": "EZ TEC Empreendimentos e Participacoes SA",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "FESA3",
+    "name": "Cia de Ferro Ligas da Bahia",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "FESA4",
+    "name": "Cia de Ferro Ligas da Bahia-Ferbasa Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "FHER3",
+    "name": "Fertilizantes Heringer S.A.",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "FICT3",
+    "name": "Fictor Alimentos SA",
+    "type": "stock",
+    "sector": "Outros",
+    "market": "br"
+  },
+  {
+    "symbol": "FIQE3",
+    "name": "Unifique Telecomunicacoes SA",
+    "type": "stock",
+    "sector": "Telecomunicações",
+    "market": "br"
+  },
+  {
+    "symbol": "FLRY3",
+    "name": "Fleury",
+    "type": "stock",
+    "sector": "Saúde",
+    "market": "br"
+  },
+  {
+    "symbol": "FRAS3",
+    "name": "Fras-Le S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "GEPA4",
+    "name": "Rio Paranapanema Energia SA Pfd Registered",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "GFSA3",
+    "name": "Gafisa S.A.",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "GGBR3",
+    "name": "Gerdau S.A.",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "GGBR4",
+    "name": "Gerdau",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "GGPS3",
+    "name": "GPS Participacoes e Empreendimentos SA",
+    "type": "stock",
+    "sector": "Serviços",
+    "market": "br"
+  },
+  {
+    "symbol": "GMAT3",
+    "name": "Grupo Mateus SA",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "GOAU3",
+    "name": "Metalurgica Gerdau S.A.",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "GOAU4",
+    "name": "Gerdau Met",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "GRND3",
+    "name": "Grendene S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "HAGA4",
+    "name": "Haga SA Industria e Comercio Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "HAPV3",
+    "name": "Hapvida",
+    "type": "stock",
+    "sector": "Saúde",
+    "market": "br"
+  },
+  {
+    "symbol": "HBOR3",
+    "name": "Helbor Empreendimentos S.A.",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "HBRE3",
+    "name": "HBR Realty Empreendimentos Imobiliarios SA",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "HBSA3",
+    "name": "Hidrovias do Brasil SA",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "HBTS5",
+    "name": "Cia Habitasul de Participacoes Pfd A",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "HOOT4",
+    "name": "Hoteis Othon SA Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "HYPE3",
+    "name": "Hypera",
+    "type": "stock",
+    "sector": "Saúde",
+    "market": "br"
+  },
+  {
+    "symbol": "IFCM3",
+    "name": "Infracommerce CXAAS SA",
+    "type": "stock",
+    "sector": "Tecnologia",
+    "market": "br"
+  },
+  {
+    "symbol": "IGTI11",
+    "name": "Iguatemi",
+    "type": "stock",
+    "sector": "Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "IGTI3",
+    "name": "Iguatemi SA",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "IGTI4",
+    "name": "Iguatemi SA Perp Pfd Registered Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "INBR32",
+    "name": "Inter & Co., Inc. Shs Unsponsored Brazilian Depositary Receipt Repr 1 Sh",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "INEP3",
+    "name": "Inepar SA Industria e Construcoes",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "INEP4",
+    "name": "Inepar SA Industria e Construcoes Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "INTB3",
+    "name": "Intelbras SA Industria de Telecomunicacao Eletronica Brasileir",
+    "type": "stock",
+    "sector": "Tecnologia",
+    "market": "br"
+  },
+  {
+    "symbol": "IRBR3",
+    "name": "IRB Brasil Resseguros SA",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "ISAE3",
+    "name": "Isa Energia Brasil SA",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "ISAE4",
+    "name": "ISA Energia",
+    "type": "stock",
+    "sector": "Utilidades Públicas",
+    "market": "br"
+  },
+  {
+    "symbol": "ITSA3",
+    "name": "Itausa SA",
+    "type": "stock",
+    "sector": "Holdings",
+    "market": "br"
+  },
+  {
+    "symbol": "ITSA4",
+    "name": "Itausa",
+    "type": "stock",
+    "sector": "Financeiro",
+    "market": "br"
+  },
+  {
+    "symbol": "ITUB3",
+    "name": "Itau Unibanco Holding S.A.",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "ITUB4",
+    "name": "Itaú Unibanco",
+    "type": "stock",
+    "sector": "Financeiro",
+    "market": "br"
+  },
+  {
+    "symbol": "JALL3",
+    "name": "Jalles Machado SA",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "JBSS32",
+    "name": "JBS N.V. Shs Sponsored Brazilian Depositary Receipt Repr 1 Sh A",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "JFEN3",
+    "name": "Joao Fortes Engenharia S.A.",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "JHSF3",
+    "name": "JHSF Participacoes S.A.",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "JSLG3",
+    "name": "JSL S.A.",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "KEPL3",
+    "name": "Kepler Weber SA",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "KLBN11",
+    "name": "Klabin",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "KLBN3",
+    "name": "Klabin SA",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "KLBN4",
+    "name": "Klabin SA Non-Cum Perp Pfd Registered Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "LAND3",
+    "name": "Terra Santa Propriedades Agricolas SA",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "LAVV3",
+    "name": "LAVVI Empreendimentos Imobiliarios SA",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "LEVE3",
+    "name": "Mahle-Metal Leve S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "LIGT3",
+    "name": "Light S.A.",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "LJQQ3",
+    "name": "Lojas Quero-Quero SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "LOGG3",
+    "name": "Log Commercial Properties e Participacoes SA",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "LOGN3",
+    "name": "Log-In Logistica Intermodal SA",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "LPSB3",
+    "name": "LPS Brasil-Consultoria de Imoveis SA",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "LREN3",
+    "name": "Lojas Renner",
+    "type": "stock",
+    "sector": "Comércio",
+    "market": "br"
+  },
+  {
+    "symbol": "LUPA3",
+    "name": "Lupatech S.A.",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "LUXM4",
+    "name": "Trevisa Investimentos SA Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "LWSA3",
+    "name": "LWSA S.A.",
+    "type": "stock",
+    "sector": "Tecnologia",
+    "market": "br"
+  },
+  {
+    "symbol": "MATD3",
+    "name": "Hospital Mater Dei SA",
+    "type": "stock",
+    "sector": "Saúde",
+    "market": "br"
+  },
+  {
+    "symbol": "MBRF3",
+    "name": "Marfrig",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "MDIA3",
+    "name": "M. Dias Branco SA Industria e Comercio de Alimentos",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "MDNE3",
+    "name": "Moura Dubeux Engenharia SA",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "MEAL3",
+    "name": "International Meal Company Alimentacao SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "MELK3",
+    "name": "Melnick Desenvolvimento Imobiliario SA",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "MGEL4",
+    "name": "Mangels Industrial SA Pfd Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "MGLU3",
+    "name": "Magazine Luiza",
+    "type": "stock",
+    "sector": "Comércio",
+    "market": "br"
+  },
+  {
+    "symbol": "MILS3",
+    "name": "Mills Locacao Servicos e Logistica S.A.",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "MLAS3",
+    "name": "Multi Group S.A",
+    "type": "stock",
+    "sector": "Tecnologia",
+    "market": "br"
+  },
+  {
+    "symbol": "MNPR3",
+    "name": "Minupar Participacoes S.A.",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "MOTV3",
+    "name": "Motiva",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "MOVI3",
+    "name": "Movida Participacoes SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "MRVE3",
+    "name": "MRV",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "MTRE3",
+    "name": "Mitre Realty Empreendimentos e Participacoes SA",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "MTSA4",
+    "name": "Metisa Metalurgica Timboense SA Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "MULT3",
+    "name": "Multiplan",
+    "type": "stock",
+    "sector": "Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "MWET4",
+    "name": "Wetzel S.A. Non-Cum Perp Pfd Registered Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "MYPK3",
+    "name": "Iochpe Maxion S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "NATU3",
+    "name": "Natura",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "NEXP3",
+    "name": "Nexpe Participacoes SA",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "NORD3",
+    "name": "Nordon Industrias Metalurgicas S.A.",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "NUTR3",
+    "name": "Nutriplant Industria E Comercio S.A.",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "OBTC3",
+    "name": "Oranjebtc SA Educacao e Investimento",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "OFSA3",
+    "name": "Ourofino S.A.",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "OIBR3",
+    "name": "Oi S.A.",
+    "type": "stock",
+    "sector": "Telecomunicações",
+    "market": "br"
+  },
+  {
+    "symbol": "OIBR4",
+    "name": "Oi S.A.Non-Cum Perp Pfd Registered Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "ONCO3",
+    "name": "Oncoclinicas do Brasil Servicos Medicos SA",
+    "type": "stock",
+    "sector": "Saúde",
+    "market": "br"
+  },
+  {
+    "symbol": "OPCT3",
+    "name": "OceanPact Servicos Maritimos SA",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "ORVR3",
+    "name": "Orizon Valorizacao de Residuos SA",
+    "type": "stock",
+    "sector": "Saneamento",
+    "market": "br"
+  },
+  {
+    "symbol": "OSXB3",
+    "name": "OSX Brasil S.A.",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "PASS3",
+    "name": "Compass Gas e Energia SA",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "PCAR3",
+    "name": "Companhia Brasileira de Distribuicao",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "PDGR3",
+    "name": "PDG Realty SA Empreendimentos e Participacoes",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "PDTC3",
+    "name": "Padtec Holding SA",
+    "type": "stock",
+    "sector": "Tecnologia",
+    "market": "br"
+  },
+  {
+    "symbol": "PETR3",
+    "name": "Petrobras ON",
+    "type": "stock",
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "market": "br"
+  },
+  {
+    "symbol": "PETR4",
+    "name": "Petrobras PN",
+    "type": "stock",
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "market": "br"
+  },
+  {
+    "symbol": "PFRM3",
+    "name": "Profarma Distribuidora de Produtos Farmaceuticos SA",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "PGMN3",
+    "name": "Empreendimentos Pague Menos SA",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "PINE3",
+    "name": "Banco PINE S.A.",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "PINE4",
+    "name": "Banco PINE S.A. Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "PLAS3",
+    "name": "Plascar Participacoes Industriais S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "PLPL3",
+    "name": "Plano & Plano Desenvolvimento Imobiliario Ltda",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "PMAM3",
+    "name": "Paranapanema S.A.",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "PNVL3",
+    "name": "Dimed S.A. Distribuidora de Medicamentos",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "POMO3",
+    "name": "Marcopolo SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "POMO4",
+    "name": "Marcopolo",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "POSI3",
+    "name": "Positivo Tecnologia SA",
+    "type": "stock",
+    "sector": "Tecnologia",
+    "market": "br"
+  },
+  {
+    "symbol": "PRIO3",
+    "name": "PRIO",
+    "type": "stock",
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "market": "br"
+  },
+  {
+    "symbol": "PRNR3",
+    "name": "Priner Servicos Industriais SA",
+    "type": "stock",
+    "sector": "Serviços",
+    "market": "br"
+  },
+  {
+    "symbol": "PRXB31",
+    "name": "Prosus N.V. ADR Sponsored Brazilian Depositary Receipt Repr 0.5 ADR",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "PSSA3",
+    "name": "Porto Seguro",
+    "type": "stock",
+    "sector": "Financeiro",
+    "market": "br"
+  },
+  {
+    "symbol": "PTBL3",
+    "name": "PBG S.A.Registered Shs",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "QUAL3",
+    "name": "Qualicorp Consultoria e Corretora de Seguros S.A.",
+    "type": "stock",
+    "sector": "Saúde",
+    "market": "br"
+  },
+  {
+    "symbol": "RADL3",
+    "name": "Raia Drogasil",
+    "type": "stock",
+    "sector": "Saúde",
+    "market": "br"
+  },
+  {
+    "symbol": "RAIL3",
+    "name": "Rumo",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "RAIZ4",
+    "name": "Raizen SA Non-Cum Perp Pfd Registered Shs",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "RANI3",
+    "name": "Irani Papel e Embalagem SA",
+    "type": "stock",
+    "sector": "Materiais",
+    "market": "br"
+  },
+  {
+    "symbol": "RAPT3",
+    "name": "Randoncorp S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "RAPT4",
+    "name": "Randoncorp S.A.",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "RCSL3",
+    "name": "Recrusul SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "RCSL4",
+    "name": "Recrusul SA Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "RDOR3",
+    "name": "Rede D'Or",
+    "type": "stock",
+    "sector": "Saúde",
+    "market": "br"
+  },
+  {
+    "symbol": "RECV3",
+    "name": "PetroReconcavo",
+    "type": "stock",
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "market": "br"
+  },
+  {
+    "symbol": "REDE3",
+    "name": "Rede Energia S.A.",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "RENT3",
+    "name": "Localiza",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "RENT4",
+    "name": "Localiza Rent A Car SA Non-Cum Perp Pfd Registered Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "RIAA3",
+    "name": "RIACHUELO",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "RNEW3",
+    "name": "Renova Energia S.A.",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "RNEW4",
+    "name": "Renova Energia S.A. Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "ROMI3",
+    "name": "Romi SA",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "RPMG3",
+    "name": "Refinaria de Petroleos Manguinhos S.A.",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "RSUL4",
+    "name": "Metalurgica Riosulense SA Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "SANB11",
+    "name": "Santander Brasil",
+    "type": "stock",
+    "sector": "Financeiro",
+    "market": "br"
+  },
+  {
+    "symbol": "SANB3",
+    "name": "Banco Santander (Brasil) S.A.",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "SANB4",
+    "name": "Banco Santander (Brasil) SA Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "SAPR3",
+    "name": "Companhia de Saneamento do Parana - Sanepar",
+    "type": "stock",
+    "sector": "Saneamento",
+    "market": "br"
+  },
+  {
+    "symbol": "SAPR4",
+    "name": "Companhia de Saneamento do Parana - Sanepar Non-Cum Perp Pfd Registered Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "SAUD3",
+    "name": "Bradsaude SA",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "SBFG3",
+    "name": "Grupo SBF S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "SBSP3",
+    "name": "Sabesp",
+    "type": "stock",
+    "sector": "Utilidades Públicas",
+    "market": "br"
+  },
+  {
+    "symbol": "SCAR3",
+    "name": "Sao Carlos Empreendimentos e Participacoes SA",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "SEER3",
+    "name": "Grupo Ser Educacional SA",
+    "type": "stock",
+    "sector": "Educação",
+    "market": "br"
+  },
+  {
+    "symbol": "SEQL3",
+    "name": "Sequoia Logistica e Transportes SA",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "SHOW3",
+    "name": "T4F Entretenimento S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "SHUL4",
+    "name": "Schulz S.A.Non-Cum Perp Pfd Registered Shs",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "SIMH3",
+    "name": "Simpar SA",
+    "type": "stock",
+    "sector": "Holdings",
+    "market": "br"
+  },
+  {
+    "symbol": "SLCE3",
+    "name": "SLC Agrícola",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "SMFT3",
+    "name": "Smart Fit",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "SMTO3",
+    "name": "Sao Martinho S.A.",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "SNSY5",
+    "name": "Sansuy SA Industria de Plasticos Pfd A",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "SOJA3",
+    "name": "Boa Safra Sementes SA",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "SOND5",
+    "name": "Sondotecnica Engenharia de Solos S.A. Pfd Shs A",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "SUZB3",
+    "name": "Suzano",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "SYNE3",
+    "name": "Syn Prop e Tech SA",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "TAEE11",
+    "name": "Taesa",
+    "type": "stock",
+    "sector": "Utilidades Públicas",
+    "market": "br"
+  },
+  {
+    "symbol": "TAEE3",
+    "name": "Transmissora Alianca De Energia Eletrica S.A.",
+    "type": "stock",
+    "sector": "Energia",
+    "market": "br"
+  },
+  {
+    "symbol": "TAEE4",
+    "name": "Transmissora Alianca De Energia Eletrica S.A. Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "TASA3",
+    "name": "Taurus Armas S.A.",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "TASA4",
+    "name": "Taurus Armas S.A. Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "TCSA3",
+    "name": "Tecnisa S.A.",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "TECN3",
+    "name": "Technos S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "TELB4",
+    "name": "Telecomunicacoes Brasileiras SA - TELEBRAS Pref.",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "TEND3",
+    "name": "Construtora Tenda SA",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "TFCO4",
+    "name": "Track & Field Co SA Pfd Registered Shs",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "TGMA3",
+    "name": "Tegma Gestao Logistica S.A.",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "TIMS3",
+    "name": "TIM",
+    "type": "stock",
+    "sector": "Comunicações",
+    "market": "br"
+  },
+  {
+    "symbol": "TOKY3",
+    "name": "Grupo Toky SA",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "TOTS3",
+    "name": "Totvs",
+    "type": "stock",
+    "sector": "Tecnologia da Informação",
+    "market": "br"
+  },
+  {
+    "symbol": "TPIS3",
+    "name": "TPI - Triunfo Participacoes e Investimentos SA",
+    "type": "stock",
+    "sector": "Infraestrutura",
+    "market": "br"
+  },
+  {
+    "symbol": "TRIS3",
+    "name": "Trisul S.A.",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "TRPL15",
+    "name": "FII TRPL    CI",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "TTEN3",
+    "name": "Tres Tentos Agroindustrial SA",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "TUPY3",
+    "name": "Tupy S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "UCAS3",
+    "name": "Unicasa Industria de Moveis S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "UGPA3",
+    "name": "Ultrapar",
+    "type": "stock",
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "market": "br"
+  },
+  {
+    "symbol": "UNIP3",
+    "name": "Unipar Carbocloro SA",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "UNIP5",
+    "name": "Unipar Carbocloro SA Pfd Class A",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "UNIP6",
+    "name": "Unipar Carbocloro SA Pfd Class B",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "USIM3",
+    "name": "Usinas Siderurgicas de Minas Gerais SA-Usiminas",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "USIM5",
+    "name": "Usiminas",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "VALE3",
+    "name": "Vale",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "VAMO3",
+    "name": "Vamos",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "VBBR3",
+    "name": "Vibra",
+    "type": "stock",
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "market": "br"
+  },
+  {
+    "symbol": "VITT3",
+    "name": "Vittia S.A.",
+    "type": "stock",
+    "sector": "Materiais Básicos",
+    "market": "br"
+  },
+  {
+    "symbol": "VIVA3",
+    "name": "Vivara",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "VIVR3",
+    "name": "Viver Incorporadora e Construtora S.A.",
+    "type": "stock",
+    "sector": "Construção e Imobiliário",
+    "market": "br"
+  },
+  {
+    "symbol": "VIVT3",
+    "name": "Telefônica Brasil",
+    "type": "stock",
+    "sector": "Comunicações",
+    "market": "br"
+  },
+  {
+    "symbol": "VLID3",
+    "name": "Valid Solucoes SA",
+    "type": "stock",
+    "sector": "Serviços",
+    "market": "br"
+  },
+  {
+    "symbol": "VSTE3",
+    "name": "Veste S.A. Estilo",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "VTRU3",
+    "name": "Vitru Educacao SA",
+    "type": "stock",
+    "sector": "Educação",
+    "market": "br"
+  },
+  {
+    "symbol": "VULC3",
+    "name": "Vulcabras SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "VVEO3",
+    "name": "CM Hospitalar SA",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "WDCN3",
+    "name": "Livetech da Bahia Industria e Comercio SA",
+    "type": "stock",
+    "sector": "Tecnologia",
+    "market": "br"
+  },
+  {
+    "symbol": "WEGE3",
+    "name": "WEG",
+    "type": "stock",
+    "sector": "Bens Industriais",
+    "market": "br"
+  },
+  {
+    "symbol": "WEST3",
+    "name": "Westwing Comercio Varejista SA",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "WHRL3",
+    "name": "Whirlpool S.A.",
+    "type": "stock",
+    "sector": "Consumo Cíclico",
+    "market": "br"
+  },
+  {
+    "symbol": "WHRL4",
+    "name": "Whirlpool SA Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "WIZC3",
+    "name": "WIZ Co Participacoes e Corretagem de Seguros SA",
+    "type": "stock",
+    "sector": "Serviços Financeiros",
+    "market": "br"
+  },
+  {
+    "symbol": "WLMM4",
+    "name": "WLM Participacoes e Comercio de Maquinas e Veiculos SA Pfd",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "XPBR31",
+    "name": "XP Inc. Shs A Unsponsored Brazilian Depositary Receipt Repr 1 Sh A",
+    "type": "stock",
+    "sector": "—",
+    "market": "br"
+  },
+  {
+    "symbol": "YDUQ3",
+    "name": "Yduqs",
+    "type": "stock",
+    "sector": "Consumo Não Cíclico",
+    "market": "br"
+  }
+]

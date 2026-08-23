@@ -286,3 +286,138 @@ export function classifySource(source: string): 1 | 2 | 3 {
   }
   return 3;
 }
+
+
+
+/**
+ * Generic RSS fetch + parse for B3 news sources. Each source below has
+ * a public RSS/Atom feed that returns items with title, link, pubDate,
+ * and description. We do our own lightweight parsing here so the
+ * feed schema differences (some use rss, some atom, some omit fields)
+ * don't leak into the rest of the codebase.
+ */
+type RssFeedItem = {
+  title: string;
+  link: string;
+  pubDate: string;
+  description: string;
+};
+
+async function fetchRssFeed(url: string, timeoutMs = 8000): Promise<RssFeedItem[]> {
+  try {
+    const r = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml",
+      },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!r.ok) return [];
+    const xml = await r.text();
+    const items: RssFeedItem[] = [];
+
+    // Detect <item> (rss2) or <entry> (atom)
+    const isAtom = /<feed[^>]*xmlns=/.test(xml) || /<entry>/.test(xml);
+    if (isAtom) {
+      const entries = xml.match(/<entry[\s\S]*?<\/entry>/g) ?? [];
+      for (const entry of entries) {
+        const title = entry.match(/<title[^>]*>([\s\S]*?)<\/title>/)?.[1]?.trim() ?? "";
+        const link = entry.match(/<link[^>]*href="([^"]+)"/)?.[1]
+                    ?? entry.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim()
+                    ?? "";
+        const pubDate = entry.match(/<published>([\s\S]*?)<\/published>/)?.[1]?.trim()
+                       ?? entry.match(/<updated>([\s\S]*?)<\/updated>/)?.[1]?.trim()
+                       ?? "";
+        const description = entry.match(/<content[^>]*>([\s\S]*?)<\/content>/)?.[1]?.trim()
+                          ?? entry.match(/<summary[^>]*>([\s\S]*?)<\/summary>/)?.[1]?.trim()
+                          ?? "";
+        items.push({
+          title: title.replace(/<!\[CDATA\[|\]\]>/g, "").trim(),
+          link,
+          pubDate,
+          description: description.replace(/<!\[CDATA\[|\]\]>/g, "").trim(),
+        });
+      }
+    } else {
+      const blocks = xml.match(/<item[\s\S]*?<\/item>/g) ?? [];
+      for (const it of blocks) {
+        const title = it.match(/<title[^>]*>([\s\S]*?)<\/title>/)?.[1]?.trim() ?? "";
+        const link = it.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim()
+                   ?? it.match(/<link\/>\s*([^<\s]+)/)?.[1]?.trim()
+                   ?? "";
+        const pubDate = it.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1]?.trim() ?? "";
+        const description = it.match(/<description[^>]*>([\s\S]*?)<\/description>/)?.[1]?.trim() ?? "";
+        items.push({
+          title: title.replace(/<!\[CDATA\[|\]\]>/g, "").trim(),
+          link,
+          pubDate,
+          description: description.replace(/<!\[CDATA\[|\]\]>/g, "").trim(),
+        });
+      }
+    }
+    return items;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Common post-processing: convert the raw RSS items to NewsItem shape
+ * with stable source label and ISO-ish datetime.
+ */
+function rssItemsToNews(
+  items: RssFeedItem[],
+  source: string,
+  category: string,
+): NewsItem[] {
+  return items
+    .filter((it) => it.title && it.link)
+    .map((it) => {
+      const datetime = it.pubDate
+        ? Math.floor(new Date(it.pubDate).getTime() / 1000)
+        : 0;
+      return {
+        id: `${source}:${it.link}`,
+        headline: it.title,
+        // Keep description text-only; strip HTML tags for the inline card.
+        summary: it.description.replace(/<[^>]+>/g, "").slice(0, 500),
+        source,
+        url: it.link,
+        datetime,
+        category,
+        relatedTickers: [],
+      };
+    });
+}
+
+/**
+ * Status Invest — análise fundamentalista de B3.
+ * https://statusinvest.com.br/noticias/rss
+ */
+export async function fetchStatusInvest(): Promise<NewsItem[]> {
+  const items = await fetchRssFeed("https://statusinvest.com.br/noticias/rss");
+  return rssItemsToNews(items, "Status Invest", "br-analysis");
+}
+
+/**
+ * Funds Explorer — análise e dados de FIIs.
+ * https://www.fundsexplorer.com.br/feed
+ */
+export async function fetchFundsExplorer(): Promise<NewsItem[]> {
+  const items = await fetchRssFeed("https://www.fundsexplorer.com.br/feed");
+  return rssItemsToNews(items, "Funds Explorer", "br-fii-analysis");
+}
+
+/**
+ * Smallcaps — cobertura de small caps brasileiras.
+ * https://smallcaps.com.br/feed
+ */
+export async function fetchSmallcaps(): Promise<NewsItem[]> {
+  const items = await fetchRssFeed("https://smallcaps.com.br/feed");
+  return rssItemsToNews(items, "Smallcaps", "br-smallcaps");
+}
+
+/**
+ * (B3 oficial dropped — portal renders news client-side, no public
+ * RSS. The other three fetchers carry enough coverage for now.)
+ */

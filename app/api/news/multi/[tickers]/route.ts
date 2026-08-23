@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchNewsForTickers } from "@/lib/news-sources";
+import { tagNewsItem } from "@/lib/news-tagger";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 25;
@@ -21,10 +22,17 @@ export async function GET(
       return NextResponse.json({ news: [] });
     }
 
-    // Limit per request
     const limited = tickers.slice(0, 30);
     const news = await fetchNewsForTickers(limited, 10, 30);
-    return NextResponse.json({ news });
+
+    // Tag every item so the UI knows which tickers are mentioned
+    // beyond the queried ones (relevant for "stocks also mentioned").
+    const tagged = news.map((n) => ({
+      ...n,
+      relatedTickers: tagNewsItem(n.headline ?? "", n.summary ?? ""),
+    }));
+
+    return NextResponse.json({ news: tagged });
   } catch (err) {
     return NextResponse.json(
       { news: [], error: String(err) },
