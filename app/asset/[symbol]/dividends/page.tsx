@@ -32,6 +32,12 @@ type CashDividend = {
   label: string | null;
 };
 
+type Selic = {
+  date: string;
+  value: number;
+  epochDate: number;
+} | null;
+
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
     if (!r.ok) throw new Error(String(r.status));
@@ -50,6 +56,11 @@ export default function DividendsPage({
     `/api/asset/${encodeURIComponent(symbol)}/dividends`,
     fetcher,
     { revalidateOnFocus: false, dedupingInterval: 600_000 },
+  );
+  const { data: selicData } = useSWR<{ selic: Selic }>(
+    `/api/macro/selic`,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 24 * 3600 * 1000 },
   );
 
   const divs = divData?.dividends ?? [];
@@ -244,6 +255,69 @@ export default function DividendsPage({
             Soma das taxas por ano (não é valor absoluto em BRL — multiplicar pelo preço no pagamento para valor real).
           </p>
         </section>
+
+        {/* F4-3: DY vs Selic comparison */}
+        {selicData?.selic && (
+          <section className="mt-8">
+            <h2 className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground/60 mb-3">
+              Dividendo vs renda fixa
+            </h2>
+            <div className="rounded-2xl border border-border/60 overflow-hidden bg-foreground/[0.02] px-4 py-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
+                    Dividend yield
+                  </p>
+                  <p className="mt-1 text-[24px] font-semibold tabular-nums">
+                    {annualYield != null
+                      ? `${(annualYield * 100).toFixed(2)}%`
+                      : "—"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
+                    Selic atual
+                  </p>
+                  <p className="mt-1 text-[24px] font-semibold tabular-nums">
+                    {selicData.selic.value.toFixed(2)}%
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 h-2 rounded-full bg-foreground/10 overflow-hidden">
+                {annualYield != null && (
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.min(100, (annualYield * 100 / Math.max(selicData.selic.value, 0.01)) * 100)}%`,
+                      background:
+                        annualYield * 100 >= selicData.selic.value
+                          ? "#10b981"
+                          : "#f59e0b",
+                    }}
+                  />
+                )}
+              </div>
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                {annualYield != null ? (
+                  annualYield * 100 >= selicData.selic.value ? (
+                    <span className="text-emerald-300">
+                      ● DY supera a Selic — renda variável compensa contra a taxa básica.
+                    </span>
+                  ) : (
+                    <span className="text-amber-300">
+                      ● DY abaixo da Selic — considerar o prêmio de risco da renda variável.
+                    </span>
+                  )
+                ) : (
+                  "Sem dividend yield para comparar."
+                )}
+              </p>
+              <p className="mt-1 text-[10px] text-muted-foreground/40">
+                Selic meta: {selicData.selic.date}. DY é anualizado, taxa nominal sem IR.
+              </p>
+            </div>
+          </section>
+        )}
 
         {/* Recent events table */}
         <section className="mt-8">
