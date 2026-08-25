@@ -145,24 +145,33 @@ export function ChartCard({
     // it's 1 day, so we use 24h. This means weekends and holidays
     // collapse to a single "next-session" point — no empty space, no
     // artificial flat line.
-    const intraDaySpanMs: Record<RangeKey, number> = {
-      "24h": 1 * 3600 * 1000,
-      "7d": 1 * 3600 * 1000,
-      "3m": 4 * 3600 * 1000,
-      "1y": 24 * 3600 * 1000,
-      "5y": 24 * 3600 * 1000,
-      "max": 24 * 3600 * 1000,
+    // Cadence of the candles for this range (matches what the API returns).
+    // Used as the "expected intra-session spacing" so consecutive candles
+    // inside the same session stay evenly spaced, while gaps between
+    // sessions (weekends, holidays) collapse to a single tick.
+    const cadenceMs: Record<RangeKey, number> = {
+      "24h": 5 * 60 * 1000,        // 5m
+      "7d": 5 * 60 * 1000,         // 5m
+      "3m": 30 * 60 * 1000,        // 30m
+      "1y": 4 * 3600 * 1000,       // 4h (after resample)
+      "5y": 24 * 3600 * 1000,      // 1d
+      "max": 24 * 3600 * 1000,     // 1d
     };
-    const span = intraDaySpanMs[range];
+    const cadence = cadenceMs[range];
     let offset = 0;
     let prevTs: number | null = null;
     return candles.map((c) => {
       const ts = c.timestamp;
       if (prevTs != null) {
         const gap = ts - prevTs;
-        if (gap > span) {
-          // Subtract the over-gap so next session sitts right after the prev.
-          offset += gap - span;
+        if (gap > cadence) {
+          // Gap exceeds intra-session spacing → session boundary
+          // (weekend, holiday, or end-of-day). Compress the ENTIRE
+          // gap so the next session's first candle sits immediately
+          // to the right of the previous session's last candle. The
+          // recharts curve connects them with a smooth line through
+          // the real price change.
+          offset += gap - cadence;
         }
       }
       prevTs = ts;
