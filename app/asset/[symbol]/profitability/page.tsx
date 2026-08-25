@@ -27,6 +27,19 @@ export default function ProfitabilityPage({
   const { data, isLoading } = useAssetBundle(symbol);
 
   const fd = (data?.financialData ?? {}) as Record<string, number | string | null | undefined>;
+  const profile = (data?.profile ?? {}) as Record<string, string | null | undefined>;
+
+  // For financial-sector tickers (banks, insurers, etc) the
+  // "operating income" line in the income statement is meaningless:
+  // Brapi returns totalOperatingExpenses as a single negative bucket
+  // that double-counts interest expense. Hide that column entirely.
+  const sector = (profile.sector ?? "").toLowerCase();
+  const isFinancial =
+    sector.includes("financial") ||
+    sector.includes("bank") ||
+    sector.includes("seguro") ||
+    sector.includes("financeiro") ||
+    sector.includes("insurance");
 
   // Latest-period margins (from financialData)
   const latest = {
@@ -61,6 +74,17 @@ export default function ProfitabilityPage({
     }))
     .filter((r) => r.endDate)
     .sort((a, b) => (a.endDate < b.endDate ? -1 : 1));
+
+  // Decide whether to show the operating-income column. Hide it when:
+  //   - the sector is financial (banks/insurers — see comment above), or
+  //   - more than half of the yearly rows have a negative operating income
+  //     (data anomaly for non-financials too — could be a one-off restated
+  //     period, but consistent across years usually means the field is junk)
+  const opRowsNegative =
+    yearly.length > 0 &&
+    yearly.filter((r) => r.operatingIncome != null && r.operatingIncome < 0).length >
+      yearly.length / 2;
+  const hideOperatingIncome = isFinancial || opRowsNegative;
 
   return (
     <div
@@ -110,7 +134,7 @@ export default function ProfitabilityPage({
               Carregando…
             </div>
           ) : (
-            <MarginTrendChart history={yearly} />
+            <MarginTrendChart history={yearly} hideOp={hideOperatingIncome} />
           )}
         </section>
 
@@ -126,7 +150,9 @@ export default function ProfitabilityPage({
                   <th className="text-left px-4 py-2 font-normal">Ano</th>
                   <th className="text-right px-4 py-2 font-normal">Receita</th>
                   <th className="text-right px-4 py-2 font-normal">Lucro Bruto</th>
-                  <th className="text-right px-4 py-2 font-normal">Op. Líquido</th>
+                  {!hideOperatingIncome && (
+                    <th className="text-right px-4 py-2 font-normal">Op. Líquido</th>
+                  )}
                   <th className="text-right px-4 py-2 font-normal">Lucro Líq.</th>
                 </tr>
               </thead>
@@ -148,11 +174,13 @@ export default function ProfitabilityPage({
                       <td className="px-4 py-2 text-right tabular-nums">
                         {row.grossProfit != null ? compactBRL(row.grossProfit) : "—"}
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums">
-                        {row.operatingIncome != null
-                          ? compactBRL(row.operatingIncome)
-                          : "—"}
-                      </td>
+                      {!hideOperatingIncome && (
+                        <td className="px-4 py-2 text-right tabular-nums">
+                          {row.operatingIncome != null && row.operatingIncome >= 0
+                            ? compactBRL(row.operatingIncome)
+                            : "—"}
+                        </td>
+                      )}
                       <td className="px-4 py-2 text-right tabular-nums">
                         {row.netIncome != null ? compactBRL(row.netIncome) : "—"}
                       </td>
@@ -161,6 +189,11 @@ export default function ProfitabilityPage({
               </tbody>
             </table>
           </div>
+          {hideOperatingIncome && (
+            <p className="mt-2 text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/40">
+              Setor financeiro: resultado operacional não é comparável a outros setores.
+            </p>
+          )}
         </section>
 
         <Link

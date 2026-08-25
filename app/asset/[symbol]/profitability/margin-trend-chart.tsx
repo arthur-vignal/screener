@@ -28,7 +28,13 @@ type HistEntry = {
   returnOnEquity?: number | null;
 };
 
-export function MarginTrendChart({ history }: { history: HistEntry[] }) {
+export function MarginTrendChart({
+  history,
+  hideOp = false,
+}: {
+  history: HistEntry[];
+  hideOp?: boolean;
+}) {
   const data = history
     .slice() // don't mutate
     .sort((a, b) => (a.endDate < b.endDate ? -1 : 1))
@@ -50,12 +56,13 @@ export function MarginTrendChart({ history }: { history: HistEntry[] }) {
   }
 
   // Use raw fractions for the Y domain — Recharts auto-scales.
-  const series: Array<{ key: keyof typeof data[0]; label: string; color: string }> = [
+  const allSeries: Array<{ key: keyof typeof data[0]; label: string; color: string }> = [
     { key: "gross", label: "Gross", color: "#9ca3af" },
     { key: "op", label: "Operacional", color: "#06b6d4" },
     { key: "profit", label: "Líquida", color: "#10b981" },
     { key: "roe", label: "ROE", color: "#f59e0b" },
   ];
+  const series = hideOp ? allSeries.filter((s) => s.key !== "op") : allSeries;
 
   return (
     <div className="h-[280px] w-full">
