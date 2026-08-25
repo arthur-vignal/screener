@@ -232,6 +232,10 @@ export type BrapiFundamentals = {
   historicals: {
     income: BrapiIncomeStatementPeriod[];
     balance: BrapiBalanceSheetPeriod[];
+    cashflow: Array<Record<string, unknown>>;
+    valueAdded: Array<Record<string, unknown>>;
+    keyStatistics: Array<Record<string, unknown>>;
+    financialData: Array<Record<string, unknown>>;
   };
 };
 
@@ -256,70 +260,92 @@ export async function getBrapiFundamentals(
       30 * 60,
       async () => {
       const modules = [
-        "defaultKeyStatistics",
-        "financialData",
-        "summaryProfile",
-        "incomeStatementHistory",
-        "balanceSheetHistory",
-      ].join(",");
-      const params: Record<string, string> = { modules, range: "1y", interval: "1d" };
-      const token = getToken();
-      if (token) params.token = token;
-      const qs = new URLSearchParams(params).toString();
-      const r = await fetch(`https://brapi.dev/api/quote/${encodeURIComponent(upper)}?${qs}`, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          "Accept": "application/json",
-        },
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!r.ok) return null;
-      const data = (await r.json()) as BrapiResponse & {
-        results?: Array<{
-          defaultKeyStatistics?: BrapiKeyStatistics;
-          financialData?: BrapiFinancialData;
-          summaryProfile?: BrapiProfile;
-          incomeStatementHistory?: { incomeStatementHistory?: BrapiIncomeStatementPeriod[] } | BrapiIncomeStatementPeriod[];
-          balanceSheetHistory?: { balanceSheetStatements?: BrapiBalanceSheetPeriod[] } | BrapiBalanceSheetPeriod[];
-        }>;
-      };
-      const raw = data.results?.[0];
-      if (!raw) return null;
+              "defaultKeyStatistics",
+              "financialData",
+              "summaryProfile",
+              "incomeStatementHistory",
+              "balanceSheetHistory",
+              "cashflowHistory",
+              "valueAddedHistory",
+              "defaultKeyStatisticsHistory",
+              "financialDataHistory",
+            ].join(",");
+            const params: Record<string, string> = { modules, range: "1y", interval: "1d" };
+            const token = getToken();
+            if (token) params.token = token;
+            const qs = new URLSearchParams(params).toString();
+            const r = await fetch(`https://brapi.dev/api/quote/${encodeURIComponent(upper)}?${qs}`, {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "Accept": "application/json",
+              },
+              signal: AbortSignal.timeout(10000),
+            });
+            if (!r.ok) return null;
+            const data = (await r.json()) as BrapiResponse & {
+              results?: Array<{
+                defaultKeyStatistics?: BrapiKeyStatistics;
+                financialData?: BrapiFinancialData;
+                summaryProfile?: BrapiProfile;
+                incomeStatementHistory?: { incomeStatementHistory?: BrapiIncomeStatementPeriod[] } | BrapiIncomeStatementPeriod[];
+                balanceSheetHistory?: { balanceSheetStatements?: BrapiBalanceSheetPeriod[] } | BrapiBalanceSheetPeriod[];
+                cashflowHistory?: Array<Record<string, unknown>> | { cashflowHistory?: Array<Record<string, unknown>> };
+                valueAddedHistory?: Array<Record<string, unknown>> | { valueAddedHistory?: Array<Record<string, unknown>> };
+                defaultKeyStatisticsHistory?: Array<Record<string, unknown>> | { defaultKeyStatisticsHistory?: Array<Record<string, unknown>> };
+                financialDataHistory?: Array<Record<string, unknown>> | { financialDataHistory?: Array<Record<string, unknown>> };
+              }>;
+            };
+            const raw = data.results?.[0];
+            if (!raw) return null;
 
-      const rawQuote = raw as unknown as BrapiRawQuote;
-      const candles = (rawQuote.historicalDataPrice ?? []).map((c) => ({
-        date: new Date(c.date * 1000).toISOString().slice(0, 10),
-        timestamp: c.date * 1000,
-        open: c.open,
-        high: c.high,
-        low: c.low,
-        close: c.close,
-        adjClose: c.adjustedClose,
-        volume: c.volume,
-      }));
-      if (!rawQuote.regularMarketPrice) return null;
+            const rawQuote = raw as unknown as BrapiRawQuote;
+            const candles = (rawQuote.historicalDataPrice ?? []).map((c) => ({
+              date: new Date(c.date * 1000).toISOString().slice(0, 10),
+              timestamp: c.date * 1000,
+              open: c.open,
+              high: c.high,
+              low: c.low,
+              close: c.close,
+              adjClose: c.adjustedClose,
+              volume: c.volume,
+            }));
+            if (!rawQuote.regularMarketPrice) return null;
 
-      const incomeHist = raw.incomeStatementHistory;
-      const income: BrapiIncomeStatementPeriod[] = Array.isArray(incomeHist)
-        ? incomeHist
-        : incomeHist?.incomeStatementHistory ?? [];
+            const incomeHist = raw.incomeStatementHistory;
+            const income: BrapiIncomeStatementPeriod[] = Array.isArray(incomeHist)
+              ? incomeHist
+              : incomeHist?.incomeStatementHistory ?? [];
 
-      const balanceHist = raw.balanceSheetHistory;
-      const balance: BrapiBalanceSheetPeriod[] = Array.isArray(balanceHist)
-        ? balanceHist
-        : balanceHist?.balanceSheetStatements ?? [];
+            const balanceHist = raw.balanceSheetHistory;
+            const balance: BrapiBalanceSheetPeriod[] = Array.isArray(balanceHist)
+              ? balanceHist
+              : balanceHist?.balanceSheetStatements ?? [];
 
-      return {
-        quote: normalize(rawQuote),
-        candles,
-        keyStatistics: raw.defaultKeyStatistics ?? {},
-        financialData: raw.financialData ?? {},
-        profile: raw.summaryProfile ?? {},
-        historicals: { income, balance },
-      };
-    },
-  );
-}
+            // Unwrap the *History modules — Brapi sometimes returns either an
+            // array directly or an object with the array under the same key.
+            function unwrap<T>(v: T[] | { [k: string]: T[] } | undefined): T[] {
+              if (!v) return [];
+              return Array.isArray(v) ? v : (v as Record<string, T[]>).valueAddedHistory ?? (v as Record<string, T[]>).cashflowHistory ?? (v as Record<string, T[]>).defaultKeyStatisticsHistory ?? (v as Record<string, T[]>).financialDataHistory ?? [];
+            }
+
+            return {
+              quote: normalize(rawQuote),
+              candles,
+              keyStatistics: raw.defaultKeyStatistics ?? {},
+              financialData: raw.financialData ?? {},
+              profile: raw.summaryProfile ?? {},
+              historicals: {
+                income,
+                balance,
+                cashflow: unwrap(raw.cashflowHistory as unknown as Array<Record<string, unknown>>),
+                valueAdded: unwrap(raw.valueAddedHistory as unknown as Array<Record<string, unknown>>),
+                keyStatistics: unwrap(raw.defaultKeyStatisticsHistory as unknown as Array<Record<string, unknown>>),
+                financialData: unwrap(raw.financialDataHistory as unknown as Array<Record<string, unknown>>),
+              },
+            };
+          },
+        );
+      }
 
 function getToken(): string {
   // Prefer BRAPI_TOKEN (used elsewhere in the codebase: brapi-full.ts,

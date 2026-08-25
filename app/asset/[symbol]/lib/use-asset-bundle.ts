@@ -22,6 +22,17 @@ export type AssetBundle = {
   marketState: string;
   logoUrl: string | null;
 
+  candles: Array<{
+    date: string;
+    timestamp: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    adjClose: number;
+    volume: number;
+  }>;
+
   quote: {
     price: number | null;
     prevClose: number | null;
@@ -62,6 +73,10 @@ export type AssetBundle = {
       netIncome?: number | null;
     }>;
     balance: Array<Record<string, unknown>>;
+    cashflow: Array<Record<string, unknown>>;
+    valueAdded: Array<Record<string, unknown>>;
+    keyStatistics: Array<Record<string, unknown>>;
+    financialData: Array<Record<string, unknown>>;
   };
 };
 

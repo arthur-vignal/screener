@@ -39,7 +39,7 @@ type Quote = {
   fiftyTwoWeekLow: number | null;
 };
 
-type Group = "valuation" | "profitability" | "income" | "financial-health" | "growth" | "about";
+type Group = "valuation" | "profitability" | "income" | "financial-health" | "growth" | "risk" | "cashflow" | "dividends" | "about";
 
 type Tile = {
   label: string;

@@ -83,9 +83,17 @@ export async function GET(
     },
 
     // Full payloads — sub-pages pull from these.
-    profile,
-    keyStatistics: ks,
-    financialData: fd,
-    historicals: data.historicals ?? { income: [], balance: [] },
-  });
-}
+        profile,
+        keyStatistics: ks,
+        financialData: fd,
+        candles: data.candles ?? [],
+        historicals: data.historicals ?? {
+          income: [],
+          balance: [],
+          cashflow: [],
+          valueAdded: [],
+          keyStatistics: [],
+          financialData: [],
+        },
+      });
+    }

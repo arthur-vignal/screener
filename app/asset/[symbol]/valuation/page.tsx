@@ -15,6 +15,7 @@ import { use } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useAssetBundle } from "../lib/use-asset-bundle";
 import { AssetSubheader } from "../components/asset-subheader";
+import { PeBandChart } from "./pe-band-chart";
 
 export default function ValuationPage({
   params,
@@ -72,28 +73,76 @@ export default function ValuationPage({
           section={{ slug: "valuation", label: "Valuation" }}
         />
 
-        {/* 52w range */}
+        {/* 52w range — enhanced gauge (F2-1) */}
         <section className="mt-6">
           <h2 className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground/60 mb-3">
             Faixa 52 semanas
           </h2>
-          <div className="rounded-2xl border border-border/60 overflow-hidden bg-foreground/[0.02] px-4 py-4">
+          <div className="rounded-2xl border border-border/60 overflow-hidden bg-foreground/[0.02] px-5 py-5">
             <div className="flex items-baseline justify-between text-[11px] text-muted-foreground tabular-nums">
               <span>{w52Low != null ? fmtBRL(w52Low) : "—"}</span>
               <span>{w52High != null ? fmtBRL(w52High) : "—"}</span>
             </div>
-            <div className="relative mt-2 h-1.5 rounded-full bg-foreground/10 overflow-hidden">
+            <div className="relative mt-3 h-2 rounded-full bg-foreground/10 overflow-visible">
               <div
-                className="absolute inset-y-0 left-0 bg-foreground/30"
+                className="absolute inset-y-0 left-0 bg-gradient-to-r from-foreground/20 to-foreground/40 rounded-full"
                 style={{ width: `${(rangePos ?? 0) * 100}%` }}
               />
               {rangePos != null && (
-                <div
-                  className="absolute h-2.5 w-2.5 -top-0.5 rounded-full bg-white shadow"
-                  style={{ left: `calc(${rangePos * 100}% - 5px)` }}
-                />
+                <>
+                  <div
+                    className="absolute h-3.5 w-3.5 top-1/2 -translate-y-1/2 rounded-full bg-white border border-foreground/30 shadow"
+                    style={{ left: `calc(${rangePos * 100}% - 7px)` }}
+                  />
+                  <div
+                    className="absolute -bottom-1 h-1 w-0.5 bg-foreground/40"
+                    style={{ left: `${rangePos * 100}%` }}
+                  />
+                </>
               )}
             </div>
+            <div className="mt-4 grid grid-cols-3 gap-3 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/70">
+              <div>
+                <p className="text-muted-foreground/40">Distância p/ mínima</p>
+                <p className="mt-0.5 text-foreground text-[13px] tabular-nums">
+                  {price != null && w52Low != null && w52Low > 0
+                    ? `+${(((price - w52Low) / w52Low) * 100).toFixed(1)}%`
+                    : "—"}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-muted-foreground/40">Posição</p>
+                <p className="mt-0.5 text-foreground text-[13px] tabular-nums">
+                  {rangePos != null ? `${(rangePos * 100).toFixed(0)}º percentil` : "—"}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-muted-foreground/40">Distância p/ máxima</p>
+                <p className="mt-0.5 text-foreground text-[13px] tabular-nums">
+                  {price != null && w52High != null && price > 0
+                    ? `${(((price - w52High) / w52High) * 100).toFixed(1)}%`
+                    : "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* F2-3: Banda histórica de P/L */}
+        <section className="mt-8">
+          <h2 className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground/60 mb-3">
+            Banda histórica de P/L
+          </h2>
+          <div className="rounded-2xl border border-border/60 overflow-hidden bg-foreground/[0.02] px-4 py-4">
+            <PeBandChart
+              history={(data?.historicals?.keyStatistics ?? []) as Array<{
+                endDate: string;
+                trailingPE?: number | null;
+                price?: number | null;
+              }>}
+              currentPe={num(data?.metrics?.trailingPE ?? null)}
+              currency={data?.currency ?? "BRL"}
+            />
           </div>
         </section>
 
