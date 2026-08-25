@@ -36,6 +36,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Bar,
+  CartesianGrid,
 } from "recharts";
 import { cn } from "@/lib/utils";
 
@@ -232,8 +233,11 @@ export function ChartCard({
       if (d.close < min) min = d.close;
       if (d.close > max) max = d.close;
     }
-    const pad = (max - min) * 0.08 || max * 0.02 || 1;
-    return [Math.max(0, min - pad), max + pad];
+    // Tighter padding (2%) so the price series fills the chart area and
+        // intra-day variation reads as actual movement instead of a flat line.
+        // The 8% we used before made low-volatility B3 stocks look monotone.
+        const pad = (max - min) * 0.02 || max * 0.005 || 1;
+        return [Math.max(0, min - pad), max + pad];
   }, [data]);
 
   // When yDomain is computed (with its 8% padding), shift each
@@ -388,6 +392,12 @@ export function ChartCard({
               data={finalData}
               margin={{ top: 8, right: 16, bottom: 0, left: 16 }}
             >
+              <CartesianGrid
+                strokeDasharray="2 4"
+                stroke="rgba(255,255,255,0.05)"
+                horizontal={true}
+                vertical={false}
+              />
               <XAxis
                 dataKey="ts"
                 type="number"
@@ -398,14 +408,14 @@ export function ChartCard({
                   const d = data.find((x) => x.ts === compressedTs);
                   return formatTickDate(d?.ts_real ?? compressedTs);
                 }}
-                tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 10 }}
-                axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                tick={{ fill: "rgba(200,200,210,0.55)", fontSize: 10 }}
+                                axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
                 tickLine={false}
               />
               <YAxis
 yAxisId="price"
                 domain={yDomain}
-                tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 10 }}
+                tick={{ fill: "rgba(200,200,210,0.55)", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 width={56}
@@ -416,12 +426,12 @@ yAxisId="price"
                   price YAxis via the volumeY data field, capped at 15%
                   of the price range to keep the price line clean.) */}
               <Tooltip
-                cursor={{ stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 }}
+                cursor={{ stroke: "rgba(255,255,255,0.08)", strokeWidth: 1 }}
                 content={({ active, payload }) => {
                   if (!active || !payload || payload.length === 0) return null;
                   const p = payload[0].payload as { ts: number; ts_real: number; close: number; volume: number };
                   return (
-                    <div className="px-3 py-2 rounded-lg bg-background/70 backdrop-blur-md text-[11px]">
+                    <div className="px-3 py-2 rounded-lg bg-[#15151a]/80 backdrop-blur-md text-[11px] border border-white/5">
                       <p className="text-muted-foreground">
                         {new Date(p.ts_real).toLocaleString("pt-BR", {
                           day: "2-digit",
@@ -445,12 +455,12 @@ yAxisId="price"
                 <ReferenceLine
                   yAxisId="price"
                   y={quote.prevClose}
-                  stroke="rgba(255,255,255,0.25)"
+                  stroke="rgba(255,255,255,0.18)"
                   strokeDasharray="3 3"
                   label={{
                     value: "Prev close",
                     position: "insideTopRight",
-                    fill: "rgba(255,255,255,0.4)",
+                    fill: "rgba(200,200,210,0.4)",
                     fontSize: 10,
                   }}
                 />
@@ -462,17 +472,17 @@ yAxisId="price"
               <Bar
                 yAxisId="price"
                 dataKey="volumeY"
-                fill={accentFaint}
+                fill="rgba(156,163,175,0.25)"
                 radius={[2, 2, 0, 0]}
                 isAnimationActive={false}
               />
               <Area
                 yAxisId="price"
-                type="monotone"
+                type="linear"
                 dataKey="close"
-                stroke="#ffffff"
-                strokeWidth={1}
-                fill="rgba(255,255,255,0.04)"
+                stroke="#9ca3af"
+                strokeWidth={1.5}
+                fill="transparent"
                 isAnimationActive={true}
                 animationDuration={650}
               />
