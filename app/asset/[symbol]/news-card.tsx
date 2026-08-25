@@ -3,14 +3,15 @@
 /**
  * NewsCard — vertical news feed filtered to this ticker.
  *
- *  - Tabs: All · Press · Analysis
- *  - 3-5 cards, each with headline + source + time-ago
- *  - Uses /api/news/multi/[tickers]?tickers=SYM to scope results
- *    to the current ticker.
+ *  Per the Fey (Mobbin) reference: 1 card per article, no mega-list.
+ *  Each card has:
+ *    - source logo (circular, colored by source-hash)
+ *    - headline with inline ticker chips (PETR4 / VALE3 → clickable)
+ *    - source name + relative time + external link icon
  *
- *  The "Press" / "Analysis" tabs are filtered client-side by
- *  `category` and source heuristics (B3 press releases vs analyst
- *  sites). The "All" tab shows everything.
+ *  Filter chips above the feed: All · Press · Analysis.
+ *  The "Daily recap" hero card was intentionally NOT added — we don't
+ *  have an LLM-generated summary yet.
  */
 
 import useSWR from "swr";
@@ -89,6 +90,40 @@ function classify(item: NewsItem): Tab {
   return "all";
 }
 
+// Stable hash → palette color (matches ticker-chip palette family so the
+// source logo and a ticker chip inside the same headline feel related).
+function sourceColor(src: string): { bg: string; letter: string } {
+  const PALETTE: Array<{ bg: string; letter: string }> = [
+    { bg: "#10b981", letter: "#ffffff" }, // emerald
+    { bg: "#3b82f6", letter: "#ffffff" }, // blue
+    { bg: "#a855f7", letter: "#ffffff" }, // purple
+    { bg: "#f43f5e", letter: "#ffffff" }, // rose
+    { bg: "#f59e0b", letter: "#0a0a0a" }, // amber
+    { bg: "#06b6d4", letter: "#ffffff" }, // cyan
+    { bg: "#ec4899", letter: "#ffffff" }, // pink
+    { bg: "#6366f1", letter: "#ffffff" }, // indigo
+    { bg: "#14b8a6", letter: "#ffffff" }, // teal
+    { bg: "#f97316", letter: "#ffffff" }, // orange
+  ];
+  let h = 0;
+  for (let i = 0; i < src.length; i++) h = (h * 31 + src.charCodeAt(i)) >>> 0;
+  return PALETTE[h % PALETTE.length];
+}
+
+function SourceLogo({ source }: { source: string }) {
+  const letter = source.trim().charAt(0).toUpperCase() || "?";
+  const c = sourceColor(source);
+  return (
+    <div
+      aria-hidden
+      className="h-9 w-9 rounded-full shrink-0 flex items-center justify-center text-[13px] font-semibold tracking-tight"
+      style={{ background: c.bg, color: c.letter }}
+    >
+      {letter}
+    </div>
+  );
+}
+
 export function NewsCard({ symbol }: { symbol: string }) {
   const [tab, setTab] = useState<Tab>("all");
   const [mounted, setMounted] = useState(false);
@@ -120,70 +155,79 @@ export function NewsCard({ symbol }: { symbol: string }) {
       transition={{ duration: 0.5, ease: "easeOut", delay: 0.05 }}
       className="h-full flex flex-col"
     >
-      <div className="rounded-2xl border border-border/60 overflow-hidden flex flex-col h-full"
-        style={{
-          background:
-            "linear-gradient(135deg, #08090c 0%, #15161b 30%, #0d0e12 55%, #1c1d22 80%, #07080b 100%)",
-        }}
-      >
-        <header className="px-5 pt-4 pb-3 border-b border-border/40 flex items-center justify-between">
-          <h2 className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground/60">
-            Notícias · {symbol}
-          </h2>
-          <div className="flex items-center gap-1 p-0.5 rounded-full border border-border/60 bg-background/40">
-            {TABS.map((t) => {
-              const active = t.key === tab;
-              return (
-                <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={cn(
-                    "px-3 h-6 rounded-full text-[10.5px] tracking-wide transition-colors",
-                    active
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-        </header>
+      {/* Header strip: title + filter chips (flat, no inner card) */}
+      <header className="px-1 pb-3 flex items-center justify-between gap-3">
+        <h2 className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground/60">
+          Notícias · {symbol}
+        </h2>
+        <div className="flex items-center gap-1 p-0.5 rounded-full border border-border/60 bg-background/40">
+          {TABS.map((t) => {
+            const active = t.key === tab;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={cn(
+                  "px-3 h-6 rounded-full text-[10.5px] tracking-wide transition-colors",
+                  active
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </header>
 
-        <div className="divide-y divide-border/40 flex-1 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {isLoading ? (
-            <div className="px-5 py-6 text-center text-[12px] text-muted-foreground/60">
-              Carregando…
-            </div>
-          ) : items.length === 0 ? (
-            <div className="px-5 py-6 text-center text-[12px] text-muted-foreground/60">
-              Sem notícias {tab !== "all" ? `em ${tab}` : ""} para {symbol}.
-            </div>
-          ) : (
-            items.map((n) => (
+      {/* Feed: each article = its own flat card. Scroll lives on this
+          container so the section grows with content but doesn't push
+          the page into a giant empty area below the chart. */}
+      <div
+        className="flex-1 overflow-y-auto space-y-2 pr-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {isLoading ? (
+          <div className="rounded-xl border border-border/60 bg-foreground/[0.02] px-5 py-6 text-center text-[12px] text-muted-foreground/60">
+            Carregando…
+          </div>
+        ) : items.length === 0 ? (
+          <div className="rounded-xl border border-border/60 bg-foreground/[0.02] px-5 py-6 text-center text-[12px] text-muted-foreground/60">
+            Sem notícias {tab !== "all" ? `em ${tab}` : ""} para {symbol}.
+          </div>
+        ) : (
+          items.map((n) => {
+            const headline = stripHtml(n.headline);
+            const matches = tagTickers(headline).matches;
+            return (
               <a
                 key={n.id}
                 href={n.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block px-5 py-3 hover:bg-foreground/[0.03] transition-colors group"
+                className="group block rounded-xl border border-border/60 bg-foreground/[0.02] hover:bg-foreground/[0.04] hover:border-border transition-colors px-4 py-3.5"
               >
-                <p className="text-[13px] text-foreground/90 leading-snug group-hover:text-foreground transition-colors">
-                  {renderHeadline(stripHtml(n.headline), tagTickers(stripHtml(n.headline)).matches)}
-                </p>
-                <div className="mt-1.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                  <span className="truncate max-w-[140px]">{n.source}</span>
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="h-2.5 w-2.5" />
-                    {mounted ? timeAgo(n.datetime) : ""}
-                  </span>
-                  <ExternalLink className="h-2.5 w-2.5 ml-auto opacity-40 group-hover:opacity-100" />
+                <div className="flex items-start gap-3">
+                  <SourceLogo source={n.source} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] leading-snug text-foreground/90 group-hover:text-foreground transition-colors">
+                      {renderHeadline(headline, matches)}
+                    </p>
+                    <div className="mt-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                      <span className="truncate max-w-[160px]">{n.source}</span>
+                      <span aria-hidden className="opacity-40">·</span>
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="h-2.5 w-2.5" />
+                        {mounted ? timeAgo(n.datetime) : ""}
+                      </span>
+                      <ExternalLink className="h-2.5 w-2.5 ml-auto opacity-40 group-hover:opacity-100" />
+                    </div>
+                  </div>
                 </div>
               </a>
-            ))
-          )}
-        </div>
+            );
+          })
+        )}
       </div>
     </motion.section>
   );
