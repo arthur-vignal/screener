@@ -22,6 +22,7 @@ import { motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Search, Bookmark, MoreHorizontal, RefreshCw } from "lucide-react";
+import { TickerLogo } from "@/components/ticker-logo";
 import { ChartCard, type RangeKey } from "./chart-card";
 import { MetricsStrip } from "./metrics-strip";
 import { NewsCard } from "./news-card";
@@ -202,27 +203,28 @@ function AssetHeader({
       className="flex items-center justify-between gap-4 pb-4 border-b border-border/40"
     >
       <div className="flex items-center gap-3 min-w-0">
-        <Link
-          href="/home"
-          aria-label="Voltar"
-          className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-border bg-foreground/5 hover:bg-foreground/10 text-foreground/80 hover:text-foreground transition-colors"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Link>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-[20px] font-semibold tracking-tight">{symbol}</h1>
-            {sector && !loading && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full border border-border bg-foreground/5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                {sector}
-              </span>
-            )}
-          </div>
-          <p className="text-[12px] text-muted-foreground truncate max-w-[60ch]">
-            {loading ? " " : name}
-          </p>
-        </div>
-      </div>
+              <Link
+                href="/home"
+                aria-label="Voltar"
+                className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-border bg-foreground/5 hover:bg-foreground/10 text-foreground/80 hover:text-foreground transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Link>
+              <TickerLogo symbol={symbol} size="md" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-[20px] font-semibold tracking-tight">{symbol}</h1>
+                  {sector && !loading && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full border border-border bg-foreground/5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                      {sector}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[12px] text-muted-foreground truncate max-w-[60ch]">
+                  {loading ? " " : name}
+                </p>
+              </div>
+            </div>
 
       <div className="flex items-center gap-2 shrink-0">
         <button

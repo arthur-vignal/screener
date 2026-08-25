@@ -314,57 +314,67 @@ export function ChartCard({
       transition={{ duration: 0.5, ease: "easeOut", delay: 0.05 }}
       className="relative h-full min-h-[64vh] flex flex-col"
     >
-      {/* Price hero — left aligned */}
-      <div className="px-2 pt-2 pb-3 flex items-end justify-between gap-4 flex-wrap">
-        <div className="flex items-end gap-4">
-          <div>
-            <p className="text-[26px] md:text-[31px] leading-[0.95] font-semibold tabular-nums tracking-tight">
-              {loading || price == null
-                ? "—"
-                : formatCurrency(price, currency)}
-            </p>
-            <div
-              className="mt-1 inline-flex items-center gap-2 text-[12px] font-medium tabular-nums"
-              style={{ color: accent }}
-            >
-              <span>
-                {change == null
-                  ? "—"
-                  : `${isUp ? "+" : ""}${formatCurrency(change, currency)}`}
-              </span>
-              <span className="opacity-70">
-                {changePercent == null
-                  ? ""
-                  : `${isUp ? "+" : ""}${changePercent.toFixed(2)}%`}
-              </span>
-              <span className="text-muted-foreground/60 text-[10px] uppercase tracking-[0.18em]">
-                today
-              </span>
-            </div>
-          </div>
-        </div>
+      {/* Price hero — left aligned, Fey-style tag + flat range pills on right */}
+            <div className="px-2 pt-2 pb-3 flex items-end justify-between gap-4 flex-wrap">
+              <div className="flex items-end gap-4">
+                <div>
+                  <p className="text-[26px] md:text-[31px] leading-[0.95] font-semibold tabular-nums tracking-tight">
+                    {loading || price == null
+                      ? "—"
+                      : formatCurrency(price, currency)}
+                  </p>
+                  <div
+                    className="mt-1 inline-flex items-center gap-2 text-[12px] font-medium tabular-nums"
+                    style={{ color: accent }}
+                  >
+                    <span>
+                      {change == null
+                        ? "—"
+                        : `${isUp ? "+" : ""}${formatCurrency(change, currency)}`}
+                    </span>
+                    <span className="opacity-70">
+                      {changePercent == null
+                        ? ""
+                        : `${isUp ? "+" : ""}${changePercent.toFixed(2)}%`}
+                    </span>
+                    <span className="text-muted-foreground/60 text-[10px] uppercase tracking-[0.18em]">
+                      today
+                    </span>
+                  </div>
+                </div>
+              </div>
 
-        {/* Range pills */}
-        <div className="flex items-center gap-1 p-1 rounded-full border border-border/60 bg-background/40 backdrop-blur-md">
-          {visibleRanges.map((r) => {
-            const active = r.key === range;
-            return (
-              <button
-                key={r.key}
-                onClick={() => onRangeChange(r.key)}
-                className={cn(
-                  "px-2.5 h-7 rounded-full text-[11px] font-medium tracking-wide transition-colors",
-                  active
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground hover:bg-foreground/5",
-                )}
-              >
-                {r.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+              {/* Right column: currency/exchange pill on top, range pills below */}
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                {/* Currency / exchange pill — Fey-style tag in the top-right */}
+                <span className="inline-flex items-center gap-1.5 px-2.5 h-6 rounded-full border border-border/60 bg-foreground/5 text-[10.5px] uppercase tracking-[0.16em] text-muted-foreground">
+                  <span className="tabular-nums">{currency}</span>
+                  <span aria-hidden className="opacity-50">·</span>
+                  <span>B3</span>
+                </span>
+
+                {/* Range pills — flat, no container (Fey reference) */}
+                <div className="flex items-center gap-0.5">
+                  {visibleRanges.map((r) => {
+                    const active = r.key === range;
+                    return (
+                      <button
+                        key={r.key}
+                        onClick={() => onRangeChange(r.key)}
+                        className={cn(
+                          "px-2.5 h-7 rounded-full text-[11px] font-medium tracking-wide transition-colors",
+                          active
+                            ? "bg-foreground text-background"
+                            : "text-muted-foreground hover:text-foreground hover:bg-foreground/5",
+                        )}
+                      >
+                        {r.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
 
       {/* Chart with embedded volume overlay */}
       <div className="px-0 pt-1 pb-2 flex-1 min-h-[320px] relative">

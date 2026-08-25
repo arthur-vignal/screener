@@ -96,12 +96,8 @@ export function MetricsStrip({
       </div>
 
       <div
-        className="rounded-2xl border border-border/60 overflow-hidden"
-        style={{
-          background:
-            "linear-gradient(135deg, #08090c 0%, #15161b 30%, #0d0e12 55%, #1c1d22 80%, #07080b 100%)",
-        }}
-      >
+              className="rounded-2xl border border-border/60 overflow-hidden bg-foreground/[0.02]"
+            >
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
           {tiles.map((tile, idx) => (
             <MetricCell
