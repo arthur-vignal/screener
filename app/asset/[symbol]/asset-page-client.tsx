@@ -129,12 +129,11 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
     <div
           className="min-h-screen text-foreground overflow-x-hidden"
           style={{
-            fontFamily: "var(--font-manrope)",
-            // Soft radial gradient gives the page a subtle vignette instead
-            // of flat #0a0a0c, matching the depth in the Fey reference.
-            background:
-              "radial-gradient(ellipse at top, #0f1014 0%, #0a0a0c 45%, #060608 100%)",
-          }}
+        fontFamily: "var(--font-manrope)",
+        /* Soft radial gradient: subtle vignette matching the Fey reference. */
+        background:
+          "radial-gradient(ellipse at top, #0f1014 0%, #0a0a0c 45%, #060608 100%)",
+      }}
         >
       <div className="px-1 pt-5 pb-12">
         <AssetHeader

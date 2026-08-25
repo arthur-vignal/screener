@@ -478,7 +478,7 @@ yAxisId="price"
               />
               <Area
                 yAxisId="price"
-                type="linear"
+                type="monotone"
                 dataKey="close"
                 stroke="#9ca3af"
                 strokeWidth={1.5}
