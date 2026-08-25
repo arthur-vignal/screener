@@ -169,11 +169,12 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
         </div>
 
         <MetricsStrip
-          currency={bundle?.currency ?? "BRL"}
-          metrics={bundle?.metrics ?? null}
-          quote={bundle?.quote ?? null}
-          loading={isLoading}
-        />
+                  symbol={symbol}
+                  currency={bundle?.currency ?? "BRL"}
+                  metrics={bundle?.metrics ?? null}
+                  quote={bundle?.quote ?? null}
+                  loading={isLoading}
+                />
       </div>
     </div>
   );

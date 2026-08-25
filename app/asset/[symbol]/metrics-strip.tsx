@@ -3,15 +3,25 @@
 /**
  * MetricsStrip — horizontal strip of fundamentals below the chart.
  *
- * Per the user's spec:
- *   Setor · Marketcap · PE · ROE · Dividend Yield (if paying) ·
- *   EBITDA · Free Cash Flow
+ * Each tile is a link that drills down into the dedicated stats page
+ * for its metric group:
+ *   - valuation       → /asset/[symbol]/valuation
+ *   - profitability  → /asset/[symbol]/profitability
+ *   - income         → /asset/[symbol]/income
+ *   - balance-sheet  → /asset/[symbol]/balance-sheet
+ *   - cashflow       → /asset/[symbol]/cashflow
+ *   - financial-health → /asset/[symbol]/financial-health
+ *   - growth         → /asset/[symbol]/growth
+ *   - about          → /asset/[symbol]/about
  *
- * Each tile shows label + value, and a small change vs previous
- * period (when available) — same Fey-style horizontal layout.
+ * Tiles within the same group are visually grouped (no divider between
+ * them, divider before the next group). The "Sobre" tile stays as a
+ * final cell pointing at the company-profile page.
  */
 
+import Link from "next/link";
 import { motion } from "motion/react";
+import { ChevronRight } from "lucide-react";
 
 type Metrics = {
   sector: string;
@@ -29,53 +39,97 @@ type Quote = {
   fiftyTwoWeekLow: number | null;
 };
 
+type Group = "valuation" | "profitability" | "income" | "financial-health" | "growth" | "about";
+
+type Tile = {
+  label: string;
+  value: number | string | null;
+  kind:
+    | "text"
+    | "multiple"
+    | "percent"
+    | "percent-conditional"
+    | "compact";
+  group: Group;
+  href: (symbol: string) => string;
+  showOnlyIfPositive?: boolean;
+};
+
 export function MetricsStrip({
+  symbol,
   currency,
   metrics,
   quote,
   loading,
 }: {
+  symbol: string;
   currency: string;
   metrics: Metrics | null;
   quote: Quote | null;
   loading: boolean;
 }) {
   const tiles: Tile[] = [
+    // ── Valuation group ──────────────────────────────────────────
     {
-      label: "Setor",
-      value: metrics?.sector ?? null,
-      kind: "text",
+      label: "P/E",
+      value: metrics?.trailingPE ?? null,
+      kind: "multiple",
+      group: "valuation",
+      href: (s) => `/asset/${s}/valuation`,
     },
     {
       label: "Market cap",
       value: (metrics?.marketCap ?? quote?.marketCap) ?? null,
       kind: "compact",
+      group: "valuation",
+      href: (s) => `/asset/${s}/valuation`,
     },
     {
-      label: "P/E",
-      value: metrics?.trailingPE ?? null,
-      kind: "multiple",
+      label: "52w range",
+      value: quote?.fiftyTwoWeekLow != null && quote?.fiftyTwoWeekHigh != null
+        ? `${quote.fiftyTwoWeekLow.toFixed(2)}–${quote.fiftyTwoWeekHigh.toFixed(2)}`
+        : null,
+      kind: "text",
+      group: "valuation",
+      href: (s) => `/asset/${s}/valuation`,
     },
+    // ── Profitability group ──────────────────────────────────────
     {
       label: "ROE",
       value: metrics?.returnOnEquity ?? null,
       kind: "percent",
-    },
-    {
-      label: "Dividend yield",
-      value: metrics?.dividendYield ?? null,
-      kind: "percent-conditional",
-      showOnlyIfPositive: true,
+      group: "profitability",
+      href: (s) => `/asset/${s}/profitability`,
     },
     {
       label: "EBITDA",
       value: metrics?.ebitda ?? null,
       kind: "compact",
+      group: "profitability",
+      href: (s) => `/asset/${s}/profitability`,
     },
     {
       label: "Free cash flow",
       value: metrics?.freeCashflow ?? null,
       kind: "compact",
+      group: "profitability",
+      href: (s) => `/asset/${s}/profitability`,
+    },
+    {
+      label: "Dividend yield",
+      value: metrics?.dividendYield ?? null,
+      kind: "percent-conditional",
+      group: "profitability",
+      href: (s) => `/asset/${s}/profitability`,
+      showOnlyIfPositive: true,
+    },
+    // ── About ────────────────────────────────────────────────────
+    {
+      label: "Setor",
+      value: metrics?.sector ?? null,
+      kind: "text",
+      group: "about",
+      href: (s) => `/asset/${s}/about`,
     },
   ];
 
@@ -95,50 +149,43 @@ export function MetricsStrip({
         </p>
       </div>
 
-      <div
-              className="rounded-2xl border border-border/60 overflow-hidden bg-foreground/[0.02]"
-            >
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
-          {tiles.map((tile, idx) => (
-            <MetricCell
-              key={tile.label}
-              tile={tile}
-              currency={currency}
-              loading={loading}
-              divider={idx > 0}
-            />
-          ))}
+      <div className="rounded-2xl border border-border/60 overflow-hidden bg-foreground/[0.02]">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8">
+          {tiles.map((tile, idx) => {
+            const prevGroup = idx > 0 ? tiles[idx - 1].group : null;
+            const isNewGroup = tile.group !== prevGroup;
+            const showDivider = idx > 0 && isNewGroup;
+            return (
+              <MetricCell
+                key={tile.label}
+                tile={tile}
+                symbol={symbol}
+                currency={currency}
+                loading={loading}
+                divider={showDivider}
+              />
+            );
+          })}
         </div>
       </div>
     </motion.section>
   );
 }
 
-type Tile = {
-  label: string;
-  value: number | string | null;
-  kind:
-    | "text"
-    | "multiple"
-    | "percent"
-    | "percent-conditional"
-    | "compact";
-  showOnlyIfPositive?: boolean;
-};
-
 function MetricCell({
   tile,
+  symbol,
   currency,
   loading,
   divider,
 }: {
   tile: Tile;
+  symbol: string;
   currency: string;
   loading: boolean;
   divider: boolean;
 }) {
   const value = tile.value;
-  const display = formatValue(tile, currency, loading);
 
   // Hide dividend yield tile if value is null/0 (issuer doesn't pay).
   if (tile.kind === "percent-conditional") {
@@ -146,20 +193,28 @@ function MetricCell({
     if (num == null || num <= 0) return null;
   }
 
+  const display = formatValue(tile, currency, loading);
+
   return (
-    <div
+    <Link
+      href={tile.href(symbol)}
       className={
-        "px-4 py-4 sm:py-5 " +
-        (divider ? "border-t border-border/40 sm:border-t-0 sm:border-l border-border/40 " : "")
+        "group relative px-4 py-4 sm:py-5 transition-colors hover:bg-foreground/[0.04] " +
+        (divider
+          ? "border-t border-border/40 sm:border-t-0 sm:border-l border-border/40 "
+          : "")
       }
     >
-      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
-        {tile.label}
-      </p>
+      <div className="flex items-center justify-between gap-1">
+        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
+          {tile.label}
+        </p>
+        <ChevronRight className="h-3 w-3 -mb-0.5 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
       <p className="mt-1.5 text-[15px] md:text-[16px] font-medium tabular-nums truncate">
         {display}
       </p>
-    </div>
+    </Link>
   );
 }
 

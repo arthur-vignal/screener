@@ -12,6 +12,15 @@ import { getBrapiFundamentals } from "@/lib/brapi";
  * are stable but we re-validate the ticker exists on every refresh).
  *
  * Returns 404 when the ticker doesn't exist (no Brapi results).
+ *
+ * Response shape (2026-08-24 — drill-down F1):
+ *   quote        — live price + 52w + volume
+ *   metrics      — the small set the home strip uses
+ *   profile      — full summaryProfile (sector, industry, summary, …)
+ *   keyStatistics — full defaultKeyStatistics (beta, forwardPE, P/B, …)
+ *   financialData — full financialData (margins, growth, balance basics, …)
+ *   historicals  — yearly incomeStatementHistory + balanceSheetHistory
+ *                  (16 entries — used by /profitability, /income, etc)
  */
 
 export const dynamic = "force-dynamic";
@@ -42,10 +51,11 @@ export async function GET(
     symbol: q.symbol,
     shortName: q.shortName,
     longName: q.longName,
-    sector: profile.sectorDisp ?? profile.sector ?? "—",
-    industry: profile.industryDisp ?? profile.industry ?? "—",
+    sector: profile.sector ?? "—",
+    industry: profile.industry ?? "—",
     currency: q.currency,
     marketState: q.marketState,
+    logoUrl: q.logoUrl ?? profile.logoUrl ?? null,
 
     quote: {
       price: q.price,
@@ -63,7 +73,7 @@ export async function GET(
     },
 
     metrics: {
-      sector: profile.sectorDisp ?? profile.sector ?? "—",
+      sector: profile.sector ?? "—",
       marketCap: q.marketCap,
       trailingPE: q.trailingPE,
       returnOnEquity: ks.returnOnEquity ?? fd.returnOnEquity ?? null,
@@ -71,5 +81,11 @@ export async function GET(
       freeCashflow: fd.freeCashflow ?? ks.freeCashflow ?? null,
       dividendYield: ks.trailingAnnualDividendYield ?? null,
     },
+
+    // Full payloads — sub-pages pull from these.
+    profile,
+    keyStatistics: ks,
+    financialData: fd,
+    historicals: data.historicals ?? { income: [], balance: [] },
   });
 }

@@ -178,6 +178,8 @@ export type BrapiProfile = {
   sectorDisp?: string | null;
   longBusinessSummary?: string | null;
   fullTimeEmployees?: number | null;
+  logoUrl?: string | null;
+  cnpj?: string | null;
 };
 
 export type BrapiIncomeStatementPeriod = {
