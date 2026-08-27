@@ -500,40 +500,7 @@ yAxisId="price"
         )}
       </div>
 
-      {/* Day-range / 52w / Volume / Mkt cap summary — flat stats below, no card */}
-      {quote && (
-        <div className="px-2 pt-4 pb-2 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3 text-[11px]">
-          <Stat label="Day range" value={quote.dayLow != null && quote.dayHigh != null ? `${formatCurrency(quote.dayLow, currency)} – ${formatCurrency(quote.dayHigh, currency)}` : "—"} />
-          <Stat
-            label="52w range"
-            value={
-              quote.fiftyTwoWeekLow != null && quote.fiftyTwoWeekHigh != null
-                ? `${formatCurrency(quote.fiftyTwoWeekLow, currency)} – ${formatCurrency(quote.fiftyTwoWeekHigh, currency)}`
-                : "—"
-            }
-          />
-          <Stat
-            label="Volume"
-            value={quote.volume != null && quote.volume > 0 ? `${(quote.volume / 1_000_000).toFixed(2)}M` : "—"}
-          />
-          <Stat
-            label="Mkt Cap"
-            value={quote.marketCap ? formatCompactBRL(quote.marketCap) : "—"}
-          />
-        </div>
-      )}
     </motion.div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-muted-foreground/60 uppercase tracking-[0.16em] text-[10px]">
-        {label}
-      </p>
-      <p className="mt-0.5 font-medium tabular-nums">{value}</p>
-    </div>
   );
 }
 

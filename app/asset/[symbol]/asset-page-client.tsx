@@ -24,7 +24,6 @@ import Link from "next/link";
 import { ChevronLeft, Search, Bookmark, MoreHorizontal, RefreshCw } from "lucide-react";
 import { TickerLogo } from "@/components/ticker-logo";
 import { ChartCard, type RangeKey } from "./chart-card";
-import { MetricsStrip } from "./metrics-strip";
 import { NewsCard } from "./news-card";
 
 type AssetBundle = {
@@ -169,14 +168,6 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
             <NewsCard symbol={symbol} />
           </div>
         </div>
-
-        <MetricsStrip
-                  symbol={symbol}
-                  currency={bundle?.currency ?? "BRL"}
-                  metrics={bundle?.metrics ?? null}
-                  quote={bundle?.quote ?? null}
-                  loading={isLoading}
-                />
       </div>
     </div>
   );
