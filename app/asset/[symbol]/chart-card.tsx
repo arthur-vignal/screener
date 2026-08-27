@@ -325,7 +325,7 @@ export function ChartCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut", delay: 0.05 }}
-      className="relative h-full min-h-[64vh] flex flex-col"
+      className="relative h-full flex flex-col"
     >
       {/* Price hero — left aligned, Fey-style tag + flat range pills on right */}
             <div className="px-2 pt-2 pb-3 flex items-end justify-between gap-4 flex-wrap">
