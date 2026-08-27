@@ -17,6 +17,7 @@ import { use } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useAssetBundle } from "../lib/use-asset-bundle";
 import { AssetSubheader } from "../components/asset-subheader";
+import { AllStatsButton } from "@/components/all-stats-button";
 import { useAssetBackground } from "@/lib/use-asset-background";
 import { DuPontChart, type DupontYear } from "./dupont-chart";
 import { MarginWaterfall } from "./margin-waterfall";
@@ -121,6 +122,10 @@ export default function ReturnPage({
         />
 
         {/* F3-1: DuPont */}
+        <div className="mt-6 flex justify-end">
+          <AllStatsButton href={`/asset/${symbol}/stats/earnings`} label="All earnings" />
+        </div>
+
         <section className="mt-6">
           <h2 className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground/60 mb-3">
             Decomposição do ROE (DuPont)

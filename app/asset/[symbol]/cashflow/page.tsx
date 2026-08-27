@@ -14,6 +14,7 @@ import { use } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useAssetBundle } from "../lib/use-asset-bundle";
 import { AssetSubheader } from "../components/asset-subheader";
+import { AllStatsButton } from "@/components/all-stats-button";
 import { useAssetBackground } from "@/lib/use-asset-background";
 import { CashFlowWaterfall } from "./cashflow-waterfall";
 
@@ -73,6 +74,10 @@ export default function CashflowPage({
         />
 
         {/* Quality tiles */}
+        <div className="mt-6 flex justify-end">
+          <AllStatsButton href={`/asset/${symbol}/stats/financials`} label="All financials" />
+        </div>
+
         <section className="mt-6">
           <h2 className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground/60 mb-3">
             Qualidade do caixa (TTM)
