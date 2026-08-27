@@ -25,6 +25,9 @@ const FULL_MODULES = [
   "defaultKeyStatisticsHistoryQuarterly",
   "cashflowHistory",
   "cashflowHistoryQuarterly",
+  // DVA — Distribuição de riqueza adicionada. 16 anos pra maioria;
+  // 14 pra algumas seguradoras. NULL/length=0 pra FII/ETF/BDR.
+  "valueAddedHistory",
 ].join(",");
 
 export type BrapiQuote = {
@@ -209,6 +212,91 @@ export type BrapiCashflow = {
 };
 
 /**
+ * Annual DVA — Demonstração do Valor Adicionado (up to 16 years for most
+ * companies, ~14 for some insurers; NULL/empty for FII/ETF/BDR).
+ *
+ * Drives section 7 of the spec — pizza de distribuição entre 5 stakeholders
+ * + série de 10 anos mostrando a migração.
+ *
+ * Important: this schema is **layout-specific**:
+ *
+ * - **Operacional (Cosif não-aplicável)**: full data, all fields populated.
+ *   PETR4, WEGE3, VALE3 examples — see field comments for what they map to.
+ *
+ * - **Bancos (Cosif)**: `financialIntermediationRevenue` is the dominant
+ *   revenue field; `grossAddedValue` and `netAddedValue` reflect the
+ *   intermediation margin not the gross revenue. `ownEquityRemuneration`
+ *   is typically NULL because banks distribute via interest on equity
+ *   through a different accounting line.
+ *
+ * - **Seguradoras (SUSEP)**: `insuranceOperationsRevenue` exists but is
+ *   often 0 in early years; `addedValueToDistribute` may be NULL when the
+ *   technical provisions complicate the distribution breakdown. Treat
+ *   `ownEquityRemuneration` as a separate signal.
+ *
+ * Consumers must check `profile.sector` (or industry) to decide which
+ * fields to read. The Universal fields (teamRemuneration, taxes,
+ * remunerationOfThirdPartyCapitals, retainedEarningsOrLoss, dividends)
+ * are populated across all three layouts.
+ */
+export type BrapiValueAdded = {
+  endDate: string;
+
+  /** Revenue (operacional). For banks, see financialIntermediationRevenue instead. */
+  revenue: number | null;
+  /** Cosif/SUSEP revenue field for financial institutions. NULL for operacionais. */
+  financialIntermediationRevenue: number | null;
+  /** SUSEP revenue field for insurers. NULL for outros. */
+  insuranceOperationsRevenue: number | null;
+  /** Other revenue components present in the operational layout. */
+  otherRevenues: number | null;
+  constructionOfOwnAssets: number | null;
+
+  /** VA bruto — total value added before retentions. */
+  grossAddedValue: number | null;
+  /** Depreciation/amortization retained (negative). Used to derive net VA. */
+  depreciationAndAmortization: number | null;
+  /** VA líquido (grossAddedValue + retentions). Spec asks whether this is
+   *  líquido de depreciação in all sectors — currently it equals
+   *  grossAddedValue + depreciationAndAmortization for operacionais; for
+   *  banks it reflects intermediation margin. */
+  netAddedValue: number | null;
+  /** VA received via transfer (equity income + financial income + other). */
+  addedValueReceivedOnTransfer: number | null;
+  /** financialIncome sub-component — appears in operacionais too. */
+  financialIncome: number | null;
+  /** Total VA available to distribute (netAddedValue + transfers). */
+  addedValueToDistribute: number | null;
+  /** Identity check: should equal addedValueToDistribute. Spec uses this
+   *  as an integrity badge. */
+  distributionOfAddedValue: number | null;
+
+  /** Distribuição — 5 stakeholders (universais) */
+
+  /** Pessoas (folha, benefícios, encargos). */
+  teamRemuneration: number | null;
+  /** Governo (federal + estadual + municipal). */
+  taxes: number | null;
+  federalTaxes: number | null;
+  stateTaxes: number | null;
+  municipalTaxes: number | null;
+  /** Credores (juros + aluguéis + outros). */
+  remunerationOfThirdPartyCapitals: number | null;
+  /** Acionistas (dividendos + JCP + lucros retidos, mas separado aqui). */
+  ownEquityRemuneration: number | null;
+  /** JCP explicitado (separado de dividendos na spec — JCP paga 15% IR). */
+  interestOnOwnEquity: number | null;
+  /** Dividendos propriamente ditos (isentos de IR). */
+  dividends: number | null;
+  /** Lucros retidos / reinvestimento. */
+  retainedEarningsOrLoss: number | null;
+  /** Parte do lucro retido de não-controladores (Cosif). */
+  nonControllingShareOfRetainedEarnings: number | null;
+  /** Catch-all residual na distribuição — manter pra checar identidade. */
+  otherDistributions: number | null;
+};
+
+/**
  * Annual key-statistics series (up to 16 years). Drives the historical
  * z-score in section 2 (Valuation): each year's multiple is a sample,
  * current year is z-scored against μ/σ of the series.
@@ -276,6 +364,8 @@ export type BrapiFull = {
   cashflowQuarterly: BrapiCashflowQuarterly[];
   /** Annual key-statistics series — drives the valuation z-score. */
   keyStatisticsHistory: BrapiKeyStatisticsHistory[];
+  /** DVA — Distribuição de riqueza. NULL/[] for FII/ETF/BDR (always check). */
+  valueAddedHistory: BrapiValueAdded[];
   dividends: BrapiDividend[];
   profile: BrapiProfile | null;
   source: "brapi-full";
@@ -317,6 +407,9 @@ type RawBrapiResult = {
   /** Annual cash flow (Brapi module name). Distinct from the Quarterly variant below. */
   cashflowHistory?: Array<Record<string, unknown>>;
   cashflowHistoryQuarterly?: Array<Record<string, unknown>>;
+  /** DVA — Demonstração do Valor Adicionado. 16y operacionais, ~14y
+   *  algumas seguradoras, NULL/length=0 pra FII/ETF/BDR. */
+  valueAddedHistory?: Array<Record<string, unknown>>;
   summaryProfile?: Record<string, unknown>;
   dividendsData?: { cashDividends?: Array<Record<string, unknown>> };
 };
@@ -600,6 +693,41 @@ function parseCashflow(r: RawBrapiResult): BrapiCashflow[] {
     .sort((a, b) => (a.endDate < b.endDate ? -1 : a.endDate > b.endDate ? 1 : 0));
 }
 
+function parseValueAdded(r: RawBrapiResult): BrapiValueAdded[] {
+  if (!r.valueAddedHistory) return [];
+  return r.valueAddedHistory
+    .filter((row) => row.type === "yearly")
+    .map((row) => ({
+      endDate: str(row.endDate) ?? "",
+      revenue: num(row.revenue),
+      financialIntermediationRevenue: num(row.financialIntermediationRevenue),
+      insuranceOperationsRevenue: num(row.insuranceOperationsRevenue),
+      otherRevenues: num(row.otherRevenues),
+      constructionOfOwnAssets: num(row.constructionOfOwnAssets),
+      grossAddedValue: num(row.grossAddedValue),
+      depreciationAndAmortization: num(row.depreciationAndAmortization),
+      netAddedValue: num(row.netAddedValue),
+      addedValueReceivedOnTransfer: num(row.addedValueReceivedOnTransfer),
+      financialIncome: num(row.financialIncome),
+      addedValueToDistribute: num(row.addedValueToDistribute),
+      distributionOfAddedValue: num(row.distributionOfAddedValue),
+      teamRemuneration: num(row.teamRemuneration),
+      taxes: num(row.taxes),
+      federalTaxes: num(row.federalTaxes),
+      stateTaxes: num(row.stateTaxes),
+      municipalTaxes: num(row.municipalTaxes),
+      remunerationOfThirdPartyCapitals: num(row.remunerationOfThirdPartyCapitals),
+      ownEquityRemuneration: num(row.ownEquityRemuneration),
+      interestOnOwnEquity: num(row.interestOnOwnEquity),
+      dividends: num(row.dividends),
+      retainedEarningsOrLoss: num(row.retainedEarningsOrLoss),
+      nonControllingShareOfRetainedEarnings: num(row.nonControllingShareOfRetainedEarnings),
+      otherDistributions: num(row.otherDistributions),
+    }))
+    .filter((row) => row.endDate)
+    .sort((a, b) => (a.endDate < b.endDate ? -1 : a.endDate > b.endDate ? 1 : 0));
+}
+
 function parseDividends(r: RawBrapiResult): BrapiDividend[] {
   const cash = r.dividendsData?.cashDividends ?? [];
   return cash
@@ -673,6 +801,7 @@ export async function getBrapiFull(ticker: string): Promise<BrapiFull | null> {
       cashflowHistory: parseCashflow(raw),
       cashflowQuarterly: parseCashflowQuarterly(raw),
       keyStatisticsHistory: parseKeyStatisticsHistory(raw),
+      valueAddedHistory: parseValueAdded(raw),
       dividends: parseDividends(raw),
       profile: parseProfile(raw),
       source: "brapi-full",
