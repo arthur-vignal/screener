@@ -221,16 +221,18 @@ export function ValuationBandChart({
               stroke="none"
             />
 
-            {/* Linha de média */}
+            {/* Linha de média — mais visível que antes (era 0.4 → 0.7) */}
             <ReferenceLine
               y={mean}
-              stroke="rgba(200,210,230,0.4)"
-              strokeDasharray="4 4"
+              stroke="rgba(200,210,230,0.7)"
+              strokeDasharray="5 5"
+              strokeWidth={1.25}
               label={{
-                value: "média",
+                value: `média ${formatMultiple(mean)}`,
                 position: "right",
-                fill: "rgba(200,210,230,0.5)",
-                fontSize: 9,
+                fill: "rgba(220,230,245,0.85)",
+                fontSize: 10,
+                fontWeight: 500,
               }}
             />
 

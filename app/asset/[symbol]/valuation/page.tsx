@@ -33,6 +33,8 @@ import { useAssetBackground } from "@/lib/use-asset-background";
 import { ValuationBandChart } from "@/components/valuation-band-chart";
 import { QualityVsPriceScatter } from "@/components/quality-vs-price-scatter";
 import { ChartPeriodSelector, type PeriodRange } from "@/components/chart-period-selector";
+import { PriceEarningsDecomposition } from "@/components/price-earnings-decomposition";
+import { ImpliedGrowthSlider } from "@/components/implied-growth-slider";
 import { computeCAPE } from "@/lib/analytics/cape";
 import { ipca12m } from "@/lib/deflator";
 import { formatMultiple } from "@/lib/format";
@@ -57,13 +59,21 @@ export default function ValuationPage({
   const { style: bgStyle, className: bgClass } = useAssetBackground(symbol);
   const { data, isLoading, error } = useAssetBundle(symbol);
 
-  // IPCA pra CAPE deflacionado
+  // IPCA pra CAPE deflacionado e prêmio real
   const { data: ipcaData } = useSWR<{ ipca: Array<{ year: string; month: string; value: number }> }>(
     `/api/macro/ipca`,
     fetcher,
     { revalidateOnFocus: false },
   );
   const ipca = ipcaData?.ipca ?? [];
+
+  // Selic meta (proxy pra NTN-B/renda fixa brasileira)
+  const { data: selicData } = useSWR<{ selic: { value: number } | null }>(
+    `/api/macro/selic`,
+    fetcher,
+    { revalidateOnFocus: false },
+  );
+  const selic = selicData?.selic?.value ?? null; // ex: 15.0 = 15% a.a.
 
   // Benchmarks dos pares do subsetor (qualidade × preço)
   const { data: peersData } = useSWR<{
@@ -132,11 +142,16 @@ export default function ValuationPage({
     });
   }, [incomeHist, ipca, sharesOutstanding, price]);
 
-  // ── Spread Earnings Yield vs IPCA 12m (prêmio real) ────────────
+  // ── Spread Earnings Yield vs NTN-B real (prêmio real) ─────────
+  // NTN-B taxa real ≈ Selic meta − IPCA esperado 12m.
+  // Não temos fonte confiável de NTN-B no BCB SGS pra esse endpoint;
+  // usamos Selic − IPCA 12m como aproximação (correto na ordem de grandeza).
   const earningsYield = trailingPE != null && trailingPE > 0 ? 1 / trailingPE : null;
   const ipca12 = ipca12m(ipca);
+  const selicRate = selic != null ? selic / 100 : null; // % → fração
+  const ntnbProxy = selicRate != null && ipca12 != null ? selicRate - ipca12 / 100 : null;
   const realSpread =
-    earningsYield != null && ipca12 != null ? earningsYield - ipca12 / 100 : null;
+    earningsYield != null && ntnbProxy != null ? earningsYield - ntnbProxy : null;
 
   // ── Posição na banda: classifica o valor atual vs histórico ────
   const position = useMemo(() => {
@@ -384,7 +399,24 @@ export default function ValuationPage({
           />
         </div>
 
-        {/* ── Faixa inferior: tabela compacta de múltiplos ──────── */}
+                {/* ── Faixa extra: decomposição + expectativas implícitas ── */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <PriceEarningsDecomposition
+            years={ksHist.filter((r: any) => r.endDate).map((r: any) => ({
+              year: Number(r.endDate.slice(0, 4)),
+              price: r.price ?? null,
+              eps: r.trailingEps ?? r.earningsPerShare ?? null,
+            }))}
+          />
+          <ImpliedGrowthSlider
+            currentPrice={price}
+            lpa={num(ks.trailingEps ?? ks.earningsPerShare)}
+            wacc={waccProxy}
+            roic={roic != null ? roic : 0.15}
+          />
+        </div>
+
+        /* ── Faixa inferior: tabela compacta de múltiplos ──────── */
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-0 rounded-2xl border border-white/10 bg-[#101116] overflow-hidden">
           <RatioTile label="P/L" value={trailingPE} fmt="multiple" />
           <RatioTile label="P/VP" value={priceToBook} fmt="multiple" />
