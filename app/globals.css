@@ -199,6 +199,31 @@ html, body {
   background-color: transparent !important;
 }
 
+/* Esconde a barra indicadora de scroll VERTICAL apenas (deixa a horizontal
+   visível caso exista). O scroll vertical continua funcionando, só não
+   mostra a track/handle à direita. Arthur pediu em 2026-08-27 — design
+   mais limpo, especialmente nas drill-downs densas. */
+/* WebKit (Chrome, Edge, Safari, Zen) — esconde vertical, mantém horizontal */
+body::-webkit-scrollbar {
+  width: 0;
+  height: 8px; /* mantém a barra horizontal fina visível */
+  background: transparent;
+}
+body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+body::-webkit-scrollbar-track {
+  background: transparent;
+}
+/* Firefox — só esconde largura (vertical), mantém altura (horizontal) */
+html {
+  scrollbar-width: thin;
+}
+
 /* ─────────────────────────────────────────────────────────────────────
  * .asset-bg — cor de fundo da página do ativo + glow suave espalhado.
  *

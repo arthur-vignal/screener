@@ -55,6 +55,18 @@ export function AssetSubheader({
       className="flex items-center justify-between gap-4 pb-4 border-b border-border/40"
     >
       <div className="flex items-center gap-3 min-w-0">
+        {/* Botão de voltar — seta circular à esquerda do logo, em todas as
+            drill-down pages. Equivalente ao ChevronLeft do /asset/[ticker]
+            raiz (ver print 3 da sessão). */}
+        <Link
+          href={`/asset/${symbol}`}
+          aria-label={`Voltar para ${symbol}`}
+          title="Voltar para o gráfico"
+          className="shrink-0 flex items-center justify-center h-9 w-9 rounded-md bg-white/[0.04] border border-white/10 text-muted-foreground/80 hover:bg-white/[0.08] hover:border-white/20 hover:text-foreground transition-colors"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Link>
+
         {/* Logo: prefer the official SVG from Brapi; fall back to the
             generated TickerLogo circle if it's not present. */}
         {logoUrl ? (

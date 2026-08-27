@@ -52,15 +52,21 @@ export function ValuationBandChart({
 }: Props) {
   // Processa a série: ordena ascendente por ano, calcula média e σ.
   const rows: Row[] = useMemo(() => {
-    // converte endDate → year
+    // converte endDate → year. Pontos com múltiplo indefinido (negativo
+    // ou zero) recebem value=null pra que a linha QUEBRE no gráfico
+    // (em vez de plotar um ponto isolado que distorce a escala Y).
     const sorted = history
       .slice()
       .sort((a, b) => a.endDate.localeCompare(b.endDate))
-      .map((p) => ({
-        year: p.endDate?.slice(0, 4) ?? "?",
-        value: p.value,
-        valid: p.value != null && Number.isFinite(p.value) && p.value > 0,
-      }));
+      .map((p) => {
+        const valid =
+          p.value != null && Number.isFinite(p.value) && p.value > 0;
+        return {
+          year: p.endDate?.slice(0, 4) ?? "?",
+          value: valid ? p.value : null,
+          valid,
+        };
+      });
 
     // calcula média e σ dos pontos VÁLIDOS (não-negativos e finitos)
     const validValues = sorted.filter((r) => r.valid).map((r) => r.value as number);
@@ -94,7 +100,7 @@ export function ValuationBandChart({
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-xl border border-white/10 bg-[#101116] px-5 py-12 text-center text-[12px] text-muted-foreground/60">
+      <div className="rounded-xl border border-white/10 bg-[#101116] px-5 py-12 text-center text-[12px] text-muted-foreground/80">
         Sem histórico suficiente pra {title.toLowerCase()}.
       </div>
     );
@@ -102,7 +108,7 @@ export function ValuationBandChart({
 
   if (!stats) {
     return (
-      <div className="rounded-xl border border-white/10 bg-[#101116] px-5 py-12 text-center text-[12px] text-muted-foreground/60">
+      <div className="rounded-xl border border-white/10 bg-[#101116] px-5 py-12 text-center text-[12px] text-muted-foreground/80">
         Histórico de {title} insuficiente (precisa de pelo menos 2 anos válidos).
       </div>
     );
@@ -115,10 +121,10 @@ export function ValuationBandChart({
   return (
     <div className="rounded-xl border border-white/10 bg-[#101116] p-4">
       <div className="flex items-baseline justify-between mb-3 px-1">
-        <div className="text-[12px] uppercase tracking-[0.18em] text-muted-foreground/70">
+        <div className="text-[12px] uppercase tracking-[0.18em] text-muted-foreground/85">
           {title} — banda histórica ±2σ
         </div>
-        <div className="flex items-center gap-3 text-[11px] text-muted-foreground/60 tabular-nums">
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground/80 tabular-nums">
           <span>
             <span className="text-muted-foreground/40">μ</span>{" "}
             {formatMultiple(mean)}
@@ -264,10 +270,10 @@ export function ValuationBandChart({
                             ? formatMultiple(p.value as number)
                             : `${(p.value as number).toFixed(2)}%`}
                         </p>
-                        <p className="text-muted-foreground/70">{labelZ}</p>
+                        <p className="text-muted-foreground/85">{labelZ}</p>
                       </>
                     ) : (
-                      <p className="text-muted-foreground/70 italic">
+                      <p className="text-muted-foreground/85 italic">
                         múltiplo indefinido (lucro/EBITDA negativo)
                       </p>
                     )}

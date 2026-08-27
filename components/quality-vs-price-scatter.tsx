@@ -51,17 +51,17 @@ export function QualityVsPriceScatter({ roic, evEbitda, wacc, loading }: Props) 
   return (
     <div className="rounded-xl border border-white/10 bg-[#101116] p-4 h-full flex flex-col">
       <div className="flex items-baseline justify-between mb-3">
-        <div className="text-[12px] uppercase tracking-[0.18em] text-muted-foreground/70">
+        <div className="text-[12px] uppercase tracking-[0.18em] text-muted-foreground/85">
           Qualidade × preço
         </div>
         <div className="flex items-center gap-3 text-[11px] tabular-nums">
-          <span className="text-muted-foreground/60">
+          <span className="text-muted-foreground/80">
             ROIC{" "}
             <span className="text-foreground">
               {roic != null ? `${(roic * 100).toFixed(1)}%` : "—"}
             </span>
           </span>
-          <span className="text-muted-foreground/60">
+          <span className="text-muted-foreground/80">
             EV/EBITDA{" "}
             <span className="text-foreground">{evEbitda != null ? evEbitda.toFixed(1) : "—"}</span>
           </span>
@@ -84,17 +84,17 @@ export function QualityVsPriceScatter({ roic, evEbitda, wacc, loading }: Props) 
         {/* Eixos labels */}
         <div className="absolute inset-0 pointer-events-none">
           {/* Y-axis labels */}
-          <div className="absolute left-1 top-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/50">
+          <div className="absolute left-1 top-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/75">
             bom (ROIC &gt; 12%)
           </div>
-          <div className="absolute left-1 bottom-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/50">
+          <div className="absolute left-1 bottom-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/75">
             ruim
           </div>
           {/* X-axis labels */}
-          <div className="absolute bottom-1 left-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/50">
+          <div className="absolute bottom-1 left-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/75">
             barato
           </div>
-          <div className="absolute bottom-1 right-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/50">
+          <div className="absolute bottom-1 right-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/75">
             caro
           </div>
         </div>
@@ -104,7 +104,7 @@ export function QualityVsPriceScatter({ roic, evEbitda, wacc, loading }: Props) 
           className="absolute left-0 right-0 border-t border-dashed border-white/20"
           style={{ top: `${yMid}%` }}
         >
-          <span className="absolute -top-3 right-2 text-[9px] uppercase tracking-[0.14em] text-muted-foreground/50 bg-[#101116] px-1">
+          <span className="absolute -top-3 right-2 text-[9px] uppercase tracking-[0.14em] text-muted-foreground/75 bg-[#101116] px-1">
             ROIC = 12%
           </span>
         </div>
@@ -119,13 +119,13 @@ export function QualityVsPriceScatter({ roic, evEbitda, wacc, loading }: Props) 
             <div className="absolute inset-0 rounded-full bg-foreground animate-ping opacity-30" />
           </div>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-[12px] text-muted-foreground/60">
+          <div className="absolute inset-0 flex items-center justify-center text-[12px] text-muted-foreground/80">
             Sem ROIC ou EV/EBITDA disponíveis.
           </div>
         )}
       </div>
 
-      <div className="mt-3 text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/50 text-center">
+      <div className="mt-3 text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/75 text-center">
         {wacc != null && (
           <>WACC ≈ {(wacc * 100).toFixed(1)}% · spread ROIC − WACC ≈{" "}
           {roic != null ? `${((roic - wacc) * 100).toFixed(1)} p.p.` : "—"}</>

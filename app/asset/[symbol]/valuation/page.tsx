@@ -24,10 +24,8 @@
  * preço pela qualidade do negócio.
  */
 
-import Link from "next/link";
 import { use, useMemo, useState } from "react";
 import useSWR from "swr";
-import { ChevronLeft } from "lucide-react";
 import { useAssetBundle } from "../lib/use-asset-bundle";
 import { AssetSubheader } from "../components/asset-subheader";
 import { AllStatsButton } from "@/components/all-stats-button";
@@ -165,7 +163,7 @@ export default function ValuationPage({
         ...bgStyle,
       }}
     >
-      <div className="px-6 pt-5 pb-8 w-full max-w-[1920px] mx-auto">
+      <div className="px-6 pt-5 pb-8 w-full">
         <AssetSubheader
           symbol={symbol}
           longName={data?.longName ?? null}
@@ -178,7 +176,7 @@ export default function ValuationPage({
         />
 
         <div className="mt-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.22em] text-muted-foreground/60">
+          <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.22em] text-muted-foreground/80">
             <span>Valuation</span>
             {error && <span className="text-[var(--negative)]">dados indisponíveis</span>}
           </div>
@@ -189,12 +187,12 @@ export default function ValuationPage({
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Card 1: P/L Trailing vs CAPE */}
           <div className="rounded-2xl border border-white/10 bg-[#101116] px-5 py-5">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85">
               P/L trailing vs ciclo
             </div>
             <div className="mt-3 flex items-baseline gap-4">
               <div>
-                <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/50">
+                <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/75">
                   Trailing
                 </div>
                 <div className="text-[28px] font-medium tabular-nums tracking-tight text-foreground">
@@ -202,7 +200,7 @@ export default function ValuationPage({
                 </div>
               </div>
               <div>
-                <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/50">
+                <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/75">
                   CAPE (10a)
                 </div>
                 <div
@@ -220,7 +218,7 @@ export default function ValuationPage({
                 </div>
               </div>
             </div>
-            <p className="mt-2 text-[11px] text-muted-foreground/70 leading-relaxed">
+            <p className="mt-2 text-[11px] text-muted-foreground/85 leading-relaxed">
               {cape != null && trailingPE != null ? (
                 cape > trailingPE * 1.5 ? (
                   <>
@@ -241,14 +239,14 @@ export default function ValuationPage({
 
           {/* Card 2: Posição na banda */}
           <div className="rounded-2xl border border-white/10 bg-[#101116] px-5 py-5">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85">
               Posição na banda
             </div>
             {position ? (
               <>
                 <div className="mt-3 flex items-baseline gap-4">
                   <div>
-                    <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/50">
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/75">
                       Atual
                     </div>
                     <div className="text-[28px] font-medium tabular-nums tracking-tight">
@@ -256,7 +254,7 @@ export default function ValuationPage({
                     </div>
                   </div>
                   <div>
-                    <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/50">
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/75">
                       Z-score
                     </div>
                     <div
@@ -275,13 +273,13 @@ export default function ValuationPage({
                     </div>
                   </div>
                 </div>
-                <p className="mt-2 text-[11px] text-muted-foreground/70 leading-relaxed">
+                <p className="mt-2 text-[11px] text-muted-foreground/85 leading-relaxed">
                   <strong className="text-foreground">{position.band}</strong>.{" "}
                   Média {formatMultiple(position.mean)} · σ {formatMultiple(position.std)}.
                 </p>
               </>
             ) : (
-              <p className="mt-3 text-[14px] text-muted-foreground/70">
+              <p className="mt-3 text-[14px] text-muted-foreground/85">
                 Histórico insuficiente (precisa de ≥2 anos válidos).
               </p>
             )}
@@ -289,7 +287,7 @@ export default function ValuationPage({
 
           {/* Card 3: Spread Earnings Yield vs IPCA 12m */}
           <div className="rounded-2xl border border-white/10 bg-[#101116] px-5 py-5">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85">
               Prêmio real (earnings yield − IPCA 12m)
             </div>
             {realSpread != null ? (
@@ -306,7 +304,7 @@ export default function ValuationPage({
                 >
                   {(realSpread * 100).toFixed(1)} p.p.
                 </div>
-                <p className="mt-2 text-[11px] text-muted-foreground/70 leading-relaxed">
+                <p className="mt-2 text-[11px] text-muted-foreground/85 leading-relaxed">
                   Earnings yield {earningsYield != null ? `${(earningsYield * 100).toFixed(1)}%` : "—"}{" "}
                   − IPCA 12m {ipca12 != null ? `${ipca12.toFixed(1)}%` : "—"}.{" "}
                   {realSpread > 0.05
@@ -317,7 +315,7 @@ export default function ValuationPage({
                 </p>
               </>
             ) : (
-              <p className="mt-3 text-[14px] text-muted-foreground/70">
+              <p className="mt-3 text-[14px] text-muted-foreground/85">
                 P/L ou IPCA 12m indisponíveis.
               </p>
             )}
@@ -380,14 +378,6 @@ export default function ValuationPage({
           />
           <RatioTile label="Beta" value={num(ks.beta)} fmt="multiple" />
         </div>
-
-        <Link
-          href={`/asset/${symbol}`}
-          className="inline-flex items-center gap-1.5 mt-6 text-[12px] tracking-[0.18em] uppercase text-muted-foreground/70 hover:text-foreground transition-colors"
-        >
-          <ChevronLeft className="h-3.5 w-3.5" />
-          Voltar para o gráfico
-        </Link>
       </div>
     </div>
   );
@@ -406,7 +396,7 @@ function RatioTile({
     value == null ? "—" : fmt === "multiple" ? formatMultiple(value) : `${value.toFixed(2)}%`;
   return (
     <div className="px-4 py-4 border-r border-white/[0.06] last:border-r-0 border-b border-white/[0.06]">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80">
         {label}
       </p>
       <p className="mt-1.5 text-[18px] font-medium tabular-nums">{display}</p>
