@@ -198,3 +198,67 @@ html, body {
   background: transparent !important;
   background-color: transparent !important;
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+ * .asset-bg — radial gradient glow com a cor dominante da marca.
+ *
+ * Aplicado no container raiz de /asset/[symbol]/* via
+ * useAssetBackground(symbol), que injeta:
+ *   --asset-glow-color    hex da cor da marca (PETR4=#008542, etc.)
+ *   --asset-glow-opacity  calibrada pela luminância (0.10 escuro claro → 0.22 bem visível)
+ *
+ * Camadas (de cima pra baixo):
+ *  1) Radial: glow da cor da marca vindo do topo, com falloff rápido
+ *  2) Linear: vinheta sutil pra evitar corte duro nas bordas inferiores
+ *  3) Base: #070709 (mesmo do @media prefers-color-scheme: dark)
+ *
+ * `isolation: isolate` impede que pseudo-elementos do topbar/dock herdem.
+ * ───────────────────────────────────────────────────────────────────── */
+.asset-bg {
+  position: relative;
+  isolation: isolate;
+  background-color: #070709;
+  background-image:
+    radial-gradient(
+      ellipse 90% 60% at 50% 0%,
+      var(--asset-glow-color, #475569) 0%,
+      transparent 70%
+    ),
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 60%,
+      rgba(7, 7, 9, 0.4) 100%
+    );
+  /* Multiplica o glow pela opacidade calibrada sem alterar o resto. */
+  background-blend-mode: normal, normal;
+}
+
+/* Pseudo-elemento separado carrega a opacidade calibrada pra permitir
+   fade-out perfeito sem reescrever o background-image inteiro. */
+.asset-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse 90% 60% at 50% 0%,
+    var(--asset-glow-color, #475569) 0%,
+    transparent 70%
+  );
+  opacity: var(--asset-glow-opacity, 0.16);
+}
+
+/* Chip de ticker nas news — fundo tingido pela cor da marca quando o
+   ticker está no brand-colors map. Caso contrário mantém o avatar hash
+   original (não tinge o chip). */
+.news-chip-tinted {
+  /* fundo sutilmente tingido, fundo neutro se não tiver cor */
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--brand-color, #475569) 18%, transparent) 0%,
+    color-mix(in oklch, var(--brand-color, #475569) 8%, transparent) 100%
+  );
+  border-color: color-mix(in oklch, var(--brand-color, #475569) 28%, transparent);
+}

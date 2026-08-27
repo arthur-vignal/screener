@@ -14,6 +14,7 @@ import { use } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useAssetBundle } from "../lib/use-asset-bundle";
 import { AssetSubheader } from "../components/asset-subheader";
+import { useAssetBackground } from "@/lib/use-asset-background";
 
 export default function AboutPage({
   params,
@@ -35,13 +36,14 @@ export default function AboutPage({
   const city = profile.city as string | undefined;
   const state = profile.state as string | undefined;
 
+  const { style: bgStyle, className: bgClass } = useAssetBackground(symbol);
+
   return (
     <div
-      className="min-h-screen text-foreground overflow-x-hidden"
+      className={`${bgClass} min-h-screen text-foreground overflow-x-hidden`}
       style={{
         fontFamily: "var(--font-manrope)",
-        background:
-          "radial-gradient(ellipse at top, #0f1014 0%, #0a0a0c 45%, #060608 100%)",
+        ...bgStyle,
       }}
     >
       <div className="px-1 pt-5 pb-12 max-w-5xl">

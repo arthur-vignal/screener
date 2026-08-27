@@ -26,6 +26,7 @@ import { TickerLogo } from "@/components/ticker-logo";
 import { ChartCard, type RangeKey } from "./chart-card";
 import { NewsCard } from "./news-card";
 import { MetricsTable, type MetricsBundle } from "./components/metrics-table";
+import { useAssetBackground } from "@/lib/use-asset-background";
 
 type AssetBundle = {
   symbol: string;
@@ -85,13 +86,15 @@ type AssetBundle = {
   };
 };
 
-const fetcher = (url: string) => fetch(url).then((r) => {
-  if (!r.ok) throw new Error(String(r.status));
-  return r.json();
-});
+const fetcher = (url: string) =>
+  fetch(url).then((r) => {
+    if (!r.ok) throw new Error(String(r.status));
+    return r.json();
+  });
 
 export function AssetPageClient({ symbol }: { symbol: string }) {
   const [range, setRange] = useState<RangeKey>("1y");
+  const { style: bgStyle, className: bgClass } = useAssetBackground(symbol);
 
   // Quote + metrics only (small, 60s cache). Bundle in the
   // /api/asset/[symbol] endpoint can hit a stale brapi:full:* cache
@@ -143,14 +146,12 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
 
   return (
     <div
-          className="min-h-screen text-foreground overflow-x-hidden"
-          style={{
+      className={`${bgClass} min-h-screen text-foreground overflow-x-hidden`}
+      style={{
         fontFamily: "var(--font-manrope)",
-        /* Soft radial gradient: subtle vignette matching the Fey reference. */
-        background:
-          "radial-gradient(ellipse at top, #0f1014 0%, #0a0a0c 45%, #060608 100%)",
+        ...bgStyle,
       }}
-        >
+    >
       <div className="px-1 pt-5 pb-12">
         <AssetHeader
           symbol={symbol}

@@ -18,6 +18,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { B3_BY_SYMBOL } from "@/lib/b3-tickers";
+import { BRAND_COLOR } from "@/lib/brand-colors";
 
 const PALETTE = [
   { bg: "from-emerald-500 to-emerald-700", text: "text-white" },
@@ -105,16 +106,19 @@ export function TickerChip({
 }) {
   const entry = B3_BY_SYMBOL[symbol];
   const displayName = entry?.name ?? symbol;
+  const brandColor = BRAND_COLOR[symbol];
   return (
     <Link
       href={`/asset/${encodeURIComponent(symbol)}`}
       className={cn(
         "inline-flex items-center gap-1.5 align-baseline rounded-full",
-        "bg-white/5 hover:bg-white/10 border border-white/10",
+        brandColor ? "news-chip-tinted" : "bg-white/5 border border-white/10",
+        "hover:bg-white/10",
         "px-1.5 py-0.5 transition-colors no-underline",
-        "hover:border-white/20",
+        brandColor ? "" : "hover:border-white/20",
         className
       )}
+      style={brandColor ? ({ "--brand-color": brandColor } as React.CSSProperties) : undefined}
       title={`Ir para ${displayName} (${symbol})`}
     >
       <TickerAvatar symbol={symbol} size={size} />
@@ -144,15 +148,18 @@ export function TickerChipLarge({
 }) {
   const entry = B3_BY_SYMBOL[symbol];
   const displayName = entry?.name ?? symbol;
+  const brandColor = BRAND_COLOR[symbol];
   return (
     <Link
       href={`/asset/${encodeURIComponent(symbol)}`}
       className={cn(
-        "inline-flex items-center gap-3 rounded-2xl bg-white/[0.03]",
-        "hover:bg-white/[0.06] border border-white/10 px-4 py-3",
-        "transition-colors no-underline",
+        "inline-flex items-center gap-3 rounded-2xl",
+        brandColor ? "news-chip-tinted" : "bg-white/[0.03] border border-white/10",
+        "hover:bg-white/[0.06]",
+        "px-4 py-3 transition-colors no-underline",
         className
       )}
+      style={brandColor ? ({ "--brand-color": brandColor } as React.CSSProperties) : undefined}
       title={`Ir para ${displayName} (${symbol})`}
     >
       <TickerAvatar symbol={symbol} size={size} />
