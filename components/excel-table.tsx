@@ -185,7 +185,7 @@ export function ExcelTable({
 
       {/* Tabela */}
       {filteredMetrics.length > 0 && (
-        <div className="overflow-auto max-h-[calc(100vh-280px)]">
+        <div className="overflow-auto max-h-[calc(100vh-180px)]">
           <table className="w-full border-collapse text-[13px] tabular-nums">
             <thead className="sticky top-0 z-10 bg-[#101116] border-b border-white/10">
               <tr>

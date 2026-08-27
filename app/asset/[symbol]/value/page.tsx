@@ -80,7 +80,7 @@ export default function ValuePage({
         ...bgStyle,
       }}
     >
-      <div className="px-1 pt-5 pb-12 max-w-5xl">
+      <div className="px-1 pt-5 pb-12 max-w-screen-2xl mx-auto w-full">
         <AssetSubheader
           symbol={symbol}
           longName={data?.longName ?? null}
