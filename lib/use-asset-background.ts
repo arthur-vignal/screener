@@ -60,14 +60,14 @@ function perceivedLuminance(hex: string): number {
 }
 
 /**
- * Opacidade calibrada: cor escura → glow forte (até 0.18),
- * cor clara → glow fraco (até 0.10). Sobe de v4 (0.07-0.14) que
- * ficou invisível — Tesla reference tem glow claramente perceptível.
+ * Opacidade calibrada: cor escura → glow forte (até 0.26),
+ * cor clara → glow fraco (até 0.16). Sobe de v5 (0.10-0.18) que
+ * ficou perceptível mas fraco.
  */
 function glowOpacityForLuminance(lum: number): number {
-  // 0.0 (preto) → 0.18; 0.5 (cinza médio) → 0.14; 1.0 (branco) → 0.10
-  const min = 0.10;
-  const max = 0.18;
+  // 0.0 (preto) → 0.26; 0.5 (cinza médio) → 0.21; 1.0 (branco) → 0.16
+  const min = 0.16;
+  const max = 0.26;
   return max - (max - min) * lum;
 }
 
