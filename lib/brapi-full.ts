@@ -107,7 +107,14 @@ export type BrapiIncomeStatement = {
   researchDevelopment: number | null;
   sellingGeneralAdministrative: number | null;
   totalOperatingExpenses: number | null;
+  /** NULL for some sectors (e.g. PETR4) — use `financialExpenses` as fallback in calculations. */
   interestExpense: number | null;
+  /** Already-normalized NOPAT (excludes non-recurring). Use this for ROIC — DO NOT recompute from ebit*tax. */
+  cleanNopat: number | null;
+  /** Usually negative (expense). abs() it for Kd denominator. */
+  financialExpenses: number | null;
+  /** abs(financialExpenses) convenience for direct use in coverageOfInterest etc. */
+  financialIncome: number | null;
   incomeTaxExpense: number | null;
 };
 
@@ -119,10 +126,19 @@ export type BrapiBalanceSheet = {
   totalAssets: number | null;
   totalCurrentLiabilities: number | null;
   totalLiab: number | null;
-  totalStockholderEquity: number | null;
+  /** Real field name in Brapi v2 is `shareholdersEquity` (not `totalStockholderEquity`). */
+  shareholdersEquity: number | null;
+  /** Real field name in Brapi v2 (not `totalStockholderEquity`). */
+  retainedEarnings: number | null;
   netTangibleAssets: number | null;
   goodWill: number | null;
   intangibleAssets: number | null;
+  /** Long-term portion of debt (loansAndFinancing + debentures etc) — Brapi v2 splits this from longTermDebt. */
+  longTermLoansAndFinancing: number | null;
+  longTermDebentures: number | null;
+  /** Short-term portion. */
+  loansAndFinancing: number | null;
+  debentures: number | null;
   longTermDebt: number | null;
   shortLongTermDebt: number | null;
   cash: number | null;
@@ -153,7 +169,8 @@ export type BrapiBalanceSheetQuarterly = {
   totalAssets: number | null;
   totalCurrentLiabilities: number | null;
   totalLiab: number | null;
-  totalStockholderEquity: number | null;
+  /** Brapi v2 field name. */
+  shareholdersEquity: number | null;
   longTermDebt: number | null;
   cash: number | null;
   inventory: number | null;
@@ -166,6 +183,62 @@ export type BrapiCashflowQuarterly = {
   capitalExpenditures: number | null;
   freeCashFlow: number | null;
   dividendsPaid: number | null;
+};
+
+/**
+ * Annual cash flow (up to 16 years per Brapi). The Brapi module is
+ * `cashflowHistory` (singular, no Quarterly suffix) and contains
+ * `operatingCashFlow` (not `cashGeneratedInOperations` as I initially
+ * misread). Use this for long-horizon accruals + FCF conversion series.
+ */
+export type BrapiCashflow = {
+  endDate: string;
+  /** Real Brapi v2 field name for operating cash flow. */
+  operatingCashFlow: number | null;
+  /** Pre-OFCF adjustments sub-totals (kept for accruals debugging). */
+  incomeFromOperations: number | null;
+  changesInAssetsAndLiabilities: number | null;
+  otherOperatingActivities: number | null;
+  /** CapEx-implied; Brapi reports sign as negative for outflow. */
+  investmentCashFlow: number | null;
+  financingCashFlow: number | null;
+  freeCashFlow: number | null;
+  increaseOrDecreaseInCash: number | null;
+  initialCashBalance: number | null;
+  finalCashBalance: number | null;
+};
+
+/**
+ * Annual key-statistics series (up to 16 years). Drives the historical
+ * z-score in section 2 (Valuation): each year's multiple is a sample,
+ * current year is z-scored against μ/σ of the series.
+ *
+ * Field names mirror `defaultKeyStatisticsHistory` from the Brapi
+ * modules list. NOT the same as `defaultKeyStatistics` (current snapshot).
+ */
+export type BrapiKeyStatisticsHistory = {
+  endDate: string;
+  trailingPE: number | null;
+  priceToBook: number | null;
+  bookValue: number | null;
+  enterpriseValue: number | null;
+  enterpriseToRevenue: number | null;
+  enterpriseToEbitda: number | null;
+  price: number | null;
+  marketCap: number | null;
+  pegRatio: number | null;
+  earningsPerShare: number | null;
+  trailingEps: number | null;
+  forwardPE: number | null;
+  profitMargins: number | null;
+  earningsQuarterlyGrowth: number | null;
+  netIncomeToCommon: number | null;
+  /** Brapi field name starts with digit — access as `row["52WeekChange"]`. */
+  fiftyTwoWeekChange: number | null;
+  lastDividendValue: number | null;
+  lastDividendDate: string | null;
+  dividendYield: number | null;
+  yield: number | null;
 };
 
 export type BrapiDividend = {
@@ -198,7 +271,11 @@ export type BrapiFull = {
   balanceSheetHistory: BrapiBalanceSheet[];
   incomeStatementQuarterly: BrapiIncomeStatementQuarterly[];
   balanceSheetQuarterly: BrapiBalanceSheetQuarterly[];
+  /** Annual cashflow (16y). Distinct from `cashflowQuarterly`. */
+  cashflowHistory: BrapiCashflow[];
   cashflowQuarterly: BrapiCashflowQuarterly[];
+  /** Annual key-statistics series — drives the valuation z-score. */
+  keyStatisticsHistory: BrapiKeyStatisticsHistory[];
   dividends: BrapiDividend[];
   profile: BrapiProfile | null;
   source: "brapi-full";
@@ -230,11 +307,15 @@ type RawBrapiResult = {
   logourl?: string;
   marketCap?: number;
   defaultKeyStatistics?: Record<string, unknown>;
+  /** Series version of `defaultKeyStatistics` — one row per fiscal year. */
+  defaultKeyStatisticsHistory?: Array<Record<string, unknown>>;
   financialData?: Record<string, unknown>;
   incomeStatementHistory?: Array<Record<string, unknown>>;
   balanceSheetHistory?: Array<Record<string, unknown>>;
   incomeStatementHistoryQuarterly?: Array<Record<string, unknown>>;
   balanceSheetHistoryQuarterly?: Array<Record<string, unknown>>;
+  /** Annual cash flow (Brapi module name). Distinct from the Quarterly variant below. */
+  cashflowHistory?: Array<Record<string, unknown>>;
   cashflowHistoryQuarterly?: Array<Record<string, unknown>>;
   summaryProfile?: Record<string, unknown>;
   dividendsData?: { cashDividends?: Array<Record<string, unknown>> };
@@ -350,7 +431,15 @@ function parseIncomeStatement(r: RawBrapiResult): BrapiIncomeStatement[] {
       researchDevelopment: num(row.researchDevelopment),
       sellingGeneralAdministrative: num(row.sellingGeneralAdministrative),
       totalOperatingExpenses: num(row.totalOperatingExpenses),
+      // interestExpense is often NULL (PETR4 example) — keep field for
+      // type completeness; consumers should fall back to `financialExpenses`.
       interestExpense: num(row.interestExpense),
+      // Already-normalized NOPAT (excludes non-recurring). For ROIC: use
+      // cleanNopat directly, do NOT recompute from ebit*tax.
+      cleanNopat: num(row.cleanNopat),
+      // Usually negative (expense). abs() it for Kd denominator.
+      financialExpenses: num(row.financialExpenses),
+      financialIncome: num(row.financialIncome),
       incomeTaxExpense: num(row.incomeTaxExpense),
     }))
     .filter((row) => row.endDate)
@@ -369,10 +458,19 @@ function parseBalanceSheet(r: RawBrapiResult): BrapiBalanceSheet[] {
       totalAssets: num(row.totalAssets),
       totalCurrentLiabilities: num(row.totalCurrentLiabilities),
       totalLiab: num(row.totalLiab),
-      totalStockholderEquity: num(row.totalStockholderEquity),
+      // Brapi v2 field name (NOT totalStockholderEquity — that one comes
+      // back NULL even on the response example I probed).
+      shareholdersEquity: num(row.shareholdersEquity),
+      retainedEarnings: num(row.retainedEarnings),
       netTangibleAssets: num(row.netTangibleAssets),
       goodWill: num(row.goodWill),
       intangibleAssets: num(row.intangibleAssets),
+      // Debt granularity: Brapi v2 splits short/long and loan/debenture.
+      // Sum these to get total debt for ROIC denominator.
+      longTermLoansAndFinancing: num(row.longTermLoansAndFinancing),
+      longTermDebentures: num(row.longTermDebentures),
+      loansAndFinancing: num(row.loansAndFinancing),
+      debentures: num(row.debentures),
       longTermDebt: num(row.longTermDebt),
       shortLongTermDebt: num(row.shortLongTermDebt),
       cash: num(row.cash),
@@ -424,7 +522,7 @@ function parseBalanceSheetQuarterly(r: RawBrapiResult): BrapiBalanceSheetQuarter
       totalAssets: num(row.totalAssets),
       totalCurrentLiabilities: num(row.totalCurrentLiabilities),
       totalLiab: num(row.totalLiab),
-      totalStockholderEquity: num(row.totalStockholderEquity),
+      shareholdersEquity: num(row.shareholdersEquity),
       longTermDebt: num(row.longTermDebt),
       cash: num(row.cash),
       inventory: num(row.inventory),
@@ -444,6 +542,59 @@ function parseCashflowQuarterly(r: RawBrapiResult): BrapiCashflowQuarterly[] {
       capitalExpenditures: num(row.capitalExpenditures),
       freeCashFlow: num(row.freeCashFlow),
       dividendsPaid: num(row.dividendsPaid),
+    }))
+    .filter((row) => row.endDate)
+    .sort((a, b) => (a.endDate < b.endDate ? -1 : a.endDate > b.endDate ? 1 : 0));
+}
+
+function parseKeyStatisticsHistory(r: RawBrapiResult): BrapiKeyStatisticsHistory[] {
+  if (!r.defaultKeyStatisticsHistory) return [];
+  return r.defaultKeyStatisticsHistory
+    .filter((row) => row.type === "yearly")
+    .map((row) => ({
+      endDate: str(row.endDate) ?? "",
+      trailingPE: num(row.trailingPE),
+      priceToBook: num(row.priceToBook),
+      bookValue: num(row.bookValue),
+      enterpriseValue: num(row.enterpriseValue),
+      enterpriseToRevenue: num(row.enterpriseToRevenue),
+      enterpriseToEbitda: num(row.enterpriseToEbitda),
+      price: num(row.price),
+      marketCap: num(row.marketCap),
+      pegRatio: num(row.pegRatio),
+      earningsPerShare: num(row.earningsPerShare),
+      trailingEps: num(row.trailingEps),
+      forwardPE: num(row.forwardPE),
+      profitMargins: num(row.profitMargins),
+      earningsQuarterlyGrowth: num(row.earningsQuarterlyGrowth),
+      netIncomeToCommon: num(row.netIncomeToCommon),
+      // Brapi field name starts with digit — bracket-access the source row.
+      fiftyTwoWeekChange: num(row["52WeekChange"]),
+      lastDividendValue: num(row.lastDividendValue),
+      lastDividendDate: str(row.lastDividendDate),
+      dividendYield: num(row.dividendYield),
+      yield: num(row.yield),
+    }))
+    .filter((row) => row.endDate)
+    .sort((a, b) => (a.endDate < b.endDate ? -1 : a.endDate > b.endDate ? 1 : 0));
+}
+
+function parseCashflow(r: RawBrapiResult): BrapiCashflow[] {
+  if (!r.cashflowHistory) return [];
+  return r.cashflowHistory
+    .filter((row) => row.type === "yearly")
+    .map((row) => ({
+      endDate: str(row.endDate) ?? "",
+      operatingCashFlow: num(row.operatingCashFlow),
+      incomeFromOperations: num(row.incomeFromOperations),
+      changesInAssetsAndLiabilities: num(row.changesInAssetsAndLiabilities),
+      otherOperatingActivities: num(row.otherOperatingActivities),
+      investmentCashFlow: num(row.investmentCashFlow),
+      financingCashFlow: num(row.financingCashFlow),
+      freeCashFlow: num(row.freeCashFlow),
+      increaseOrDecreaseInCash: num(row.increaseOrDecreaseInCash),
+      initialCashBalance: num(row.initialCashBalance),
+      finalCashBalance: num(row.finalCashBalance),
     }))
     .filter((row) => row.endDate)
     .sort((a, b) => (a.endDate < b.endDate ? -1 : a.endDate > b.endDate ? 1 : 0));
@@ -519,7 +670,9 @@ export async function getBrapiFull(ticker: string): Promise<BrapiFull | null> {
       balanceSheetHistory: parseBalanceSheet(raw),
       incomeStatementQuarterly: parseIncomeStatementQuarterly(raw),
       balanceSheetQuarterly: parseBalanceSheetQuarterly(raw),
+      cashflowHistory: parseCashflow(raw),
       cashflowQuarterly: parseCashflowQuarterly(raw),
+      keyStatisticsHistory: parseKeyStatisticsHistory(raw),
       dividends: parseDividends(raw),
       profile: parseProfile(raw),
       source: "brapi-full",
