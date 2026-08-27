@@ -152,7 +152,7 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
         ...bgStyle,
       }}
     >
-      <div className="px-1 pt-5 pb-12">
+      <div className="px-6 pt-5 pb-12">
         <AssetHeader
           symbol={symbol}
           sector={bundle?.sector ?? null}

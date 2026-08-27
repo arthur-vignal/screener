@@ -93,7 +93,7 @@ export default function ScorePage({
         ...bgStyle,
       }}
     >
-      <div className="px-1 pt-5 pb-12 max-w-screen-2xl mx-auto w-full">
+      <div className="px-6 pt-5 pb-12 w-full">
         <AssetSubheader
           symbol={symbol}
           longName={data?.longName ?? null}
