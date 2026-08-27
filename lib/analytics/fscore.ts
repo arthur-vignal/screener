@@ -12,6 +12,16 @@
  * Brazilian analysts track ROE more closely. Asset turnover uses total
  * revenue / total assets instead of cogs/sales.
  *
+ * Known coverage gaps from the 2026-08-27 probe (PETR4 end-to-end):
+ *   - ΔShares (recompra) is permanently null — Brapi doesn't expose
+ *     shares outstanding on the income/balance rows used here.
+ *   - ΔDebt uses totalDebtOf() to sum Brapi's granular loan/debenture
+ *     fields (PETR4 splits loans and debentures — longTermDebt alone
+ *     comes back NULL).
+ *   - PETR4 reports F-Score of 3-4/9 historically — consistent with a
+ *     mature state-owned: profitability OK but ROE/margin/turnover all
+ *     trending down. Not a bug — the score reflects the reality.
+ *
  * Inputs are nullable per row — null fields are treated as the
  * "indifferent" state (no point awarded, no point deducted).
  */
@@ -22,6 +32,7 @@ import type {
   BrapiFinancialData,
   BrapiIncomeStatement,
 } from "@/lib/brapi-full";
+import { totalDebtOf } from "./roic-wacc";
 
 export type FScoreSignal = {
   id: string;
@@ -121,9 +132,10 @@ export function computeFScore(
   });
 
   // Leverage / Liquidity ───────────────────────────────
-  // 5. ΔDebt < 0 (debt going down)
+  // 5. ΔDebt < 0 (debt going down). Brapi v2 splits loan/debenture
+  // granularly — totalDebtOf() sums what's available per year.
   if (prev) {
-    const dDebt = delta(curr.balance.longTermDebt, prev.balance.longTermDebt);
+    const dDebt = delta(totalDebtOf(curr.balance), totalDebtOf(prev.balance));
     signals.push({
       id: "delta-debt",
       label: "Dívida decrescente",

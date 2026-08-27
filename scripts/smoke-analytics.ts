@@ -147,8 +147,17 @@ const fmtB = (v: number | null | undefined) =>
   }));
   const ftl = computeFScoreTimeline(fAligned);
   for (const r of ftl) {
-    const signals = r.score.signals.filter((s) => s.value != null).length;
-    console.log(`  ${r.endDate}: total=${r.score.total ?? "—"}/9 (${signals}/9 signals) tier=${r.score.tier}`);
+    const valid = r.score.signals.filter((s) => s.value != null);
+    const ones = r.score.signals.filter((s) => s.value === 1).length;
+    const signals = valid.length;
+    console.log(`  ${r.endDate}: total=${r.score.total ?? "—"}/9 (${signals}/9 signals, ${ones} acertos) tier=${r.score.tier}`);
+    if (r.score.total != null && r.score.total < 5) {
+      console.log(`    signals:`);
+      for (const s of r.score.signals) {
+        const mark = s.value === 1 ? "✓" : s.value === 0 ? "✗" : "·";
+        console.log(`      ${mark} ${s.label}: ${s.value === null ? "(sem dado)" : s.value === 1 ? "OK" : "NÃO"}`);
+      }
+    }
   }
 
   // ───────── Beta decomposition ─────────
