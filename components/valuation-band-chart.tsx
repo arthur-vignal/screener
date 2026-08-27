@@ -24,6 +24,7 @@
 import { useMemo } from "react";
 import { ComposedChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea, CartesianGrid } from "recharts";
 import { formatMultiple } from "@/lib/format";
+import { filterByRange, type PeriodRange } from "./chart-period-selector";
 
 type HistoryPoint = { endDate: string; value: number | null };
 
@@ -36,6 +37,8 @@ type Props = {
   accentColor?: string;
   /** Slot extra no header — usado pra seletor de múltiplo. */
   headerExtra?: React.ReactNode;
+  /** Filtro de período — null = sem filtro. */
+  periodRange?: PeriodRange;
 };
 
 type Row = {
@@ -52,13 +55,21 @@ export function ValuationBandChart({
   unit = "multiple",
   accentColor = "#ffffff",
   headerExtra,
+  periodRange,
 }: Props) {
+  // Aplica filtro de período se especificado (pra evitar que picos
+  // outliers comprimam a escala do resto do gráfico).
+  const filteredHistory = useMemo(
+    () => filterByRange(history, periodRange ?? { startYear: null, endYear: null }),
+    [history, periodRange],
+  );
+
   // Processa a série: ordena ascendente por ano, calcula média e σ.
   const rows: Row[] = useMemo(() => {
     // converte endDate → year. Pontos com múltiplo indefinido (negativo
     // ou zero) recebem value=null pra que a linha QUEBRE no gráfico
     // (em vez de plotar um ponto isolado que distorce a escala Y).
-    const sorted = history
+    const sorted = filteredHistory
       .slice()
       .sort((a, b) => a.endDate.localeCompare(b.endDate))
       .map((p) => {

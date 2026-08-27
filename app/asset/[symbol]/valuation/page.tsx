@@ -32,6 +32,7 @@ import { AllStatsButton } from "@/components/all-stats-button";
 import { useAssetBackground } from "@/lib/use-asset-background";
 import { ValuationBandChart } from "@/components/valuation-band-chart";
 import { QualityVsPriceScatter } from "@/components/quality-vs-price-scatter";
+import { ChartPeriodSelector, type PeriodRange } from "@/components/chart-period-selector";
 import { computeCAPE } from "@/lib/analytics/cape";
 import { ipca12m } from "@/lib/deflator";
 import { formatMultiple } from "@/lib/format";
@@ -80,6 +81,10 @@ export default function ValuationPage({
 
   // Seletor de múltiplo da faixa central
   const [multiple, setMultiple] = useState<Multiple>("trailingPE");
+  const [periodRange, setPeriodRange] = useState<PeriodRange>({
+    startYear: null,
+    endYear: null,
+  });
 
   // ── Métricas correntes ─────────────────────────────────────────
   const price = data?.quote?.price ?? null;
@@ -341,21 +346,30 @@ export default function ValuationPage({
             title={MULTIPLE_LABELS[multiple]}
             accentColor="#ffffff"
             headerExtra={
-              <div className="flex items-center gap-1 p-0.5 rounded-md border border-white/10 bg-white/[0.04]">
-                {(Object.keys(MULTIPLE_LABELS) as Multiple[]).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setMultiple(m)}
-                    className={`px-3 h-7 rounded text-[12px] transition-colors ${
-                      multiple === m
-                        ? "bg-foreground text-background"
-                        : "text-muted-foreground/85 hover:text-foreground"
-                    }`}
-                  >
-                    {MULTIPLE_LABELS[m]}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2">
+                <ChartPeriodSelector
+                  value={periodRange}
+                  onChange={setPeriodRange}
+                  minYear={2010}
+                  maxYear={new Date().getFullYear()}
+                  dataLength={history.length}
+                />
+                <div className="flex items-center gap-1 p-0.5 rounded-md border border-white/10 bg-white/[0.04]">
+                  {(Object.keys(MULTIPLE_LABELS) as Multiple[]).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setMultiple(m)}
+                      className={`px-3 h-7 rounded text-[12px] transition-colors ${
+                        multiple === m
+                          ? "bg-foreground text-background"
+                          : "text-muted-foreground/85 hover:text-foreground"
+                      }`}
+                    >
+                      {MULTIPLE_LABELS[m]}
+                    </button>
+                  ))}
+                </div>
               </div>
             }
           />
