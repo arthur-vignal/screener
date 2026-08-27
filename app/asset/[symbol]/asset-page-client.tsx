@@ -31,6 +31,7 @@ type AssetBundle = {
   symbol: string;
   shortName: string | null;
   longName: string | null;
+  logoUrl: string | null;
   sector: string;
   currency: string;
   marketState: string;
@@ -141,6 +142,7 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
           sector={bundle?.sector ?? null}
           shortName={bundle?.shortName ?? null}
           longName={bundle?.longName ?? null}
+          logoUrl={bundle?.logoUrl ?? null}
           loading={isLoading}
           onRefresh={() => mutate()}
         />
@@ -187,6 +189,7 @@ function AssetHeader({
   sector,
   shortName,
   longName,
+  logoUrl,
   loading,
   onRefresh,
 }: {
@@ -194,6 +197,7 @@ function AssetHeader({
   sector: string | null;
   shortName: string | null;
   longName: string | null;
+  logoUrl: string | null;
   loading: boolean;
   onRefresh: () => void;
 }) {
@@ -213,7 +217,16 @@ function AssetHeader({
               >
                 <ChevronLeft className="h-4 w-4" />
               </Link>
-              <TickerLogo symbol={symbol} size="md" />
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={logoUrl}
+                  alt={`${symbol} logo`}
+                  className="h-11 w-11 rounded-full bg-white/5 object-contain shrink-0"
+                />
+              ) : (
+                <TickerLogo symbol={symbol} size="md" />
+              )}
               <div className="min-w-0">
                 <div className="flex items-center gap-2.5">
                   <h1 className="text-[20px] font-semibold tracking-tight">{symbol}</h1>

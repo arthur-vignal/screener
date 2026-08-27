@@ -41,24 +41,50 @@ function hashColor(symbol: string) {
 }
 
 /**
- * Render a small letter avatar for the ticker. We use the first
- * character of the symbol — works for the common Latin B3 case.
+ * Render the official Brapi logo for the ticker if available, falling
+ * back to a colored letter avatar (hash-derived palette). The direct
+ * URL avoids fetching the full bundle just to render inline chips.
+ *
+ * The icons endpoint serves the SVG without a token when no auth is
+ * configured; with a token it still serves the SVG. We intentionally
+ * don't request a token here — keeping the chip rendering client-side
+ * and independent of the bundle.
  */
 function TickerAvatar({ symbol, size }: { symbol: string; size: number }) {
   const palette = hashColor(symbol);
   const letter = symbol.charAt(0);
+  const logoUrl = `https://icons.brapi.dev/icons/${encodeURIComponent(symbol)}.svg`;
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-full bg-gradient-to-br ${palette.bg} ${palette.text} font-semibold shrink-0 select-none`}
-      style={{
-        width: size,
-        height: size,
-        fontSize: size * 0.45,
-        lineHeight: 1,
-      }}
+      className="inline-flex items-center justify-center rounded-full bg-white/5 shrink-0 select-none overflow-hidden"
+      style={{ width: size, height: size }}
       aria-hidden
     >
-      {letter}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={logoUrl}
+        alt=""
+        width={size}
+        height={size}
+        className="block"
+        style={{ width: size, height: size, objectFit: "contain" }}
+        onError={(e) => {
+          // Fallback to colored letter if the SVG 404s (private/foreign
+          // tickers not on Brapi).
+          const target = e.currentTarget as HTMLImageElement;
+          target.style.display = "none";
+          const parent = target.parentElement;
+          if (parent && !parent.querySelector("[data-fallback]")) {
+            const span = document.createElement("span");
+            span.dataset.fallback = "1";
+            span.className = `inline-flex items-center justify-center w-full h-full rounded-full bg-gradient-to-br ${palette.bg} ${palette.text} font-semibold`;
+            span.style.fontSize = `${size * 0.45}px`;
+            span.style.lineHeight = "1";
+            span.textContent = letter;
+            parent.appendChild(span);
+          }
+        }}
+      />
     </span>
   );
 }
