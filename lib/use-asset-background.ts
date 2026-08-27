@@ -3,11 +3,18 @@
  * página do ativo baseado na cor dominante da marca.
  *
  * Aplicado em /asset/[symbol]/* (todas as drill-down pages). O efeito
- * é um glow bem suave vindo do topo, com falloff rápido pra preto —
- * igual à referência Mobbin/NVDA.
+ * é um glow bem suave e espalhado lateralmente, com falloff longo
+ * antes de sumir — mais discreto do que glows centralizados.
  *
  * Implementação: usa CSS variables no style do <main> pra ficar
  * isolado por página (não vaza pro body ou pro topbar).
+ *
+ * Calibração visual (revisão 2026-08-27, pós-feedback do Arthur):
+ *  - Opacidade baixa: 0.06 (cor clara) → 0.12 (cor escura).
+ *    Antes era 0.10/0.22, ficou "barriga" forte no topo.
+ *  - Ellipse ampla: 130% × 70%, antes 90% × 60% — espalha lateralmente.
+ *  - Falloff curto: 55%, antes 70% — gradiente desce mais antes de sumir,
+ *    então a cor "respira" pela página em vez de concentrar no topo.
  */
 
 import { useMemo } from "react";
@@ -53,14 +60,13 @@ function perceivedLuminance(hex: string): number {
 }
 
 /**
- * Opacidade calibrada: cor escura → glow forte (até 0.22),
- * cor clara → glow fraco (até 0.10). Mantém o efeito perceptível mas
- * nunca "estourando" o fundo preto.
+ * Opacidade calibrada: cor escura → glow forte (até 0.12),
+ * cor clara → glow fraco (até 0.06). Mais discreto que v1.
  */
 function glowOpacityForLuminance(lum: number): number {
-  // 0.0 (preto) → 0.22; 0.5 (cinza médio) → 0.16; 1.0 (branco) → 0.10
-  const min = 0.10;
-  const max = 0.22;
+  // 0.0 (preto) → 0.12; 0.5 (cinza médio) → 0.09; 1.0 (branco) → 0.06
+  const min = 0.06;
+  const max = 0.12;
   return max - (max - min) * lum;
 }
 
