@@ -18,7 +18,7 @@ import { computeYieldLiquido, dividendStreak } from "./yield-liquido";
 import { computeAccrualsTimeline } from "./accruals";
 import { computeFScoreTimeline } from "./fscore";
 import { LABELS } from "./labels";
-import { currentValue, historicalValue } from "./key-mapper";
+import { currentValue, historicalValue, type KeyStatisticsShape } from "./key-mapper";
 
 export type Period = "1y" | "3y" | "5y" | "max";
 export type ComparisonMode = "yoy" | "period";
@@ -124,15 +124,16 @@ function buildRow(
   if (h.length >= 2 && curr != null) {
     if (mode === "yoy") {
       // Compare to 1 year back
-      const prevYearIdx = h.length - 2;
-      const prev = h[prevYearIdx]?.value ?? null;
+      // A série vem em ordem DECRESCENTE da Brapi (mais recente primeiro).
+      // O penúltimo mais recente (h[1]) é o ano anterior.
+      const prev = h.length >= 2 ? h[1]?.value ?? null : null;
       variation = pct(curr, prev);
     } else {
-      // period-over-period: compare to N years back where N = yearsForPeriod
+      // period-over-period: índice decrescente: mais antigo está no fim
       const n = yearsForPeriod(period);
-      const prevYearIdx = h.length - 1 - n;
-      if (prevYearIdx >= 0) {
-        const prev = h[prevYearIdx]?.value ?? null;
+      // queremos comparar com h[n] (n posições antes do atual, em ordem decrescente)
+      if (n < h.length) {
+        const prev = h[n]?.value ?? null;
         variation = pct(curr, prev);
       } else {
         variation = null;
@@ -284,10 +285,10 @@ export function buildMetricRows(
         description: LABELS.priceToBook.description,
         unit: LABELS.priceToBook.unit,
         category: "valuation",
-        current: currentValue("priceToBook", bundle as never),
+        current: currentValue("priceToBook", bundle?.keyStatistics as KeyStatisticsShape),
         history: bundle.keyStatisticsHistory.map((r) => ({
           endDate: r.endDate,
-          value: historicalValue("priceToBook", r as never),
+          value: historicalValue("priceToBook", r as KeyStatisticsShape),
         })),
         format: "multiple",
       },
@@ -304,10 +305,10 @@ export function buildMetricRows(
         description: LABELS.enterpriseToEbitda.description,
         unit: LABELS.enterpriseToEbitda.unit,
         category: "valuation",
-        current: currentValue("enterpriseToEbitda", bundle as never),
+        current: currentValue("enterpriseToEbitda", bundle?.keyStatistics as KeyStatisticsShape),
         history: bundle.keyStatisticsHistory.map((r) => ({
           endDate: r.endDate,
-          value: historicalValue("enterpriseToEbitda", r as never),
+          value: historicalValue("enterpriseToEbitda", r as KeyStatisticsShape),
         })),
         format: "multiple",
       },
@@ -324,10 +325,10 @@ export function buildMetricRows(
         description: LABELS.enterpriseValue.description,
         unit: LABELS.enterpriseValue.unit,
         category: "valuation",
-        current: currentValue("enterpriseValue", bundle as never),
+        current: currentValue("enterpriseValue", bundle?.keyStatistics as KeyStatisticsShape),
         history: bundle.keyStatisticsHistory.map((r) => ({
           endDate: r.endDate,
-          value: historicalValue("enterpriseValue", r as never),
+          value: historicalValue("enterpriseValue", r as KeyStatisticsShape),
         })),
         format: "currency",
       },
@@ -344,10 +345,11 @@ export function buildMetricRows(
         description: "Yield bruto anualizado reportado pela Brapi.",
         unit: "%",
         category: "valuation",
-        current: currentValue("dividendYield", bundle as never),
+        current: currentValue("dividendYield", bundle?.keyStatistics as KeyStatisticsShape),
         history: bundle.keyStatisticsHistory.map((r) => ({
           endDate: r.endDate,
-          value: r.dividendYield != null ? r.dividendYield * 100 : null,
+          // dy já vem em % (key-mapper converte se necessário)
+          value: historicalValue("dividendYield", r as KeyStatisticsShape),
         })),
         format: "percent",
       },

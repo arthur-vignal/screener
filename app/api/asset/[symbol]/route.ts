@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBrapiFundamentals } from "@/lib/brapi";
+import { getBrapiFundamentals, normalizeYield } from "@/lib/brapi";
 
 /**
  * /api/asset/[symbol] — single ticker bundle.
@@ -75,16 +75,31 @@ export async function GET(
     metrics: {
       sector: profile.sector ?? "—",
       marketCap: q.marketCap,
-      trailingPE: q.trailingPE,
+      // P/L unificado: prioriza o trailingPE do quote (normalizado de
+      // raw.priceEarnings no lib/brapi.ts), cai pra ks.trailingPE (snapshot).
+      // Sobrescreve ks.trailingPE pra que toda UI leia o mesmo número.
+      trailingPE: q.trailingPE ?? ks.trailingPE ?? null,
       returnOnEquity: ks.returnOnEquity ?? fd.returnOnEquity ?? null,
       ebitda: fd.ebitda ?? null,
       freeCashflow: fd.freeCashflow ?? ks.freeCashflow ?? null,
-      dividendYield: ks.trailingAnnualDividendYield ?? null,
+      // Dividend Yield: a Brapi v2 retorna `yield` E `dividendYield` como
+      // decimais (fração 0-1) na prática, embora o `/dictionary` diga
+      // `unit='%'` para `yield`. Heurística: se o valor for < 0.5, trata
+      // como decimal e multiplica por 100; senão, deixa como está.
+      // (PETR4 paga ~9%, mas o bundle retorna 0.09 — bug da Brapi.)
+      dividendYield: normalizeYield(ks.yield) ?? normalizeYield(ks.dividendYield) ?? null,
     },
 
     // Full payloads — sub-pages pull from these.
         profile,
-        keyStatistics: ks,
+        // Sobrescreve keyStatistics.trailingPE com o valor unificado
+        // para que toda UI (metrics-strip, /valuation, MetricsTable)
+        // leia o mesmo número. Sem isso, /valuation via metrics.trailingPE
+        // = 4.14 (live) e MetricsTable via ks.trailingPE = 7.99 (snapshot).
+        keyStatistics: {
+          ...ks,
+          trailingPE: q.trailingPE ?? ks.trailingPE ?? null,
+        },
         financialData: fd,
         candles: data.candles ?? [],
         historicals: data.historicals ?? {

@@ -22,6 +22,7 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { ChevronRight } from "lucide-react";
+import { compactBRL, formatMultiple, formatPercent, formatNumber } from "@/lib/format";
 
 type Metrics = {
   sector: string;
@@ -222,17 +223,18 @@ function formatValue(tile: Tile, currency: string, loading: boolean): string {
   if (loading) return "—";
   const v = tile.value;
   if (v == null || v === "" || (typeof v === "number" && !Number.isFinite(v))) return "—";
+  // Usa o formatador central de lib/format.ts pra garantir unidade consistente.
   switch (tile.kind) {
     case "text":
       return String(v);
     case "multiple":
-      return typeof v === "number" ? v.toFixed(2) : "—";
+      return typeof v === "number" ? formatMultiple(v) : "—";
     case "percent":
-      return typeof v === "number" ? `${v.toFixed(2)}%` : "—";
+      return typeof v === "number" ? formatPercent(v, { decimals: 2 }) : "—";
     case "percent-conditional":
-      return typeof v === "number" ? `${v.toFixed(2)}%` : "—";
+      return typeof v === "number" ? formatPercent(v, { decimals: 2 }) : "—";
     case "compact":
-      return typeof v === "number" ? formatCompact(v, currency) : "—";
+      return typeof v === "number" ? compactBRL(v) : "—";
     default:
       return String(v);
   }

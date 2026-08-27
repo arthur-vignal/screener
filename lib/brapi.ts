@@ -135,6 +135,14 @@ export type BrapiKeyStatistics = {
   lastDividendDate?: string | null;
   trailingAnnualDividendRate?: number | null;
   trailingAnnualDividendYield?: number | null;
+  /** P/L trailing — vem dentro de `defaultKeyStatistics` na Brapi v2. */
+  trailingPE?: number | null;
+  /** P/VP — Brapi retorna tanto `priceToBook` quanto `priceBook`. */
+  priceToBook?: number | null;
+  /** Yield anualizado já em % (conforme `/dictionary` unit="%"). */
+  yield?: number | null;
+  /** Yield anualizado em decimal (fração 0-1). Multiplicar por 100 ao usar. */
+  dividendYield?: number | null;
 };
 
 export type BrapiFinancialData = {
@@ -352,6 +360,27 @@ function getToken(): string {
   // brapi-dividends.ts, brapi-macro.ts, brapi-curve.ts, brapi-correlation.ts).
   // Fall back to BRAPI_API_TOKEN for backwards compatibility, then empty.
   return process.env.BRAPI_TOKEN ?? process.env.BRAPI_API_TOKEN ?? "";
+}
+
+
+
+/**
+ * Normalize um valor de yield que pode vir em decimal (0.09) ou percentual (9.0).
+ *
+ * A Brapi v2 está inconsistente: `/dictionary` diz `unit='%'` para `yield`,
+ * mas o `defaultKeyStatistics` na prática retorna decimal (PETR4 = 0.09).
+ *
+ * Heurística (até a Brapi normalizar):
+ *   - Se o valor for null/undefined, retorna null.
+ *   - Se for < 0.5, trata como decimal e multiplica por 100.
+ *   - Se for >= 0.5, trata como percentual direto.
+ *
+ * DY de 9% vira 9.0 (correto). DY "de 0.09" vira 9.0 (correto).
+ * O limiar 0.5 separa claramente os dois universos — nenhum ativo paga 50%.
+ */
+export function normalizeYield(value: number | null | undefined): number | null {
+  if (value == null || !Number.isFinite(value)) return null;
+  return value < 0.5 ? value * 100 : value;
 }
 
 function normalize(raw: BrapiRawQuote): BrapiQuote {

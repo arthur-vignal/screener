@@ -65,13 +65,20 @@ export type BrapiKeyStatistics = {
   earningsQuarterlyGrowth: number | null;
   netIncomeToCommon: number | null;
   trailingEps: number | null;
+  /** P/L trailing calculado pela Brapi. Em geral vem do snapshot EOD. */
+  trailingPE?: number | null;
   forwardEps: number | null;
   enterpriseToRevenue: number | null;
   enterpriseToEbitda: number | null;
   fiftyTwoWeekChange: number | null;
   lastDividendValue: number | null;
   lastDividendDate: string | null;
+  /** Yield anualizado já em % (conforme `/dictionary` unit="%"). */
   yield: number | null;
+  /** Yield anualizado em decimal (fração 0-1). Multiplicar por 100 ao usar. */
+  dividendYield?: number | null;
+  /** Yield anualizado de dividendos em trailing 12 meses. */
+  trailingAnnualDividendYield?: number | null;
   heldPercentInsiders: number | null;
   heldPercentInstitutions: number | null;
   marketCap: number | null;

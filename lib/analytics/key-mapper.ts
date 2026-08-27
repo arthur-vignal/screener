@@ -5,14 +5,20 @@
  * on `defaultKeyStatistics`, some on `defaultKeyStatisticsHistory`) and
  * a single canonical key the rest of the analytics layer uses.
  *
- * Why this exists: Brapi v2 returns:
- *   - current snapshot trailing PE under `quote.priceEarnings`
- *   - historical trailing PE under `defaultKeyStatisticsHistory[i].trailingPE`
+ * Source-of-truth rules (2026-08-27 — Arthur's bug report):
  *
- * These should not require manual disambiguation at every call site.
+ *   - **P/L (trailingPE)**: prioriza `priceEarnings` (EOD), fallback
+ *     `trailingPE` (live), fallback `keyStatistics.trailingPE` (snapshot).
+ *     Cada fonte pode divergir durante o pregão — sem unificação, dois
+ *     lugares da UI mostravam números diferentes pro mesmo ativo.
+ *
+ *   - **Dividend Yield**: a Brapi v2 retorna `dividendYield` como
+ *     `unit='decimal'` (fração 0-1) e `yield` como `unit='%'` (já
+ *     percentual). Preferimos `yield` quando existir; senão multiplicamos
+ *     `dividendYield` por 100.
+ *
+ *   - **Outras métricas**: leem direto do `keyStatistics` correspondente.
  */
-
-import type { BrapiFull, BrapiQuote, BrapiKeyStatistics } from "@/lib/brapi-full";
 
 export type CanonicalField =
   | "trailingPE"
@@ -26,66 +32,91 @@ export type CanonicalField =
   | "earningsPerShare"
   | "pegRatio";
 
+/**
+ * Shape de entrada — mesma forma do `MetricsBundleInput.keyStatistics`.
+ * Mantemos loose (`Record<string, unknown>`) pra tolerar campos extras
+ * sem quebrar, e fazemos narrowing por chave.
+ */
+export type KeyStatisticsShape = Record<string, unknown>;
+
 export function currentValue(
   field: CanonicalField,
-  bundle: Pick<BrapiFull, "quote" | "keyStatistics">,
+  ks: KeyStatisticsShape | null | undefined,
 ): number | null {
-  const q = bundle.quote;
-  const ks = bundle.keyStatistics;
+  if (!ks) return null;
   switch (field) {
-    case "trailingPE":
-      // Current snapshot uses `quote.priceEarnings` (NOT keyStatistics.trailingPE).
-      return q.priceEarnings ?? null;
+    case "trailingPE": {
+      // priceEarnings (EOD) > trailingPE (live) > keyStatistics.trailingPE
+      const pe = num(ks.priceEarnings) ?? num(ks.trailingPE);
+      return pe;
+    }
     case "priceToBook":
-      return ks?.priceToBook ?? null;
+      return num(ks.priceToBook);
     case "bookValue":
-      return ks?.bookValue ?? null;
+      return num(ks.bookValue);
     case "enterpriseValue":
-      return ks?.enterpriseValue ?? null;
+      return num(ks.enterpriseValue);
     case "enterpriseToRevenue":
-      return ks?.enterpriseToRevenue ?? null;
+      return num(ks.enterpriseToRevenue);
     case "enterpriseToEbitda":
-      return ks?.enterpriseToEbitda ?? null;
+      return num(ks.enterpriseToEbitda);
     case "marketCap":
-      // quote.marketCap is the live value; keyStatistics.marketCap is historical.
-      return q.marketCap ?? null;
-    case "dividendYield":
-      return ks?.yield ?? null;
+      return num(ks.marketCap);
+    case "dividendYield": {
+      // yield (já em %) > dividendYield (decimal) * 100
+      const y = num(ks.yield);
+      if (y != null) return y;
+      const dy = num(ks.dividendYield);
+      if (dy != null) return dy * 100;
+      return null;
+    }
     case "earningsPerShare":
-      return q.earningsPerShare ?? null;
+      return num(ks.earningsPerShare) ?? num(ks.trailingEps);
     case "pegRatio":
-      return ks?.pegRatio ?? null;
+      return num(ks.pegRatio);
   }
 }
 
 /**
- * Extract a field from a BrapiKeyStatisticsHistory row. Wraps the
- * bracket-access for fields starting with a digit.
+ * Extract a field from a BrapiKeyStatisticsHistory row.
  */
 export function historicalValue(
   field: CanonicalField,
-  row: { trailingPE: number | null; priceToBook: number | null; bookValue: number | null; enterpriseValue: number | null; enterpriseToRevenue: number | null; enterpriseToEbitda: number | null; marketCap: number | null; dividendYield: number | null; yield: number | null; earningsPerShare: number | null; pegRatio: number | null },
+  row: KeyStatisticsShape,
 ): number | null {
+  if (!row) return null;
   switch (field) {
     case "trailingPE":
-      return row.trailingPE;
+      return num(row.trailingPE);
     case "priceToBook":
-      return row.priceToBook;
+      return num(row.priceToBook);
     case "bookValue":
-      return row.bookValue;
+      return num(row.bookValue);
     case "enterpriseValue":
-      return row.enterpriseValue;
+      return num(row.enterpriseValue);
     case "enterpriseToRevenue":
-      return row.enterpriseToRevenue;
+      return num(row.enterpriseToRevenue);
     case "enterpriseToEbitda":
-      return row.enterpriseToEbitda;
+      return num(row.enterpriseToEbitda);
     case "marketCap":
-      return row.marketCap;
-    case "dividendYield":
-      return row.dividendYield ?? row.yield;
+      return num(row.marketCap);
+    case "dividendYield": {
+      // yield (já %) > dividendYield (decimal) * 100
+      const y = num(row.yield);
+      if (y != null) return y;
+      const dy = num(row.dividendYield);
+      if (dy != null) return dy * 100;
+      return null;
+    }
     case "earningsPerShare":
-      return row.earningsPerShare;
+      return num(row.earningsPerShare) ?? num(row.trailingEps);
     case "pegRatio":
-      return row.pegRatio;
+      return num(row.pegRatio);
   }
+}
+
+function num(v: unknown): number | null {
+  if (v == null) return null;
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  return null;
 }
