@@ -25,6 +25,7 @@ import { ChevronLeft, Search, Bookmark, MoreHorizontal, RefreshCw } from "lucide
 import { TickerLogo } from "@/components/ticker-logo";
 import { ChartCard, type RangeKey } from "./chart-card";
 import { NewsCard } from "./news-card";
+import { MetricsTable, type MetricsBundle } from "./components/metrics-table";
 
 type AssetBundle = {
   symbol: string;
@@ -67,6 +68,21 @@ type AssetBundle = {
     adjClose: number;
     volume: number;
   }>;
+  /**
+   * Loose shape — /api/asset/[symbol] forwards the raw fields from
+   * lib/brapi.ts's getBrapiFundamentals(). Use `unknown` here and let
+   * adaptForMetrics() cast at the boundary.
+   */
+  keyStatistics?: Record<string, number | null | undefined>;
+  historicals?: {
+    income?: Array<Record<string, unknown>>;
+    balance?: Array<Record<string, unknown>>;
+    cashflow?: Array<Record<string, unknown>>;
+    valueAdded?: Array<Record<string, unknown>>;
+    keyStatistics?: Array<Record<string, unknown>>;
+    financialData?: Array<Record<string, unknown>>;
+    dividends?: Array<Record<string, unknown>>;
+  };
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => {
@@ -87,7 +103,7 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
     error: bundleError,
     isLoading,
     mutate,
-  } = useSWR<Omit<AssetBundle, "candles">>(
+  } = useSWR<AssetBundle>(
     `/api/asset/${encodeURIComponent(symbol)}`,
     fetcher,
     { refreshInterval: 60_000, revalidateOnFocus: true },
@@ -168,9 +184,98 @@ export function AssetPageClient({ symbol }: { symbol: string }) {
             <NewsCard symbol={symbol} />
           </div>
         </div>
+
+        {bundle && <MetricsTable bundle={adaptForMetrics(bundle)} />}
       </div>
     </div>
   );
+}
+
+/**
+ * Adapter: `bundle` from /api/asset/[symbol] uses lib/brapi's
+ * `BrapiFundamentals` shape (different from `BrapiFull` in
+ * lib/brapi-full.ts). Map it into the loose `MetricsBundle` that the
+ * table component actually consumes.
+ */
+function adaptForMetrics(b: AssetBundle): MetricsBundle {
+  const hist = b.historicals ?? ({} as NonNullable<typeof b.historicals>);
+  return {
+    quote: {
+      regularMarketPrice: b.quote?.price ?? null,
+      marketCap: b.quote?.marketCap ?? null,
+    },
+    keyStatistics: b.keyStatistics
+      ? {
+          enterpriseValue: b.keyStatistics.enterpriseValue ?? null,
+          forwardPE: b.keyStatistics.forwardPE ?? null,
+          profitMargins: b.keyStatistics.profitMargins ?? null,
+          floatShares: b.keyStatistics.floatShares ?? null,
+          sharesOutstanding: b.keyStatistics.sharesOutstanding ?? null,
+          beta: b.keyStatistics.beta ?? null,
+          bookValue: b.keyStatistics.bookValue ?? null,
+          priceToBook: b.keyStatistics.priceToBook ?? null,
+          pegRatio: b.keyStatistics.pegRatio ?? null,
+          earningsPerShare: b.keyStatistics.trailingEps ?? null,
+          trailingEps: b.keyStatistics.trailingEps ?? null,
+          enterpriseToRevenue: b.keyStatistics.enterpriseToRevenue ?? null,
+          enterpriseToEbitda: b.keyStatistics.enterpriseToEbitda ?? null,
+          fiftyTwoWeekChange: b.keyStatistics.fiftyTwoWeekChange ?? null,
+          yield: b.keyStatistics.yield ?? null,
+          dividendYield: b.keyStatistics.dividendYield ?? null,
+          marketCap: b.keyStatistics.marketCap ?? null,
+          priceEarnings: b.keyStatistics.priceEarnings ?? null,
+        }
+      : null,
+    incomeStatementHistory: (hist.income ?? []).map((r) => ({
+      endDate: (r as { endDate?: string }).endDate ?? "",
+      netIncome: (r as { netIncome?: number | null }).netIncome ?? null,
+      cleanNopat: (r as { cleanNopat?: number | null }).cleanNopat ?? null,
+    })),
+    balanceSheetHistory: (hist.balance ?? []).map((r) => ({
+      endDate: (r as { endDate?: string }).endDate ?? "",
+      cash: (r as { cash?: number | null }).cash ?? null,
+      shareholdersEquity: (r as { shareholdersEquity?: number | null }).shareholdersEquity ?? null,
+      totalAssets: (r as { totalAssets?: number | null }).totalAssets ?? null,
+      loansAndFinancing: (r as { loansAndFinancing?: number | null }).loansAndFinancing ?? null,
+      longTermLoansAndFinancing: (r as { longTermLoansAndFinancing?: number | null }).longTermLoansAndFinancing ?? null,
+      debentures: (r as { debentures?: number | null }).debentures ?? null,
+      longTermDebentures: (r as { longTermDebentures?: number | null }).longTermDebentures ?? null,
+      longTermDebt: (r as { longTermDebt?: number | null }).longTermDebt ?? null,
+      shortLongTermDebt: (r as { shortLongTermDebt?: number | null }).shortLongTermDebt ?? null,
+    })),
+    cashflowHistory: (hist.cashflow ?? []).map((r) => ({
+      endDate: (r as { endDate?: string }).endDate ?? "",
+      operatingCashFlow: (r as { operatingCashFlow?: number | null }).operatingCashFlow ?? null,
+      freeCashFlow: (r as { freeCashFlow?: number | null }).freeCashFlow ?? null,
+    })),
+    keyStatisticsHistory: (hist.keyStatistics ?? []).map((r) => ({
+      endDate: (r as { endDate?: string }).endDate ?? "",
+      trailingPE: (r as { trailingPE?: number | null }).trailingPE ?? null,
+      priceToBook: (r as { priceToBook?: number | null }).priceToBook ?? null,
+      bookValue: (r as { bookValue?: number | null }).bookValue ?? null,
+      enterpriseValue: (r as { enterpriseValue?: number | null }).enterpriseValue ?? null,
+      enterpriseToRevenue: (r as { enterpriseToRevenue?: number | null }).enterpriseToRevenue ?? null,
+      enterpriseToEbitda: (r as { enterpriseToEbitda?: number | null }).enterpriseToEbitda ?? null,
+      marketCap: (r as { marketCap?: number | null }).marketCap ?? null,
+      pegRatio: (r as { pegRatio?: number | null }).pegRatio ?? null,
+      earningsPerShare: (r as { earningsPerShare?: number | null }).earningsPerShare ?? null,
+      trailingEps: (r as { trailingEps?: number | null }).trailingEps ?? null,
+      forwardPE: (r as { forwardPE?: number | null }).forwardPE ?? null,
+      profitMargins: (r as { profitMargins?: number | null }).profitMargins ?? null,
+      earningsQuarterlyGrowth: (r as { earningsQuarterlyGrowth?: number | null }).earningsQuarterlyGrowth ?? null,
+      netIncomeToCommon: (r as { netIncomeToCommon?: number | null }).netIncomeToCommon ?? null,
+      fiftyTwoWeekChange: (r as { "52WeekChange"?: number | null })["52WeekChange"] ?? null,
+      lastDividendValue: (r as { lastDividendValue?: number | null }).lastDividendValue ?? null,
+      lastDividendDate: (r as { lastDividendDate?: string | null }).lastDividendDate ?? null,
+      dividendYield: (r as { dividendYield?: number | null }).dividendYield ?? null,
+      yield: (r as { yield?: number | null }).yield ?? null,
+    })),
+    dividends: (hist.dividends ?? []).map((r) => ({
+      rate: (r as { rate?: number }).rate ?? 0,
+      paymentDate: (r as { paymentDate?: string }).paymentDate ?? "",
+      label: (r as { label?: string }).label ?? "DIVIDENDO",
+    })),
+  };
 }
 
 // ─────────────────────────── Header ───────────────────────────
