@@ -58,6 +58,22 @@ function derived(
   return out;
 }
 
+
+function derivedTwo(
+  rows: HistoricalRow[] | undefined,
+  aField: string,
+  bField: string,
+  fn: (a: number | null, b: number | null) => number | null,
+): Record<string, number | null> {
+  const out: Record<string, number | null> = {};
+  for (const r of rows ?? []) {
+    const y = r.endDate?.slice(0, 4);
+    if (!y) continue;
+    out[y] = fn(num(r, aField), num(r, bField));
+  }
+  return out;
+}
+
 function derivedCross(
   rowsA: HistoricalRow[] | undefined,
   rowsB: HistoricalRow[] | undefined,
@@ -122,7 +138,10 @@ export default function StatsFinancialsPage({
     const set = new Set<string>();
     for (const arr of [historicals.income, historicals.balance, historicals.cashflow]) {
       for (const r of arr ?? []) {
-        if (r.endDate) set.add(r.endDate);
+        // Só o ano (YYYY) — `row.values` é indexado por ano também,
+        // então o `col` passado pro ExcelTable tem que bater.
+        const year = r.endDate?.slice(0, 4);
+        if (year) set.add(year);
       }
     }
     return Array.from(set).sort((a, b) => b.localeCompare(a));
@@ -191,7 +210,18 @@ export default function StatsFinancialsPage({
     push("cash", "Caixa e equivalentes", "balance", "cash", "currency", ["caixa", "cash"]);
     push("debt_lt", "Dívida de longo prazo", "balance", "longTermDebt", "currency", ["dívida", "debt", "long term"]);
     push("debt_st", "Dívida de curto prazo", "balance", "shortLongTermDebt", "currency", ["dívida", "debt", "short term"]);
-    push("debt_total", "Dívida bruta total", "balance", "totalDebt", "currency", ["dívida total", "total debt"]);
+    // debt_total é computado abaixo (LT + ST)
+
+    // ── Dívida bruta (soma: LT + ST, já que Brapi não tem totalDebt agregado) ─
+    rows.push({
+      key: "debt_total",
+      label: "Dívida bruta total",
+      tags: ["dívida total", "total debt"],
+      values: derivedTwo(historicals.balance, "longTermDebt", "shortLongTermDebt", (lt, st) =>
+        (lt ?? 0) + (st ?? 0) || null
+      ),
+      format: "currency",
+    });
 
     // ── Dívida líquida e alavancagem ─────────────────────────────────────
     rows.push({
@@ -211,9 +241,9 @@ export default function StatsFinancialsPage({
 
     // ── Fluxo de caixa ──────────────────────────────────────────────────
     push("ocf", "Caixa operacional (OCF)", "cashflow", "operatingCashFlow", "currency", ["OCF", "operacional", "operating"]);
-    push("capex", "Capex", "cashflow", "capitalExpenditures", "currency", ["capex", "investimento"], true);
+    push("capex", "Capex (investimento total)", "cashflow", "investmentCashFlow", "currency", ["capex", "investimento"], true);
     push("fcf", "Free cash flow (FCF)", "cashflow", "freeCashFlow", "currency", ["FCF", "livre"]);
-    push("div_paid", "Dividendos pagos", "cashflow", "dividendsPaid", "currency", ["proventos pagos", "dividends paid"], true);
+    // div_paid não existe no anual da Brapi — só em quarterly. Removido.
 
     // ── Qualidade do lucro ──────────────────────────────────────────────
     rows.push({

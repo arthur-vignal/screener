@@ -91,7 +91,8 @@ export default function StatsEarningsPage({
     const set = new Set<string>();
     for (const arr of [ksHist, fdHist]) {
       for (const r of arr ?? []) {
-        if (r.endDate) set.add(r.endDate);
+        const year = r.endDate?.slice(0, 4);
+        if (year) set.add(year);
       }
     }
     return Array.from(set).sort((a, b) => b.localeCompare(a));
