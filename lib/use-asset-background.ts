@@ -60,13 +60,14 @@ function perceivedLuminance(hex: string): number {
 }
 
 /**
- * Opacidade calibrada: cor escura → glow forte (até 0.12),
- * cor clara → glow fraco (até 0.06). Mais discreto que v1.
+ * Opacidade calibrada: cor escura → glow forte (até 0.08),
+ * cor clara → glow fraco (até 0.04). Bem mais discreto que v2.
+ * (revisão pós-feedback: ainda estava dominante mesmo em 0.12)
  */
 function glowOpacityForLuminance(lum: number): number {
-  // 0.0 (preto) → 0.12; 0.5 (cinza médio) → 0.09; 1.0 (branco) → 0.06
-  const min = 0.06;
-  const max = 0.12;
+  // 0.0 (preto) → 0.08; 0.5 (cinza médio) → 0.06; 1.0 (branco) → 0.04
+  const min = 0.04;
+  const max = 0.08;
   return max - (max - min) * lum;
 }
 
