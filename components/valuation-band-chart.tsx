@@ -34,6 +34,8 @@ type Props = {
   unit?: "multiple" | "percent";
   /** Cor da linha de média (default: branco). */
   accentColor?: string;
+  /** Slot extra no header — usado pra seletor de múltiplo. */
+  headerExtra?: React.ReactNode;
 };
 
 type Row = {
@@ -49,6 +51,7 @@ export function ValuationBandChart({
   title,
   unit = "multiple",
   accentColor = "#ffffff",
+  headerExtra,
 }: Props) {
   // Processa a série: ordena ascendente por ano, calcula média e σ.
   const rows: Row[] = useMemo(() => {
@@ -230,14 +233,39 @@ export function ValuationBandChart({
               />
             )}
 
-            {/* Linha principal do múltiplo */}
+            {/* Linha principal + pontos color coded por posição vs média.
+                Acima da média = vermelho (caro, cuidado).
+                Abaixo da média = verde (barato, oportunidade).
+                Na média = branco (justo). */}
             <Line
               type="monotone"
               dataKey="value"
-              stroke={accentColor}
-              strokeWidth={1.5}
-              dot={{ r: 2.5, fill: accentColor, fillOpacity: 1, strokeWidth: 0 }}
-              activeDot={{ r: 4, fill: accentColor, strokeWidth: 0 }}
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth={1.25}
+              dot={(props: any) => {
+                const { cx, cy, payload } = props;
+                if (payload?.valid !== true || payload?.value == null) return null;
+                const v = payload.value;
+                const color =
+                  v > mean
+                    ? "var(--negative)"
+                    : v < mean
+                      ? "var(--positive)"
+                      : accentColor;
+                const r =
+                  payload?.zscore != null && Math.abs(payload.zscore) > 1.5 ? 4 : 3;
+                return (
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={r}
+                    fill={color}
+                    stroke="transparent"
+                    fillOpacity={1}
+                  />
+                );
+              }}
+              activeDot={{ r: 5, fill: accentColor, strokeWidth: 0 }}
               isAnimationActive={false}
               connectNulls={false}
             />

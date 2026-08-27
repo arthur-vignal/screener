@@ -64,6 +64,17 @@ export default function ValuationPage({
   );
   const ipca = ipcaData?.ipca ?? [];
 
+  // Benchmarks dos pares do subsetor (qualidade × preço)
+  const { data: peersData } = useSWR<{
+    subSector: string | null;
+    peers: Array<{ symbol: string; name: string; evEbitda: number | null; roic: number | null }>;
+    medians: { evEbitda: number | null; roic: number | null };
+  }>(
+    `/api/peer-benchmarks/${encodeURIComponent(symbol)}`,
+    fetcher,
+    { revalidateOnFocus: false },
+  );
+
   const ks = (data?.keyStatistics ?? {}) as Record<string, number | string | null | undefined>;
   const fd = (data?.financialData ?? {}) as Record<string, number | string | null | undefined>;
 
@@ -176,7 +187,7 @@ export default function ValuationPage({
         />
 
         <div className="mt-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.22em] text-muted-foreground/80">
+          <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.22em] text-foreground">
             <span>Valuation</span>
             {error && <span className="text-[var(--negative)]">dados indisponíveis</span>}
           </div>
@@ -187,12 +198,12 @@ export default function ValuationPage({
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Card 1: P/L Trailing vs CAPE */}
           <div className="rounded-2xl border border-white/10 bg-[#101116] px-5 py-5">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-foreground">
               P/L trailing vs ciclo
             </div>
             <div className="mt-3 flex items-baseline gap-4">
               <div>
-                <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/75">
+                <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/90">
                   Trailing
                 </div>
                 <div className="text-[28px] font-medium tabular-nums tracking-tight text-foreground">
@@ -200,7 +211,7 @@ export default function ValuationPage({
                 </div>
               </div>
               <div>
-                <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/75">
+                <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/90">
                   CAPE (10a)
                 </div>
                 <div
@@ -218,7 +229,7 @@ export default function ValuationPage({
                 </div>
               </div>
             </div>
-            <p className="mt-2 text-[11px] text-muted-foreground/85 leading-relaxed">
+            <p className="mt-2 text-[11px] text-foreground leading-relaxed">
               {cape != null && trailingPE != null ? (
                 cape > trailingPE * 1.5 ? (
                   <>
@@ -239,14 +250,14 @@ export default function ValuationPage({
 
           {/* Card 2: Posição na banda */}
           <div className="rounded-2xl border border-white/10 bg-[#101116] px-5 py-5">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-foreground">
               Posição na banda
             </div>
             {position ? (
               <>
                 <div className="mt-3 flex items-baseline gap-4">
                   <div>
-                    <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/75">
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/90">
                       Atual
                     </div>
                     <div className="text-[28px] font-medium tabular-nums tracking-tight">
@@ -254,7 +265,7 @@ export default function ValuationPage({
                     </div>
                   </div>
                   <div>
-                    <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/75">
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/90">
                       Z-score
                     </div>
                     <div
@@ -273,13 +284,13 @@ export default function ValuationPage({
                     </div>
                   </div>
                 </div>
-                <p className="mt-2 text-[11px] text-muted-foreground/85 leading-relaxed">
+                <p className="mt-2 text-[11px] text-foreground leading-relaxed">
                   <strong className="text-foreground">{position.band}</strong>.{" "}
                   Média {formatMultiple(position.mean)} · σ {formatMultiple(position.std)}.
                 </p>
               </>
             ) : (
-              <p className="mt-3 text-[14px] text-muted-foreground/85">
+              <p className="mt-3 text-[14px] text-foreground">
                 Histórico insuficiente (precisa de ≥2 anos válidos).
               </p>
             )}
@@ -287,7 +298,7 @@ export default function ValuationPage({
 
           {/* Card 3: Spread Earnings Yield vs IPCA 12m */}
           <div className="rounded-2xl border border-white/10 bg-[#101116] px-5 py-5">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-foreground">
               Prêmio real (earnings yield − IPCA 12m)
             </div>
             {realSpread != null ? (
@@ -304,7 +315,7 @@ export default function ValuationPage({
                 >
                   {(realSpread * 100).toFixed(1)} p.p.
                 </div>
-                <p className="mt-2 text-[11px] text-muted-foreground/85 leading-relaxed">
+                <p className="mt-2 text-[11px] text-foreground leading-relaxed">
                   Earnings yield {earningsYield != null ? `${(earningsYield * 100).toFixed(1)}%` : "—"}{" "}
                   − IPCA 12m {ipca12 != null ? `${ipca12.toFixed(1)}%` : "—"}.{" "}
                   {realSpread > 0.05
@@ -315,7 +326,7 @@ export default function ValuationPage({
                 </p>
               </>
             ) : (
-              <p className="mt-3 text-[14px] text-muted-foreground/85">
+              <p className="mt-3 text-[14px] text-foreground">
                 P/L ou IPCA 12m indisponíveis.
               </p>
             )}
@@ -324,36 +335,38 @@ export default function ValuationPage({
 
         {/* ── Faixa central: gráfico de banda (esq) + scatter (dir) ── */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
-          <div className="flex flex-col">
-            {/* Seletor de múltiplo */}
-            <div className="flex items-center gap-1 mb-3 p-0.5 rounded-md border border-white/10 bg-white/[0.02] w-fit">
-              {(Object.keys(MULTIPLE_LABELS) as Multiple[]).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMultiple(m)}
-                  className={`px-3 h-7 rounded text-[12px] transition-colors ${
-                    multiple === m
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {MULTIPLE_LABELS[m]}
-                </button>
-              ))}
-            </div>
-            <ValuationBandChart
-              history={history}
-              current={currentMultiple}
-              title={MULTIPLE_LABELS[multiple]}
-              accentColor="#ffffff"
-            />
-          </div>
+          <ValuationBandChart
+            history={history}
+            current={currentMultiple}
+            title={MULTIPLE_LABELS[multiple]}
+            accentColor="#ffffff"
+            headerExtra={
+              <div className="flex items-center gap-1 p-0.5 rounded-md border border-white/10 bg-white/[0.04]">
+                {(Object.keys(MULTIPLE_LABELS) as Multiple[]).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMultiple(m)}
+                    className={`px-3 h-7 rounded text-[12px] transition-colors ${
+                      multiple === m
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground/85 hover:text-foreground"
+                    }`}
+                  >
+                    {MULTIPLE_LABELS[m]}
+                  </button>
+                ))}
+              </div>
+            }
+          />
           <QualityVsPriceScatter
             roic={roic}
             evEbitda={enterpriseToEbitda}
             wacc={waccProxy}
             loading={isLoading}
+            peers={peersData?.peers}
+            medians={peersData?.medians}
+            subSector={peersData?.subSector ?? undefined}
           />
         </div>
 
@@ -396,7 +409,7 @@ function RatioTile({
     value == null ? "—" : fmt === "multiple" ? formatMultiple(value) : `${value.toFixed(2)}%`;
   return (
     <div className="px-4 py-4 border-r border-white/[0.06] last:border-r-0 border-b border-white/[0.06]">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/90">
         {label}
       </p>
       <p className="mt-1.5 text-[18px] font-medium tabular-nums">{display}</p>
