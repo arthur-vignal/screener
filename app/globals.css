@@ -205,7 +205,7 @@ html, body {
  * Aplicado no container raiz de /asset/[symbol]/* via
  * useAssetBackground(symbol), que injeta:
  *   --asset-glow-color    hex da cor da marca (PETR4=#008542, etc.)
- *   --asset-glow-opacity  calibrada pela luminância (0.07 claro → 0.14 escuro)
+ *   --asset-glow-opacity  calibrada pela luminância (0.10 claro → 0.18 escuro)
  *
  * ARQUITETURA:
  *   .asset-bg           → só background-color: #070709 (base preta).
@@ -228,7 +228,7 @@ html, body {
 /* Pseudo-elemento carrega o glow com opacidade calibrada. Ellipse
    150%×85% espalha lateral e vertical sem hot-spot no topo (v3 com
    200%×120% ficou invisível; v2 com 130%×70% ficou saturado).
-   Falloff 50%. */
+   Falloff 65% — gradiente desce mais antes de sumir. */
 .asset-bg::before {
   content: "";
   position: absolute;
@@ -238,9 +238,9 @@ html, body {
   background: radial-gradient(
     ellipse 150% 85% at 50% 0%,
     var(--asset-glow-color, #475569) 0%,
-    transparent 50%
+    transparent 65%
   );
-  opacity: var(--asset-glow-opacity, 0.105);
+  opacity: var(--asset-glow-opacity, 0.14);
 }
 
 /* Chip de ticker nas news — fundo tingido pela cor da marca quando o
