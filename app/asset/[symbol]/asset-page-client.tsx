@@ -40,6 +40,7 @@ import {
   NewsSummaryCard,
   type NewsSummaryItem,
 } from "@/components/asset/news-summary-card";
+import { PEHistoryChart, type PEHistoryRow } from "@/components/asset/pe-history-chart";
 import { PERatioComparison, type PeerRow } from "@/components/asset/pe-ratio-comparison";
 import { PriceChart, type RangeKey } from "@/components/asset/price-chart";
 import { PriceHero } from "@/components/asset/price-hero";
@@ -119,6 +120,15 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
   }>(`/api/peer-benchmarks/${symbol}`, fetchJson, {
     revalidateOnFocus: false,
   });
+
+  // ── P/E histórico (bandas) ───────────────────────────────────────────
+  // brapi /api/v2/stocks/statistics?mode=history&period=quarterly
+  const { data: peHistoryData } = useSWR<{ history?: PEHistoryRow[] }>(
+    `/api/asset/${symbol}/pe-history`,
+    fetchJson,
+    { revalidateOnFocus: false }
+  );
+  const peHistory = peHistoryData?.history ?? [];
   const peerSymbols = useMemo(
     () =>
       (peerData?.peers ?? [])
@@ -461,13 +471,19 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
             </div>
 
             <div className="grid grid-cols-2 gap-5 mb-5">
-              {/* P/E comparison */}
-              <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
-                <PERatioComparison
-                  mainPe={mainPe}
-                  sectorPe={sectorPeMedian}
-                  peers={peerRows}
+              {/* P/E: histórico (bandas) + comparação com peers */}
+              <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5 flex flex-col gap-4">
+                <PEHistoryChart
+                  history={peHistory}
+                  currentPe={mainPe}
                 />
+                <div className="border-t border-white/[0.06] pt-4">
+                  <PERatioComparison
+                    mainPe={mainPe}
+                    sectorPe={sectorPeMedian}
+                    peers={peerRows}
+                  />
+                </div>
               </div>
 
               {/* EPS quarterly chart */}
