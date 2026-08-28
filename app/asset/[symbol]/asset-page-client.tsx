@@ -156,19 +156,6 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     fetchJson,
     { revalidateOnFocus: false }
   );
-  const peerRows = useMemo<PeerRow[]>(() => {
-    const rows: PeerRow[] = [];
-    for (const sym of batchSymbols) {
-      const pe = batchData?.rows?.find((r) => r.symbol === sym)
-        ?.quote?.priceEarnings;
-      rows.push({
-        symbol: sym,
-        name: peerNameBySymbol.get(sym) ?? sym,
-        pe: pe == null ? null : Number.isFinite(pe) ? pe : null,
-      });
-    }
-    return rows;
-  }, [batchSymbols, batchData, peerNameBySymbol]);
 
   // P/E do ativo: prioriza trailingPE do bundle; se null, calcula
   // price/eps a partir de dados reais (fallback honesto).
@@ -181,6 +168,29 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     }
     return null;
   }, [bundle]);
+
+  const peerRows = useMemo<PeerRow[]>(() => {
+    const rows: PeerRow[] = [];
+    for (const sym of batchSymbols) {
+      let pe: number | null = null;
+      if (sym === symbol) {
+        // Ativo principal: usa mainPe (que tem fallback price/eps).
+        pe = mainPe;
+      } else {
+        // Peer: usa o priceEarnings do batch.
+        const batchPe = batchData?.rows?.find((r) => r.symbol === sym)
+          ?.quote?.priceEarnings;
+        pe =
+          batchPe == null || !Number.isFinite(batchPe) ? null : batchPe;
+      }
+      rows.push({
+        symbol: sym,
+        name: peerNameBySymbol.get(sym) ?? sym,
+        pe,
+      });
+    }
+    return rows;
+  }, [batchSymbols, batchData, peerNameBySymbol, symbol, mainPe]);
 
   // P/E médio do setor (mediano dos peers, excluindo o próprio ativo)
   const sectorPeMedian = useMemo(() => {
