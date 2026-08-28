@@ -1,15 +1,14 @@
 "use client";
 
 /**
- * PriceChart — gráfico de preço full-width com seletor de período.
+ * PriceChart — gráfico de preço estilo Fey TSLA.
  *
- * Padrão (sulfur-chart-theme §4):
- *   - type="monotone", stroke 1.25px (filled)
- *   - área embaixo com gradient sutil (rgba 0.06 → 0)
- *   - grid horizontal sutil
- *   - Y axis à direita com labels muted
- *   - prevClose como ReferenceLine tracejada
- *   - hover com crosshair e tooltip rico (data, preço, variação)
+ * Visual:
+ *   - linha fina + dots em pontos importantes
+ *   - prevClose como ReferenceLine tracejada com label "Previous Close XXX.XX"
+ *   - volume embaixo em barras sutis
+ *   - tabs: 1D | 1W | 1M | 3M | YTD | 1Y | 5Y | All (estilo Fey)
+ *   - sem header interno (gráfico fala sozinho)
  *
  * 3 estados: loading (skeleton com forma), empty (sem candles), ready.
  */
@@ -17,9 +16,10 @@
 import { useMemo } from "react";
 import type { JSX } from "react";
 import {
-  Area,
-  AreaChart,
+  Bar,
   CartesianGrid,
+  ComposedChart,
+  Line,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -27,7 +27,6 @@ import {
   YAxis,
 } from "recharts";
 
-import { PeriodTabs, type PeriodRange } from "@/components/foundation/period-tabs";
 import { Skeleton } from "@/components/foundation/skeleton";
 import {
   CHART_COLORS,
@@ -35,11 +34,21 @@ import {
   cartesianGridProps,
   cursorProps,
   tooltipWrapperStyle,
-  yAxisProps,
 } from "@/lib/chart-theme";
 import { cn } from "@/lib/utils";
-import type { RangeKey } from "./asset-bundle";
-import { RANGE_DAYS } from "./asset-bundle";
+
+export type RangeKey = "1D" | "1W" | "1M" | "3M" | "YTD" | "1Y" | "5Y" | "All";
+
+export const RANGE_DAYS: Record<RangeKey, number | null> = {
+  "1D": 1,
+  "1W": 7,
+  "1M": 30,
+  "3M": 90,
+  "YTD": null, // ano atual — handled no caller
+  "1Y": 365,
+  "5Y": 1825,
+  All: null,
+};
 
 type Candle = {
   date: string;
@@ -61,7 +70,7 @@ type Props = {
   className?: string;
 };
 
-const RANGES: RangeKey[] = ["1D", "7D", "30D", "1Y", "Max"];
+const RANGES: RangeKey[] = ["1D", "1W", "1M", "3M", "YTD", "1Y", "5Y", "All"];
 
 export function PriceChart({
   candles,
@@ -72,46 +81,55 @@ export function PriceChart({
   className,
 }: Props): JSX.Element {
   if (loading) return <LoadingChart className={className} />;
-  if (candles.length === 0)
-    return (
-      <EmptyChart
-        range={range}
-        onRangeChange={onRangeChange}
-        className={className}
-      />
-    );
 
   return (
-    <div
-      className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-5",
-        className
-      )}
-    >
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
-          Histórico de preço
+    <div className={cn("relative", className)}>
+      {/* Previous Close label (estilo Fey) */}
+      {prevClose != null && candles.length > 0 && (
+        <div className="absolute top-0 right-2 text-[10px] text-muted-foreground/70 pointer-events-none z-10">
+          <div>Previous Close</div>
+          <div className="tabular-nums text-foreground/85 font-medium">
+            {prevClose.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </div>
         </div>
-        <PeriodTabs
-          value={rangeToPeriodRange(range)}
-          onChange={(v) => onRangeChange(periodRangeToRange(v))}
-          presets={RANGES.map((r) => ({
-            label: r,
-            value: rangeToPeriodRange(r),
-          }))}
-        />
+      )}
+
+      <div className="h-[360px] w-full">
+        {candles.length === 0 ? (
+          <EmptyChart />
+        ) : (
+          <ResponsiveContainer>
+            <ChartInner candles={candles} prevClose={prevClose ?? null} />
+          </ResponsiveContainer>
+        )}
       </div>
 
-      <div className="h-[320px] w-full">
-        <ResponsiveContainer>
-          <ChartInner candles={candles} prevClose={prevClose ?? null} />
-        </ResponsiveContainer>
+      {/* Tabs embaixo (estilo Fey) */}
+      <div className="mt-4 flex items-center gap-1">
+        {RANGES.map((r) => (
+          <button
+            key={r}
+            type="button"
+            onClick={() => onRangeChange(r)}
+            className={cn(
+              "px-3 py-1.5 rounded text-[12px] font-medium transition-colors",
+              range === r
+                ? "bg-white/[0.04] text-foreground border border-white/10"
+                : "text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.02]"
+            )}
+          >
+            {r}
+          </button>
+        ))}
       </div>
     </div>
   );
 }
 
-// ─── Inner chart (sofre do RULES OF HOOKS — useMemo aqui dentro) ─────────────
+// ─── Inner chart ────────────────────────────────────────────────────────────
 
 function ChartInner({
   candles,
@@ -124,21 +142,18 @@ function ChartInner({
     () =>
       candles.map((c) => ({
         timestamp: c.timestamp,
-        date: c.date,
         close: c.close,
+        volume: c.volume,
       })),
     [candles]
   );
 
+  // Volume renderizado em painel separado (YAxis à esquerda do volume)
   return (
-    <AreaChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-      <defs>
-        <linearGradient id="priceFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity={0.12} />
-          <stop offset="100%" stopColor="#ffffff" stopOpacity={0} />
-        </linearGradient>
-      </defs>
-
+    <ComposedChart
+      data={data}
+      margin={{ top: 24, right: 16, left: 0, bottom: 0 }}
+    >
       <CartesianGrid {...cartesianGridProps} />
 
       <XAxis
@@ -149,7 +164,25 @@ function ChartInner({
         tickFormatter={formatX}
         {...axisProps}
       />
-      <YAxis {...yAxisProps} tickFormatter={formatY} domain={["auto", "auto"]} />
+      <YAxis
+        yAxisId="price"
+        orientation="right"
+        tick={{ fill: CHART_COLORS.axisTick, fontSize: 10 }}
+        tickFormatter={(v: number) => v.toFixed(0)}
+        axisLine={{ stroke: CHART_COLORS.axisLine, strokeWidth: 1 }}
+        tickLine={false}
+        width={48}
+        domain={["auto", "auto"]}
+      />
+      <YAxis
+        yAxisId="volume"
+        orientation="left"
+        tick={false}
+        axisLine={false}
+        tickLine={false}
+        width={0}
+        domain={[0, "auto"]}
+      />
 
       <Tooltip
         content={<PriceTooltip />}
@@ -160,22 +193,35 @@ function ChartInner({
       {prevClose != null && (
         <ReferenceLine
           y={prevClose}
+          yAxisId="price"
           stroke={CHART_COLORS.gridLineStrong}
           strokeDasharray="3 3"
           strokeWidth={1}
         />
       )}
 
-      <Area
+      {/* Volume embaixo (barras sutis) */}
+      <Bar
+        yAxisId="volume"
+        dataKey="volume"
+        fill={CHART_COLORS.seriesPrimary}
+        fillOpacity={0.15}
+        isAnimationActive={false}
+      />
+
+      {/* Linha de preço */}
+      <Line
+        yAxisId="price"
         type="monotone"
         dataKey="close"
         stroke={CHART_COLORS.seriesPrimary}
         strokeWidth={1.25}
-        fill="url(#priceFill)"
+        dot={false}
+        activeDot={{ r: 4, fill: CHART_COLORS.seriesPrimary }}
         isAnimationActive={false}
         connectNulls={false}
       />
-    </AreaChart>
+    </ComposedChart>
   );
 }
 
@@ -186,7 +232,9 @@ function PriceTooltip({
   payload,
 }: {
   active?: boolean;
-  payload?: Array<{ payload: { timestamp: number; close: number } }>;
+  payload?: Array<{
+    payload: { timestamp: number; close: number; volume: number };
+  }>;
 }): JSX.Element | null {
   if (!active || !payload || payload.length === 0) return null;
   const p = payload[0].payload;
@@ -216,6 +264,17 @@ function PriceTooltip({
       >
         R$ {p.close.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
       </p>
+      {p.volume > 0 && (
+        <p
+          style={{
+            color: CHART_COLORS.tooltipMuted,
+            fontSize: 10,
+            marginTop: 4,
+          }}
+        >
+          Vol {p.volume.toLocaleString("pt-BR", { notation: "compact" })}
+        </p>
+      )}
     </div>
   );
 }
@@ -224,56 +283,27 @@ function PriceTooltip({
 
 function LoadingChart({ className }: { className?: string }): JSX.Element {
   return (
-    <div
-      className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-5",
-        className
-      )}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <Skeleton className="h-3 w-32" />
-        <Skeleton className="h-8 w-72" />
+    <div className={cn(className)}>
+      <Skeleton className="h-[360px] w-full" roundedMd />
+      <div className="mt-4 flex gap-1">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={i} className="h-7 w-12" />
+        ))}
       </div>
-      <Skeleton className="h-[320px] w-full" roundedMd />
     </div>
   );
 }
 
-function EmptyChart({
-  range,
-  onRangeChange,
-  className,
-}: {
-  range: RangeKey;
-  onRangeChange: (r: RangeKey) => void;
-  className?: string;
-}): JSX.Element {
+function EmptyChart(): JSX.Element {
   return (
-    <div
-      className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-5",
-        className
-      )}
-    >
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
-          Histórico de preço
-        </div>
-        <PeriodTabs
-          value={rangeToPeriodRange(range)}
-          onChange={(v) => onRangeChange(periodRangeToRange(v))}
-          presets={RANGES.map((r) => ({ label: r, value: rangeToPeriodRange(r) }))}
-        />
-      </div>
-      <div className="h-[320px] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-[14px] text-foreground">
-            Sem dados de preço pra este período.
-          </p>
-          <p className="mt-1.5 text-[12px] text-muted-foreground/85">
-            Pode ser IPO recente ou indisponibilidade na Brapi.
-          </p>
-        </div>
+    <div className="h-[360px] flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-[14px] text-foreground">
+          Sem dados de preço.
+        </p>
+        <p className="mt-1.5 text-[12px] text-muted-foreground/70">
+          Pode ser IPO recente ou indisponibilidade na Brapi.
+        </p>
       </div>
     </div>
   );
@@ -287,31 +317,4 @@ function formatX(ts: number): string {
     day: "2-digit",
     month: "short",
   });
-}
-
-function formatY(v: number): string {
-  if (v >= 1000) return v.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
-  return v.toFixed(2);
-}
-
-function rangeToPeriodRange(r: RangeKey): PeriodRange {
-  if (r === "Max") return { startYear: null, endYear: null };
-  const days = RANGE_DAYS[r];
-  if (days == null) return { startYear: null, endYear: null };
-  const start = new Date();
-  start.setDate(start.getDate() - days);
-  return {
-    startYear: start.getFullYear(),
-    endYear: null,
-  };
-}
-
-function periodRangeToRange(v: PeriodRange): RangeKey {
-  if (!v.startYear) return "Max";
-  const yearsAgo = new Date().getFullYear() - v.startYear;
-  if (yearsAgo <= 0) return "1D";
-  if (yearsAgo <= 1) return "1Y";
-  if (yearsAgo <= 3) return "30D";
-  if (yearsAgo <= 7) return "30D";
-  return "Max";
 }

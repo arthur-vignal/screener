@@ -1,20 +1,21 @@
 "use client";
 
 /**
- * AssetHeader — header da página /asset/[symbol].
+ * AssetHeader — header da página /asset/[symbol] (estilo Fey TSLA).
  *
  * Layout:
- *   ┌──────┬─────────────────────────────────────┬──────────┐
- *   │ ←    │ [logo] PETR4                        │  ANALYZE │
- *   │      │ Petrobras ...                       │          │
- *   └──────┴─────────────────────────────────────┴──────────┘
- *
- * Toggle BRL/USD (pílula canto superior direito) — switch entre
- * moeda local e USD pra cotações.
+ *   [←] [logo] PETR4                       [Analyze] [⤓] [⚙] [☐]
+ *         Energia                          3 ícones (analyze, dropdown, bookmark)
+ *         Petrobras ...
  */
 
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import {
+  Bookmark,
+  ChevronDown,
+  ChevronLeft,
+  Settings,
+} from "lucide-react";
 import type { JSX } from "react";
 
 import { TickerLogo } from "@/components/foundation/ticker-logo";
@@ -25,10 +26,6 @@ type Props = {
   longName: string | null;
   shortName: string | null;
   sector: string;
-  /** Moeda atual exibida. */
-  currency: "BRL" | "USD";
-  /** Callback do toggle. */
-  onCurrencyChange: (next: "BRL" | "USD") => void;
   className?: string;
 };
 
@@ -37,14 +34,12 @@ export function AssetHeader({
   longName,
   shortName,
   sector,
-  currency,
-  onCurrencyChange,
   className,
 }: Props): JSX.Element {
   return (
     <header
       className={cn(
-        "flex items-center justify-between gap-6 pb-5 border-b border-border/40",
+        "flex items-center justify-between gap-6 pb-5",
         className
       )}
     >
@@ -55,104 +50,78 @@ export function AssetHeader({
           aria-label="Voltar para a home"
           title="Voltar"
           className={cn(
-            "shrink-0 flex items-center justify-center h-10 w-10 rounded-md",
-            "bg-white/[0.04] border border-white/10 text-muted-foreground/85",
-            "hover:bg-white/[0.08] hover:border-white/20 hover:text-foreground",
+            "shrink-0 flex items-center justify-center h-9 w-9 rounded-md",
+            "text-muted-foreground/85",
+            "hover:bg-white/[0.04] hover:text-foreground",
             "transition-colors cursor-pointer"
           )}
         >
           <ChevronLeft className="h-5 w-5" strokeWidth={2} />
         </Link>
 
-        <TickerLogo symbol={symbol} size="lg" />
+        <TickerLogo symbol={symbol} size="md" />
 
         <div className="min-w-0">
-          <div className="flex items-baseline gap-3">
-            <h1 className="text-[32px] font-semibold tracking-tight text-foreground">
+          <div className="flex items-center gap-3">
+            <h1 className="text-[16px] font-semibold tracking-tight text-foreground">
               {symbol}
             </h1>
             {sector && (
-              <span className="text-[12px] uppercase tracking-[0.14em] text-muted-foreground/85 font-medium">
+              <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/85 font-medium">
                 {sector}
               </span>
             )}
           </div>
           {(longName ?? shortName) && (
-            <p className="text-[13px] text-muted-foreground/85 truncate max-w-[60ch]">
+            <p className="text-[12px] text-muted-foreground/70 truncate max-w-[60ch]">
               {longName ?? shortName}
             </p>
           )}
         </div>
       </div>
 
-      {/* Direita: toggle moeda + ANALYZE */}
-      <div className="flex items-center gap-3 shrink-0">
-        <div
+      {/* Direita: ações (estilo Fey TSLA) */}
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
           className={cn(
-            "inline-flex bg-white/[0.02] rounded-md border border-white/10 p-0.5"
+            "inline-flex items-center gap-1.5 h-8 px-3 rounded-md",
+            "bg-white/[0.04] border border-white/10 text-foreground",
+            "text-[12px] font-medium",
+            "hover:bg-white/[0.08] hover:border-white/20",
+            "transition-colors cursor-pointer"
           )}
-          role="tablist"
-          aria-label="Moeda"
         >
-          <CurrencyPill
-            active={currency === "BRL"}
-            onClick={() => onCurrencyChange("BRL")}
-          >
-            BRL
-          </CurrencyPill>
-          <CurrencyPill
-            active={currency === "USD"}
-            onClick={() => onCurrencyChange("USD")}
-          >
-            USD
-          </CurrencyPill>
-        </div>
+          <Settings className="h-3.5 w-3.5" strokeWidth={2} />
+          Analyze
+        </button>
 
         <button
           type="button"
-          onClick={() => {
-            // FUTURO: abrir modal de análise completa (Phase 4 — leva dedicada).
-            // Por enquanto só loga.
-            // eslint-disable-next-line no-console
-            console.log("ANALYZE clicked", symbol);
-          }}
+          aria-label="Mais opções"
           className={cn(
-            "inline-flex items-center gap-1.5 h-10 px-4 rounded-md",
-            "bg-[var(--primary)] text-[#070709]",
-            "text-[13px] font-semibold",
-            "hover:opacity-90 transition-opacity cursor-pointer"
+            "inline-flex items-center justify-center h-8 w-8 rounded-md",
+            "bg-white/[0.04] border border-white/10 text-foreground",
+            "hover:bg-white/[0.08] hover:border-white/20",
+            "transition-colors cursor-pointer"
           )}
         >
-          Analyze
+          <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
+        </button>
+
+        <button
+          type="button"
+          aria-label="Adicionar aos favoritos"
+          className={cn(
+            "inline-flex items-center justify-center h-8 w-8 rounded-md",
+            "bg-white/[0.04] border border-white/10 text-foreground",
+            "hover:bg-white/[0.08] hover:border-white/20",
+            "transition-colors cursor-pointer"
+          )}
+        >
+          <Bookmark className="h-3.5 w-3.5" strokeWidth={2} />
         </button>
       </div>
     </header>
-  );
-}
-
-function CurrencyPill({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}): JSX.Element {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={cn(
-        "px-3 py-1.5 rounded text-[12px] font-medium transition-colors",
-        active
-          ? "bg-white/[0.06] text-foreground"
-          : "text-muted-foreground hover:text-foreground"
-      )}
-    >
-      {children}
-    </button>
   );
 }

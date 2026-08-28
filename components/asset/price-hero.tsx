@@ -1,19 +1,19 @@
 "use client";
 
 /**
- * PriceHero — preço corrente + variação do dia (logo abaixo do header).
+ * PriceHero — preço corrente + variação (estilo Fey TSLA).
  *
  * Layout:
- *   R$ 18,96                 +R$ 0,05
- *   −0,11%  today            +0,26%
+ *   $329.22  −1.30 (−0.39%)          USD · Nasdaq
  *
- * Skeleton quando loading. Empty/error states discretos.
+ *   (sem market state pill, sem botão, sem nada além)
+ *
+ * Skeleton quando loading.
  */
 
 import { ArrowDown, ArrowUp } from "lucide-react";
 import type { JSX } from "react";
 
-import { Delta } from "@/components/foundation/delta";
 import { Skeleton } from "@/components/foundation/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -22,8 +22,8 @@ type Props = {
   currency: "BRL" | "USD";
   change: number | null;
   changePercent: number | null;
-  prevClose: number | null;
-  marketState?: string;
+  /** Localização (ex: "B3"). Mostrado à direita do preço. */
+  location?: string | null;
   loading?: boolean;
   className?: string;
 };
@@ -33,82 +33,58 @@ export function PriceHero({
   currency,
   change,
   changePercent,
-  prevClose,
-  marketState,
+  location,
   loading,
   className,
 }: Props): JSX.Element {
   if (loading) return <LoadingHero className={className} />;
 
-  const priceStr = formatPrice(price, currency);
+  const isPositive = (change ?? 0) >= 0;
+  const changeColor = isPositive ? "text-[var(--positive)]" : "text-[var(--negative)]";
+  const ChangeIcon = isPositive ? ArrowUp : ArrowDown;
+
+  const locationText = location
+    ? `${currency} · ${location}`
+    : currency;
 
   return (
-    <div
-      className={cn(
-        "flex items-end justify-between gap-6 py-5",
-        className
-      )}
-    >
-      {/* Preço */}
-      <div>
-        <div className="text-[48px] font-semibold tabular-nums text-foreground leading-none tracking-tight">
-          {priceStr}
+    <div className={cn("flex items-end justify-between gap-6 py-4", className)}>
+      {/* Preço + delta inline */}
+      <div className="flex items-baseline gap-3">
+        <div className="text-[32px] font-semibold tabular-nums text-foreground leading-none tracking-tight">
+          {formatPrice(price, currency)}
         </div>
-        <div className="mt-2 flex items-center gap-2 text-[13px] text-muted-foreground/85">
-          {prevClose != null && (
-            <span className="tabular-nums">
-              Fechamento anterior {formatPrice(prevClose, currency)}
+        {change != null && changePercent != null && (
+          <div className={cn("flex items-center gap-1 text-[14px] font-medium tabular-nums", changeColor)}>
+            <ChangeIcon className="h-3.5 w-3.5" strokeWidth={2.25} />
+            {formatAbsCurrency(change, currency)}
+            <span className="opacity-90">
+              ({isPositive ? "+" : "−"}
+              {Math.abs(changePercent).toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+              %)
             </span>
-          )}
-          {marketState && (
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5",
-                marketState === "REGULAR" && "text-[var(--positive)]",
-                marketState === "CLOSED" && "text-muted-foreground/70"
-              )}
-            >
-              {marketState === "REGULAR" ? (
-                <ArrowUp className="h-3 w-3" />
-              ) : (
-                <ArrowDown className="h-3 w-3" />
-              )}
-              {marketState === "REGULAR" ? "Mercado aberto" : "Mercado fechado"}
-            </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* Variação */}
-      <div className="text-right">
-        {change != null && (
-          <div className="text-[20px] font-semibold tabular-nums">
-            {change >= 0 ? "+" : "−"}
-            {formatCurrency(Math.abs(change), currency)}
-          </div>
-        )}
-        {changePercent != null && (
-          <div className="mt-1 flex items-center justify-end gap-1.5">
-            <Delta value={changePercent} unit="percent" size="md" />
-            <span className="text-[12px] text-muted-foreground/70">today</span>
-          </div>
-        )}
-      </div>
+      {/* Localização */}
+      {locationText && (
+        <div className="text-[12px] text-muted-foreground/70 shrink-0">
+          {locationText}
+        </div>
+      )}
     </div>
   );
 }
 
 function LoadingHero({ className }: { className?: string }): JSX.Element {
   return (
-    <div className={cn("flex items-end justify-between gap-6 py-5", className)}>
-      <div>
-        <Skeleton className="h-12 w-56 mb-3" roundedMd />
-        <Skeleton className="h-3.5 w-72" />
-      </div>
-      <div className="text-right">
-        <Skeleton className="h-6 w-28 mb-2" roundedMd />
-        <Skeleton className="h-4 w-24" />
-      </div>
+    <div className={cn("flex items-end justify-between gap-6 py-4", className)}>
+      <Skeleton className="h-9 w-48" roundedMd />
+      <Skeleton className="h-3.5 w-24" />
     </div>
   );
 }
@@ -117,19 +93,19 @@ function LoadingHero({ className }: { className?: string }): JSX.Element {
 
 function formatPrice(v: number | null, currency: "BRL" | "USD"): string {
   if (v == null) return "—";
-  return v.toLocaleString("pt-BR", {
-    style: "currency",
-    currency,
+  // Fey usa símbolo da moeda antes do número (estilo en-US: "$329.22")
+  const symbol = currency === "USD" ? "$" : "R$";
+  const formatted = v.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+  return `${symbol}${formatted}`;
 }
 
-function formatCurrency(v: number, currency: "BRL" | "USD"): string {
-  return v.toLocaleString("pt-BR", {
-    style: "currency",
-    currency,
+function formatAbsCurrency(v: number, currency: "BRL" | "USD"): string {
+  const symbol = currency === "USD" ? "$" : "R$";
+  return `${v >= 0 ? "" : "−"}${symbol}${Math.abs(v).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  });
+  })}`;
 }
