@@ -3,14 +3,19 @@
 /**
  * PriceChart — gráfico de preço estilo Fey TSLA.
  *
+ * Mudanças aplicadas:
+ *   - Eixo X usa escala por ÍNDICE (não tempo), pra evitar linhas
+ *     conectando fim de um dia ao início do próximo. Labels mostram
+ *     data formatada do row, mas a escala é discreta.
+ *   - Animação fluida: isAnimationActive + duration 1500ms ease-in-out.
+ *   - Altura maior: h-[560px] (2/3 confortável da tela).
+ *   - cursor-pointer nas tabs.
+ *
  * Visual:
  *   - linha fina + dots em pontos importantes
  *   - prevClose como ReferenceLine tracejada com label "Previous Close XXX.XX"
  *   - volume embaixo em barras sutis
  *   - tabs: 1D | 1W | 1M | 3M | YTD | 1Y | 5Y | All (estilo Fey)
- *   - sem header interno (gráfico fala sozinho)
- *
- * 3 estados: loading (skeleton com forma), empty (sem candles), ready.
  */
 
 import { useMemo } from "react";
@@ -30,7 +35,6 @@ import {
 import { Skeleton } from "@/components/foundation/skeleton";
 import {
   CHART_COLORS,
-  axisProps,
   cartesianGridProps,
   cursorProps,
   tooltipWrapperStyle,
@@ -38,17 +42,6 @@ import {
 import { cn } from "@/lib/utils";
 
 export type RangeKey = "1D" | "1W" | "1M" | "3M" | "YTD" | "1Y" | "5Y" | "All";
-
-export const RANGE_DAYS: Record<RangeKey, number | null> = {
-  "1D": 1,
-  "1W": 7,
-  "1M": 30,
-  "3M": 90,
-  "YTD": null, // ano atual — handled no caller
-  "1Y": 365,
-  "5Y": 1825,
-  All: null,
-};
 
 type Candle = {
   date: string;
@@ -97,7 +90,7 @@ export function PriceChart({
         </div>
       )}
 
-      <div className="h-[360px] w-full">
+      <div className="h-[560px] w-full">
         {candles.length === 0 ? (
           <EmptyChart />
         ) : (
@@ -115,7 +108,7 @@ export function PriceChart({
             type="button"
             onClick={() => onRangeChange(r)}
             className={cn(
-              "px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors",
+              "px-3 py-1.5 rounded-md text-[12px] font-medium cursor-pointer transition-colors",
               range === r
                 ? "bg-white/[0.04] text-foreground border border-white/10"
                 : "text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.02]"
@@ -138,19 +131,21 @@ function ChartInner({
   candles: Candle[];
   prevClose: number | null;
 }) {
+  // Adiciona índice discreto (0,1,2,...) em cada candle. A escala do
+  // eixo X vira categórica, então gaps (mercado fechado, fins de semana)
+  // NÃO são desenhados — a linha quebra entre candles adjacentes.
   const data = useMemo(
     () =>
-      candles.map((c) => ({
+      candles.map((c, i) => ({
+        index: i,
         timestamp: c.timestamp,
+        date: c.date,
         close: c.close,
         volume: c.volume,
       })),
     [candles]
   );
 
-  // Volume renderizado em painel separado (YAxis à esquerda do volume)
-  // Usamos `stackId` para empilhar e o domain do YAxis do volume limitado
-  // pra 1/4 da altura do chart (volume fica sutil embaixo).
   return (
     <ComposedChart
       data={data}
@@ -158,18 +153,34 @@ function ChartInner({
     >
       <CartesianGrid {...cartesianGridProps} />
 
+      {/* Eixo X categórico — quebra visual entre candles (sem conectar
+          pregões consecutivos) */}
       <XAxis
-        dataKey="timestamp"
+        dataKey="index"
         type="number"
         domain={["dataMin", "dataMax"]}
-        scale="time"
-        tickFormatter={formatX}
-        {...axisProps}
+        tickFormatter={(idx: number) =>
+          formatXByIdx(data, idx)
+        }
+        interval="preserveStartEnd"
+        minTickGap={48}
+        tick={{
+          fill: CHART_COLORS.axisTick,
+          fontSize: 10,
+          fontFamily: "var(--font-manrope), system-ui, sans-serif",
+        }}
+        axisLine={{ stroke: CHART_COLORS.axisLine, strokeWidth: 1 }}
+        tickLine={false}
+        height={24}
       />
       <YAxis
         yAxisId="price"
         orientation="right"
-        tick={{ fill: CHART_COLORS.axisTick, fontSize: 10 }}
+        tick={{
+          fill: CHART_COLORS.axisTick,
+          fontSize: 10,
+          fontFamily: "var(--font-manrope), system-ui, sans-serif",
+        }}
         tickFormatter={(v: number) => v.toFixed(0)}
         axisLine={{ stroke: CHART_COLORS.axisLine, strokeWidth: 1 }}
         tickLine={false}
@@ -183,7 +194,7 @@ function ChartInner({
         axisLine={false}
         tickLine={false}
         width={0}
-        domain={[0, (dataMax: number) => dataMax * 4]} // limita volume a 1/4 da altura
+        domain={[0, (dataMax: number) => dataMax * 4]}
       />
 
       <Tooltip
@@ -208,19 +219,24 @@ function ChartInner({
         dataKey="volume"
         fill={CHART_COLORS.seriesPrimary}
         fillOpacity={0.12}
-        isAnimationActive={false}
+        isAnimationActive={true}
+        animationDuration={1500}
+        animationEasing="ease-out"
       />
 
-      {/* Linha de preço */}
+      {/* Linha de preço — animação fluida da esquerda pra direita */}
       <Line
         yAxisId="price"
         type="monotone"
         dataKey="close"
         stroke={CHART_COLORS.seriesPrimary}
-        strokeWidth={1.25}
+        strokeWidth={1.5}
         dot={false}
         activeDot={{ r: 4, fill: CHART_COLORS.seriesPrimary }}
-        isAnimationActive={false}
+        isAnimationActive={true}
+        animationBegin={0}
+        animationDuration={1800}
+        animationEasing="ease-out"
         connectNulls={false}
       />
     </ComposedChart>
@@ -238,13 +254,15 @@ function PriceTooltip({
     name?: string;
     value?: number | string;
     dataKey?: string;
-    payload?: { timestamp: number; close: number; volume: number };
+    payload?: { timestamp: number; close: number; volume: number; date: string };
   }>;
 }): JSX.Element | null {
   if (!active || !payload || payload.length === 0) return null;
 
   // Filtra: pega só a entry do "close" (ignora volume/linhas extras).
-  const closeEntry = payload.find((e) => e.dataKey === "close" || e.name === "close");
+  const closeEntry = payload.find(
+    (e) => e.dataKey === "close" || e.name === "close"
+  );
   if (!closeEntry || !closeEntry.payload) return null;
 
   const p = closeEntry.payload;
@@ -294,7 +312,7 @@ function PriceTooltip({
 function LoadingChart({ className }: { className?: string }): JSX.Element {
   return (
     <div className={cn(className)}>
-      <Skeleton className="h-[360px] w-full" roundedMd />
+      <Skeleton className="h-[560px] w-full" roundedMd />
       <div className="mt-4 flex gap-1">
         {Array.from({ length: 8 }).map((_, i) => (
           <Skeleton key={i} className="h-7 w-12" />
@@ -306,7 +324,7 @@ function LoadingChart({ className }: { className?: string }): JSX.Element {
 
 function EmptyChart(): JSX.Element {
   return (
-    <div className="h-[360px] flex items-center justify-center">
+    <div className="h-[560px] flex items-center justify-center">
       <div className="text-center">
         <p className="text-[14px] text-foreground">
           Sem dados de preço.
@@ -321,8 +339,30 @@ function EmptyChart(): JSX.Element {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function formatX(ts: number): string {
-  const d = new Date(ts);
+type DataRow = {
+  index: number;
+  timestamp: number;
+  date: string;
+  close: number;
+  volume: number;
+};
+
+/**
+ * Formata o tick do eixo X com base na posição do candle no array.
+ * - Intraday (1D, 1W): mostra hora "HH:MM"
+ * - Outros: mostra data "DD MMM"
+ */
+function formatXByIdx(data: DataRow[], idx: number): string {
+  const row = data[idx];
+  if (!row) return "";
+  const d = new Date(row.timestamp);
+  const isIntraday = row.timestamp > Date.now() - 7 * 24 * 3600 * 1000;
+  if (isIntraday) {
+    return d.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
   return d.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",

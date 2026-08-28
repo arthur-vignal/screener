@@ -55,7 +55,7 @@ export function NewsSummaryCard({
     : null;
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
+    <div className={cn("flex flex-col h-full min-h-[560px]", className)}>
       {/* Card */}
       <div className="flex-1 rounded-2xl border border-white/10 bg-[#101116] p-5 flex flex-col">
         <div className="flex items-center justify-between mb-4">
@@ -141,7 +141,7 @@ function TabPill({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "px-3.5 py-1.5 rounded-md text-[12px] font-medium transition-colors",
+        "px-3.5 py-1.5 rounded-md text-[12px] font-medium cursor-pointer transition-colors",
         active
           ? "bg-white/[0.04] text-foreground border border-white/10"
           : "text-muted-foreground/70 hover:text-foreground"
