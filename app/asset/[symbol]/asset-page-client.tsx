@@ -229,17 +229,15 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
       .sort((a, b) => a.endDate.localeCompare(b.endDate));
 
     // Fallback: se a brapi não retornou incomeQuarterly, mas tem eps
-    // (TTM) + revenue, derivamos 1 ponto "TTM" baseado no dado TTM
-    // (NÃO é histórico real — é o agregado TTM mostrado como ponto
+    // (TTM) + revenue, criamos 1 ponto "TTM" agregado (NÃO é histórico
+    // real — é o agregado dos últimos 12 meses mostrado como ponto
     // único pra preencher o gráfico com honestidade).
     if (quarters.length === 0) {
       const ttmEps = bundle?.metrics?.eps ?? bundle?.metrics?.forwardEps;
       if (ttmEps != null) {
-        const lastDate = new Date();
-        // TTM = ano atual; usa o endDate do último annual
-        const yearEnd = `${lastDate.getUTCFullYear()}-12-31`;
+        // endDate fictício só pro eixo X — label real é "TTM"
         quarters.push({
-          endDate: yearEnd,
+          endDate: "TTM",
           epsBasic: ttmEps,
           revenue: bundle?.metrics?.revenue ?? null,
         });
@@ -520,8 +518,10 @@ function toIso(seconds: number | undefined): string {
   return new Date(seconds * 1000).toISOString();
 }
 
-// Helper: formata endDate (ISO "YYYY-MM-DD") pra "Q1 2024"
+// Helper: formata endDate (ISO "YYYY-MM-DD") pra "Q1 2024".
+// Se endDate for "TTM" (fallback), retorna como está.
 function formatQuarterLabel(endDate: string): string {
+  if (endDate === "TTM") return "TTM";
   const d = new Date(endDate + "T00:00:00Z");
   if (Number.isNaN(d.getTime())) return endDate;
   const month = d.getUTCMonth() + 1;

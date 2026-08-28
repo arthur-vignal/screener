@@ -38,6 +38,14 @@ type Props = {
   className?: string;
 };
 
+/** Decide número de colunas baseado na quantidade de results. */
+function gridColsFor(n: number): string {
+  if (n <= 1) return "grid-cols-1";
+  if (n === 2) return "grid-cols-2";
+  if (n === 3) return "grid-cols-3";
+  return "grid-cols-2 lg:grid-cols-4";
+}
+
 export function QuarterResults({
   results,
   currency,
@@ -54,12 +62,7 @@ export function QuarterResults({
   }
 
   return (
-    <div
-      className={cn(
-        "grid grid-cols-2 lg:grid-cols-4 gap-3",
-        className
-      )}
-    >
+    <div className={cn("grid gap-3", gridColsFor(results.length), className)}>
       {results.map((r, idx) => (
         <QuarterCard key={`${r.label}-${idx}`} result={r} currency={currency} />
       ))}
