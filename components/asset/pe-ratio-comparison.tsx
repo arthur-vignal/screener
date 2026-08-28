@@ -3,13 +3,23 @@
 /**
  * PERatioComparison — tabela comparativa de P/E com barra inline (estilo Fey TSLA).
  *
- * Visual: tabela com ticker + P/E value + barra horizontal que mostra
- * magnitude relativa. Barra colorida verde se P/E "razoável" (< 20)
- * e vermelho se alto (> 30).
+ * Visual (replica o print Fey TSLA):
+ *   P/E ratio
+ *   TSLA is 594% above sector average
  *
- * ⚠️ ATENÇÃO: a Brapi v2 não retorna P/E de peers automaticamente.
- * Por ora, este componente recebe `peers` via prop. Quando integrarmos
- * com /api/peer-benchmarks/[symbol], trocamos a fonte.
+ *   F       ████  6.3
+ *   HMC     ████  6
+ *   GM      ████  7.7
+ *   MBGYY   N/A
+ *   TSLA    ██████████████████  149
+ *
+ * - Lista de peers (default: 5) vindo do /api/peer-benchmarks.
+ * - Ativo principal destacado (font weight maior).
+ * - Barra colorida: verde se P/E "razoável" (< 20), vermelho se alto (> 30).
+ * - Setor (mediano dos peers) calculado client-side.
+ * - "X% above/below sector average" = (mainPe - sectorPe) / sectorPe.
+ *
+ * Dados REAIS via /api/peer-benchmarks e /api/assets/quote.
  */
 
 import type { JSX } from "react";
@@ -25,11 +35,13 @@ export type PeerRow = {
 type Props = {
   /** P/E do ativo principal (referência). */
   mainPe: number | null;
-  /** P/E da média do setor (referência pra texto descritivo). */
+  /** Setor (P/E médio). Opcional — calculado se ausente. */
   sectorPe?: number | null;
-  /** Lista de peers (incluindo o ativo principal, se quiser). */
+  /** Lista de peers (incluindo o principal, se quiser). */
   peers: PeerRow[];
-  /** Moeda (placeholder, futuro). */
+  /** Quantos peers mostrar (default: 4 + ativo = 5). */
+  peerLimit?: number;
+  /** Moeda pra formatação (atualmente não usado, P/E é adimensional). */
   className?: string;
 };
 
@@ -39,13 +51,14 @@ function maxScale(peers: PeerRow[]): number {
     .map((p) => p.pe)
     .filter((v): v is number => v != null && v > 0 && v < 500);
   if (valid.length === 0) return 30;
-  return Math.max(...valid) * 1.1;
+  return Math.max(...valid) * 1.05;
 }
 
 export function PERatioComparison({
   mainPe,
   sectorPe,
   peers,
+  peerLimit = 4,
   className,
 }: Props): JSX.Element {
   // Texto descritivo: "X% above/below sector average"
@@ -53,8 +66,7 @@ export function PERatioComparison({
     if (mainPe == null || sectorPe == null || sectorPe === 0) return null;
     const pct = Math.round(((mainPe - sectorPe) / sectorPe) * 100);
     if (pct === 0) return null;
-    const sign = pct > 0 ? "above" : "below";
-    return { pct: Math.abs(pct), sign };
+    return { pct: Math.abs(pct), sign: pct > 0 ? "above" : "below" };
   })();
 
   const scale = maxScale(peers);
@@ -62,28 +74,23 @@ export function PERatioComparison({
   return (
     <div className={cn("flex flex-col", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-baseline justify-between mb-3">
         <div className="text-[14px] font-semibold text-foreground">
           P/E ratio
         </div>
-        {diffText && (
-          <div
-            className={cn(
-              "text-[11px] font-medium",
-              diffText.sign === "above"
-                ? "text-[var(--negative)]"
-                : "text-[var(--positive)]"
-            )}
-          >
-            {diffText.sign === "above" ? "+" : "−"}
-            {diffText.pct}% vs setor
-          </div>
-        )}
       </div>
+
+      {/* Texto descritivo */}
+      {diffText && (
+        <p className="text-[11px] text-muted-foreground/70 mb-3">
+          {mainPe?.toLocaleString("en-US", { maximumFractionDigits: 0 })}%{" "}
+          {diffText.sign} sector average
+        </p>
+      )}
 
       {/* Tabela de peers */}
       <div className="rounded-lg bg-[#08090c] border border-white/[0.04] overflow-hidden">
-        {peers.map((peer, idx) => {
+        {peers.slice(0, peerLimit).map((peer, idx) => {
           const isMain = peer.pe === mainPe;
           const isHigh = peer.pe != null && peer.pe > 30;
           const isLow = peer.pe != null && peer.pe > 0 && peer.pe < 15;
@@ -122,7 +129,10 @@ export function PERatioComparison({
               {/* Barra */}
               <div className="flex-1 h-3 relative overflow-hidden rounded-sm">
                 <div
-                  className={cn("h-full transition-all duration-500", colorClass)}
+                  className={cn(
+                    "h-full transition-all duration-500",
+                    colorClass
+                  )}
                   style={{
                     width: `${widthPct}%`,
                     opacity: peer.pe == null ? 0.3 : 0.8,

@@ -270,25 +270,49 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
       }
     }
 
-    // QuarterResults: pega últimos 4 + 1 projected (próximo)
-    const lastN = quarters.slice(-4); // 4 últimos quarters reais
+    // QuarterResults: 3 últimos quarters reais + 1 projected
+    const last3 = quarters.filter(
+      (q): q is QuarterPoint & { epsBasic: number } => q.epsBasic != null,
+    ).slice(-3);
 
-    const results: QuarterResult[] = lastN.map((q, idx) => {
-      // Variação % vs quarter anterior
-      const prev = idx > 0 ? lastN[idx - 1] : null;
-      const revenueChangePct =
-        prev && q.revenue != null && prev.revenue != null && prev.revenue > 0
-          ? ((q.revenue - prev.revenue) / prev.revenue) * 100
-          : null;
-      // Próximo quarter = projected (só pro mais recente, se forwardEps existir)
-      const isProjected = false;
+    /** Helper: status heurístico baseado em variação vs Q anterior. */
+    const trendOf = (
+      current: number,
+      prev: number | null,
+    ): "missed" | "beat" | "flat" => {
+      if (prev == null || prev === 0) return "flat";
+      const change = ((current - prev) / Math.abs(prev)) * 100;
+      if (change < -5) return "missed";
+      if (change > 5) return "beat";
+      return "flat";
+    };
+
+    /** Helper: yoy % vs quarter 4 antes. */
+    const yoyOf = (
+      idx: number,
+      all: Array<QuarterPoint & { epsBasic: number }>,
+      current: number,
+    ): number | null => {
+      const prevYearIdx = idx - 4;
+      if (prevYearIdx < 0) return null;
+      const prevYear = all[prevYearIdx];
+      if (!prevYear || prevYear.epsBasic === 0) return null;
+      return ((current - prevYear.epsBasic) / Math.abs(prevYear.epsBasic)) * 100;
+    };
+
+    const results: QuarterResult[] = last3.map((q, idx) => {
+      const realIdx = quarters.length - last3.length + idx;
+      const prevQ = idx > 0 ? last3[idx - 1] : null;
+      const trend = trendOf(q.epsBasic, prevQ ? prevQ.epsBasic : null);
       return {
         label: formatQuarterLabel(q.endDate),
-        status: isProjected ? "projected" : "actual",
+        status: "actual",
+        headline: trend === "beat" ? "Beat" : trend === "missed" ? "Miss" : "Flat",
+        trend,
         eps: q.epsBasic,
         revenue: q.revenue,
-        revenueChangePct,
-      } as QuarterResult;
+        yoyChangePct: yoyOf(realIdx, last3, q.epsBasic),
+      };
     });
 
     // Próximo quarter projected = baseado em forwardEps/4
@@ -298,22 +322,30 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
       const lastDate = new Date(lastQ.endDate + "T00:00:00Z");
       const nextDate = new Date(lastDate);
       nextDate.setUTCMonth(nextDate.getUTCMonth() + 3);
-      const nextLabel = formatQuarterLabel(nextDate.toISOString().slice(0, 10));
+      const nextLabel = formatQuarterLabel(
+        nextDate.toISOString().slice(0, 10),
+      );
       // Estimated revenue = média dos 4 últimos × (1 + earnings growth)
       const recentRevenue =
-        lastN
+        last3
           .map((q) => q.revenue ?? 0)
           .filter((v) => v > 0)
           .reduce((s, v, _, arr) => s + v / arr.length, 0);
-      const earningsGrowth = bundle?.metrics?.forwardEps
-        ? (forwardEps / (lastN[lastN.length - 1]?.epsBasic ?? 1) - 1)
+      const earningsGrowth = forwardEps
+        ? (forwardEps / (last3[last3.length - 1]?.epsBasic ?? 1) - 1)
         : 0;
       results.push({
-        label: nextLabel,
+        label: `Projected Q1 date`,
         status: "projected",
+        headline: nextDate.toLocaleDateString("en-US", {
+          month: "short",
+          day: "2-digit",
+        }),
+        trend: "flat",
         eps: forwardEps,
-        revenue: recentRevenue > 0 ? recentRevenue * (1 + earningsGrowth) : null,
-        revenueChangePct: null,
+        revenue:
+          recentRevenue > 0 ? recentRevenue * (1 + earningsGrowth) : null,
+        yoyChangePct: null,
       });
     }
 
@@ -498,6 +530,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
                     mainPe={mainPe}
                     sectorPe={sectorPeMedian}
                     peers={peerRows}
+                    peerLimit={4}
                   />
                 </div>
               </div>

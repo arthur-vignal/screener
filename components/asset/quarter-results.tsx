@@ -3,18 +3,27 @@
 /**
  * QuarterResults — grid de cards com resultados trimestrais (estilo Fey TSLA).
  *
- * Dados REAIS de `bundle.historicals.incomeQuarterly`:
- *   - endDate: quarter end
- *   - basicEarningsPerShare
- *   - dilutedEarningsPerShare
- *   - totalRevenue
+ * Visual (replica o print Fey TSLA):
+ *   ┌─────────────┬─────────────┬─────────────┬─────────────┐
+ *   │ Q2 2024     │ Q3 2024     │ Q4 2024     │ Projected Q1 │
+ *   │ Miss        │ Beat        │ Miss        │ Apr 24       │
+ *   │ 0.52  $25B  │ 0.72  $25B  │ 0.73  $25B  │ 0.52  $23B  │
+ *   │ Actual EPS  │             │             │             │
+ *   │ 16.15%      │ 20.49%      │ 4.83%       │             │
+ *   └─────────────┴─────────────┴─────────────┴─────────────┘
  *
- * Sem "Beat/Miss" badge porque brapi NÃO retorna estimativa de
- * consenso pré-resultado. Badge é "Actual" (passado) ou "Projected"
- * (próximo quarter, baseado em bundle.metrics.forwardEps / 4).
+ * - 4 cards lado a lado (3 últimos + 1 projected)
+ * - Status badge: Miss / Beat / Projected (heurístico vs quarter anterior)
+ * - EPS pill (verde/vermelho) + Revenue compact
+ * - Variação % vs year-ago quarter (calculada)
+ * - "View all estimates" link
+ *
+ * Dados REAIS: brapi incomeStatementHistoryQuarterly.
+ * Status "missed/beat" é heurístico: EPS caiu > 5% vs Q anterior
+ * = missed, subiu > 5% = beat, senão flat. Brapi não dá consenso.
  */
 
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import type { JSX } from "react";
 
 import { cn } from "@/lib/utils";
@@ -24,12 +33,16 @@ export type QuarterResult = {
   label: string;
   /** "Actual" (passado) ou "Projected" (próximo). */
   status: "actual" | "projected";
+  /** Label grande (ex: "Miss", "Beat", "Projected Q1 date"). */
+  headline: string;
+  /** Status heurístico: missed/beat/flat. */
+  trend: "missed" | "beat" | "flat";
   /** EPS básico. */
   eps: number | null;
   /** Revenue total no quarter. */
   revenue: number | null;
-  /** Variação % vs quarter anterior (calculado). */
-  revenueChangePct: number | null;
+  /** Variação % vs year-ago quarter (calculada). */
+  yoyChangePct: number | null;
 };
 
 type Props = {
@@ -43,6 +56,7 @@ function gridColsFor(n: number): string {
   if (n <= 1) return "grid-cols-1";
   if (n === 2) return "grid-cols-2";
   if (n === 3) return "grid-cols-3";
+  if (n === 4) return "grid-cols-2 md:grid-cols-4";
   return "grid-cols-2 lg:grid-cols-4";
 }
 
@@ -81,12 +95,13 @@ function QuarterCard({
     v.toLocaleString("en-US", {
       style: "currency",
       currency,
-      minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
 
   const fmtCompact = (v: number) =>
     v.toLocaleString("en-US", {
+      style: "currency",
+      currency,
       notation: "compact",
       maximumFractionDigits: 2,
     });
@@ -102,18 +117,22 @@ function QuarterCard({
           : "border-white/[0.06] bg-[#0d0d11]"
       )}
     >
-      {/* Header: quarter label + status */}
-      <div className="flex items-baseline justify-between mb-3">
+      {/* Header: quarter label + headline (Miss/Beat/Projected) */}
+      <div className="flex items-baseline justify-between mb-3 gap-2">
         <span className="text-[11px] text-muted-foreground/70 uppercase tracking-[0.14em] font-medium">
           {result.label}
         </span>
         <span
           className={cn(
-            "text-[12px] font-semibold",
-            isProjected ? "text-muted-foreground/70" : "text-foreground"
+            "text-[14px] font-semibold",
+            result.trend === "beat"
+              ? "text-[var(--positive)]"
+              : result.trend === "missed"
+                ? "text-[var(--negative)]"
+                : "text-foreground/85"
           )}
         >
-          {isProjected ? "Projected" : "Actual"}
+          {result.headline}
         </span>
       </div>
 
@@ -128,7 +147,10 @@ function QuarterCard({
                 : "bg-[var(--negative)]/15 text-[var(--negative)]"
             )}
           >
-            {result.eps.toLocaleString("en-US", { maximumFractionDigits: 2 })}
+            {result.eps.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </span>
         ) : (
           <span className="text-[12px] text-muted-foreground/40">—</span>
@@ -140,26 +162,27 @@ function QuarterCard({
         )}
       </div>
 
-      {/* Label + variação */}
-      <p className="text-[11px] text-muted-foreground/70">
-        {isProjected ? "Estimativa EPS" : "EPS real"}
+      {/* Label "Actual EPS / Revenue" */}
+      <p className="text-[11px] text-muted-foreground/70 mb-2">
+        {isProjected ? "Projected EPS" : "Actual EPS / Revenue"}
       </p>
 
-      {result.revenueChangePct != null && !isProjected && (
+      {/* Variação % vs year-ago */}
+      {result.yoyChangePct != null && !isProjected && (
         <div
           className={cn(
-            "mt-2 inline-flex items-center gap-1 text-[11px] tabular-nums",
-            result.revenueChangePct >= 0
+            "inline-flex items-center gap-1 text-[11px] tabular-nums",
+            result.yoyChangePct >= 0
               ? "text-[var(--positive)]"
               : "text-[var(--negative)]"
           )}
         >
-          {result.revenueChangePct >= 0 ? (
-            <TrendingUp className="h-3 w-3" strokeWidth={2.25} />
+          {result.yoyChangePct >= 0 ? (
+            <ArrowUp className="h-3 w-3" strokeWidth={2.25} />
           ) : (
-            <TrendingDown className="h-3 w-3" strokeWidth={2.25} />
+            <ArrowDown className="h-3 w-3" strokeWidth={2.25} />
           )}
-          {Math.abs(result.revenueChangePct).toFixed(2)}%
+          {Math.abs(result.yoyChangePct).toFixed(2)}%
         </div>
       )}
     </div>
