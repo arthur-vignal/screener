@@ -35,7 +35,7 @@ import {
   NewsSummaryCard,
   type NewsSummaryItem,
 } from "@/components/asset/news-summary-card";
-import { PriceChart, type RangeKey, RANGE_DAYS } from "@/components/asset/price-chart";
+import { PriceChart, type RangeKey } from "@/components/asset/price-chart";
 import { PriceHero } from "@/components/asset/price-hero";
 
 type Props = {
@@ -61,13 +61,19 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
   );
 
   // Candles do range selecionado
-  const days = RANGE_DAYS[range];
-  const candlesUrl =
-    range === "YTD"
-      ? `/api/asset/${symbol}/candles?range=YTD`
-      : days != null
-        ? `/api/asset/${symbol}/candles?days=${days}`
-        : `/api/asset/${symbol}/candles?range=Max`;
+  // Mapeia RangeKey (UI) → range string esperado pelo endpoint /api/asset/[symbol]/candles
+  const RANGE_TO_API: Record<RangeKey, string> = {
+    "1D": "24h",
+    "1W": "7d",
+    "1M": "3m",
+    "3M": "3m",
+    "YTD": "ytd",
+    "1Y": "1y",
+    "5Y": "5y",
+    All: "max",
+  };
+  const apiRange = RANGE_TO_API[range];
+  const candlesUrl = `/api/asset/${symbol}/candles?range=${apiRange}`;
   const { data: candlesData } = useSWR<{ candles?: AssetBundle["candles"] }>(
     candlesUrl,
     fetchJson,
@@ -76,18 +82,18 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
   const candles = candlesData?.candles ?? bundle?.candles ?? [];
 
   // News summary (pega primeira notícia relevante do ticker)
-  const { data: newsData, isLoading: newsLoading } = useSWR<{ items?: NewsApiItem[] }>(
+  const { data: newsData, isLoading: newsLoading } = useSWR<{ news?: NewsApiItem[] }>(
     `/api/news/multi?tickers=${symbol}`,
     fetchJson
   );
   const newsItems = useMemo<NewsSummaryItem[]>(() => {
-    const items = newsData?.items ?? [];
+    const items = newsData?.news ?? [];
     return items.slice(0, 1).map((n) => ({
       id: n.id,
       title: n.headline,
-      summary: n.summary ?? "",
+      summary: stripHtml(n.summary ?? ""),
       source: n.source,
-      publishedAt: n.publishedAt,
+      publishedAt: toIso(n.datetime),
     }));
   }, [newsData]);
 
@@ -261,5 +267,17 @@ type NewsApiItem = {
   headline: string;
   summary?: string;
   source: string;
-  publishedAt: string;
+  /** Unix timestamp (segundos). */
+  datetime?: number;
 };
+
+// Helper: strip HTML tags da summary (endpoint retorna HTML-encoded).
+function stripHtml(s: string): string {
+  return s.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+}
+
+// Helper: converte datetime (segundos) → ISO string.
+function toIso(seconds: number | undefined): string {
+  if (!seconds) return new Date().toISOString();
+  return new Date(seconds * 1000).toISOString();
+}

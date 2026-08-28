@@ -34,7 +34,7 @@ import { cached } from "@/lib/cache";
 export const dynamic = "force-dynamic";
 export const maxDuration = 25;
 
-const VALID_RANGES = ["24h", "7d", "3m", "1y", "5y", "max"] as const;
+const VALID_RANGES = ["24h", "7d", "3m", "ytd", "1y", "5y", "max"] as const;
 type Range = (typeof VALID_RANGES)[number];
 
 const HOUR = 3600 * 1000;
@@ -111,6 +111,20 @@ async function fetchCandlesForRange(
         getBrapiCandlesRaw(symbol, "3mo", "30m"),
       );
       return sliceAndFormat(filterTradingHours(all));
+    }
+
+    case "ytd": {
+      // Year-to-date: pull 1y daily and slice candles since Jan 1 of
+      // current year (Brasília time).
+      const daily = await cached(`brapiDaily1y:${symbol}`, 300, () =>
+        getBrapiCandlesRaw(symbol, "1y", "1d"),
+      );
+      const yearStart = new Date();
+      yearStart.setMonth(0, 1);
+      yearStart.setHours(0, 0, 0, 0);
+      return sliceAndFormat(
+        filterTradingHours(daily.filter((c) => c.timestamp >= yearStart.getTime())),
+      );
     }
 
     case "1y": {

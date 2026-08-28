@@ -115,7 +115,7 @@ export function PriceChart({
             type="button"
             onClick={() => onRangeChange(r)}
             className={cn(
-              "px-3 py-1.5 rounded text-[12px] font-medium transition-colors",
+              "px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors",
               range === r
                 ? "bg-white/[0.04] text-foreground border border-white/10"
                 : "text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.02]"
@@ -149,6 +149,8 @@ function ChartInner({
   );
 
   // Volume renderizado em painel separado (YAxis à esquerda do volume)
+  // Usamos `stackId` para empilhar e o domain do YAxis do volume limitado
+  // pra 1/4 da altura do chart (volume fica sutil embaixo).
   return (
     <ComposedChart
       data={data}
@@ -181,7 +183,7 @@ function ChartInner({
         axisLine={false}
         tickLine={false}
         width={0}
-        domain={[0, "auto"]}
+        domain={[0, (dataMax: number) => dataMax * 4]} // limita volume a 1/4 da altura
       />
 
       <Tooltip
@@ -205,7 +207,7 @@ function ChartInner({
         yAxisId="volume"
         dataKey="volume"
         fill={CHART_COLORS.seriesPrimary}
-        fillOpacity={0.15}
+        fillOpacity={0.12}
         isAnimationActive={false}
       />
 
@@ -233,11 +235,19 @@ function PriceTooltip({
 }: {
   active?: boolean;
   payload?: Array<{
-    payload: { timestamp: number; close: number; volume: number };
+    name?: string;
+    value?: number | string;
+    dataKey?: string;
+    payload?: { timestamp: number; close: number; volume: number };
   }>;
 }): JSX.Element | null {
   if (!active || !payload || payload.length === 0) return null;
-  const p = payload[0].payload;
+
+  // Filtra: pega só a entry do "close" (ignora volume/linhas extras).
+  const closeEntry = payload.find((e) => e.dataKey === "close" || e.name === "close");
+  if (!closeEntry || !closeEntry.payload) return null;
+
+  const p = closeEntry.payload;
   const date = new Date(p.timestamp);
   return (
     <div style={tooltipWrapperStyle}>
