@@ -239,6 +239,8 @@ export type BrapiFundamentals = {
   profile: BrapiProfile;
   historicals: {
     income: BrapiIncomeStatementPeriod[];
+    /** Trimestral — 12-16 quarters (3-4 anos). endDate = quarter end. */
+    incomeQuarterly: BrapiIncomeStatementPeriod[];
     balance: BrapiBalanceSheetPeriod[];
     cashflow: Array<Record<string, unknown>>;
     valueAdded: Array<Record<string, unknown>>;
@@ -272,6 +274,7 @@ export async function getBrapiFundamentals(
               "financialData",
               "summaryProfile",
               "incomeStatementHistory",
+              "incomeStatementHistoryQuarterly",
               "balanceSheetHistory",
               "cashflowHistory",
               "valueAddedHistory",
@@ -296,6 +299,7 @@ export async function getBrapiFundamentals(
                 financialData?: BrapiFinancialData;
                 summaryProfile?: BrapiProfile;
                 incomeStatementHistory?: { incomeStatementHistory?: BrapiIncomeStatementPeriod[] } | BrapiIncomeStatementPeriod[];
+                incomeStatementHistoryQuarterly?: { incomeStatementHistory?: BrapiIncomeStatementPeriod[] } | BrapiIncomeStatementPeriod[];
                 balanceSheetHistory?: { balanceSheetStatements?: BrapiBalanceSheetPeriod[] } | BrapiBalanceSheetPeriod[];
                 cashflowHistory?: Array<Record<string, unknown>> | { cashflowHistory?: Array<Record<string, unknown>> };
                 valueAddedHistory?: Array<Record<string, unknown>> | { valueAddedHistory?: Array<Record<string, unknown>> };
@@ -324,6 +328,12 @@ export async function getBrapiFundamentals(
               ? incomeHist
               : incomeHist?.incomeStatementHistory ?? [];
 
+            // Trimestral: mesmo shape, mas com endDate tipo "2024-09-30" (quarter end)
+            const incomeQuarterlyHist = raw.incomeStatementHistoryQuarterly;
+            const incomeQuarterly: BrapiIncomeStatementPeriod[] = Array.isArray(incomeQuarterlyHist)
+              ? incomeQuarterlyHist
+              : incomeQuarterlyHist?.incomeStatementHistory ?? [];
+
             const balanceHist = raw.balanceSheetHistory;
             const balance: BrapiBalanceSheetPeriod[] = Array.isArray(balanceHist)
               ? balanceHist
@@ -344,6 +354,7 @@ export async function getBrapiFundamentals(
               profile: raw.summaryProfile ?? {},
               historicals: {
                 income,
+                incomeQuarterly,
                 balance,
                 cashflow: unwrap(raw.cashflowHistory as unknown as Array<Record<string, unknown>>),
                 valueAdded: unwrap(raw.valueAddedHistory as unknown as Array<Record<string, unknown>>),

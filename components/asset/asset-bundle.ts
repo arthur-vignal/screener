@@ -47,6 +47,8 @@ export type AssetBundle = {
     profitMargin: number | null;
     /** Beta vs índice de referência. */
     beta: number | null;
+    /** EPS forward (próximos 4 quarters somados). */
+    forwardEps: number | null;
     /** Price target — High (analyst). */
     targetHighPrice: number | null;
     /** Price target — Low (analyst). */
@@ -77,6 +79,8 @@ export type AssetBundle = {
   profile?: Record<string, unknown>;
   historicals?: {
     income?: Array<Record<string, unknown>>;
+    /** Trimestral — 12-16 quarters (3-4 anos). endDate = quarter end. */
+    incomeQuarterly?: Array<Record<string, unknown>>;
     balance?: Array<Record<string, unknown>>;
     cashflow?: Array<Record<string, unknown>>;
     keyStatistics?: Array<Record<string, unknown>>;

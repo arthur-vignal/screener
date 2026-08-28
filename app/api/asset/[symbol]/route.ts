@@ -103,6 +103,7 @@ export async function GET(
         null,
       revenue: fd.totalRevenue ?? null,
       eps: ks.trailingEps ?? null,
+      forwardEps: ks.forwardEps ?? null,
       grossMargin: fd.grossMargins ?? null,
       profitMargin: fd.profitMargins ?? null,
       beta: ks.beta ?? null,
@@ -130,6 +131,7 @@ export async function GET(
         candles: data.candles ?? [],
         historicals: data.historicals ?? {
           income: [],
+          incomeQuarterly: [],
           balance: [],
           cashflow: [],
           valueAdded: [],

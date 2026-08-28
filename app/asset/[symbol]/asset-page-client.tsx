@@ -34,15 +34,20 @@ import {
 } from "@/components/asset/analyst-ratings-radar";
 import { AssetHeader } from "@/components/asset/asset-header";
 import type { AssetBundle } from "@/components/asset/asset-bundle";
-import { EarningsEstimates } from "@/components/asset/earnings-estimates";
+import { EPSQuarterlyChart, type QuarterPoint } from "@/components/asset/eps-quarterly-chart";
 import { MetricStrip, type MetricCell } from "@/components/asset/metric-strip";
 import {
   NewsSummaryCard,
   type NewsSummaryItem,
 } from "@/components/asset/news-summary-card";
+import { PERatioComparison, type PeerRow } from "@/components/asset/pe-ratio-comparison";
 import { PriceChart, type RangeKey } from "@/components/asset/price-chart";
 import { PriceHero } from "@/components/asset/price-hero";
 import { PriceTargetChart } from "@/components/asset/price-target-chart";
+import {
+  QuarterResults,
+  type QuarterResult,
+} from "@/components/asset/quarter-results";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -106,6 +111,150 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
       publishedAt: toIso(n.datetime),
     }));
   }, [newsData]);
+
+  // ── Peer benchmarks (subsetor) ──────────────────────────────────────
+  // O endpoint retorna lista de peers do subsetor do ativo.
+  const { data: peerData } = useSWR<{
+    peers?: Array<{ symbol: string; shortName?: string; longName?: string }>;
+  }>(`/api/peer-benchmarks/${symbol}`, fetchJson, {
+    revalidateOnFocus: false,
+  });
+  const peerSymbols = useMemo(
+    () =>
+      (peerData?.peers ?? [])
+        .map((p) => p.symbol)
+        .filter(Boolean)
+        .slice(0, 6),
+    [peerData]
+  );
+  const peerNameBySymbol = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const p of peerData?.peers ?? []) {
+      m.set(
+        p.symbol,
+        p.shortName ?? p.longName ?? p.symbol
+      );
+    }
+    return m;
+  }, [peerData]);
+
+  // ── Batch quote pra P/E dos peers (priceEarnings) ──────────────────
+  // Inclui o ativo principal + peers.
+  const batchSymbols = useMemo(() => {
+    const set = new Set<string>([symbol, ...peerSymbols]);
+    return Array.from(set);
+  }, [symbol, peerSymbols]);
+  const { data: batchData } = useSWR<{
+    rows?: Array<{
+      symbol: string;
+      quote?: { priceEarnings?: number | null };
+    }>;
+  }>(
+    batchSymbols.length > 0
+      ? `/api/assets/quote?symbols=${batchSymbols.join(",")}`
+      : null,
+    fetchJson,
+    { revalidateOnFocus: false }
+  );
+  const peerRows = useMemo<PeerRow[]>(() => {
+    const rows: PeerRow[] = [];
+    for (const sym of batchSymbols) {
+      const pe = batchData?.rows?.find((r) => r.symbol === sym)
+        ?.quote?.priceEarnings;
+      rows.push({
+        symbol: sym,
+        name: peerNameBySymbol.get(sym) ?? sym,
+        pe: pe == null ? null : Number.isFinite(pe) ? pe : null,
+      });
+    }
+    return rows;
+  }, [batchSymbols, batchData, peerNameBySymbol]);
+
+  // P/E médio do setor (mediano dos peers, excluindo o próprio ativo)
+  const sectorPeMedian = useMemo(() => {
+    const values = peerRows
+      .filter((r) => r.symbol !== symbol && r.pe != null)
+      .map((r) => r.pe as number);
+    if (values.length === 0) return null;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0
+      ? (sorted[mid - 1] + sorted[mid]) / 2
+      : sorted[mid];
+  }, [peerRows, symbol]);
+
+  // ── Earnings data (real, do bundle.historicals.incomeQuarterly) ────
+  const earningsData = useMemo(() => {
+    const incomeQ = (bundle?.historicals?.incomeQuarterly ?? []) as Array<
+      Record<string, unknown>
+    >;
+
+    // Mapeia rows brapi → QuarterPoint (filtra nulos, ordena asc)
+    const quarters: QuarterPoint[] = incomeQ
+      .map((r) => ({
+        endDate: String(r.endDate ?? ""),
+        epsBasic:
+          r.basicEarningsPerShare != null
+            ? Number(r.basicEarningsPerShare)
+            : r.dilutedEarningsPerShare != null
+              ? Number(r.dilutedEarningsPerShare)
+              : r.earningsPerShare != null
+                ? Number(r.earningsPerShare)
+                : null,
+        revenue: r.totalRevenue != null ? Number(r.totalRevenue) : null,
+      }))
+      .filter((q) => q.endDate && q.epsBasic != null)
+      .sort((a, b) => a.endDate.localeCompare(b.endDate));
+
+    // QuarterResults: pega últimos 4 + 1 projected (próximo)
+    const lastN = quarters.slice(-4); // 4 últimos quarters reais
+
+    const results: QuarterResult[] = lastN.map((q, idx) => {
+      // Variação % vs quarter anterior
+      const prev = idx > 0 ? lastN[idx - 1] : null;
+      const revenueChangePct =
+        prev && q.revenue != null && prev.revenue != null && prev.revenue > 0
+          ? ((q.revenue - prev.revenue) / prev.revenue) * 100
+          : null;
+      // Próximo quarter = projected (só pro mais recente, se forwardEps existir)
+      const isProjected = false;
+      return {
+        label: formatQuarterLabel(q.endDate),
+        status: isProjected ? "projected" : "actual",
+        eps: q.epsBasic,
+        revenue: q.revenue,
+        revenueChangePct,
+      } as QuarterResult;
+    });
+
+    // Próximo quarter projected = baseado em forwardEps/4
+    const forwardEps = bundle?.metrics?.forwardEps;
+    if (forwardEps != null && quarters.length > 0) {
+      const lastQ = quarters[quarters.length - 1];
+      const lastDate = new Date(lastQ.endDate + "T00:00:00Z");
+      const nextDate = new Date(lastDate);
+      nextDate.setUTCMonth(nextDate.getUTCMonth() + 3);
+      const nextLabel = formatQuarterLabel(nextDate.toISOString().slice(0, 10));
+      // Estimated revenue = média dos 4 últimos × (1 + earnings growth)
+      const recentRevenue =
+        lastN
+          .map((q) => q.revenue ?? 0)
+          .filter((v) => v > 0)
+          .reduce((s, v, _, arr) => s + v / arr.length, 0);
+      const earningsGrowth = bundle?.metrics?.forwardEps
+        ? (forwardEps / (lastN[lastN.length - 1]?.epsBasic ?? 1) - 1)
+        : 0;
+      results.push({
+        label: nextLabel,
+        status: "projected",
+        eps: forwardEps,
+        revenue: recentRevenue > 0 ? recentRevenue * (1 + earningsGrowth) : null,
+        revenueChangePct: null,
+      });
+    }
+
+    return { quarters, results };
+  }, [bundle]);
 
   // Metric strip (10 widgets estilo Fey TSLA)
   const metricCells = useMemo<MetricCell[]>(() => {
@@ -254,13 +403,53 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
         </StaggerOnMount>
 
         <StaggerOnMount className="mt-6">
-          <EarningsEstimates
-            peRatio={bundle?.metrics.trailingPE ?? null}
-            eps={bundle?.metrics.eps ?? null}
-            sector={bundle?.sector ?? null}
-            currency={(bundle?.currency as "BRL" | "USD") ?? "BRL"}
-            epsChangePercent={null}
-          />
+          {/* Card Earnings expandido (estilo Fey TSLA) — 100% dado real */}
+          <div className="rounded-2xl border border-white/10 bg-[#101116] p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <h2 className="text-[16px] font-semibold tracking-tight text-foreground">
+                  Earnings
+                </h2>
+                <span className="inline-flex items-center justify-center h-5 w-5 rounded bg-white/[0.04] border border-white/10 text-[10px] font-semibold text-muted-foreground/70">
+                  E
+                </span>
+              </div>
+              <a
+                href={`/asset/${symbol}/earnings`}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md cursor-pointer bg-white/[0.04] border border-white/10 text-foreground text-[12px] font-medium hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+              >
+                All earnings
+              </a>
+            </div>
+
+            <div className="grid grid-cols-2 gap-5 mb-5">
+              {/* P/E comparison */}
+              <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
+                <PERatioComparison
+                  mainPe={bundle?.metrics.trailingPE ?? null}
+                  sectorPe={sectorPeMedian}
+                  peers={peerRows}
+                />
+              </div>
+
+              {/* EPS quarterly chart */}
+              <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
+                <EPSQuarterlyChart
+                  quarters={earningsData.quarters}
+                  currency={(bundle?.currency as "BRL" | "USD") ?? "BRL"}
+                  limit={5}
+                />
+              </div>
+            </div>
+
+            {/* Quarter results grid */}
+            <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
+              <QuarterResults
+                results={earningsData.results}
+                currency={(bundle?.currency as "BRL" | "USD") ?? "BRL"}
+              />
+            </div>
+          </div>
         </StaggerOnMount>
       </motion.main>
 
@@ -289,4 +478,14 @@ function stripHtml(s: string): string {
 function toIso(seconds: number | undefined): string {
   if (!seconds) return new Date().toISOString();
   return new Date(seconds * 1000).toISOString();
+}
+
+// Helper: formata endDate (ISO "YYYY-MM-DD") pra "Q1 2024"
+function formatQuarterLabel(endDate: string): string {
+  const d = new Date(endDate + "T00:00:00Z");
+  if (Number.isNaN(d.getTime())) return endDate;
+  const month = d.getUTCMonth() + 1;
+  const year = d.getUTCFullYear();
+  const q = Math.ceil(month / 3);
+  return `Q${q} ${year}`;
 }
