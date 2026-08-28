@@ -122,13 +122,29 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
   });
 
   // ── P/E histórico (bandas) ───────────────────────────────────────────
-  // brapi /api/v2/stocks/statistics?mode=history&period=quarterly
-  const { data: peHistoryData } = useSWR<{ history?: PEHistoryRow[] }>(
-    `/api/asset/${symbol}/pe-history`,
-    fetchJson,
-    { revalidateOnFocus: false }
-  );
-  const peHistory = peHistoryData?.history ?? [];
+  // Já vem no bundle.historicals.keyStatistics (defaultKeyStatisticsHistory
+  // do brapi /api/v2/stocks/statistics?mode=history&period=quarterly).
+  // Mapeia pro shape PEHistoryRow.
+  const peHistory: PEHistoryRow[] = useMemo(() => {
+    const raw = (bundle?.historicals?.keyStatistics ?? []) as Array<
+      Record<string, unknown>
+    >;
+    return raw
+      .map((r) => ({
+        endDate: String(r.endDate ?? ""),
+        trailingPE:
+          r.trailingPE != null && Number.isFinite(Number(r.trailingPE))
+            ? Number(r.trailingPE)
+            : r.priceEarnings != null && Number.isFinite(Number(r.priceEarnings))
+              ? Number(r.priceEarnings)
+              : null,
+        priceEarnings:
+          r.priceEarnings != null && Number.isFinite(Number(r.priceEarnings))
+            ? Number(r.priceEarnings)
+            : null,
+      }))
+      .filter((r) => r.endDate && r.trailingPE != null);
+  }, [bundle]);
   const peerSymbols = useMemo(
     () =>
       (peerData?.peers ?? [])
