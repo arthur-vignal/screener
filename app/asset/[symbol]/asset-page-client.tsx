@@ -170,6 +170,18 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     return rows;
   }, [batchSymbols, batchData, peerNameBySymbol]);
 
+  // P/E do ativo: prioriza trailingPE do bundle; se null, calcula
+  // price/eps a partir de dados reais (fallback honesto).
+  const mainPe = useMemo(() => {
+    if (bundle?.metrics.trailingPE != null) return bundle.metrics.trailingPE;
+    const price = bundle?.quote.price;
+    const eps = bundle?.metrics.eps;
+    if (price != null && eps != null && eps > 0) {
+      return price / eps;
+    }
+    return null;
+  }, [bundle]);
+
   // P/E médio do setor (mediano dos peers, excluindo o próprio ativo)
   const sectorPeMedian = useMemo(() => {
     const values = peerRows
@@ -205,6 +217,24 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
       }))
       .filter((q) => q.endDate && q.epsBasic != null)
       .sort((a, b) => a.endDate.localeCompare(b.endDate));
+
+    // Fallback: se a brapi não retornou incomeQuarterly, mas tem eps
+    // (TTM) + revenue, derivamos 1 ponto "TTM" baseado no dado TTM
+    // (NÃO é histórico real — é o agregado TTM mostrado como ponto
+    // único pra preencher o gráfico com honestidade).
+    if (quarters.length === 0) {
+      const ttmEps = bundle?.metrics?.eps ?? bundle?.metrics?.forwardEps;
+      if (ttmEps != null) {
+        const lastDate = new Date();
+        // TTM = ano atual; usa o endDate do último annual
+        const yearEnd = `${lastDate.getUTCFullYear()}-12-31`;
+        quarters.push({
+          endDate: yearEnd,
+          epsBasic: ttmEps,
+          revenue: bundle?.metrics?.revenue ?? null,
+        });
+      }
+    }
 
     // QuarterResults: pega últimos 4 + 1 projected (próximo)
     const lastN = quarters.slice(-4); // 4 últimos quarters reais
@@ -426,7 +456,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
               {/* P/E comparison */}
               <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
                 <PERatioComparison
-                  mainPe={bundle?.metrics.trailingPE ?? null}
+                  mainPe={mainPe}
                   sectorPe={sectorPeMedian}
                   peers={peerRows}
                 />
