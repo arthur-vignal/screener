@@ -341,9 +341,17 @@ export async function getBrapiFundamentals(
 
             // Unwrap the *History modules — Brapi sometimes returns either an
             // array directly or an object with the array under the same key.
-            function unwrap<T>(v: T[] | { [k: string]: T[] } | undefined): T[] {
+            // Recebe a key específica pra evitar conflito entre os 4
+            // *History modules (valueAddedHistory vs defaultKeyStatisticsHistory
+            // vs cashflowHistory vs financialDataHistory).
+            function unwrapHistory<T>(
+              v: T[] | { [k: string]: T[] } | undefined,
+              key: string,
+            ): T[] {
               if (!v) return [];
-              return Array.isArray(v) ? v : (v as Record<string, T[]>).valueAddedHistory ?? (v as Record<string, T[]>).cashflowHistory ?? (v as Record<string, T[]>).defaultKeyStatisticsHistory ?? (v as Record<string, T[]>).financialDataHistory ?? [];
+              if (Array.isArray(v)) return v;
+              const obj = v as Record<string, T[]>;
+              return obj[key] ?? [];
             }
 
             return {
@@ -356,10 +364,30 @@ export async function getBrapiFundamentals(
                 income,
                 incomeQuarterly,
                 balance,
-                cashflow: unwrap(raw.cashflowHistory as unknown as Array<Record<string, unknown>>),
-                valueAdded: unwrap(raw.valueAddedHistory as unknown as Array<Record<string, unknown>>),
-                keyStatistics: unwrap(raw.defaultKeyStatisticsHistory as unknown as Array<Record<string, unknown>>),
-                financialData: unwrap(raw.financialDataHistory as unknown as Array<Record<string, unknown>>),
+                cashflow: unwrapHistory(
+                  raw.cashflowHistory as unknown as
+                    | Array<Record<string, unknown>>
+                    | { [k: string]: Array<Record<string, unknown>> },
+                  "cashflowHistory",
+                ),
+                valueAdded: unwrapHistory(
+                  raw.valueAddedHistory as unknown as
+                    | Array<Record<string, unknown>>
+                    | { [k: string]: Array<Record<string, unknown>> },
+                  "valueAddedHistory",
+                ),
+                keyStatistics: unwrapHistory(
+                  raw.defaultKeyStatisticsHistory as unknown as
+                    | Array<Record<string, unknown>>
+                    | { [k: string]: Array<Record<string, unknown>> },
+                  "defaultKeyStatisticsHistory",
+                ),
+                financialData: unwrapHistory(
+                  raw.financialDataHistory as unknown as
+                    | Array<Record<string, unknown>>
+                    | { [k: string]: Array<Record<string, unknown>> },
+                  "financialDataHistory",
+                ),
               },
             };
           },
