@@ -119,7 +119,7 @@ export function QuotationsTable({
       </div>
 
       {/* Rows */}
-      <div className="max-h-[calc(100vh-280px)] overflow-y-auto">
+      <div className="max-h-[calc(100vh-420px)] overflow-y-auto">
         {rows.map((row) => (
           <Row key={row.symbol} row={row} />
         ))}
@@ -157,21 +157,21 @@ function Row({ row }: { row: QuoteRow }): JSX.Element {
     <Link
       href={`/asset/${row.symbol}`}
       className={cn(
-        "grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_repeat(5,minmax(0,0.8fr))] gap-3 px-4 py-3",
+        "grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_repeat(5,minmax(0,0.8fr))] gap-4 px-5 py-4",
         "border-b border-border/40 last:border-b-0",
         "items-center transition-colors hover:bg-white/[0.02]",
         !hasPrice && "opacity-60"
       )}
     >
       {/* Ativo + nome */}
-      <div className="flex items-center gap-2.5 min-w-0">
-        <TickerLogo symbol={row.symbol} size="sm" />
+      <div className="flex items-center gap-3 min-w-0">
+        <TickerLogo symbol={row.symbol} size="md" />
         <div className="min-w-0">
-          <div className="text-[13px] font-semibold text-foreground truncate">
+          <div className="text-[15px] font-semibold text-foreground truncate">
             {row.symbol}
           </div>
           {row.longName && (
-            <div className="text-[11px] text-muted-foreground/85 truncate">
+            <div className="text-[12px] text-muted-foreground/85 truncate">
               {row.longName}
             </div>
           )}
@@ -179,7 +179,7 @@ function Row({ row }: { row: QuoteRow }): JSX.Element {
       </div>
 
       {/* Setor */}
-      <div className="text-[12px] text-muted-foreground/85 truncate">
+      <div className="text-[13px] text-muted-foreground/85 truncate">
         {row.sector}
       </div>
 
@@ -193,12 +193,12 @@ function Row({ row }: { row: QuoteRow }): JSX.Element {
       <DeltaCell value={row.changePercent30d} />
 
       {/* Vol */}
-      <div className="text-[12px] tabular-nums text-muted-foreground/85 text-right">
+      <div className="text-[13px] tabular-nums text-muted-foreground/85 text-right">
         {row.volume != null ? formatCompact(row.volume) : "—"}
       </div>
 
       {/* Mkt cap */}
-      <div className="text-[12px] tabular-nums text-foreground text-right">
+      <div className="text-[13px] tabular-nums text-foreground text-right">
         {row.marketCap != null ? formatCompact(row.marketCap) : "—"}
       </div>
     </Link>
@@ -208,14 +208,14 @@ function Row({ row }: { row: QuoteRow }): JSX.Element {
 function DeltaCell({ value }: { value: number | null }): JSX.Element {
   if (value == null) {
     return (
-      <div className="text-[12px] tabular-nums text-muted-foreground/40 text-right">
+      <div className="text-[13px] tabular-nums text-muted-foreground/40 text-right">
         —
       </div>
     );
   }
   return (
     <div className="flex justify-end">
-      <Delta value={value} unit="percent" size="sm" />
+      <Delta value={value} unit="percent" size="md" />
     </div>
   );
 }

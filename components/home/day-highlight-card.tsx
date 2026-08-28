@@ -42,16 +42,16 @@ export function DayHighlightCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-5",
+        "rounded-2xl border border-white/10 bg-[#101116] p-6",
         className
       )}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
           Notícia do dia
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/70 tabular-nums">
-          <Calendar className="h-3 w-3" strokeWidth={2} />
+        <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground/70 tabular-nums">
+          <Calendar className="h-3.5 w-3.5" strokeWidth={2} />
           {dateText}
         </div>
       </div>
@@ -63,11 +63,11 @@ export function DayHighlightCard({
           rel="noopener noreferrer"
           className="block group"
         >
-          <h3 className="text-[15px] font-semibold text-foreground leading-snug group-hover:text-foreground/90 transition-colors">
+          <h3 className="text-[17px] font-semibold text-foreground leading-snug group-hover:text-foreground/90 transition-colors">
             {headline}
           </h3>
-          <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/70 tabular-nums">
-            <Newspaper className="h-3 w-3" strokeWidth={2} />
+          <div className="mt-3 flex items-center gap-1.5 text-[12px] text-muted-foreground/70 tabular-nums">
+            <Newspaper className="h-3.5 w-3.5" strokeWidth={2} />
             <span className="font-medium uppercase tracking-wide">
               {source}
             </span>
@@ -80,11 +80,11 @@ export function DayHighlightCard({
           </div>
         </a>
       ) : (
-        <div className="py-6 text-center">
-          <p className="text-[13px] text-muted-foreground/85">
+        <div className="py-7 text-center">
+          <p className="text-[14px] text-muted-foreground/85">
             Sem destaque do dia ainda.
           </p>
-          <p className="mt-1.5 text-[11px] text-muted-foreground/60">
+          <p className="mt-2 text-[12px] text-muted-foreground/60">
             Os portais publicam destaques ao longo do pregão.
           </p>
         </div>
@@ -97,14 +97,14 @@ function LoadingCard({ className }: { className?: string }): JSX.Element {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-5",
+        "rounded-2xl border border-white/10 bg-[#101116] p-6",
         className
       )}
     >
-      <Skeleton className="h-3 w-24 mb-4" />
-      <Skeleton className="h-4 w-full mb-2" />
-      <Skeleton className="h-4 w-2/3 mb-3" />
-      <Skeleton className="h-3 w-20" />
+      <Skeleton className="h-3 w-28 mb-5" />
+      <Skeleton className="h-5 w-full mb-2" />
+      <Skeleton className="h-5 w-2/3 mb-4" />
+      <Skeleton className="h-3 w-24" />
     </div>
   );
 }

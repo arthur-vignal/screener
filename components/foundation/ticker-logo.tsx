@@ -89,7 +89,6 @@ export function TickerLogo({
     <div
       className={cn(
         "shrink-0 rounded-full overflow-hidden flex items-center justify-center",
-        "bg-white/[0.04] border border-white/10",
         sizes.box,
         className
       )}
@@ -100,7 +99,7 @@ export function TickerLogo({
       <img
         src={buildUrl(symbol)}
         alt={`${symbol} logo`}
-        className="h-full w-full object-contain p-1"
+        className="h-full w-full object-contain"
         loading="lazy"
         decoding="async"
         onError={() => setFailed(true)}

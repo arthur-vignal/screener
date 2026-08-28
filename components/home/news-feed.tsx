@@ -40,36 +40,47 @@ type Props = {
   loading?: boolean;
   onRetry?: () => void;
   className?: string;
+  /** Limite de itens renderizados. Default: 8 (cabe sem scroll em ~1080p). */
+  maxItems?: number;
 };
 
-export function NewsFeed({ items, loading, onRetry, className }: Props): JSX.Element {
+export function NewsFeed({
+  items,
+  loading,
+  onRetry,
+  className,
+  maxItems = 8,
+}: Props): JSX.Element {
+  const visible = items.slice(0, maxItems);
+  const hasMore = items.length > maxItems;
+
   return (
     <aside
       className={cn(
-        "flex flex-col rounded-2xl border border-white/10 bg-[#101116] overflow-hidden h-full",
+        "flex flex-col rounded-2xl border border-white/10 bg-[#101116] overflow-hidden",
         className
       )}
       aria-label="Feed de notícias"
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border/40">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
+      <div className="px-5 py-4 border-b border-border/40">
+        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
           Notícias da B3
         </div>
-        <div className="mt-0.5 text-[11px] text-muted-foreground/70">
+        <div className="mt-1 text-[12px] text-muted-foreground/70">
           Portais verificados
         </div>
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 p-2">
         {loading ? (
           <LoadingList />
-        ) : items.length === 0 ? (
+        ) : visible.length === 0 ? (
           <EmptyState onRetry={onRetry} />
         ) : (
           <ul className="space-y-1">
-            {items.map((item) => (
+            {visible.map((item) => (
               <li key={item.id}>
                 <NewsCard item={item} />
               </li>
@@ -77,6 +88,17 @@ export function NewsFeed({ items, loading, onRetry, className }: Props): JSX.Ele
           </ul>
         )}
       </div>
+
+      {hasMore && !loading && (
+        <div className="px-5 py-3 border-t border-border/40">
+          <a
+            href="/news"
+            className="text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Ver todas as notícias →
+          </a>
+        </div>
+      )}
     </aside>
   );
 }
@@ -93,20 +115,20 @@ function NewsCard({ item }: { item: NewsItem }): JSX.Element {
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "block rounded-lg p-3",
+        "block rounded-lg p-3.5",
         "hover:bg-white/[0.02]",
         "transition-colors group"
       )}
     >
       <div className="flex gap-3">
         {primary ? (
-          <TickerLogo symbol={primary} size="sm" className="mt-0.5" />
+          <TickerLogo symbol={primary} size="md" className="mt-0.5" />
         ) : (
-          <div className="h-7 w-7 rounded-full bg-white/[0.04] border border-white/10 shrink-0 mt-0.5" />
+          <div className="h-10 w-10 rounded-full bg-white/[0.04] shrink-0 mt-0.5" />
         )}
 
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-medium text-foreground leading-snug line-clamp-2 group-hover:text-foreground/90">
+          <p className="text-[14px] font-medium text-foreground leading-snug line-clamp-2 group-hover:text-foreground/90">
             {item.headline}
           </p>
           <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/70 tabular-nums">
@@ -133,12 +155,12 @@ function LoadingList(): JSX.Element {
   return (
     <ul className="space-y-2 p-2">
       {Array.from({ length: 6 }).map((_, i) => (
-        <li key={i} className="flex gap-3 p-2">
-          <Skeleton roundedFull className="h-7 w-7 shrink-0" />
+        <li key={i} className="flex gap-3 p-2.5">
+          <Skeleton roundedFull className="h-10 w-10 shrink-0" />
           <div className="flex-1 space-y-2">
-            <Skeleton className="h-3 w-full" />
-            <Skeleton className="h-3 w-3/4" />
-            <Skeleton className="h-2.5 w-20" />
+            <Skeleton className="h-3.5 w-full" />
+            <Skeleton className="h-3.5 w-3/4" />
+            <Skeleton className="h-2.5 w-24" />
           </div>
         </li>
       ))}

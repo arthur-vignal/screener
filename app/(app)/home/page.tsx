@@ -235,7 +235,7 @@ export default function HomePage(): JSX.Element {
         variants={staggerParentVariants as any}
         initial="hidden"
         animate="show"
-        className="mx-auto max-w-[1600px] px-6 py-6 pb-32"
+        className="w-[90%] mx-auto py-6 pb-32"
       >
         {/* Header com typewriter greeting */}
         <div className="flex items-baseline justify-between mb-6">
@@ -243,10 +243,10 @@ export default function HomePage(): JSX.Element {
           <StatusBar />
         </div>
 
-        {/* 3-col grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_340px] gap-4 items-start">
+        {/* 3-col grid — stretch natural (alinha fim dos cards) */}
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)_360px] gap-5 items-stretch">
           {/* ── Coluna esquerda ─────────────────────────────────────────── */}
-          <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+          <div className="flex flex-col gap-5">
             <StaggerOnMount>
               <PortfolioCard state={portfolio} />
             </StaggerOnMount>
@@ -276,8 +276,8 @@ export default function HomePage(): JSX.Element {
           </StaggerOnMount>
 
           {/* ── Coluna direita ─────────────────────────────────────────── */}
-          <StaggerOnMount className="lg:sticky lg:top-6 h-[calc(100vh-80px)] min-h-[600px]">
-            <NewsFeed items={news} loading={newsLoading} />
+          <StaggerOnMount>
+            <NewsFeed items={news} loading={newsLoading} maxItems={6} />
           </StaggerOnMount>
         </div>
       </motion.main>

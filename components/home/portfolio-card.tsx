@@ -75,27 +75,27 @@ function ReadyCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-5",
+        "rounded-2xl border border-white/10 bg-[#101116] p-6",
         className
       )}
     >
-      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-3">
+      <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">
         Carteira
       </div>
 
-      <p className="text-[14px] text-foreground leading-snug">
+      <p className="text-[15px] text-foreground leading-snug">
         {greeting()},{" "}
         <span className="font-semibold">{state.name}</span>.
       </p>
 
-      <div className="mt-4">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/85 mb-1">
+      <div className="mt-5">
+        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85 mb-1.5">
           Patrimônio
         </div>
-        <div className="text-[28px] font-semibold tabular-nums text-foreground leading-none">
+        <div className="text-[32px] font-semibold tabular-nums text-foreground leading-none">
           {valueFormatted}
         </div>
-        <div className="mt-2 flex items-center gap-1.5 text-[12px]">
+        <div className="mt-2.5 flex items-center gap-1.5 text-[13px]">
           <Delta
             value={state.changeTodayPercent}
             unit="percent"
@@ -108,11 +108,11 @@ function ReadyCard({
       <Link
         href="/portfolio"
         className={cn(
-          "mt-5 inline-flex items-center justify-center gap-1.5 w-full h-9",
+          "mt-6 inline-flex items-center justify-center gap-1.5 w-full h-10",
           "rounded-md border border-white/10 bg-white/[0.04]",
-          "text-[12px] font-medium text-foreground",
+          "text-[13px] font-medium text-foreground",
           "hover:bg-white/[0.08] hover:border-white/20",
-          "transition-colors"
+          "transition-colors cursor-pointer"
         )}
       >
         Acessar portfólio
@@ -134,19 +134,19 @@ function EmptyCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-5",
+        "rounded-2xl border border-white/10 bg-[#101116] p-6",
         className
       )}
     >
-      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-3">
+      <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">
         Carteira
       </div>
 
-      <p className="text-[14px] text-foreground leading-snug">
+      <p className="text-[15px] text-foreground leading-snug">
         {greeting()}{name ? `, ${name}` : ""}.
       </p>
 
-      <p className="mt-3 text-[13px] text-muted-foreground/85 leading-relaxed">
+      <p className="mt-4 text-[14px] text-muted-foreground/85 leading-relaxed">
         Você ainda não tem uma carteira. Crie uma pra acompanhar seus
         ativos e ver a valorização em tempo real.
       </p>
@@ -154,13 +154,13 @@ function EmptyCard({
       <Link
         href="/portfolio/new"
         className={cn(
-          "mt-5 inline-flex items-center justify-center gap-1.5 w-full h-9",
+          "mt-6 inline-flex items-center justify-center gap-1.5 w-full h-10",
           "rounded-md bg-[var(--primary)] text-[#070709]",
-          "text-[12px] font-semibold",
-          "hover:opacity-90 transition-opacity"
+          "text-[13px] font-semibold",
+          "hover:opacity-90 transition-opacity cursor-pointer"
         )}
       >
-        <Briefcase className="h-3.5 w-3.5" strokeWidth={2.25} />
+        <Briefcase className="h-4 w-4" strokeWidth={2.25} />
         Criar carteira
       </Link>
     </div>
@@ -173,15 +173,15 @@ function LoadingCard({ className }: { className?: string }): JSX.Element {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-5",
+        "rounded-2xl border border-white/10 bg-[#101116] p-6",
         className
       )}
     >
-      <Skeleton className="h-3 w-16 mb-3" />
-      <Skeleton className="h-4 w-40 mb-4" />
-      <Skeleton className="h-3 w-20 mb-2" />
-      <Skeleton className="h-7 w-32 mb-3" />
-      <Skeleton className="h-9 w-full" roundedMd />
+      <Skeleton className="h-3 w-20 mb-4" />
+      <Skeleton className="h-4 w-48 mb-5" />
+      <Skeleton className="h-3 w-24 mb-2" />
+      <Skeleton className="h-8 w-40 mb-4" />
+      <Skeleton className="h-10 w-full" roundedMd />
     </div>
   );
 }
@@ -192,27 +192,27 @@ function ErrorCard({ className }: { className?: string }): JSX.Element {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-5",
+        "rounded-2xl border border-white/10 bg-[#101116] p-6",
         className
       )}
     >
-      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-3">
+      <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">
         Carteira
       </div>
-      <p className="text-[14px] text-foreground leading-snug">
+      <p className="text-[15px] text-foreground leading-snug">
         Não foi possível carregar sua carteira.
       </p>
-      <p className="mt-2 text-[12px] text-muted-foreground/85">
+      <p className="mt-2.5 text-[13px] text-muted-foreground/85">
         Tente recarregar a página.
       </p>
       <button
         type="button"
         onClick={() => window.location.reload()}
         className={cn(
-          "mt-4 inline-flex items-center justify-center gap-1.5 w-full h-9",
+          "mt-5 inline-flex items-center justify-center gap-1.5 w-full h-10",
           "rounded-md border border-white/10 bg-white/[0.04]",
-          "text-[12px] font-medium text-foreground",
-          "hover:bg-white/[0.08] transition-colors"
+          "text-[13px] font-medium text-foreground",
+          "hover:bg-white/[0.08] transition-colors cursor-pointer"
         )}
       >
         Recarregar
