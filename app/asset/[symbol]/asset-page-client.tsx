@@ -37,6 +37,7 @@ import {
 } from "@/components/asset/news-summary-card";
 import { PriceChart, type RangeKey } from "@/components/asset/price-chart";
 import { PriceHero } from "@/components/asset/price-hero";
+import { cn } from "@/lib/utils";
 
 type Props = {
   symbol: string;
@@ -51,7 +52,10 @@ async function fetchJson<T>(url: string): Promise<T> {
 export default function AssetPageClient({ symbol }: Props): JSX.Element {
   const [range, setRange] = useState<RangeKey>("1Y");
 
-  useAssetBackground(symbol);
+  // Glow da cor da marca (estilo Fey TSLA) — aplica variáveis CSS
+  // --asset-glow-color e --asset-glow-opacity no container raiz.
+  const { style: assetStyle, className: assetClassName } =
+    useAssetBackground(symbol);
 
   // Bundle principal
   const { data: bundle, isLoading } = useSWR<AssetBundle>(
@@ -134,13 +138,19 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
   }, [bundle]);
 
   return (
-    <div className="min-h-screen text-foreground" style={{ background: "#070709" }}>
+    <div
+      className={cn(
+        "min-h-screen text-foreground asset-bg",
+        assetClassName
+      )}
+      style={{ background: "#070709", ...assetStyle }}
+    >
       <motion.main
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         variants={staggerParentVariants as any}
         initial="hidden"
         animate="show"
-        className="w-[90%] mx-auto py-6 pb-32"
+        className="w-[90%] mx-auto py-6 pb-32 relative z-10"
       >
         <StaggerOnMount>
           <AssetHeader
@@ -257,10 +267,6 @@ function EmptyColumn({
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-function cn(...args: Array<string | false | null | undefined>): string {
-  return args.filter(Boolean).join(" ");
-}
 
 type NewsApiItem = {
   id: string;
