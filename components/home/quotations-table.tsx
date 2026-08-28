@@ -19,7 +19,9 @@ import type { JSX } from "react";
 
 import { Delta } from "@/components/foundation/delta";
 import { Skeleton } from "@/components/foundation/skeleton";
-import { BrandLetter } from "@/components/foundation/brand-letter";
+import { TickerLogo } from "@/components/foundation/ticker-logo";
+import { SegmentedControl } from "@/components/foundation/segmented-control";
+import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type QuoteRow = {
@@ -42,6 +44,12 @@ type Props = {
   /** Callback de retry quando erro. */
   onRetry?: () => void;
   className?: string;
+  /** Tipo de ativo selecionado. */
+  assetType?: "stock" | "fii" | "etf" | "bdr";
+  onAssetTypeChange?: (v: "stock" | "fii" | "etf" | "bdr") => void;
+  /** Search query (controlada externamente). */
+  search?: string;
+  onSearchChange?: (v: string) => void;
 };
 
 export function QuotationsTable({
@@ -49,6 +57,10 @@ export function QuotationsTable({
   loading,
   onRetry,
   className,
+  assetType = "stock",
+  onAssetTypeChange,
+  search = "",
+  onSearchChange,
 }: Props): JSX.Element {
   if (loading) return <LoadingTable className={className} />;
   if (rows.length === 0)
@@ -63,19 +75,47 @@ export function QuotationsTable({
         className
       )}
     >
-      {/* Header */}
-      <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_repeat(5,minmax(0,0.8fr))] gap-3 px-4 py-2.5 border-b border-border/40 sticky top-0 bg-[#101116]/95 backdrop-blur-sm z-10">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
-          Ativo
+      {/* Header interno */}
+      <div className="px-4 pt-4 pb-3 border-b border-border/40">
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
+              Cotações oficiais
+            </div>
+            <div className="mt-0.5 text-[11px] text-muted-foreground/70 tabular-nums">
+              {rows.length} ativos
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {onAssetTypeChange && (
+              <SegmentedControl
+                value={assetType}
+                onChange={(v) =>
+                  onAssetTypeChange(v as "stock" | "fii" | "etf" | "bdr")
+                }
+                segments={[
+                  { value: "stock", label: "Ações" },
+                  { value: "fii", label: "FIIs" },
+                  { value: "etf", label: "ETFs" },
+                  { value: "bdr", label: "BDRs" },
+                ]}
+              />
+            )}
+            {onSearchChange && (
+              <SearchBox value={search} onChange={onSearchChange} />
+            )}
+          </div>
         </div>
-        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
-          Setor
+        <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_repeat(5,minmax(0,0.8fr))] gap-3">
+          <HeaderCell>Ativo</HeaderCell>
+          <HeaderCell>Setor</HeaderCell>
+          <HeaderCell align="right">24h</HeaderCell>
+          <HeaderCell align="right">7D</HeaderCell>
+          <HeaderCell align="right">30D</HeaderCell>
+          <HeaderCell align="right">Vol</HeaderCell>
+          <HeaderCell align="right">Mkt cap</HeaderCell>
         </div>
-        <HeaderCell align="right">24h</HeaderCell>
-        <HeaderCell align="right">7D</HeaderCell>
-        <HeaderCell align="right">30D</HeaderCell>
-        <HeaderCell align="right">Vol</HeaderCell>
-        <HeaderCell align="right">Mkt cap</HeaderCell>
       </div>
 
       {/* Rows */}
@@ -125,7 +165,7 @@ function Row({ row }: { row: QuoteRow }): JSX.Element {
     >
       {/* Ativo + nome */}
       <div className="flex items-center gap-2.5 min-w-0">
-        <BrandLetter symbol={row.symbol} size="sm" />
+        <TickerLogo symbol={row.symbol} size="sm" />
         <div className="min-w-0">
           <div className="text-[13px] font-semibold text-foreground truncate">
             {row.symbol}
@@ -243,6 +283,37 @@ function EmptyTable({
           Recarregar
         </button>
       )}
+    </div>
+  );
+}
+
+function SearchBox({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}): JSX.Element {
+  return (
+    <div className="relative">
+      <Search
+        className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none"
+        strokeWidth={2}
+      />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Buscar ativo, setor…"
+        aria-label="Buscar"
+        className={cn(
+          "h-8 pl-8 pr-3 rounded-md",
+          "bg-white/[0.02] border border-white/10",
+          "text-[12px] text-foreground placeholder:text-muted-foreground/60",
+          "focus:outline-none focus:border-white/20 focus:bg-white/[0.04]",
+          "transition-colors w-[200px]"
+        )}
+      />
     </div>
   );
 }

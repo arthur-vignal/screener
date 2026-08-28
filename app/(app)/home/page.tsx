@@ -1,49 +1,48 @@
 "use client";
 
 /**
- * /home — dashboard principal (Fase 2 do redesign).
+ * /home — dashboard principal (Fase 2.1).
  *
  * Layout 3-colunas Fey-style:
  *   ┌──────────┬───────────────────────────────┬──────────┐
- *   │          │                               │          │
  *   │ Carteira │   Cotações oficiais           │ Notícias │
- *   │  (hero)  │   (search + filter + tabela)  │  (feed)  │
- *   │          │                               │          │
+ *   │  (hero)  │   (header interno + filter    │  (feed)  │
+ *   │          │    + search + tabela)         │          │
  *   ├──────────┤                               │          │
  *   │ Notícia  │                               │          │
  *   │ do dia   │                               │          │
  *   └──────────┴───────────────────────────────┴──────────┘
- *                              [dock]
+ *                              [dock só ícones]
+ *
+ * Header: "Bom dia/tarde/noite, {nome}" com typewriter (caret piscando).
+ * Cards: StaggerOnMount fade+slide-up ao montar.
+ * Dock: 48x48, só ícones, hover scale 1.15 + sobe 4px.
  *
  * Dados:
- *   - /api/auth/me → nome do usuário + dados do portfólio
- *   - /api/portfolio/summary → valor total + variação do dia
+ *   - /api/auth/me → nome do usuário
+ *   - /api/portfolio/summary → patrimônio + variação
  *   - /api/assets/quote?symbols=... → cotações
- *   - /api/news/multi → feed de notícias
- *   - /api/news/multi?highlight=1 → notícia do dia
+ *   - /api/news/multi → feed
+ *   - /api/news/multi?highlight=1 → destaque do dia
  */
 
-import { Search } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { motion } from "motion/react";
+import { useCallback, useEffect, useState } from "react";
 import type { JSX } from "react";
 
 import { DashboardDock } from "@/components/foundation/dashboard-dock";
-import { Skeleton } from "@/components/foundation/skeleton";
+import { StaggerOnMount, staggerParentVariants } from "@/components/foundation/stagger";
 import { StatusBar } from "@/components/foundation/status-bar";
+import { TypedGreeting } from "@/components/foundation/typed-greeting";
 import { DayHighlightCard } from "@/components/home/day-highlight-card";
 import { NewsFeed, type NewsItem } from "@/components/home/news-feed";
 import {
   PortfolioCard,
   type PortfolioCardState,
 } from "@/components/home/portfolio-card";
-import {
-  QuotationsTable,
-  type QuoteRow,
-} from "@/components/home/quotations-table";
-import { TypeFilter, type AssetType } from "@/components/home/type-filter";
-import { cn } from "@/lib/utils";
+import { QuotationsTable, type QuoteRow } from "@/components/home/quotations-table";
 
-// Top 30 B3 por volume (seed inicial até o usuário filtrar).
+// Seeds por tipo
 const SEED_STOCKS = [
   "PETR4", "VALE3", "ITUB4", "BBDC4", "ABEV3", "BBAS3", "WEGE3",
   "B3SA3", "BBSE3", "CMIG4", "EQTL3", "RDOR3", "PRIO3", "GGBR4",
@@ -51,35 +50,27 @@ const SEED_STOCKS = [
   "VIVT3", "TIMS3", "SBSP3", "ENBR3", "KLBN11", "UGPA3",
   "HAPV3", "RADL3", "BPAC11", "BBDC3",
 ];
-
-const SEED_FIIS = [
-  "MXRF11", "HGLG11", "XPML11", "VISC11", "BCFF11", "IRDM11",
-  "KNRI11", "HSML11", "HGRU11", "XPLG11",
-];
-
-const SEED_ETFS = [
-  "BOVA11", "IVVB11", "SMAL11", "DIVO11", "PIBB11",
-];
-
-const SEED_BDRS = [
-  "AAPL34", "MSFT34", "GOOG34", "AMZO34", "TSLA34",
-];
-
-const SEEDS: Record<AssetType, string[]> = {
+const SEED_FIIS = ["MXRF11", "HGLG11", "XPML11", "VISC11", "BCFF11", "IRDM11", "KNRI11", "HSML11", "HGRU11", "XPLG11"];
+const SEED_ETFS = ["BOVA11", "IVVB11", "SMAL11", "DIVO11", "PIBB11"];
+const SEED_BDRS = ["AAPL34", "MSFT34", "GOOG34", "AMZO34", "TSLA34"];
+const SEEDS = {
   stock: SEED_STOCKS,
   fii: SEED_FIIS,
   etf: SEED_ETFS,
   bdr: SEED_BDRS,
-};
+} as const;
+
+type AssetType = keyof typeof SEEDS;
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function HomePage(): JSX.Element {
+  const [userName, setUserName] = useState<string>("");
+
   const [assetType, setAssetType] = useState<AssetType>("stock");
   const [search, setSearch] = useState("");
   const [rows, setRows] = useState<QuoteRow[]>([]);
   const [quotesLoading, setQuotesLoading] = useState(true);
-  const [quotesError, setQuotesError] = useState(false);
 
   const [portfolio, setPortfolio] = useState<PortfolioCardState>({
     kind: "loading",
@@ -87,7 +78,6 @@ export default function HomePage(): JSX.Element {
 
   const [news, setNews] = useState<NewsItem[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
-  const [newsError, setNewsError] = useState(false);
 
   const [highlight, setHighlight] = useState<{
     headline: string;
@@ -97,10 +87,28 @@ export default function HomePage(): JSX.Element {
   } | null>(null);
   const [highlightLoading, setHighlightLoading] = useState(true);
 
+  // ── User name ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const r = await fetch("/api/auth/me", { cache: "no-store" });
+        if (!r.ok) return;
+        const data = (await r.json()) as { user?: { username?: string } };
+        if (!cancelled && data.user?.username) setUserName(data.user.username);
+      } catch {
+        // ignore
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // ── Quotes ────────────────────────────────────────────────────────────────
   const fetchQuotes = useCallback(async () => {
     setQuotesLoading(true);
-    setQuotesError(false);
     try {
       const symbols = SEEDS[assetType];
       const url = `/api/assets/quote?symbols=${symbols.join(",")}`;
@@ -110,7 +118,7 @@ export default function HomePage(): JSX.Element {
       const mapped = (data.rows ?? []).map(toQuoteRow);
       setRows(mapped);
     } catch {
-      setQuotesError(true);
+      setRows([]);
     } finally {
       setQuotesLoading(false);
     }
@@ -135,14 +143,12 @@ export default function HomePage(): JSX.Element {
           changeTodayPercent?: number;
           currency?: "BRL" | "USD";
         };
-
         if (cancelled) return;
 
         if (!data.hasPortfolio) {
           setPortfolio({ kind: "empty", name: data.name ?? null });
           return;
         }
-
         setPortfolio({
           kind: "ready",
           name: data.name ?? "Arthur",
@@ -164,7 +170,6 @@ export default function HomePage(): JSX.Element {
   // ── News ──────────────────────────────────────────────────────────────────
   const fetchNews = useCallback(async () => {
     setNewsLoading(true);
-    setNewsError(false);
     try {
       const r = await fetch("/api/news/multi", { cache: "no-store" });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -172,7 +177,7 @@ export default function HomePage(): JSX.Element {
       const mapped = (data.items ?? []).slice(0, 30).map(toNewsItem);
       setNews(mapped);
     } catch {
-      setNewsError(true);
+      setNews([]);
     } finally {
       setNewsLoading(false);
     }
@@ -206,7 +211,7 @@ export default function HomePage(): JSX.Element {
           });
         }
       } catch {
-        // Falha silenciosa — card mostra empty state.
+        // silent
       } finally {
         if (!cancelled) setHighlightLoading(false);
       }
@@ -217,39 +222,24 @@ export default function HomePage(): JSX.Element {
     };
   }, []);
 
-  // ── Filter (search local) ─────────────────────────────────────────────────
-  const filteredRows = useMemo(() => {
-    if (!search.trim()) return rows;
-    const q = search.toLowerCase();
-    return rows.filter(
-      (r) =>
-        r.symbol.toLowerCase().includes(q) ||
-        (r.longName ?? "").toLowerCase().includes(q) ||
-        r.sector.toLowerCase().includes(q)
-    );
-  }, [rows, search]);
-
-  const todayText = useMemo(
-    () =>
-      new Date().toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }),
-    []
-  );
+  const todayText = new Date().toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 
   return (
-    <div
-      className="min-h-screen text-foreground"
-      style={{ background: "#070709" }}
-    >
-      <div className="mx-auto max-w-[1600px] px-6 py-6 pb-32">
-        {/* Header */}
+    <div className="min-h-screen text-foreground" style={{ background: "#070709" }}>
+      <motion.main
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        variants={staggerParentVariants as any}
+        initial="hidden"
+        animate="show"
+        className="mx-auto max-w-[1600px] px-6 py-6 pb-32"
+      >
+        {/* Header com typewriter greeting */}
         <div className="flex items-baseline justify-between mb-6">
-          <h1 className="text-[20px] font-semibold tracking-tight">
-            Visão geral
-          </h1>
+          <TypedGreeting name={userName} size="lg" />
           <StatusBar />
         </div>
 
@@ -257,89 +247,42 @@ export default function HomePage(): JSX.Element {
         <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_340px] gap-4 items-start">
           {/* ── Coluna esquerda ─────────────────────────────────────────── */}
           <div className="flex flex-col gap-4 lg:sticky lg:top-6">
-            <PortfolioCard state={portfolio} />
-            <DayHighlightCard
-              headline={highlight?.headline ?? null}
-              source={highlight?.source ?? null}
-              url={highlight?.url ?? null}
-              relatedCount={highlight?.relatedCount}
-              dateText={todayText}
-              loading={highlightLoading}
-            />
+            <StaggerOnMount>
+              <PortfolioCard state={portfolio} />
+            </StaggerOnMount>
+            <StaggerOnMount>
+              <DayHighlightCard
+                headline={highlight?.headline ?? null}
+                source={highlight?.source ?? null}
+                url={highlight?.url ?? null}
+                relatedCount={highlight?.relatedCount}
+                dateText={todayText}
+                loading={highlightLoading}
+              />
+            </StaggerOnMount>
           </div>
 
-          {/* ── Coluna central ──────────────────────────────────────────── */}
-          <section className="flex flex-col gap-3 min-w-0">
-            {/* Toolbar */}
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-baseline gap-3">
-                <h2 className="text-[16px] font-semibold tracking-tight">
-                  Cotações oficiais
-                </h2>
-                <span className="text-[11px] text-muted-foreground/70 tabular-nums">
-                  {filteredRows.length} ativos
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                <TypeFilter value={assetType} onChange={setAssetType} />
-                <SearchBox value={search} onChange={setSearch} />
-              </div>
-            </div>
-
-            {/* Tabela */}
+          {/* ── Coluna central (tabela com header interno) ─────────────── */}
+          <StaggerOnMount className="min-w-0">
             <QuotationsTable
-              rows={filteredRows}
-              loading={quotesLoading && !quotesError}
+              rows={rows}
+              loading={quotesLoading}
               onRetry={fetchQuotes}
+              assetType={assetType}
+              onAssetTypeChange={setAssetType}
+              search={search}
+              onSearchChange={setSearch}
             />
-          </section>
+          </StaggerOnMount>
 
           {/* ── Coluna direita ─────────────────────────────────────────── */}
-          <div className="lg:sticky lg:top-6 h-[calc(100vh-80px)] min-h-[600px]">
-            <NewsFeed
-              items={news}
-              loading={newsLoading}
-              onRetry={newsError ? fetchNews : undefined}
-            />
-          </div>
+          <StaggerOnMount className="lg:sticky lg:top-6 h-[calc(100vh-80px)] min-h-[600px]">
+            <NewsFeed items={news} loading={newsLoading} />
+          </StaggerOnMount>
         </div>
-      </div>
+      </motion.main>
 
       <DashboardDock />
-    </div>
-  );
-}
-
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
-function SearchBox({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}): JSX.Element {
-  return (
-    <div className="relative">
-      <Search
-        className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none"
-        strokeWidth={2}
-      />
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Buscar ativo, setor…"
-        aria-label="Buscar"
-        className={cn(
-          "h-8 pl-8 pr-3 rounded-md",
-          "bg-white/[0.02] border border-white/10",
-          "text-[12px] text-foreground placeholder:text-muted-foreground/60",
-          "focus:outline-none focus:border-white/20 focus:bg-white/[0.04]",
-          "transition-colors w-[200px]"
-        )}
-      />
     </div>
   );
 }

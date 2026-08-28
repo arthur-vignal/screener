@@ -20,6 +20,7 @@ import type { JSX } from "react";
 
 import { BrandLetter } from "@/components/foundation/brand-letter";
 import { Skeleton } from "@/components/foundation/skeleton";
+import { TickerLogo } from "@/components/foundation/ticker-logo";
 import { cn } from "@/lib/utils";
 
 export type NewsItem = {
@@ -99,7 +100,7 @@ function NewsCard({ item }: { item: NewsItem }): JSX.Element {
     >
       <div className="flex gap-3">
         {primary ? (
-          <BrandLetter symbol={primary} size="sm" className="mt-0.5" />
+          <TickerLogo symbol={primary} size="sm" className="mt-0.5" />
         ) : (
           <div className="h-7 w-7 rounded-full bg-white/[0.04] border border-white/10 shrink-0 mt-0.5" />
         )}

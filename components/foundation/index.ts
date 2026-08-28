@@ -32,3 +32,10 @@ export type { Segment } from "./segmented-control";
 export { Skeleton } from "./skeleton";
 
 export { StatusBar } from "./status-bar";
+
+export { TickerLogo } from "./ticker-logo";
+export type { TickerLogoSize } from "./ticker-logo";
+
+export { StaggerOnMount, staggerParentVariants, staggerChildVariants } from "./stagger";
+
+export { TypedGreeting } from "./typed-greeting";

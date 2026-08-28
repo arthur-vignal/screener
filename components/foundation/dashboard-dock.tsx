@@ -3,17 +3,18 @@
 /**
  * DashboardDock — dock de navegação inferior centralizado.
  *
- * Padrão visual (sulfur-ui-rules §3.3):
- *   Container: fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#101116]/95
- *              backdrop-blur border border-white/10 rounded-2xl
- *   Item:      flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-md
- *              text-muted-foreground
- *   Ativo:     bg-white/[0.04] text-foreground
+ * Visual:
+ *   - Container: rounded-2xl, bg-[#101116]/95, backdrop-blur, border-white/10
+ *   - Itens: só ícone (sem texto embaixo), 48x48px
+ *   - Hover: scale 1.15 + ícone sobe 4px (estilo macOS dock)
+ *   - Ativo: pill sutil com bg-white/[0.06]
  *
- * 6 ícones máximo (limitação visual). Acesso ao resto é por
- * search global + breadcrumb.
+ * 6 ícones máximo. Acesso ao resto via search/breadcrumb.
+ *
+ * Animação: cada item usa motion.div com whileHover scale + spring.
  */
 
+import { motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { JSX } from "react";
@@ -74,10 +75,10 @@ export function DashboardDock({
     <nav
       aria-label="Navegação principal"
       className={cn(
-        "fixed bottom-4 left-1/2 -translate-x-1/2 z-50",
-        "inline-flex items-center gap-0.5 bg-[#101116]/95 backdrop-blur-md",
-        "border border-white/10 rounded-2xl px-2 py-1.5",
-        "shadow-[0_8px_24px_-8px_rgba(0,0,0,0.6)]",
+        "fixed bottom-5 left-1/2 -translate-x-1/2 z-50",
+        "inline-flex items-center gap-1 bg-[#101116]/95 backdrop-blur-md",
+        "border border-white/10 rounded-2xl px-2.5 py-2",
+        "shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8)]",
         className
       )}
     >
@@ -85,22 +86,32 @@ export function DashboardDock({
         const Icon = ICONS[item.icon];
         const active = isActive(pathname, item.href);
         return (
-          <Link
+          <motion.div
             key={item.href}
-            href={item.href}
-            className={cn(
-              "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-md transition-colors min-w-[64px]",
-              active
-                ? "bg-white/[0.06] text-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.02]"
-            )}
-            aria-current={active ? "page" : undefined}
+            whileHover={{ scale: 1.15, y: -4 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 380, damping: 22 }}
+            className="relative"
           >
-            <Icon className="h-4 w-4" strokeWidth={active ? 2.25 : 2} />
-            <span className="text-[10px] font-medium leading-none">
-              {item.label}
-            </span>
-          </Link>
+            <Link
+              href={item.href}
+              aria-label={item.label}
+              title={item.label}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex items-center justify-center h-12 w-12 rounded-xl",
+                "transition-colors duration-200 cursor-pointer",
+                active
+                  ? "bg-white/[0.06] text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
+              )}
+            >
+              <Icon
+                className="h-5 w-5"
+                strokeWidth={active ? 2.25 : 2}
+              />
+            </Link>
+          </motion.div>
         );
       })}
     </nav>
