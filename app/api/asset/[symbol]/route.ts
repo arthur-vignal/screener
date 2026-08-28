@@ -88,6 +88,32 @@ export async function GET(
       // como decimal e multiplica por 100; senão, deixa como está.
       // (PETR4 paga ~9%, mas o bundle retorna 0.09 — bug da Brapi.)
       dividendYield: normalizeYield(ks.yield) ?? normalizeYield(ks.dividendYield) ?? null,
+      // Métricas extras pra /asset/[symbol] MetricStrip (estilo Fey TSLA)
+      // Brapi v2 retorna EV/Sales em defaultKeyStatistics.enterpriseToRevenue
+      // ou como campo raw no payload (algumas versões). Cobre ambos.
+      evToSales:
+        (ks as Record<string, unknown>).enterpriseToRevenue as
+          | number
+          | null
+          | undefined ??
+        (fd as Record<string, unknown>).enterpriseToRevenue as
+          | number
+          | null
+          | undefined ??
+        null,
+      revenue: fd.totalRevenue ?? null,
+      eps: ks.trailingEps ?? null,
+      grossMargin: fd.grossMargins ?? null,
+      profitMargin: fd.profitMargins ?? null,
+      beta: ks.beta ?? null,
+      // Price target (vem de financialData na Brapi v2)
+      targetHighPrice: fd.targetHighPrice ?? null,
+      targetLowPrice: fd.targetLowPrice ?? null,
+      targetMeanPrice: fd.targetMeanPrice ?? null,
+      targetMedianPrice: fd.targetMedianPrice ?? null,
+      recommendationMean: fd.recommendationMean ?? null,
+      recommendationKey: fd.recommendationKey ?? null,
+      numberOfAnalystOpinions: fd.numberOfAnalystOpinions ?? null,
     },
 
     // Full payloads — sub-pages pull from these.

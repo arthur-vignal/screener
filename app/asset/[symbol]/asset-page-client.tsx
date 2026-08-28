@@ -28,8 +28,13 @@ import {
   staggerParentVariants,
 } from "@/components/foundation/stagger";
 import { useAssetBackground } from "@/lib/use-asset-background";
+import {
+  AnalystRatingsRadar,
+  deriveRatings,
+} from "@/components/asset/analyst-ratings-radar";
 import { AssetHeader } from "@/components/asset/asset-header";
 import type { AssetBundle } from "@/components/asset/asset-bundle";
+import { EarningsEstimates } from "@/components/asset/earnings-estimates";
 import { MetricStrip, type MetricCell } from "@/components/asset/metric-strip";
 import {
   NewsSummaryCard,
@@ -37,6 +42,7 @@ import {
 } from "@/components/asset/news-summary-card";
 import { PriceChart, type RangeKey } from "@/components/asset/price-chart";
 import { PriceHero } from "@/components/asset/price-hero";
+import { PriceTargetChart } from "@/components/asset/price-target-chart";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -106,15 +112,16 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     if (!bundle) return [];
     const m = bundle.metrics;
     const q = bundle.quote;
+    const currency = (bundle.currency as "BRL" | "USD") ?? "BRL";
 
     const fmtCompact = (v: number | null) =>
       v == null ? "—" : v.toLocaleString("en-US", { notation: "compact", maximumFractionDigits: 2 });
-    const fmtCurrency = (v: number | null, c: string) =>
+    const fmtCurrencyCompact = (v: number | null) =>
       v == null
         ? "—"
         : v.toLocaleString("en-US", {
           style: "currency",
-          currency: c,
+          currency,
           notation: "compact",
           maximumFractionDigits: 2,
         });
@@ -123,15 +130,22 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     const fmtMultiple = (v: number | null) =>
       v == null ? "—" : v.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
+    // grossMargin e profitMargin vêm em decimal (0-1) da brapi — converte pra %
+    const fmtMarginPercent = (v: number | null) => {
+      if (v == null) return "—";
+      const pct = v <= 1 ? v * 100 : v; // se vier 0.16 vira 16; se vier 16 fica 16
+      return `${pct.toLocaleString("en-US", { maximumFractionDigits: 2 })}%`;
+    };
+
     return [
-      { label: "Mkt cap", value: fmtCompact(m.marketCap) },
-      { label: "EV/Sales", value: "—" }, // requer campo que bundle não tem
+      { label: "Mkt cap", value: fmtCurrencyCompact(m.marketCap) },
+      { label: "EV/Sales", value: fmtMultiple(m.evToSales) },
       { label: "P/E ratio", value: fmtMultiple(m.trailingPE) },
-      { label: "FY Revenue", value: "—" }, // requer campo
-      { label: "EPS", value: "—" }, // requer campo
-      { label: "Gross Margin", value: "—" }, // requer campo
-      { label: "Profit Margin", value: "—" }, // requer campo
-      { label: "Beta", value: "—" }, // requer campo
+      { label: "FY Revenue", value: fmtCurrencyCompact(m.revenue) },
+      { label: "EPS", value: m.eps != null ? fmtCurrencyCompact(m.eps) : "—" },
+      { label: "Gross Margin", value: fmtMarginPercent(m.grossMargin) },
+      { label: "Profit Margin", value: fmtMarginPercent(m.profitMargin) },
+      { label: "Beta", value: fmtMultiple(m.beta) },
       { label: "Div yield", value: fmtPercent(m.dividendYield) },
       { label: "Sector", value: m.sector ?? "—" },
     ];
@@ -191,77 +205,66 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
         </StaggerOnMount>
 
         <StaggerOnMount className="mt-6">
-          <AnalystEstimates symbol={symbol} hasEstimates={false} />
+          {/* Card container estilo Fey: Analyst estimates */}
+          <div className="rounded-2xl border border-white/10 bg-[#101116] p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <h2 className="text-[16px] font-semibold tracking-tight text-foreground">
+                  Analyst estimates
+                </h2>
+                <span className="inline-flex items-center justify-center h-5 w-5 rounded bg-white/[0.04] border border-white/10 text-[10px] font-semibold text-muted-foreground/70">
+                  A
+                </span>
+              </div>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md cursor-pointer bg-white/[0.04] border border-white/10 text-foreground text-[12px] font-medium hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+              >
+                All estimates
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-5">
+              {/* Analyst ratings radar */}
+              <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
+                <AnalystRatingsRadar
+                  ratings={deriveRatings(
+                    bundle?.metrics.recommendationMean ?? null,
+                    bundle?.metrics.numberOfAnalystOpinions ?? null
+                  )}
+                />
+              </div>
+
+              {/* Price target chart */}
+              <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
+                <PriceTargetChart
+                  candles={candles}
+                  current={bundle?.quote.price ?? null}
+                  high52w={bundle?.quote.fiftyTwoWeekHigh ?? null}
+                  low52w={bundle?.quote.fiftyTwoWeekLow ?? null}
+                  targetHigh={bundle?.metrics.targetHighPrice ?? null}
+                  targetLow={bundle?.metrics.targetLowPrice ?? null}
+                  targetMedian={bundle?.metrics.targetMedianPrice ?? null}
+                  targetMean={bundle?.metrics.targetMeanPrice ?? null}
+                  currency={(bundle?.currency as "BRL" | "USD") ?? "BRL"}
+                />
+              </div>
+            </div>
+          </div>
+        </StaggerOnMount>
+
+        <StaggerOnMount className="mt-6">
+          <EarningsEstimates
+            peRatio={bundle?.metrics.trailingPE ?? null}
+            eps={bundle?.metrics.eps ?? null}
+            sector={bundle?.sector ?? null}
+            currency={(bundle?.currency as "BRL" | "USD") ?? "BRL"}
+            epsChangePercent={null}
+          />
         </StaggerOnMount>
       </motion.main>
 
       <DashboardDock />
-    </div>
-  );
-}
-
-// ─── Analyst estimates (placeholder pra Fase 4) ────────────────────────────
-
-function AnalystEstimates({
-  symbol,
-  hasEstimates,
-}: {
-  symbol: string;
-  hasEstimates: boolean;
-}): JSX.Element {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <h2 className="text-[16px] font-semibold tracking-tight text-foreground">
-            Analyst estimates
-          </h2>
-          <span className="inline-flex items-center justify-center h-5 w-5 rounded bg-white/[0.04] border border-white/10 text-[10px] font-semibold text-muted-foreground/70">
-            A
-          </span>
-        </div>
-        <button
-          type="button"
-          disabled={!hasEstimates}
-          className={cn(
-            "inline-flex items-center gap-1.5 h-8 px-3 rounded-md",
-            "bg-white/[0.04] border border-white/10 text-foreground",
-            "text-[12px] font-medium",
-            "hover:bg-white/[0.08] hover:border-white/20",
-            "transition-colors cursor-pointer",
-            !hasEstimates && "opacity-50 cursor-not-allowed"
-          )}
-        >
-          All estimates
-        </button>
-      </div>
-
-      {hasEstimates ? (
-        <div className="space-y-3">
-          {/* Implementação real virá na Fase 4 */}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4">
-          <EmptyColumn label="Analyst ratings" symbol={symbol} />
-          <EmptyColumn label="Price target" symbol={symbol} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function EmptyColumn({
-  label,
-  symbol,
-}: {
-  label: string;
-  symbol: string;
-}): JSX.Element {
-  return (
-    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5 text-center">
-      <p className="text-[12px] text-muted-foreground/70">
-        {label} indisponível para {symbol}.
-      </p>
     </div>
   );
 }

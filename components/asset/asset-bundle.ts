@@ -10,6 +10,7 @@ export type AssetBundle = {
   longName: string | null;
   logoUrl: string | null;
   sector: string;
+  industry: string | null;
   currency: string;
   marketState: string;
   quote: {
@@ -34,6 +35,32 @@ export type AssetBundle = {
     ebitda: number | null;
     freeCashflow: number | null;
     dividendYield: number | null;
+    /** EV / Sales (TTM) — múltiplo de receita. */
+    evToSales: number | null;
+    /** Receita total TTM (BRL ou USD). */
+    revenue: number | null;
+    /** EPS (lucro por ação) trailing. */
+    eps: number | null;
+    /** Margem bruta (decimal 0-1). */
+    grossMargin: number | null;
+    /** Margem líquida (decimal 0-1). */
+    profitMargin: number | null;
+    /** Beta vs índice de referência. */
+    beta: number | null;
+    /** Price target — High (analyst). */
+    targetHighPrice: number | null;
+    /** Price target — Low (analyst). */
+    targetLowPrice: number | null;
+    /** Price target — Mean (analyst). */
+    targetMeanPrice: number | null;
+    /** Price target — Median (analyst). */
+    targetMedianPrice: number | null;
+    /** Recomendação média (1=Strong Buy, 5=Strong Sell). */
+    recommendationMean: number | null;
+    /** Recomendação textual (ex: "buy", "hold"). */
+    recommendationKey: string | null;
+    /** Número de analistas que deram opinião. */
+    numberOfAnalystOpinions: number | null;
   };
   candles: Array<{
     date: string;
@@ -46,6 +73,8 @@ export type AssetBundle = {
     volume: number;
   }>;
   keyStatistics?: Record<string, number | null | undefined>;
+  financialData?: Record<string, number | null | undefined>;
+  profile?: Record<string, unknown>;
   historicals?: {
     income?: Array<Record<string, unknown>>;
     balance?: Array<Record<string, unknown>>;
