@@ -3,8 +3,16 @@
 /**
  * /dev/components — playground pra visualizar todos os componentes foundation.
  *
- * Cada componente é renderizado em estados (default, loading, empty, error)
- * pra validar a regra dos 3 estados da sulfur-ui-rules.
+ * ⚠️ ESTA PÁGINA É SÓ PRA VALIDAR FUNCIONALIDADE, NÃO ESTILO.
+ *    O estilo final de cada componente é calibrado quando ele é usado em
+ *    produção (/home, /asset/[symbol], /analysis) seguindo a sulfur-ui-rules.
+ *    O que importa aqui é:
+ *      - componente renderiza sem crash
+ *      - os 3 estados aparecem lado a lado (loading/empty/error)
+ *      - proporções, hierarquia e interações funcionam
+ *      - tipos TS batem (passa no typecheck)
+ *
+ *    NÃO USE ESTA PÁGINA COMO REFERÊNCIA VISUAL FINAL.
  */
 
 import {
