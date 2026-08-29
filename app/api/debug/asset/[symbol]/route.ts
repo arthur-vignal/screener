@@ -55,18 +55,23 @@ export async function GET(
           for (const [k, v] of Object.entries(obj)) {
             if (Array.isArray(v)) {
               summary[`results[0].${k}.length`] = v.length;
-              // sample 1 entrada
+              // sample COMPLETO das primeiras 2 entradas (pra ver TODOS os campos)
               if (v.length > 0) {
-                summary[`results[0].${k}[0]`] = JSON.stringify(v[0]).slice(0, 400);
+                summary[`results[0].${k}[0]_keys`] = Object.keys(v[0] as object).sort().join(",");
+              }
+              if (v.length > 1) {
+                summary[`results[0].${k}[1]_keys`] = Object.keys(v[1] as object).sort().join(",");
               }
             } else if (v && typeof v === "object" && !Array.isArray(v)) {
-              // pode ser { statistics: [...] }
               const inner = v as Record<string, unknown>;
               for (const [k2, v2] of Object.entries(inner)) {
                 if (Array.isArray(v2)) {
                   summary[`results[0].${k}.${k2}.length`] = v2.length;
                   if (v2.length > 0) {
-                    summary[`results[0].${k}.${k2}[0]`] = JSON.stringify(v2[0]).slice(0, 400);
+                    summary[`results[0].${k}.${k2}[0]_keys`] = Object.keys(v2[0] as object).sort().join(",");
+                  }
+                  if (v2.length > 1) {
+                    summary[`results[0].${k}.${k2}[1]_keys`] = Object.keys(v2[1] as object).sort().join(",");
                   }
                 }
               }
