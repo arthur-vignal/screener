@@ -27,7 +27,6 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  Area,
 } from "recharts";
 
 import { cn } from "@/lib/utils";
@@ -44,25 +43,67 @@ export type PEHistoryRow = {
   priceEarnings: number | null;
 };
 
+/**
+ * Estatísticas do subsetor (mediana + quartis do P/E dos peers).
+ * Calculado client-side a partir de peerRows em /api/peer-benchmarks.
+ */
+export type PESectorStats = {
+  /** Mediana do P/E dos peers (excluindo o próprio ticker). */
+  median: number | null;
+  /** 1º quartil (25%) dos peers. */
+  p25: number | null;
+  /** 3º quartil (75%) dos peers. */
+  p75: number | null;
+  /** Quantos peers entraram no cálculo (com pe != null). */
+  count: number;
+};
+
 type Props = {
   history: PEHistoryRow[];
   /** P/L atual (do bundle ou calculado price/eps). */
   currentPe: number | null;
+  /** Estatísticas do subsetor (mediana + quartis dos peers). */
+  sectorStats?: PESectorStats | null;
+  /** Quantos anos exibir (default 4). Limpa outliers de períodos
+   *  anormais (Lava Jato, COVID) que quebram a escala. */
+  windowYears?: number;
   className?: string;
 };
 
 /**
- * Helper: ordena por endDate, remove nulls, mapeia pra {index, pe, endDate}.
+ * Helper: ordena por endDate, remove nulls/inválidos, limita janela
+ * temporal (default 4 anos). Também remove outliers absurdos
+ * (P/L > 100 ou negativo) que indicam trimestres com EPS ~0
+ * (Lava Jato, COVID) e quebrariam a escala do gráfico.
  */
-function normalize(history: PEHistoryRow[]): Array<{
+function normalize(
+  history: PEHistoryRow[],
+  windowYears = 4,
+): Array<{
   index: number;
   pe: number;
   endDate: string;
 }> {
+  // cutoff: últimos N anos a partir do entry mais recente
+  const dates = history
+    .map((r) => r.endDate)
+    .filter((d): d is string => Boolean(d))
+    .sort();
+  const latest = dates[dates.length - 1];
+  const cutoff = latest
+    ? latest.slice(0, 4) // ano do mais recente
+    : String(new Date().getFullYear());
+  const cutoffYear = parseInt(cutoff, 10) - (windowYears - 1);
+
   return history
     .filter(
       (r): r is { endDate: string; trailingPE: number; priceEarnings: number | null } =>
-        r.trailingPE != null && Number.isFinite(r.trailingPE) && r.trailingPE > 0
+        r.trailingPE != null &&
+        Number.isFinite(r.trailingPE) &&
+        r.trailingPE > 0 &&
+        r.trailingPE < 100 && // remove outliers > 100 (geralmente EPS ~0)
+        r.endDate != null &&
+        parseInt(r.endDate.slice(0, 4), 10) >= cutoffYear,
     )
     .sort((a, b) => a.endDate.localeCompare(b.endDate))
     .map((r, i) => ({
@@ -75,55 +116,64 @@ function normalize(history: PEHistoryRow[]): Array<{
 export function PEHistoryChart({
   history,
   currentPe,
+  sectorStats,
+  windowYears = 4,
   className,
 }: Props): JSX.Element | null {
-  const data = useMemo(() => normalize(history), [history]);
+  const data = useMemo(
+    () => normalize(history, windowYears),
+    [history, windowYears],
+  );
 
-  // Domínio Y: combina histórico + atual pra garantir que tudo cabe
+  // Domínio Y: combina histórico + atual + banda do subsetor
+  // pra garantir que tudo cabe.
   const yStats = useMemo(() => {
-    if (data.length === 0) {
-      return currentPe != null
-        ? { min: currentPe * 0.7, max: currentPe * 1.3, mean: currentPe, std: 0 }
-        : null;
-    }
+    if (data.length === 0 && currentPe == null) return null;
+
     const pes = data.map((d) => d.pe);
-    const mean = pes.reduce((s, v) => s + v, 0) / pes.length;
-    const variance =
-      pes.length > 1
-        ? pes.reduce((s, v) => s + (v - mean) ** 2, 0) / (pes.length - 1)
-        : 0;
-    const std = Math.sqrt(variance);
-    const allValues = [...pes, ...(currentPe != null ? [currentPe] : [])];
-    const min = Math.min(...allValues) * 0.85;
-    const max = Math.max(...allValues) * 1.15;
-    return { min, max, mean, std };
-  }, [data, currentPe]);
+    const sectorBand = sectorStats
+      ? [sectorStats.p25, sectorStats.p75, sectorStats.median].filter(
+          (v): v is number => v != null && Number.isFinite(v),
+        )
+      : [];
+
+    const allValues = [
+      ...pes,
+      ...(currentPe != null ? [currentPe] : []),
+      ...sectorBand,
+    ];
+
+    if (allValues.length === 0) return null;
+    const min = Math.min(...allValues);
+    const max = Math.max(...allValues);
+    // padding de 10% em cima/embaixo
+    const pad = Math.max((max - min) * 0.1, 0.5);
+    return {
+      min: Math.max(0, min - pad),
+      max: max + pad,
+    };
+  }, [data, currentPe, sectorStats]);
 
   if (!yStats) return null;
 
-  const zScore =
-    currentPe != null && yStats.std > 0
-      ? (currentPe - yStats.mean) / yStats.std
+  // Cor do valor atual baseada na posição vs mediana do subsetor.
+  // Verde: abaixo do P25 (barato). Vermelho: acima do P75 (caro).
+  const vsMedian =
+    currentPe != null && sectorStats?.median != null
+      ? currentPe - sectorStats.median
       : null;
-
-  // Cor do valor atual baseada no z-score
   const currentColor =
-    zScore == null
+    vsMedian == null || sectorStats == null || currentPe == null
       ? "var(--foreground)"
-      : zScore < -0.5
-        ? "var(--positive)" // barato
-        : zScore > 1
-          ? "var(--negative)" // caro
-          : "var(--foreground)"; // neutro
+      : currentPe < (sectorStats.p25 ?? Infinity)
+        ? "var(--positive)" // barato (< P25 do subsetor)
+        : currentPe > (sectorStats.p75 ?? -Infinity)
+          ? "var(--negative)" // caro (> P75)
+          : "var(--foreground)"; // dentro da banda
 
-  // Área da banda ±1σ
-  const bandData = data.map((d) => ({
-    index: d.index,
-    endDate: d.endDate,
-    pe: d.pe,
-    upper: yStats.mean + yStats.std,
-    lower: Math.max(0, yStats.mean - yStats.std),
-  }));
+  // Linha de mediana do subsetor + banda P25-P75.
+  // Plotado como ReferenceLines horizontais (mais simples que área cheia).
+  const hasSectorStats = sectorStats?.median != null;
 
   return (
     <div className={cn("flex flex-col", className)}>
@@ -131,9 +181,9 @@ export function PEHistoryChart({
         <div className="text-[14px] font-semibold text-foreground">
           Histórico de P/L
         </div>
-        {zScore != null && (
-          <div className="text-[11px] text-muted-foreground/70 tabular-nums">
-            z = {zScore >= 0 ? "+" : ""}{zScore.toFixed(2)}σ
+        {hasSectorStats && sectorStats && (
+          <div className="text-[10px] text-muted-foreground/70 tabular-nums">
+            Setor ({sectorStats.count}): {sectorStats.p25?.toFixed(1)}–{sectorStats.p75?.toFixed(1)}x
           </div>
         )}
       </div>
@@ -151,12 +201,6 @@ export function PEHistoryChart({
               data={data}
               margin={{ top: 8, right: 32, left: 0, bottom: 0 }}
             >
-              <defs>
-                <linearGradient id="peBandFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={CHART_COLORS.seriesPrimary} stopOpacity={0.15} />
-                  <stop offset="100%" stopColor={CHART_COLORS.seriesPrimary} stopOpacity={0.05} />
-                </linearGradient>
-              </defs>
               <CartesianGrid
                 stroke={CHART_COLORS.gridLine}
                 strokeWidth={1}
@@ -234,24 +278,52 @@ export function PEHistoryChart({
                 }}
               />
 
-              {/* Linha da média histórica */}
-              <ReferenceLine
-                y={yStats.mean}
-                stroke={CHART_COLORS.gridLineStrong}
-                strokeDasharray="4 4"
-                strokeWidth={1}
-                yAxisId={0}
-              />
-
-              {/* Banda ±1σ (atrás da linha) */}
-              {data.length > 0 && (
-                <Area
-                  type="monotone"
-                  dataKey="pe"
-                  stroke="none"
-                  fill="url(#peBandFill)"
-                  isAnimationActive={false}
+              {/* Banda do subsetor: P25 e P75 como linhas tracejadas.
+                  Mais útil que ±1σ porque contextualiza o ticker vs pares. */}
+              {sectorStats?.p25 != null && (
+                <ReferenceLine
+                  y={sectorStats.p25}
+                  stroke={CHART_COLORS.gridLine}
+                  strokeDasharray="2 4"
+                  strokeWidth={1}
                   yAxisId={0}
+                  label={{
+                    value: "P25",
+                    fill: CHART_COLORS.tooltipMuted,
+                    fontSize: 9,
+                    position: "left",
+                  }}
+                />
+              )}
+              {sectorStats?.p75 != null && (
+                <ReferenceLine
+                  y={sectorStats.p75}
+                  stroke={CHART_COLORS.gridLine}
+                  strokeDasharray="2 4"
+                  strokeWidth={1}
+                  yAxisId={0}
+                  label={{
+                    value: "P75",
+                    fill: CHART_COLORS.tooltipMuted,
+                    fontSize: 9,
+                    position: "left",
+                  }}
+                />
+              )}
+              {/* Mediana do subsetor */}
+              {sectorStats?.median != null && (
+                <ReferenceLine
+                  y={sectorStats.median}
+                  stroke={CHART_COLORS.gridLineStrong}
+                  strokeDasharray="4 4"
+                  strokeWidth={1}
+                  yAxisId={0}
+                  label={{
+                    value: "mediana",
+                    fill: CHART_COLORS.tooltipMuted,
+                    fontSize: 9,
+                    position: "left",
+                  }}
                 />
               )}
 
@@ -295,20 +367,26 @@ export function PEHistoryChart({
             color="text-muted-foreground/70"
           />
           <StatBlock
-            label="Média"
-            value={formatPe(yStats.mean)}
+            label="Mediana setor"
+            value={
+              sectorStats?.median != null
+                ? formatPe(sectorStats.median)
+                : "—"
+            }
             color="text-foreground/85"
-            sublabel={`±${yStats.std.toFixed(1)}σ`}
+            sublabel={
+              sectorStats?.p25 != null && sectorStats?.p75 != null
+                ? `P25–P75: ${sectorStats.p25.toFixed(1)}–${sectorStats.p75.toFixed(1)}`
+                : undefined
+            }
           />
           <StatBlock
             label="Atual"
             value={currentPe != null ? formatPe(currentPe) : "—"}
             color={currentColor}
             sublabel={
-              zScore != null
-                ? zScore >= 0
-                  ? `+${zScore.toFixed(2)}σ`
-                  : `${zScore.toFixed(2)}σ`
+              vsMedian != null && sectorStats?.median != null
+                ? `${vsMedian >= 0 ? "+" : ""}${vsMedian.toFixed(1)} vs mediana`
                 : undefined
             }
           />

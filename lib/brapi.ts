@@ -269,16 +269,10 @@ export async function getBrapiFundamentals(
       // hammering the 15 req/min free-tier rate limit.
       30 * 60,
       async () => {
-      // brapi v2 dividiu o antigo /api/v2/quote/{t}?modules=... em:
-      //   /api/v2/stocks/{t}              → preço + profile
-      //   /api/v2/stocks/{t}/profile      → perfil completo
-      //   /api/v2/stocks/{t}/quote        → preço atual
-      //   /api/v2/stocks/{t}/statistics   → múltiplos (PE, etc)
-      //   /api/v2/stocks/{t}/financial-data → margins, debt, FCF
-      //   /api/v2/stocks/{t}/balance-sheet → balanço
-      //   /api/v2/stocks/{t}/cash-flow    → fluxo de caixa
-      //   /api/v2/stocks/{t}/income-statement → DRE
-      //   /api/v2/stocks/{t}/historical   → candles (range + interval)
+      // brapi v2 dividiu o antigo /api/v2/quote/{t}?modules=... em vários
+      // endpoints /stocks/*, MAS o endpoint /stocks/{t} retorna 404 para
+      // tickers BR (PETR4, VALE3 etc). O endpoint /quote/{t} antigo
+      // continua funcionando e já retorna price + 52w + marketCap.
       // Histórico de P/L e EPS trimestral são tratados por wrappers
       // separados (stats-history e income-quarterly), porque são endpoints
       // sem histórico embutido no request principal.
@@ -289,10 +283,15 @@ export async function getBrapiFundamentals(
       };
       const t = token ? `&token=${encodeURIComponent(token)}` : "";
 
-      // Faz 3 chamadas paralelas: stocks/{t} (core) + statistics (current) +
-      // financial-data. O /stocks/{t} já retorna price + profile, mas
-      // financial data (margins, debt/equity, FCF) vem em endpoint separado.
-      const urlStock = `https://brapi.dev/api/v2/stocks/${encodeURIComponent(upper)}?${t.replace(/^&/, "")}`;
+      // Faz 6 chamadas paralelas:
+      //   /quote/{t}                     → core (price + 52w + mcap) [BR-friendly]
+      //   /stocks/statistics?mode=current → múltiplos (PE, EPS, beta, yield)
+      //   /stocks/financial-data         → margins + debt
+      //   /stocks/balance-sheet          → balanço anual
+      //   /stocks/cash-flow              → fluxo de caixa
+      //   /stocks/income-statement?period=annual → DRE anual
+      //   /stocks/historical?range=1y    → candles 1Y
+      const urlQuote = `https://brapi.dev/api/quote/${encodeURIComponent(upper)}?modules=summaryProfile&${t.replace(/^&/, "")}`;
       const urlStats = `https://brapi.dev/api/v2/stocks/statistics?symbols=${encodeURIComponent(upper)}&mode=current${token ? `&token=${encodeURIComponent(token)}` : ""}`;
       const urlFinData = `https://brapi.dev/api/v2/stocks/financial-data?symbols=${encodeURIComponent(upper)}${token ? `&token=${encodeURIComponent(token)}` : ""}`;
       const urlBalance = `https://brapi.dev/api/v2/stocks/balance-sheet?symbols=${encodeURIComponent(upper)}${token ? `&token=${encodeURIComponent(token)}` : ""}`;
@@ -310,9 +309,9 @@ export async function getBrapiFundamentals(
         }
       };
 
-      const [stockRes, statsRes, finDataRes, balanceRes, cashFlowRes, incomeRes, historicalRes] =
+      const [quoteRes, statsRes, finDataRes, balanceRes, cashFlowRes, incomeRes, historicalRes] =
         await Promise.all([
-          fetchJson(urlStock),
+          fetchJson(urlQuote),
           fetchJson(urlStats),
           fetchJson(urlFinData),
           fetchJson(urlBalance),
@@ -321,43 +320,37 @@ export async function getBrapiFundamentals(
           fetchJson(urlHistorical),
         ]);
 
-      const stockData = stockRes as Record<string, unknown> | null;
-      const stockResult = stockData?.results as Record<string, unknown> | undefined;
+      const quoteData = quoteRes as Record<string, unknown> | null;
+      const quoteArr = (quoteData?.results as Array<Record<string, unknown>> | undefined) ?? [];
+      const stock = (quoteArr[0] ?? {}) as Record<string, unknown>;
+      // Se /quote/{t} falhou (404, token inválido, etc) e não tem stock
+      // algum, aborta — bundle não tem como montar sem core.
+      if (!stock.symbol) return null;
+
+      // Mapeia pro shape antigo que o front espera.
+      // brapi v2: results[0] = { symbol, data: { priceHint, trailingPE, … } }
+      // (data é um objeto com os campos diretos, não array).
       const statsData = statsRes as Record<string, unknown> | null;
-      const statsResult = statsData?.results as Array<Record<string, unknown>> | undefined;
-      const stats = statsResult?.[0]?.data as Array<Record<string, unknown>> | undefined;
+      const statsResult = (statsData?.results as Array<Record<string, unknown>> | undefined) ?? [];
+      const statsObj =
+        (statsResult[0]?.data as Record<string, unknown> | undefined) ??
+        (statsResult[0] as Record<string, unknown> | undefined) ??
+        {};
+      const ks = statsObj;
+      // financial-data: mesma estrutura (data é objeto com todos os campos).
       const finData = finDataRes as Record<string, unknown> | null;
-      const finDataResult = finData?.results as Array<Record<string, unknown>> | undefined;
-      const finDataRow = finDataResult?.[0]?.data as Array<Record<string, unknown>> | undefined;
+      const finDataResultArr =
+        ((finData?.results as Array<Record<string, unknown>> | undefined) ?? []);
+      const fd =
+        (finDataResultArr[0]?.data as Record<string, unknown> | undefined) ??
+        (finDataResultArr[0] as Record<string, unknown> | undefined) ??
+        {};
 
-      if (!stockResult) return null;
-
-      // Mapeia pro shape antigo que o front espera
-      const ks = (stats?.[0] as Record<string, unknown> | undefined) ?? {};
-      const fd = (finDataRow?.[0] as Record<string, unknown> | undefined) ?? {};
-
-      // Extrai dados dos responses paralelos
-      // stocks/{t} → core (price + profile + sector)
-      // stocks/statistics?mode=current → múltiplos (ks)
-      // stocks/financial-data → margins + debt (fd)
-      // stocks/balance-sheet → balanço
-      // stocks/cash-flow → fluxo de caixa
-      // stocks/income-statement?period=annual → DRE anual
-      // stocks/historical?range=1y → candles
-
-      const stockArr = stockResult?.results as Array<Record<string, unknown>> | undefined;
-      const stock = stockArr?.[0] ?? {};
-
-      // ks/fd já foram extraídos acima (linhas 335-337) do stats e finData
-      // ks: múltiplos atuais (trailingPE, priceEarnings, etc)
-      // fd: margins + debt (grossMargins, profitMargins, debtToEquity, etc)
-
-      // Profile (do /stocks/{t} retorna direto). Cast porque BrapiProfile
-      // antigo da v1 tinha outros campos (address1, city) que a v2 não
-      // retorna mais — o strict typing é um resíduo.
+      // Profile (do /quote/{t}?modules=summaryProfile retorna summaryProfile
+      // como sub-objeto do stock).
       const profile: BrapiProfile = {
-        ...((stock as Record<string, unknown>) as BrapiProfile),
-      };
+        ...((stock.summaryProfile as Record<string, unknown> | undefined) ?? stock),
+      } as BrapiProfile;
 
       // Candles do /historical
       const histData = historicalRes as Record<string, unknown> | null;
@@ -375,10 +368,11 @@ export async function getBrapiFundamentals(
           volume: Number(c.volume ?? 0),
         }));
 
-      // Quote (do /stocks/{t}, preço regular market)
+      // Quote (do /quote/{t}, preço regular market)
+      // Note: o /quote/{t} antigo retorna regularMarketPrice/Change/etc diretamente.
       const price =
-        (stock.currentPrice as number | null | undefined) ??
         (stock.regularMarketPrice as number | null | undefined) ??
+        (stock.currentPrice as number | null | undefined) ??
         null;
       const change =
         (stock.regularMarketChange as number | null | undefined) ?? null;
@@ -399,6 +393,17 @@ export async function getBrapiFundamentals(
       const longName = (stock.longName as string | null | undefined) ?? null;
       const currency = (stock.currency as string | null | undefined) ?? "BRL";
       const priceEarnings = (ks.priceEarnings as number | null | undefined) ?? null;
+      // dayHigh/dayLow/dayOpen/prevClose vêm do /quote/{t} (regularMarketDay*).
+      const dayHigh =
+        (stock.regularMarketDayHigh as number | null | undefined) ?? null;
+      const dayLow =
+        (stock.regularMarketDayLow as number | null | undefined) ?? null;
+      const dayOpen =
+        (stock.regularMarketOpen as number | null | undefined) ?? null;
+      const prevClose =
+        (stock.regularMarketPreviousClose as number | null | undefined) ?? null;
+      const marketTime =
+        (stock.regularMarketTime as string | null | undefined) ?? null;
 
       if (price == null) return null;
 
@@ -465,12 +470,10 @@ export async function getBrapiFundamentals(
           // BrapiQuote usa "changePercent", não "changePct"
           change: change ?? 0,
           changePercent: changePct ?? 0,
-          // dayHigh/dayLow/dayOpen/prevPreclose não vêm no /stocks/{t} simplificado,
-          // preenchemos com null (cast através de unknown pq BrapiQuote é strict)
-          dayHigh: null,
-          dayLow: null,
-          dayOpen: null,
-          prevClose: null,
+          dayHigh,
+          dayLow,
+          dayOpen,
+          prevClose,
           marketCap,
           volume: volume ?? 0,
           marketState: marketState ?? "REGULAR",
@@ -485,7 +488,7 @@ export async function getBrapiFundamentals(
           beta: (ks.beta as number | null | undefined) ?? null,
           dividendYield: (ks.dividendYield as number | null | undefined) ?? null,
           logoUrl: (stock.logo as string | null | undefined) ?? null,
-          marketTime: null,
+          marketTime,
         } as unknown) as BrapiQuote,
         candles: candlesRaw,
         keyStatistics: (ks as unknown) as BrapiKeyStatistics,

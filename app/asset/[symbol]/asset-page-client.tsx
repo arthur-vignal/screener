@@ -40,7 +40,7 @@ import {
   NewsSummaryCard,
   type NewsSummaryItem,
 } from "@/components/asset/news-summary-card";
-import { PEHistoryChart, type PEHistoryRow } from "@/components/asset/pe-history-chart";
+import { PEHistoryChart, type PEHistoryRow, type PESectorStats } from "@/components/asset/pe-history-chart";
 import { PERatioComparison, type PeerRow } from "@/components/asset/pe-ratio-comparison";
 import { PriceChart, type RangeKey } from "@/components/asset/price-chart";
 import { PriceHero } from "@/components/asset/price-hero";
@@ -228,6 +228,29 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     return sorted.length % 2 === 0
       ? (sorted[mid - 1] + sorted[mid]) / 2
       : sorted[mid];
+  }, [peerRows, symbol]);
+
+  // Quartis do subsetor (mediana + P25 + P75). Usado pelo PEHistoryChart
+  // pra contextualizar o ticker vs peers.
+  const sectorStats = useMemo<PESectorStats | null>(() => {
+    const values = peerRows
+      .filter((r) => r.symbol !== symbol && r.pe != null && Number.isFinite(r.pe))
+      .map((r) => r.pe as number);
+    if (values.length === 0) return null;
+    const sorted = [...values].sort((a, b) => a - b);
+    const q = (p: number) => {
+      const pos = (sorted.length - 1) * p;
+      const base = Math.floor(pos);
+      const rest = pos - base;
+      const upper = sorted[base + 1] ?? sorted[base];
+      return sorted[base] + rest * (upper - sorted[base]);
+    };
+    return {
+      median: q(0.5),
+      p25: q(0.25),
+      p75: q(0.75),
+      count: sorted.length,
+    };
   }, [peerRows, symbol]);
 
   // ── Earnings data (real, do /api/asset/[symbol]/income-quarterly) ───
@@ -521,6 +544,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
                 <PEHistoryChart
                   history={peHistory}
                   currentPe={mainPe}
+                  sectorStats={sectorStats}
                 />
                 <div className="border-t border-white/[0.06] pt-4">
                   <PERatioComparison
