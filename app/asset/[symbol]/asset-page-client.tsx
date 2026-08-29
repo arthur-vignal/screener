@@ -42,7 +42,6 @@ import {
 } from "@/components/asset/news-summary-card";
 import { PEHistoryChart, type PEHistoryRow, type PESectorStats } from "@/components/asset/pe-history-chart";
 import { PERatioComparison, type PeerRow } from "@/components/asset/pe-ratio-comparison";
-import { SectorMedianStrip, type SectorMedian } from "@/components/asset/sector-median-strip";
 import { PriceChart, type RangeKey } from "@/components/asset/price-chart";
 import { PriceHero } from "@/components/asset/price-hero";
 import { PriceTargetChart } from "@/components/asset/price-target-chart";
@@ -487,23 +486,6 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
 
         <StaggerOnMount className="mt-6">
           <MetricStrip cells={metricCells} />
-        </StaggerOnMount>
-
-        <StaggerOnMount className="mt-3">
-          <SectorMedianStrip
-            data={
-              peerData && peerData.peerCount > 0
-                ? {
-                    symbol: peerData.symbol,
-                    subSector: peerData.subSector ?? null,
-                    peerCount: peerData.peerCount,
-                    asset: peerData.asset,
-                    medians: peerData.medians,
-                  }
-                : null
-            }
-            loading={!peerData}
-          />
         </StaggerOnMount>
 
         <StaggerOnMount className="mt-6">
