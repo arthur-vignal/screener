@@ -116,7 +116,13 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
   // ── Peer benchmarks (subsetor) ──────────────────────────────────────
   // O endpoint retorna lista de peers do subsetor do ativo.
   const { data: peerData } = useSWR<{
-    peers?: Array<{ symbol: string; shortName?: string; longName?: string }>;
+    peers?: Array<{
+      symbol: string;
+      name: string;
+      evEbitda: number | null;
+      roic: number | null;
+      pe: number | null;
+    }>;
   }>(`/api/peer-benchmarks/${symbol}`, fetchJson, {
     revalidateOnFocus: false,
   });
@@ -156,32 +162,10 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
   const peerNameBySymbol = useMemo(() => {
     const m = new Map<string, string>();
     for (const p of peerData?.peers ?? []) {
-      m.set(
-        p.symbol,
-        p.shortName ?? p.longName ?? p.symbol
-      );
+      m.set(p.symbol, p.name);
     }
     return m;
   }, [peerData]);
-
-  // ── Batch quote pra P/E dos peers (priceEarnings) ──────────────────
-  // Inclui o ativo principal + peers.
-  const batchSymbols = useMemo(() => {
-    const set = new Set<string>([symbol, ...peerSymbols]);
-    return Array.from(set);
-  }, [symbol, peerSymbols]);
-  const { data: batchData } = useSWR<{
-    rows?: Array<{
-      symbol: string;
-      quote?: { priceEarnings?: number | null };
-    }>;
-  }>(
-    batchSymbols.length > 0
-      ? `/api/assets/quote?symbols=${batchSymbols.join(",")}`
-      : null,
-    fetchJson,
-    { revalidateOnFocus: false }
-  );
 
   // P/E do ativo: prioriza trailingPE do bundle; se null, calcula
   // price/eps a partir de dados reais (fallback honesto).
@@ -195,28 +179,25 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     return null;
   }, [bundle]);
 
+  // peerRows: peers do subsetor (do /api/peer-benchmarks).
+  // O ativo principal tem `pe = mainPe`; peers reais usam `peerData.peers[].pe`.
+  // Mantém o ativo principal como a última linha (Fey TSLA faz assim).
   const peerRows = useMemo<PeerRow[]>(() => {
-    const rows: PeerRow[] = [];
-    for (const sym of batchSymbols) {
-      let pe: number | null = null;
-      if (sym === symbol) {
-        // Ativo principal: usa mainPe (que tem fallback price/eps).
-        pe = mainPe;
-      } else {
-        // Peer: usa o priceEarnings do batch.
-        const batchPe = batchData?.rows?.find((r) => r.symbol === sym)
-          ?.quote?.priceEarnings;
-        pe =
-          batchPe == null || !Number.isFinite(batchPe) ? null : batchPe;
-      }
-      rows.push({
-        symbol: sym,
-        name: peerNameBySymbol.get(sym) ?? sym,
-        pe,
-      });
-    }
-    return rows;
-  }, [batchSymbols, batchData, peerNameBySymbol, symbol, mainPe]);
+    const realPeers: PeerRow[] = (peerData?.peers ?? [])
+      .filter((p) => p.symbol !== symbol)
+      .map((p) => ({
+        symbol: p.symbol,
+        name: p.name,
+        pe:
+          p.pe != null && Number.isFinite(p.pe)
+            ? p.pe
+            : null,
+      }));
+    return [
+      ...realPeers,
+      { symbol, name: symbol, pe: mainPe },
+    ];
+  }, [peerData, symbol, mainPe]);
 
   // P/E médio do setor (mediano dos peers, excluindo o próprio ativo)
   const sectorPeMedian = useMemo(() => {

@@ -101,11 +101,19 @@ export async function GET(
           const ebitda = num(q.ebitda);
           const evEbitda = ev != null && ebitda != null && ebitda > 0 ? ev / ebitda : null;
           const roic = num(q.returnOnEquity); // proxy: ROE ≈ ROIC pra simplificar
+          // P/E (priceEarnings) — vem em defaultKeyStatistics.
+          // Brapi v2 retorna priceEarnings inconsistente; usamos
+          // trailingPE como fallback.
+          const pe =
+            num(q.priceEarnings) ??
+            num(q.trailingPE) ??
+            null;
           return {
             symbol: t.symbol,
             name: t.shortName ?? t.longName ?? t.symbol,
             evEbitda,
             roic,
+            pe,
           };
         } catch {
           return null;
@@ -114,8 +122,15 @@ export async function GET(
     );
 
     const peersFiltered = peers.filter(
-      (p): p is { symbol: string; name: string; evEbitda: number | null; roic: number | null } =>
-        p != null,
+      (
+        p,
+      ): p is {
+        symbol: string;
+        name: string;
+        evEbitda: number | null;
+        roic: number | null;
+        pe: number | null;
+      } => p != null,
     );
 
     const evEbitdas = peersFiltered.map((p) => p.evEbitda).filter((v): v is number => v != null);
