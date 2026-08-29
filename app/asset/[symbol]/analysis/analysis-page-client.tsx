@@ -267,6 +267,7 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
             <EPSVsRiskFree
               incomeHistory={bundle?.incomeHistory ?? []}
               selic={selicMacro}
+              currentPrice={bundle?.quote?.price ?? null}
             />
             <RevenueVsPIB
               incomeHistory={bundle?.incomeHistory ?? []}
