@@ -143,7 +143,17 @@ export function QuarterResults({
       )
       .sort((a, b) => a.endDate.localeCompare(b.endDate));
 
-    return withRev.slice(-5).map((q, i, arr) => {
+    // Pega últimos 5 quarters COM revenue > 0 (descarta negativos —
+    // prejuízo operacional é real mas distorce a escala do chart e
+    // gera barras negativas confusas). Se houver < 2 válidos, aceita
+    // qualquer um não-zero pra não ficar vazio.
+    const positives = withRev.filter((q) => q.revenue > 0);
+    const last =
+      positives.length >= 2
+        ? positives.slice(-5)
+        : withRev.filter((q) => q.revenue !== 0).slice(-5);
+
+    return last.map((q, i, arr) => {
       const prev = i > 0 ? arr[i - 1] : null;
       const changePct =
         prev && prev.revenue !== 0
@@ -207,11 +217,11 @@ function RevenueBarChart({
   return (
     <div>
       {/* Header estilo Fey: título bold + valor à direita */}
-      <div className="flex items-baseline justify-between mb-4">
-        <div className="text-[16px] font-bold tracking-tight text-foreground">
+      <div className="flex items-baseline justify-between mb-4 gap-3">
+        <div className="text-[16px] font-bold tracking-tight text-foreground shrink-0">
           Quarterly revenue
         </div>
-        <div className="text-[12px] text-muted-foreground/70 font-semibold tabular-nums">
+        <div className="text-[12px] text-muted-foreground/70 font-semibold tabular-nums truncate">
           {formatCompact(lastRevenue, currency)}
         </div>
       </div>
@@ -221,7 +231,7 @@ function RevenueBarChart({
         <ResponsiveContainer>
           <BarChart
             data={data}
-            margin={{ top: 8, right: 0, left: 0, bottom: 0 }}
+            margin={{ top: 8, right: 48, left: 8, bottom: 0 }}
             barCategoryGap="35%"
             barSize={28}
           >
@@ -278,6 +288,10 @@ function RevenueBarChart({
               width={48}
               tickCount={4}
               allowDecimals={false}
+              // Domínio com 10% headroom em cima pra não cortar a barra
+              // mais alta. Começa de 0 (não de negative — sem barras
+              // negativas porque filtramos revenue > 0).
+              domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
             />
             <Tooltip
               cursor={{ fill: "rgba(255,255,255,0.04)" }}
