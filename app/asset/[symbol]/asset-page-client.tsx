@@ -128,29 +128,47 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
   });
 
   // ── P/E histórico (bandas) ───────────────────────────────────────────
-  // Já vem no bundle.historicals.keyStatistics (defaultKeyStatisticsHistory
-  // do brapi /api/v2/stocks/statistics?mode=history&period=quarterly).
-  // Mapeia pro shape PEHistoryRow.
+  // brapi /api/v2/stocks/statistics?symbols=X&mode=history&period=quarterly
+  // (wrapper Sulfur: /api/asset/[symbol]/stats-history)
+  const { data: peStatsData } = useSWR<{
+    history?: PEHistoryRow[];
+  }>(`/api/asset/${symbol}/stats-history`, fetchJson, {
+    revalidateOnFocus: false,
+  });
   const peHistory: PEHistoryRow[] = useMemo(() => {
-    const raw = (bundle?.historicals?.keyStatistics ?? []) as Array<
-      Record<string, unknown>
-    >;
+    const raw = peStatsData?.history ?? [];
     return raw
       .map((r) => ({
-        endDate: String(r.endDate ?? ""),
+        endDate: r.endDate,
         trailingPE:
-          r.trailingPE != null && Number.isFinite(Number(r.trailingPE))
-            ? Number(r.trailingPE)
-            : r.priceEarnings != null && Number.isFinite(Number(r.priceEarnings))
-              ? Number(r.priceEarnings)
+          r.trailingPE != null && Number.isFinite(r.trailingPE)
+            ? r.trailingPE
+            : r.priceEarnings != null && Number.isFinite(r.priceEarnings)
+              ? r.priceEarnings
               : null,
         priceEarnings:
-          r.priceEarnings != null && Number.isFinite(Number(r.priceEarnings))
-            ? Number(r.priceEarnings)
+          r.priceEarnings != null && Number.isFinite(r.priceEarnings)
+            ? r.priceEarnings
             : null,
       }))
       .filter((r) => r.endDate && r.trailingPE != null);
-  }, [bundle]);
+  }, [peStatsData]);
+
+  // ── EPS trimestral ───────────────────────────────────────────────────
+  // brapi /api/v2/stocks/income-statement?symbols=X&period=quarterly
+  // (wrapper Sulfur: /api/asset/[symbol]/income-quarterly)
+  type IncomeQuarterlyRow = {
+    endDate: string;
+    basicEarningsPerShare?: number | null;
+    dilutedEarningsPerShare?: number | null;
+    earningsPerShare?: number | null;
+    totalRevenue?: number | null;
+  };
+  const { data: incomeData } = useSWR<{ income?: IncomeQuarterlyRow[] }>(
+    `/api/asset/${symbol}/income-quarterly`,
+    fetchJson,
+    { revalidateOnFocus: false },
+  );
   const peerSymbols = useMemo(
     () =>
       (peerData?.peers ?? [])
@@ -212,11 +230,9 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
       : sorted[mid];
   }, [peerRows, symbol]);
 
-  // ── Earnings data (real, do bundle.historicals.incomeQuarterly) ────
+  // ── Earnings data (real, do /api/asset/[symbol]/income-quarterly) ───
   const earningsData = useMemo(() => {
-    const incomeQ = (bundle?.historicals?.incomeQuarterly ?? []) as Array<
-      Record<string, unknown>
-    >;
+    const incomeQ = (incomeData?.income ?? []) as Array<Record<string, unknown>>;
 
     // Mapeia rows brapi → QuarterPoint (filtra nulos, ordena asc)
     const quarters: QuarterPoint[] = incomeQ
@@ -331,7 +347,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     }
 
     return { quarters, results };
-  }, [bundle]);
+  }, [incomeData, bundle]);
 
   // Metric strip (10 widgets estilo Fey TSLA)
   const metricCells = useMemo<MetricCell[]>(() => {

@@ -269,16 +269,19 @@ export async function getBrapiFundamentals(
       // hammering the 15 req/min free-tier rate limit.
       30 * 60,
       async () => {
+      // IMPORTANTE: brapi v2 NÃO aceita estes como modules em /quote:
+      // - defaultKeyStatisticsHistory (precisa /api/v2/stocks/statistics?mode=history)
+      // - incomeStatementHistoryQuarterly (precisa /api/v2/stocks/income-statement?period=quarterly)
+      // Os wrappers /api/asset/[symbol]/stats-history e income-quarterly
+      // fazem essas chamadas separadas.
       const modules = [
               "defaultKeyStatistics",
               "financialData",
               "summaryProfile",
               "incomeStatementHistory",
-              "incomeStatementHistoryQuarterly",
               "balanceSheetHistory",
               "cashflowHistory",
               "valueAddedHistory",
-              "defaultKeyStatisticsHistory",
               "financialDataHistory",
             ].join(",");
             const params: Record<string, string> = { modules, range: "1y", interval: "1d" };
@@ -329,10 +332,8 @@ export async function getBrapiFundamentals(
               : incomeHist?.incomeStatementHistory ?? [];
 
             // Trimestral: mesmo shape, mas com endDate tipo "2024-09-30" (quarter end)
-            const incomeQuarterlyHist = raw.incomeStatementHistoryQuarterly;
-            const incomeQuarterly: BrapiIncomeStatementPeriod[] = Array.isArray(incomeQuarterlyHist)
-              ? incomeQuarterlyHist
-              : incomeQuarterlyHist?.incomeStatementHistory ?? [];
+            const incomeQuarterlyHist = undefined; // vem de /api/asset/[symbol]/income-quarterly
+            const incomeQuarterly: BrapiIncomeStatementPeriod[] = [];
 
             const balanceHist = raw.balanceSheetHistory;
             const balance: BrapiBalanceSheetPeriod[] = Array.isArray(balanceHist)
