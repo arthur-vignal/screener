@@ -521,16 +521,11 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
                 />
               </div>
 
-              {/* Price target chart */}
+              {/* Price target chart (mock — brapi não tem sell-side target pra BR) */}
               <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
                 <PriceTargetChart
+                  candles={candles}
                   current={bundle?.quote.price ?? null}
-                  high52w={bundle?.quote.fiftyTwoWeekHigh ?? null}
-                  low52w={bundle?.quote.fiftyTwoWeekLow ?? null}
-                  targetHigh={bundle?.metrics.targetHighPrice ?? null}
-                  targetLow={bundle?.metrics.targetLowPrice ?? null}
-                  targetMedian={bundle?.metrics.targetMedianPrice ?? null}
-                  targetMean={bundle?.metrics.targetMeanPrice ?? null}
                   currency={(bundle?.currency as "BRL" | "USD") ?? "BRL"}
                 />
               </div>

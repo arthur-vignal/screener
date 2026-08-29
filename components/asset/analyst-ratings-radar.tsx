@@ -1,38 +1,44 @@
 "use client";
 
 /**
- * AnalystRatingsBreakdown — distribuição de ratings de analistas
- * (estilo Fey Analyst Coverage).
+ * AnalystRatingsRadar — radar chart pentagonal de ratings de analistas
+ * (estilo Fey TSLA).
  *
  * Visual (replica o print Fey):
- *   ┌─────────────────────────────────────────────┐
- *   │ Analyst consensus                           │
- *   │ Optimistic — Buy                              │
- *   │                                              │
- *   │ Strong Buy    ████████   8                    │
- *   │ Buy           ████████████████  15          │
- *   │ Hold          █████  5                        │
- *   │ Sell          █  1                            │
- *   │ Strong Sell   ░  0                            │
- *   │                                              │
- *   │ 29 analistas · média 1.8                    │
- *   └─────────────────────────────────────────────┘
- *
- * - Bar chart horizontal com cor por bucket
- * - Counts visíveis à direita
- * - Aggregate label ("Optimistic", "Pessimistic", "Neutral")
- *   derivado de buy+strongBuy vs sell+strongSell
+ *   ┌────────────────────────────────────┐
+ *   │ Analyst ratings                    │
+ *   │ Optimistic                         │
+ *   │                                    │
+ *   │         Neutral 15                 │
+ *   │              ▼                     │
+ *   │   Sell 4 ╱╲  Buy 7                 │
+ *   │         ╱  ╲                       │
+ *   │        ╱    ╲                      │
+ *   │ Strong   ╲╱   Strong               │
+ *   │ Sell 8      Buy 12                 │
+ *   │                                    │
+ *   │ Radar pentagonal com área verde    │
+ *   │ suave mostrando distribuição       │
+ *   └────────────────────────────────────┘
  *
  * Dados REAIS quando disponíveis:
  *   - recommendationMean (1=Strong Buy, 5=Strong Sell)
  *   - numberOfAnalystOpinions
  *
- * Brapi v2 não retorna a distribuição real por bucket. A heurística
+ * Brapi v2 não retorna a distribuição real por bucket — a heurística
  * distribui em torno de numberOfAnalystOpinions e recommendationMean.
  */
 
 import { useMemo } from "react";
 import type { JSX } from "react";
+import {
+  PolarAngleAxis,
+  PolarGrid,
+  Radar,
+  RadarChart,
+  ResponsiveContainer,
+} from "recharts";
+
 import { cn } from "@/lib/utils";
 
 export type AnalystRatings = {
@@ -67,7 +73,6 @@ export function deriveRatings(
   if (recommendationMean == null) {
     return { strongSell: 0, sell: 4, neutral: 15, buy: 7, strongBuy: 12 };
   }
-  // Pesos por bucket baseado em recommendationMean
   const weights =
     recommendationMean < 1.5
       ? { ss: 0, s: 1, n: 5, b: 8, sb: 24 }
@@ -92,79 +97,32 @@ export function deriveRatings(
 type Bucket = {
   key: keyof AnalystRatings;
   label: string;
-  /** Cor da barra: verde (positivo) → amarelo (neutro) → vermelho (negativo). */
-  colorClass: string;
-  /** Cor do texto do label. */
-  textClass: string;
+  /** Texto curto pra exibir no radar. */
+  short: string;
 };
 
 const BUCKETS: Bucket[] = [
-  {
-    key: "strongBuy",
-    label: "Strong Buy",
-    colorClass: "bg-[var(--positive)]",
-    textClass: "text-[var(--positive)]",
-  },
-  {
-    key: "buy",
-    label: "Buy",
-    colorClass: "bg-[var(--positive)]/70",
-    textClass: "text-[var(--positive)]/85",
-  },
-  {
-    key: "neutral",
-    label: "Hold",
-    colorClass: "bg-muted-foreground/40",
-    textClass: "text-muted-foreground/85",
-  },
-  {
-    key: "sell",
-    label: "Sell",
-    colorClass: "bg-[var(--negative)]/70",
-    textClass: "text-[var(--negative)]/85",
-  },
-  {
-    key: "strongSell",
-    label: "Strong Sell",
-    colorClass: "bg-[var(--negative)]",
-    textClass: "text-[var(--negative)]",
-  },
+  { key: "strongSell", label: "Strong Sell", short: "Strong Sell" },
+  { key: "sell", label: "Sell", short: "Sell" },
+  { key: "neutral", label: "Neutral", short: "Neutral" },
+  { key: "buy", label: "Buy", short: "Buy" },
+  { key: "strongBuy", label: "Strong Buy", short: "Strong Buy" },
 ];
 
 function aggregateLabel(
   ratings: AnalystRatings,
   mean: number | null | undefined,
-): { label: string; sublabel: string; colorClass: string } {
+): { label: string; colorClass: string } {
   const totalPositive = ratings.buy + ratings.strongBuy;
   const totalNegative = ratings.sell + ratings.strongSell;
-  const total = totalPositive + totalNegative + ratings.neutral;
 
-  let label: string;
-  let colorClass: string;
   if (totalPositive > totalNegative * 1.5) {
-    label = "Optimistic";
-    colorClass = "text-[var(--positive)]";
-  } else if (totalNegative > totalPositive * 1.5) {
-    label = "Pessimistic";
-    colorClass = "text-[var(--negative)]";
-  } else {
-    label = "Neutral";
-    colorClass = "text-foreground";
+    return { label: "Optimistic", colorClass: "text-[var(--positive)]" };
   }
-
-  // Sublabel com a média (Fey style: "Buy — avg 1.8")
-  let sublabel = "";
-  if (mean != null && Number.isFinite(mean)) {
-    if (mean < 1.5) sublabel = `Buy — avg ${mean.toFixed(1)}`;
-    else if (mean < 2.5) sublabel = `Buy — avg ${mean.toFixed(1)}`;
-    else if (mean < 3.5) sublabel = `Hold — avg ${mean.toFixed(1)}`;
-    else if (mean < 4.5) sublabel = `Sell — avg ${mean.toFixed(1)}`;
-    else sublabel = `Strong Sell — avg ${mean.toFixed(1)}`;
-  } else {
-    sublabel = `${total} analistas`;
+  if (totalNegative > totalPositive * 1.5) {
+    return { label: "Pessimistic", colorClass: "text-[var(--negative)]" };
   }
-
-  return { label, sublabel, colorClass };
+  return { label: "Neutral", colorClass: "text-foreground" };
 }
 
 export function AnalystRatingsRadar({
@@ -173,22 +131,17 @@ export function AnalystRatingsRadar({
   total,
   className,
 }: Props): JSX.Element | null {
-  const rows = useMemo(() => {
-    if (!ratings) return [];
-    const max = Math.max(
-      ratings.strongBuy,
-      ratings.buy,
-      ratings.neutral,
-      ratings.sell,
-      ratings.strongSell,
-      1,
-    );
-    return BUCKETS.map((b) => ({
-      bucket: b,
-      count: ratings[b.key],
-      pct: (ratings[b.key] / max) * 100,
-    }));
-  }, [ratings]);
+  const data = useMemo(
+    () =>
+      ratings
+        ? BUCKETS.map((b) => ({
+            bucket: b.short,
+            value: ratings[b.key],
+            fullName: b.label,
+          }))
+        : [],
+    [ratings],
+  );
 
   const aggregate = useMemo(
     () => (ratings ? aggregateLabel(ratings, mean) : null),
@@ -206,48 +159,75 @@ export function AnalystRatingsRadar({
       ratings.strongSell;
 
   return (
-    <div className={cn("flex flex-col", className)}>
-      <div className="mb-4">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 font-semibold mb-1">
-          Analyst consensus
+    <div className={cn("flex flex-col items-center", className)}>
+      {/* Título + aggregate */}
+      <div className="w-full text-left mb-4">
+        <div className="text-[14px] font-semibold tracking-tight text-foreground">
+          Analyst ratings
         </div>
-        <div className={cn("text-[15px] font-semibold", aggregate.colorClass)}>
+        <div className={cn("text-[13px] font-medium mt-1", aggregate.colorClass)}>
           {aggregate.label}
         </div>
-        <div className="text-[11px] text-muted-foreground/70 tabular-nums mt-0.5">
-          {aggregate.sublabel}
-        </div>
       </div>
 
-      {/* Bar chart horizontal */}
-      <div className="flex flex-col gap-2.5">
-        {rows.map(({ bucket, count, pct }) => (
-          <div key={bucket.key} className="flex items-center gap-2.5">
-            <div
-              className={cn(
-                "text-[11px] font-medium w-[78px] shrink-0 text-right",
-                bucket.textClass,
-              )}
-            >
-              {bucket.label}
-            </div>
-            <div className="flex-1 h-2 relative overflow-hidden rounded-sm bg-white/[0.04]">
-              <div
-                className={cn(
-                  "h-full transition-all duration-700 rounded-sm",
-                  bucket.colorClass,
-                )}
-                style={{ width: `${Math.max(pct, count > 0 ? 4 : 0)}%` }}
-              />
-            </div>
-            <div className="text-[12px] tabular-nums text-foreground/85 font-semibold w-8 text-right shrink-0">
-              {count}
-            </div>
-          </div>
-        ))}
+      {/* Radar */}
+      <div className="w-full h-[240px] relative">
+        <ResponsiveContainer>
+          <RadarChart data={data} outerRadius="78%">
+            <PolarGrid stroke="rgba(255,255,255,0.10)" strokeWidth={1} />
+            <PolarAngleAxis
+              dataKey="bucket"
+              tick={({ x, y, payload, textAnchor }) => {
+                const r = data.find((d) => d.bucket === payload.value);
+                return (
+                  <g transform={`translate(${x},${y})`}>
+                    <text
+                      x={0}
+                      y={0}
+                      dy={-4}
+                      textAnchor={textAnchor}
+                      fill="rgba(200, 210, 230, 0.85)"
+                      fontSize={11}
+                      fontWeight={600}
+                      fontFamily="var(--font-manrope), system-ui, sans-serif"
+                    >
+                      {payload.value}
+                    </text>
+                    {r && (
+                      <text
+                        x={0}
+                        y={0}
+                        dy={10}
+                        textAnchor={textAnchor}
+                        fill="rgba(200, 210, 230, 0.55)"
+                        fontSize={11}
+                        fontWeight={600}
+                        fontFamily="var(--font-manrope), system-ui, sans-serif"
+                      >
+                        {r.value}
+                      </text>
+                    )}
+                  </g>
+                );
+              }}
+              tickLine={false}
+            />
+            <Radar
+              name="Analystas"
+              dataKey="value"
+              stroke="rgba(77, 190, 149, 0.95)"
+              strokeWidth={1.5}
+              fill="rgba(77, 190, 149, 0.20)"
+              fillOpacity={1}
+              isAnimationActive={true}
+              animationDuration={1200}
+              dot={{ r: 3, fill: "#4dbe95", strokeWidth: 0 }}
+            />
+          </RadarChart>
+        </ResponsiveContainer>
       </div>
 
-      <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-[10px] text-muted-foreground/60">
+      <div className="w-full mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between text-[10px] text-muted-foreground/60">
         <span className="uppercase tracking-[0.14em] font-semibold">
           Total analysts
         </span>
