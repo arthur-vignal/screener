@@ -153,8 +153,22 @@ export function QuarterResults({
         ? positives.slice(-5)
         : withRev.filter((q) => q.revenue !== 0).slice(-5);
 
+    // Pra calcular QoQ da PRIMEIRA barra plotada, acha o último quarter
+    // positivo ANTERIOR ao primeiro do array `last`. Isso dá uma cor
+    // correta mesmo pro Q mais antigo do grupo plotado.
+    const firstEnd = last[0]?.endDate ?? "";
+    const baseline =
+      last.length > 0
+        ? [...withRev]
+            .reverse()
+            .find((q) => q.endDate < firstEnd && q.revenue > 0)
+        : null;
+
     return last.map((q, i, arr) => {
-      const prev = i > 0 ? arr[i - 1] : null;
+      // QoQ vs quarter anterior do array plotado. Se for o primeiro e
+      // temos um baseline de quarters positivos antes, usa o baseline.
+      let prev: { revenue: number } | null =
+        i > 0 ? arr[i - 1] : baseline ?? null;
       const changePct =
         prev && prev.revenue !== 0
           ? ((q.revenue - prev.revenue) / Math.abs(prev.revenue)) * 100

@@ -604,13 +604,24 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
               </div>
             </div>
 
-            {/* Quarter results grid */}
-            <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
-              <QuarterResults
-                results={earningsData.results}
-                quarters={earningsData.quarters}
-                currency={(bundle?.currency as "BRL" | "USD") ?? "BRL"}
-              />
+            {/* Quarter results grid (revenue chart) — ocupa metade,
+                deixando a metade direita livre pra futura adição */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
+                <QuarterResults
+                  results={earningsData.results}
+                  quarters={earningsData.quarters}
+                  currency={(bundle?.currency as "BRL" | "USD") ?? "BRL"}
+                />
+              </div>
+              {/* Slot direito livre — aguardando definição do Arthur */}
+              <div className="rounded-xl bg-[#0d0d11] border border-dashed border-white/[0.06] p-5 flex items-center justify-center text-[11px] text-muted-foreground/40 min-h-[280px]">
+                <span className="text-center">
+                  Slot reservado para próxima métrica
+                  <br />
+                  (EPS YoY, Free Cash Flow, Margins, …)
+                </span>
+              </div>
             </div>
           </div>
         </StaggerOnMount>
