@@ -93,10 +93,14 @@ async function fetchBrapiIncomeQuarterly(
   const data = (await r.json()) as BrapiResponse;
   const result = data.results?.[0];
   if (!result) return [];
-  const inc = result.incomeStatement;
+  // brapi v2 retorna os dados em results[0].data (array)
+  // ou, em algumas versões, em incomeStatement como array ou { incomeStatement: [...] }
+  const dataField = (result as { data?: IncomeStatementRow[] }).data;
+  const incField = result.incomeStatement;
   let arr: IncomeStatementRow[] = [];
-  if (Array.isArray(inc)) arr = inc;
-  else if (inc && typeof inc === "object" && Array.isArray((inc as { incomeStatement?: IncomeStatementRow[] }).incomeStatement))
-    arr = (inc as { incomeStatement?: IncomeStatementRow[] }).incomeStatement ?? [];
+  if (Array.isArray(dataField)) arr = dataField;
+  else if (Array.isArray(incField)) arr = incField;
+  else if (incField && typeof incField === "object" && Array.isArray((incField as { incomeStatement?: IncomeStatementRow[] }).incomeStatement))
+    arr = (incField as { incomeStatement?: IncomeStatementRow[] }).incomeStatement ?? [];
   return arr.filter((r) => r.endDate != null).sort((a, b) => (a.endDate ?? "").localeCompare(b.endDate ?? ""));
 }

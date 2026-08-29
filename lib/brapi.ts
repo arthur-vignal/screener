@@ -269,131 +269,241 @@ export async function getBrapiFundamentals(
       // hammering the 15 req/min free-tier rate limit.
       30 * 60,
       async () => {
-      // IMPORTANTE: brapi v2 NÃO aceita estes como modules em /quote:
-      // - defaultKeyStatisticsHistory (precisa /api/v2/stocks/statistics?mode=history)
-      // - incomeStatementHistoryQuarterly (precisa /api/v2/stocks/income-statement?period=quarterly)
-      // Os wrappers /api/asset/[symbol]/stats-history e income-quarterly
-      // fazem essas chamadas separadas.
-      const modules = [
-              "defaultKeyStatistics",
-              "financialData",
-              "summaryProfile",
-              "incomeStatementHistory",
-              "balanceSheetHistory",
-              "cashflowHistory",
-              "valueAddedHistory",
-              "financialDataHistory",
-            ].join(",");
-            const params: Record<string, string> = { modules, range: "1y", interval: "1d" };
-            const token = getToken();
-            if (token) params.token = token;
-            const qs = new URLSearchParams(params).toString();
-            const r = await fetch(`https://brapi.dev/api/quote/${encodeURIComponent(upper)}?${qs}`, {
-              headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                "Accept": "application/json",
-              },
-              signal: AbortSignal.timeout(10000),
-            });
-            if (!r.ok) return null;
-            const data = (await r.json()) as BrapiResponse & {
-              results?: Array<{
-                defaultKeyStatistics?: BrapiKeyStatistics;
-                financialData?: BrapiFinancialData;
-                summaryProfile?: BrapiProfile;
-                incomeStatementHistory?: { incomeStatementHistory?: BrapiIncomeStatementPeriod[] } | BrapiIncomeStatementPeriod[];
-                incomeStatementHistoryQuarterly?: { incomeStatementHistory?: BrapiIncomeStatementPeriod[] } | BrapiIncomeStatementPeriod[];
-                balanceSheetHistory?: { balanceSheetStatements?: BrapiBalanceSheetPeriod[] } | BrapiBalanceSheetPeriod[];
-                cashflowHistory?: Array<Record<string, unknown>> | { cashflowHistory?: Array<Record<string, unknown>> };
-                valueAddedHistory?: Array<Record<string, unknown>> | { valueAddedHistory?: Array<Record<string, unknown>> };
-                defaultKeyStatisticsHistory?: Array<Record<string, unknown>> | { defaultKeyStatisticsHistory?: Array<Record<string, unknown>> };
-                financialDataHistory?: Array<Record<string, unknown>> | { financialDataHistory?: Array<Record<string, unknown>> };
-              }>;
-            };
-            const raw = data.results?.[0];
-            if (!raw) return null;
+      // brapi v2 dividiu o antigo /api/v2/quote/{t}?modules=... em:
+      //   /api/v2/stocks/{t}              → preço + profile
+      //   /api/v2/stocks/{t}/profile      → perfil completo
+      //   /api/v2/stocks/{t}/quote        → preço atual
+      //   /api/v2/stocks/{t}/statistics   → múltiplos (PE, etc)
+      //   /api/v2/stocks/{t}/financial-data → margins, debt, FCF
+      //   /api/v2/stocks/{t}/balance-sheet → balanço
+      //   /api/v2/stocks/{t}/cash-flow    → fluxo de caixa
+      //   /api/v2/stocks/{t}/income-statement → DRE
+      //   /api/v2/stocks/{t}/historical   → candles (range + interval)
+      // Histórico de P/L e EPS trimestral são tratados por wrappers
+      // separados (stats-history e income-quarterly), porque são endpoints
+      // sem histórico embutido no request principal.
+      const token = getToken();
+      const authHeaders = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        Accept: "application/json",
+      };
+      const t = token ? `&token=${encodeURIComponent(token)}` : "";
 
-            const rawQuote = raw as unknown as BrapiRawQuote;
-            const candles = (rawQuote.historicalDataPrice ?? []).map((c) => ({
-              date: new Date(c.date * 1000).toISOString().slice(0, 10),
-              timestamp: c.date * 1000,
-              open: c.open,
-              high: c.high,
-              low: c.low,
-              close: c.close,
-              adjClose: c.adjustedClose,
-              volume: c.volume,
-            }));
-            if (!rawQuote.regularMarketPrice) return null;
+      // Faz 3 chamadas paralelas: stocks/{t} (core) + statistics (current) +
+      // financial-data. O /stocks/{t} já retorna price + profile, mas
+      // financial data (margins, debt/equity, FCF) vem em endpoint separado.
+      const urlStock = `https://brapi.dev/api/v2/stocks/${encodeURIComponent(upper)}?${t.replace(/^&/, "")}`;
+      const urlStats = `https://brapi.dev/api/v2/stocks/statistics?symbols=${encodeURIComponent(upper)}&mode=current${token ? `&token=${encodeURIComponent(token)}` : ""}`;
+      const urlFinData = `https://brapi.dev/api/v2/stocks/financial-data?symbols=${encodeURIComponent(upper)}${token ? `&token=${encodeURIComponent(token)}` : ""}`;
+      const urlBalance = `https://brapi.dev/api/v2/stocks/balance-sheet?symbols=${encodeURIComponent(upper)}${token ? `&token=${encodeURIComponent(token)}` : ""}`;
+      const urlCashFlow = `https://brapi.dev/api/v2/stocks/cash-flow?symbols=${encodeURIComponent(upper)}${token ? `&token=${encodeURIComponent(token)}` : ""}`;
+      const urlIncome = `https://brapi.dev/api/v2/stocks/income-statement?symbols=${encodeURIComponent(upper)}&period=annual${token ? `&token=${encodeURIComponent(token)}` : ""}`;
+      const urlHistorical = `https://brapi.dev/api/v2/stocks/historical?symbols=${encodeURIComponent(upper)}&range=1y&interval=1d${token ? `&token=${encodeURIComponent(token)}` : ""}`;
 
-            const incomeHist = raw.incomeStatementHistory;
-            const income: BrapiIncomeStatementPeriod[] = Array.isArray(incomeHist)
-              ? incomeHist
-              : incomeHist?.incomeStatementHistory ?? [];
+      const fetchJson = async (url: string): Promise<unknown> => {
+        try {
+          const r = await fetch(url, { headers: authHeaders, signal: AbortSignal.timeout(10000) });
+          if (!r.ok) return null;
+          return r.json();
+        } catch {
+          return null;
+        }
+      };
 
-            // Trimestral: mesmo shape, mas com endDate tipo "2024-09-30" (quarter end)
-            const incomeQuarterlyHist = undefined; // vem de /api/asset/[symbol]/income-quarterly
-            const incomeQuarterly: BrapiIncomeStatementPeriod[] = [];
+      const [stockRes, statsRes, finDataRes, balanceRes, cashFlowRes, incomeRes, historicalRes] =
+        await Promise.all([
+          fetchJson(urlStock),
+          fetchJson(urlStats),
+          fetchJson(urlFinData),
+          fetchJson(urlBalance),
+          fetchJson(urlCashFlow),
+          fetchJson(urlIncome),
+          fetchJson(urlHistorical),
+        ]);
 
-            const balanceHist = raw.balanceSheetHistory;
-            const balance: BrapiBalanceSheetPeriod[] = Array.isArray(balanceHist)
-              ? balanceHist
-              : balanceHist?.balanceSheetStatements ?? [];
+      const stockData = stockRes as Record<string, unknown> | null;
+      const stockResult = stockData?.results as Record<string, unknown> | undefined;
+      const statsData = statsRes as Record<string, unknown> | null;
+      const statsResult = statsData?.results as Array<Record<string, unknown>> | undefined;
+      const stats = statsResult?.[0]?.data as Array<Record<string, unknown>> | undefined;
+      const finData = finDataRes as Record<string, unknown> | null;
+      const finDataResult = finData?.results as Array<Record<string, unknown>> | undefined;
+      const finDataRow = finDataResult?.[0]?.data as Array<Record<string, unknown>> | undefined;
 
-            // Unwrap the *History modules — Brapi sometimes returns either an
-            // array directly or an object with the array under the same key.
-            // Recebe a key específica pra evitar conflito entre os 4
-            // *History modules (valueAddedHistory vs defaultKeyStatisticsHistory
-            // vs cashflowHistory vs financialDataHistory).
-            function unwrapHistory<T>(
-              v: T[] | { [k: string]: T[] } | undefined,
-              key: string,
-            ): T[] {
-              if (!v) return [];
-              if (Array.isArray(v)) return v;
-              const obj = v as Record<string, T[]>;
-              return obj[key] ?? [];
-            }
+      if (!stockResult) return null;
 
-            return {
-              quote: normalize(rawQuote),
-              candles,
-              keyStatistics: raw.defaultKeyStatistics ?? {},
-              financialData: raw.financialData ?? {},
-              profile: raw.summaryProfile ?? {},
-              historicals: {
-                income,
-                incomeQuarterly,
-                balance,
-                cashflow: unwrapHistory(
-                  raw.cashflowHistory as unknown as
-                    | Array<Record<string, unknown>>
-                    | { [k: string]: Array<Record<string, unknown>> },
-                  "cashflowHistory",
-                ),
-                valueAdded: unwrapHistory(
-                  raw.valueAddedHistory as unknown as
-                    | Array<Record<string, unknown>>
-                    | { [k: string]: Array<Record<string, unknown>> },
-                  "valueAddedHistory",
-                ),
-                keyStatistics: unwrapHistory(
-                  raw.defaultKeyStatisticsHistory as unknown as
-                    | Array<Record<string, unknown>>
-                    | { [k: string]: Array<Record<string, unknown>> },
-                  "defaultKeyStatisticsHistory",
-                ),
-                financialData: unwrapHistory(
-                  raw.financialDataHistory as unknown as
-                    | Array<Record<string, unknown>>
-                    | { [k: string]: Array<Record<string, unknown>> },
-                  "financialDataHistory",
-                ),
-              },
-            };
-          },
-        );
-      }
+      // Mapeia pro shape antigo que o front espera
+      const ks = (stats?.[0] as Record<string, unknown> | undefined) ?? {};
+      const fd = (finDataRow?.[0] as Record<string, unknown> | undefined) ?? {};
+
+      // Extrai dados dos responses paralelos
+      // stocks/{t} → core (price + profile + sector)
+      // stocks/statistics?mode=current → múltiplos (ks)
+      // stocks/financial-data → margins + debt (fd)
+      // stocks/balance-sheet → balanço
+      // stocks/cash-flow → fluxo de caixa
+      // stocks/income-statement?period=annual → DRE anual
+      // stocks/historical?range=1y → candles
+
+      const stockArr = stockResult?.results as Array<Record<string, unknown>> | undefined;
+      const stock = stockArr?.[0] ?? {};
+
+      // ks/fd já foram extraídos acima (linhas 335-337) do stats e finData
+      // ks: múltiplos atuais (trailingPE, priceEarnings, etc)
+      // fd: margins + debt (grossMargins, profitMargins, debtToEquity, etc)
+
+      // Profile (do /stocks/{t} retorna direto). Cast porque BrapiProfile
+      // antigo da v1 tinha outros campos (address1, city) que a v2 não
+      // retorna mais — o strict typing é um resíduo.
+      const profile: BrapiProfile = {
+        ...((stock as Record<string, unknown>) as BrapiProfile),
+      };
+
+      // Candles do /historical
+      const histData = historicalRes as Record<string, unknown> | null;
+      const histArr = (histData?.results as Array<Record<string, unknown>> | undefined) ?? [];
+      const histFirst = histArr[0] ?? {};
+      const candlesRaw = ((histFirst.historicalDataPrice ?? []) as Array<Record<string, unknown>>)
+        .map((c) => ({
+          date: new Date(Number(c.date) * 1000).toISOString().slice(0, 10),
+          timestamp: Number(c.date) * 1000,
+          open: Number(c.open),
+          high: Number(c.high),
+          low: Number(c.low),
+          close: Number(c.close),
+          adjClose: Number(c.adjustedClose ?? c.close),
+          volume: Number(c.volume ?? 0),
+        }));
+
+      // Quote (do /stocks/{t}, preço regular market)
+      const price =
+        (stock.currentPrice as number | null | undefined) ??
+        (stock.regularMarketPrice as number | null | undefined) ??
+        null;
+      const change =
+        (stock.regularMarketChange as number | null | undefined) ?? null;
+      const changePct =
+        (stock.regularMarketChangePercent as number | null | undefined) ?? null;
+      const marketCap =
+        (stock.marketCap as number | null | undefined) ?? null;
+      const fiftyTwoWeekHigh =
+        (stock.fiftyTwoWeekHigh as number | null | undefined) ?? null;
+      const fiftyTwoWeekLow =
+        (stock.fiftyTwoWeekLow as number | null | undefined) ?? null;
+      const volume =
+        (stock.regularMarketVolume as number | null | undefined) ?? null;
+      const marketState =
+        (stock.marketState as string | null | undefined) ?? null;
+      const symbol = (stock.symbol as string | null | undefined) ?? upper;
+      const shortName = (stock.shortName as string | null | undefined) ?? null;
+      const longName = (stock.longName as string | null | undefined) ?? null;
+      const currency = (stock.currency as string | null | undefined) ?? "BRL";
+      const priceEarnings = (ks.priceEarnings as number | null | undefined) ?? null;
+
+      if (price == null) return null;
+
+      // Balanço (do /balance-sheet)
+      const balanceData = balanceRes as Record<string, unknown> | null;
+      const balanceArr =
+        ((balanceData?.results as Array<Record<string, unknown>> | undefined) ?? []);
+      const balanceRows =
+        ((balanceArr[0]?.data as Array<Record<string, unknown>> | undefined) ?? []);
+
+      // Cash flow (do /cash-flow)
+      const cfData = cashFlowRes as Record<string, unknown> | null;
+      const cfArr = ((cfData?.results as Array<Record<string, unknown>> | undefined) ?? []);
+      const cfRows =
+        ((cfArr[0]?.data as Array<Record<string, unknown>> | undefined) ?? []);
+
+      // DRE anual (do /income-statement?period=annual)
+      const incData = incomeRes as Record<string, unknown> | null;
+      const incArr = ((incData?.results as Array<Record<string, unknown>> | undefined) ?? []);
+      const incomeRows =
+        ((incArr[0]?.data as Array<Record<string, unknown>> | undefined) ?? []);
+
+      // historicals.income (anual) pra accumulator e top-level
+      const incomeAnnual: BrapiIncomeStatementPeriod[] = incomeRows.map((r) => ({
+        type: "annual" as const,
+        endDate: String(r.endDate ?? ""),
+        totalRevenue: r.totalRevenue != null ? Number(r.totalRevenue) : null,
+        grossProfit: r.grossProfit != null ? Number(r.grossProfit) : null,
+        operatingIncome: r.operatingIncome != null ? Number(r.operatingIncome) : null,
+        netIncome: r.netIncome != null ? Number(r.netIncome) : null,
+        ebitda: r.ebitda != null ? Number(r.ebitda) : null,
+        basicEarningsPerShare: r.basicEarningsPerShare != null ? Number(r.basicEarningsPerShare) : null,
+        dilutedEarningsPerShare: r.dilutedEarningsPerShare != null ? Number(r.dilutedEarningsPerShare) : null,
+        earningsPerShare: r.earningsPerShare != null ? Number(r.earningsPerShare) : null,
+      }));
+
+      // historicals.balance (anual)
+      const balance: BrapiBalanceSheetPeriod[] = balanceRows.map((r) => ({
+        type: "annual" as const,
+        endDate: String(r.endDate ?? ""),
+        totalAssets: r.totalAssets != null ? Number(r.totalAssets) : null,
+        totalLiab: r.totalLiab != null ? Number(r.totalLiab) : null,
+        totalEquity: r.totalStockholderEquity != null ? Number(r.totalStockholderEquity) : null,
+        longTermDebt: r.longTermDebt != null ? Number(r.longTermDebt) : null,
+        totalCash: r.cash != null ? Number(r.cash) : null,
+      }));
+
+      // historicals.cashflow
+      const cashflow: Array<Record<string, unknown>> = cfRows.map((r) => ({
+        endDate: r.endDate,
+        operatingCashflow: r.totalCashFromOperatingActivities,
+        freeCashflow: r.freeCashFlow,
+        capitalExpenditures: r.capitalExpenditures,
+        dividendsPaid: r.dividendsPaid,
+      }));
+
+      return {
+        quote: ({
+          symbol,
+          shortName,
+          longName,
+          currency,
+          price,
+          // BrapiQuote usa "changePercent", não "changePct"
+          change: change ?? 0,
+          changePercent: changePct ?? 0,
+          // dayHigh/dayLow/dayOpen/prevPreclose não vêm no /stocks/{t} simplificado,
+          // preenchemos com null (cast através de unknown pq BrapiQuote é strict)
+          dayHigh: null,
+          dayLow: null,
+          dayOpen: null,
+          prevClose: null,
+          marketCap,
+          volume: volume ?? 0,
+          marketState: marketState ?? "REGULAR",
+          fiftyTwoWeekHigh,
+          fiftyTwoWeekLow,
+          trailingPE: (ks.trailingPE as number | null | undefined) ?? null,
+          forwardPE: (ks.forwardPE as number | null | undefined) ?? null,
+          earningsPerShare:
+            (ks.earningsPerShare as number | null | undefined) ?? null,
+          trailingEps: (ks.trailingEps as number | null | undefined) ?? null,
+          forwardEps: (ks.forwardEps as number | null | undefined) ?? null,
+          beta: (ks.beta as number | null | undefined) ?? null,
+          dividendYield: (ks.dividendYield as number | null | undefined) ?? null,
+          logoUrl: (stock.logo as string | null | undefined) ?? null,
+          marketTime: null,
+        } as unknown) as BrapiQuote,
+        candles: candlesRaw,
+        keyStatistics: (ks as unknown) as BrapiKeyStatistics,
+        financialData: (fd as unknown) as BrapiFinancialData,
+        profile,
+        historicals: {
+          income: incomeAnnual,
+          incomeQuarterly: [],
+          balance,
+          cashflow,
+          valueAdded: [],
+          keyStatistics: [],
+          financialData: [],
+        },
+      };
+      },
+    );
+}
 
 function getToken(): string {
   // Prefer BRAPI_TOKEN (used elsewhere in the codebase: brapi-full.ts,

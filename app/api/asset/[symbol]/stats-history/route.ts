@@ -116,15 +116,14 @@ async function fetchBrapiStatsHistory(
   const data = (await r.json()) as BrapiResponse;
   const result = data.results?.[0];
   if (!result) return [];
-  // O payload pode vir como:
-  // - result.statistics (array ou { statistics: array })
-  // - result direto como array (em algumas versões da API)
-  const stat = result.statistics;
+  // brapi v2 retorna os dados em results[0].data (array)
+  // ou, em algumas versões, em statistics como array ou { statistics: [...] }
+  const dataField = (result as { data?: StatsHistoryRow[] }).data;
+  const statField = result.statistics;
   let arr: StatsHistoryRow[] = [];
-  if (Array.isArray(stat)) arr = stat;
-  else if (stat && typeof stat === "object" && Array.isArray((stat as { statistics?: StatsHistoryRow[] }).statistics))
-    arr = (stat as { statistics?: StatsHistoryRow[] }).statistics ?? [];
-  else if (Array.isArray(result as unknown as StatsHistoryRow[]))
-    arr = result as unknown as StatsHistoryRow[];
+  if (Array.isArray(dataField)) arr = dataField;
+  else if (Array.isArray(statField)) arr = statField;
+  else if (statField && typeof statField === "object" && Array.isArray((statField as { statistics?: StatsHistoryRow[] }).statistics))
+    arr = (statField as { statistics?: StatsHistoryRow[] }).statistics ?? [];
   return arr.filter((r) => r.endDate != null).sort((a, b) => (a.endDate ?? "").localeCompare(b.endDate ?? ""));
 }
