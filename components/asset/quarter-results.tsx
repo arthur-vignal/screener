@@ -3,27 +3,23 @@
 /**
  * QuarterResults — bar chart de revenue por quarter (estilo Fey TSLA).
  *
- * Layout (vertical, sem cards duplicados):
+ * Layout (replica print Fey "Quarterly revenue"):
  *
- *   REVENUE (5Q)                                  R$45.8B
- *
- *       ▄
- *       █
- *       █                       ▄
- *   ▄   █               ▄       █         ▄
- *   █   █               █       █         █     ▄
- *   █   █               █       █         █     █
- *   Q1   Q2              Q3     Q1        Q1     Q2
- *   25   25              25     26        26     26
- *
- *   R$   R$              R$     R$        R$     R$
- *   123B 4.0B            8.8B   123B      123B   45.8B
- *
- *   EPS  EPS              EPS    EPS       EPS    EPS
- *   27.3 -6.6             4.7   25.3       —    15.4
- *
- *   ▲    ▼                ▲      ▲         ▼     ▼
- *   —    -97%            +119%  +1309%     -63%  -63%
+ *   Quarterly revenue                          R$45.8B
+ *   ┌─────────────────────────────────────┐
+ *   │ 200│                              █  │
+ *   │    │                              █  │
+ *   │ 100│       █                █     █  │  █
+ *   │    │       █       █       █     █  │  █
+ *   │   0│_______ █ _____ █ _____ █ ___ █ _│  █_
+ *   │     Q1 25  Q2 25  Q3 25  Q1 26  Q2 26│
+ *   │                                      │
+ *   │ R$       R$       R$       R$       R$│
+ *   │ 123.1B   -4.0B    8.8B     123.7B  45.8B│
+ *   │                                      │
+ *   │ EPS 27.30  -6.60   4.70     25.30  15.40
+ *   │ ▲ 0.0%    ▼-97%   ▲+119%   ▲+1309% ▼-63%
+ *   └─────────────────────────────────────┘
  *
  * - Bar chart vertical, cor por QoQ (verde subiu / vermelho caiu)
  * - Embaixo de cada barra: valor compacto + EPS + variação QoQ
@@ -90,9 +86,8 @@ function formatCompact(v: number, currency: "BRL" | "USD"): string {
   return `${symbol}${v.toFixed(0)}`;
 }
 
-/** Quebra label "Q1 2024" em 2 linhas: "Q1" e "24" (ano curto). */
+/** Quebra label "Q1 2024" em 2 linhas: "Q1" e "25" (ano curto). */
 function splitQuarterLabel(label: string): { q: string; y: string } {
-  // aceita "Q1 2024" ou "Q1 24"
   const m = label.match(/^(Q\d)\s+(\d{2,4})$/);
   if (!m) return { q: label, y: "" };
   const year = m[2];
@@ -110,6 +105,17 @@ function quarterFromEndDate(endDate: string): string {
   return `Q${q} ${year}`;
 }
 
+/** Formata número em string curta pra eixo Y (ex: 200000000000 → "200B"). */
+function formatAxisValue(v: number, currency: "BRL" | "USD"): string {
+  const symbol = currency === "USD" ? "$" : "R$";
+  const abs = Math.abs(v);
+  if (abs >= 1e12) return `${symbol}${(v / 1e12).toFixed(1)}T`;
+  if (abs >= 1e9) return `${symbol}${(v / 1e9).toFixed(0)}B`;
+  if (abs >= 1e6) return `${symbol}${(v / 1e6).toFixed(0)}M`;
+  if (abs >= 1e3) return `${symbol}${(v / 1e3).toFixed(0)}K`;
+  return `${symbol}${v.toFixed(0)}`;
+}
+
 export function QuarterResults({
   results,
   quarters,
@@ -117,7 +123,6 @@ export function QuarterResults({
   className,
 }: Props): JSX.Element {
   const data = useMemo(() => {
-    // Pega últimos 5 quarters COM revenue válido (ignora null/anual faltando)
     const src =
       quarters && quarters.length > 0
         ? quarters
@@ -136,8 +141,6 @@ export function QuarterResults({
 
     return withRev.slice(-5).map((q, i, arr) => {
       const prev = i > 0 ? arr[i - 1] : null;
-      // QoQ % (quarter-over-quarter) — brapi não dá consensus, QoQ é o
-      // que temos de mais direto pra colorir as barras.
       const changePct =
         prev && prev.revenue !== 0
           ? ((q.revenue - prev.revenue) / Math.abs(prev.revenue)) * 100
@@ -173,10 +176,12 @@ export function QuarterResults({
 /**
  * Bar chart vertical de revenue por quarter.
  *
- * Layout vertical com 3 camadas embaixo de cada barra:
- *   1. Valor compacto (R$127B)
- *   2. EPS (27.30, —, -6.60)
- *   3. Variação QoQ com seta ▲▼ (-97%, +119%)
+ * Regras de design aplicadas (Sulfur / Fey):
+ * - Título "Quarterly revenue" — 14px semibold (estilo Fey)
+ * - Y axis à esquerda com 4 ticks discretos em compact (R$0, R$Xb, R$Yb…)
+ * - Barras mais finas (barSize explícito = 36px) com gap generoso
+ * - Cor sólida (sem fillOpacity) por QoQ
+ * - Cores muted dos ticks (#2a2d33 / rgba muted)
  */
 function RevenueBarChart({
   data,
@@ -195,23 +200,24 @@ function RevenueBarChart({
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-baseline justify-between mb-3">
-        <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 font-semibold">
-          Revenue ({data.length}Q)
+      {/* Header estilo Fey: "Quarterly revenue" + valor último Q à direita */}
+      <div className="flex items-baseline justify-between mb-4">
+        <div className="text-[14px] font-semibold tracking-tight text-foreground">
+          Quarterly revenue
         </div>
-        <div className="text-[11px] text-muted-foreground/85 font-semibold tabular-nums">
+        <div className="text-[11px] text-muted-foreground/70 tabular-nums">
           {formatCompact(lastRevenue, currency)}
         </div>
       </div>
 
-      {/* Bar chart (h-[280px] pra não comprimir) */}
-      <div className="h-[280px] w-full">
+      {/* Bar chart */}
+      <div className="h-[220px] w-full">
         <ResponsiveContainer>
           <BarChart
             data={data}
-            margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
-            barCategoryGap="20%"
+            margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+            barCategoryGap="40%"
+            barSize={36}
           >
             <XAxis
               dataKey="label"
@@ -253,7 +259,19 @@ function RevenueBarChart({
               interval={0}
               height={32}
             />
-            <YAxis hide={true} domain={[0, "dataMax"]} />
+            <YAxis
+              orientation="left"
+              tick={{
+                fill: "rgba(200, 210, 230, 0.45)",
+                fontSize: 9,
+                fontFamily: "var(--font-manrope), system-ui, sans-serif",
+              }}
+              tickFormatter={(v: number) => formatAxisValue(v, currency)}
+              axisLine={false}
+              tickLine={false}
+              width={48}
+              tickCount={4}
+            />
             <Tooltip
               cursor={{ fill: "rgba(255,255,255,0.04)" }}
               content={({ active, payload }) => {
@@ -309,7 +327,6 @@ function RevenueBarChart({
                   <Cell
                     key={`cell-${idx}`}
                     fill={isUp ? "var(--positive)" : "var(--negative)"}
-                    fillOpacity={0.85}
                   />
                 );
               })}
@@ -318,7 +335,7 @@ function RevenueBarChart({
         </ResponsiveContainer>
       </div>
 
-      {/* Labels embaixo: 3 camadas por coluna */}
+      {/* Labels embaixo: 3 camadas por coluna (valor / EPS / QoQ) */}
       <div
         className="grid gap-1 mt-3"
         style={{ gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))` }}
