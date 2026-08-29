@@ -38,11 +38,13 @@ async function fetchJson(url: string): Promise<unknown> {
 
 async function fetchMacroObservations(
   symbols: string[],
-  startDate: string,
 ): Promise<Record<string, MacroObs[]>> {
   if (symbols.length === 0) return {};
   try {
-    const url = `https://brapi.dev/api/v2/macro?symbols=${symbols.join(",")}&startDate=${startDate}&sortOrder=asc`;
+    // brapi limita ~20 obs sem filtros. Com `sortOrder=desc&limit=500`
+    // retorna as 500 MAIS RECENTES — cobre ~1.5 anos pra SELIC/CDI e
+    // 40 anos pra IBC-Br (mensal).
+    const url = `https://brapi.dev/api/v2/macro?symbols=${symbols.join(",")}&sortOrder=desc&limit=500`;
     const data = (await fetchJson(url)) as {
       results?: Array<{
         series?: { slug?: string };
@@ -162,14 +164,13 @@ export async function GET(
       // ignore
     }
 
-    // Macro: SELIC, IPCA 12m, CDI últimos 2 anos
-    const twoYearsAgo = new Date();
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-    const startDate = twoYearsAgo.toISOString().slice(0, 10);
+    // Macro: SELIC, IPCA 12m, CDI, IBC-Br.
+    // Cache: 24h. brapi limita ~20 obs sem filtros; com limit=500 retorna
+    // ~1.5 ano de SELIC/CDI (diário) e anos de IBC-Br (mensal).
     const macro = await cached(
-      `brapi:macro:${startDate}`,
+      `brapi:macro:v3`,
       24 * 60 * 60,
-      () => fetchMacroObservations(["selic", "ipca12m", "cdi", "ibcbr"], startDate),
+      () => fetchMacroObservations(["selic", "ipca12m", "cdi", "ibcbr"]),
     );
 
     // Resposta consolidada — espelha o que /api/asset/[symbol] retorna
