@@ -31,7 +31,14 @@ type IncomeStatementRow = {
   ebitda?: number | null;
   ebit?: number | null;
   basicEarningsPerShare?: number | null;
+  /**
+   * Em CENTAVOS (dividir por 100 pra ter R$). Algumas versões da brapi
+   * retornam o EPS populado nesse campo quando basicEarningsPerShare é null.
+   * Heurística: se basicEarningsPerShare for null, usa esse / 100.
+   */
+  basicEarningsPerCommonShare?: number | null;
   dilutedEarningsPerShare?: number | null;
+  dilutedEarningsPerCommonShare?: number | null;
   earningsPerShare?: number | null;
   researchDevelopment?: number | null;
   sellingGeneralAdministrative?: number | null;
@@ -102,5 +109,38 @@ async function fetchBrapiIncomeQuarterly(
   else if (Array.isArray(incField)) arr = incField;
   else if (incField && typeof incField === "object" && Array.isArray((incField as { incomeStatement?: IncomeStatementRow[] }).incomeStatement))
     arr = (incField as { incomeStatement?: IncomeStatementRow[] }).incomeStatement ?? [];
-  return arr.filter((r) => r.endDate != null).sort((a, b) => (a.endDate ?? "").localeCompare(b.endDate ?? ""));
+
+  // Normalização: brapi retorna EPS em campos diferentes dependendo da
+  // versão do payload. Heurística:
+  //   1. Se basicEarningsPerShare tem valor, usa ele.
+  //   2. Se for null mas basicEarningsPerCommonShare tem valor (em centavos),
+  //      divide por 100.
+  //   3. Senão null.
+  //   Mesma lógica pra diluted.
+  const normalized = arr
+    .filter((r) => r.endDate != null)
+    .map((r) => {
+      const basicCommon = r.basicEarningsPerCommonShare;
+      const basicEps =
+        r.basicEarningsPerShare != null && Number.isFinite(r.basicEarningsPerShare)
+          ? r.basicEarningsPerShare
+          : basicCommon != null && Number.isFinite(basicCommon)
+            ? basicCommon / 100
+            : null;
+      const dilutedCommon = r.dilutedEarningsPerCommonShare;
+      const dilutedEps =
+        r.dilutedEarningsPerShare != null && Number.isFinite(r.dilutedEarningsPerShare)
+          ? r.dilutedEarningsPerShare
+          : dilutedCommon != null && Number.isFinite(dilutedCommon)
+            ? dilutedCommon / 100
+            : null;
+      return {
+        ...r,
+        basicEarningsPerShare: basicEps,
+        dilutedEarningsPerShare: dilutedEps,
+      };
+    })
+    .sort((a, b) => (a.endDate ?? "").localeCompare(b.endDate ?? ""));
+
+  return normalized;
 }

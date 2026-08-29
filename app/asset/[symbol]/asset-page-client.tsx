@@ -215,17 +215,22 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
   // peerRows: peers do subsetor (do /api/peer-benchmarks).
   // O ativo principal tem `pe = mainPe`; peers reais usam `peerData.peers[].pe`.
   // Mantém o ativo principal como a última linha (Fey TSLA faz assim).
+  //
+  // Filtro de outliers: P/E <= 0 (empresa com prejuízo) ou P/E > 100
+  // (geralmente EPS ~0 ou erro de amostra) quebram a escala do gráfico
+  // e tornam a mediana inútil. Mantém só peers com P/E razoável.
   const peerRows = useMemo<PeerRow[]>(() => {
     const realPeers: PeerRow[] = (peerData?.peers ?? [])
       .filter((p) => p.symbol !== symbol)
-      .map((p) => ({
-        symbol: p.symbol,
-        name: p.name,
-        pe:
-          p.pe != null && Number.isFinite(p.pe)
+      .map((p) => {
+        const pe =
+          p.pe != null && Number.isFinite(p.pe) && p.pe > 0 && p.pe < 100
             ? p.pe
-            : null,
-      }));
+            : null;
+        return { symbol: p.symbol, name: p.name, pe };
+      })
+      // ordena por P/E asc pra deixar layout mais legível
+      .sort((a, b) => (a.pe ?? 9999) - (b.pe ?? 9999));
     return [
       ...realPeers,
       { symbol, name: symbol, pe: mainPe },
@@ -305,10 +310,11 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
       }
     }
 
-    // QuarterResults: 3 últimos quarters reais + 1 projected
-    const last3 = quarters.filter(
+    // QuarterResults: 5 últimos quarters reais + 1 projected (estilo Fey TSLA).
+    // Só considera quarters com EPS válido pra evitar buracos na série.
+    const last5 = quarters.filter(
       (q): q is QuarterPoint & { epsBasic: number } => q.epsBasic != null,
-    ).slice(-3);
+    ).slice(-5);
 
     /** Helper: status heurístico baseado em variação vs Q anterior. */
     const trendOf = (
@@ -322,7 +328,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
       return "flat";
     };
 
-    /** Helper: yoy % vs quarter 4 antes. */
+    /** Helper: yoy % vs quarter 4 antes (na série filtrada). */
     const yoyOf = (
       idx: number,
       all: Array<QuarterPoint & { epsBasic: number }>,
@@ -335,9 +341,8 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
       return ((current - prevYear.epsBasic) / Math.abs(prevYear.epsBasic)) * 100;
     };
 
-    const results: QuarterResult[] = last3.map((q, idx) => {
-      const realIdx = quarters.length - last3.length + idx;
-      const prevQ = idx > 0 ? last3[idx - 1] : null;
+    const results: QuarterResult[] = last5.map((q, idx) => {
+      const prevQ = idx > 0 ? last5[idx - 1] : null;
       const trend = trendOf(q.epsBasic, prevQ ? prevQ.epsBasic : null);
       return {
         label: formatQuarterLabel(q.endDate),
@@ -346,7 +351,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
         trend,
         eps: q.epsBasic,
         revenue: q.revenue,
-        yoyChangePct: yoyOf(realIdx, last3, q.epsBasic),
+        yoyChangePct: yoyOf(idx, last5, q.epsBasic),
       };
     });
 
@@ -362,12 +367,12 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
       );
       // Estimated revenue = média dos 4 últimos × (1 + earnings growth)
       const recentRevenue =
-        last3
+        last5
           .map((q) => q.revenue ?? 0)
           .filter((v) => v > 0)
           .reduce((s, v, _, arr) => s + v / arr.length, 0);
       const earningsGrowth = forwardEps
-        ? (forwardEps / (last3[last3.length - 1]?.epsBasic ?? 1) - 1)
+        ? (forwardEps / (last5[last5.length - 1]?.epsBasic ?? 1) - 1)
         : 0;
       results.push({
         label: `Projected Q1 date`,

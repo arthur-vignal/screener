@@ -310,18 +310,21 @@ export function PEHistoryChart({
                   }}
                 />
               )}
-              {/* Mediana do subsetor */}
+              {/* Mediana do subsetor — mais visível (strokeWidth 1.5 + cor
+                  accent azul #489ffa pra contrastar com a linha branca). */}
               {sectorStats?.median != null && (
                 <ReferenceLine
                   y={sectorStats.median}
-                  stroke={CHART_COLORS.gridLineStrong}
-                  strokeDasharray="4 4"
-                  strokeWidth={1}
+                  stroke="#489ffa"
+                  strokeDasharray="5 3"
+                  strokeWidth={1.5}
+                  strokeOpacity={0.7}
                   yAxisId={0}
                   label={{
-                    value: "mediana",
-                    fill: CHART_COLORS.tooltipMuted,
-                    fontSize: 9,
+                    value: `mediana ${sectorStats.median.toFixed(1)}x`,
+                    fill: "#489ffa",
+                    fontSize: 10,
+                    fontWeight: 600,
                     position: "left",
                   }}
                 />
