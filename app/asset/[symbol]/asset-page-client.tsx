@@ -42,6 +42,7 @@ import {
 } from "@/components/asset/news-summary-card";
 import { PEHistoryChart, type PEHistoryRow, type PESectorStats } from "@/components/asset/pe-history-chart";
 import { PERatioComparison, type PeerRow } from "@/components/asset/pe-ratio-comparison";
+import { SectorMedianStrip, type SectorMedian } from "@/components/asset/sector-median-strip";
 import { PriceChart, type RangeKey } from "@/components/asset/price-chart";
 import { PriceHero } from "@/components/asset/price-hero";
 import { PriceTargetChart } from "@/components/asset/price-target-chart";
@@ -114,8 +115,12 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
   }, [newsData]);
 
   // ── Peer benchmarks (subsetor) ──────────────────────────────────────
-  // O endpoint retorna lista de peers do subsetor do ativo.
+  // O endpoint retorna lista de peers do subsetor do ativo, mais as
+  // medianas e os stats do próprio ticker.
   const { data: peerData } = useSWR<{
+    symbol: string;
+    subSector: string | null;
+    peerCount: number;
     peers?: Array<{
       symbol: string;
       name: string;
@@ -123,6 +128,16 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
       roic: number | null;
       pe: number | null;
     }>;
+    medians: {
+      evEbitda: number | null;
+      roic: number | null;
+      pe: number | null;
+    };
+    asset: {
+      evEbitda: number | null;
+      roic: number | null;
+      pe: number | null;
+    };
   }>(`/api/peer-benchmarks/${symbol}`, fetchJson, {
     revalidateOnFocus: false,
   });
@@ -469,6 +484,23 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
           <MetricStrip cells={metricCells} />
         </StaggerOnMount>
 
+        <StaggerOnMount className="mt-3">
+          <SectorMedianStrip
+            data={
+              peerData && peerData.peerCount > 0
+                ? {
+                    symbol: peerData.symbol,
+                    subSector: peerData.subSector ?? null,
+                    peerCount: peerData.peerCount,
+                    asset: peerData.asset,
+                    medians: peerData.medians,
+                  }
+                : null
+            }
+            loading={!peerData}
+          />
+        </StaggerOnMount>
+
         <StaggerOnMount className="mt-6">
           {/* Card container estilo Fey: Analyst estimates */}
           <div className="rounded-2xl border border-white/10 bg-[#101116] p-6">
@@ -490,20 +522,21 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
             </div>
 
             <div className="grid grid-cols-2 gap-5">
-              {/* Analyst ratings radar */}
+              {/* Analyst ratings breakdown */}
               <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
                 <AnalystRatingsRadar
                   ratings={deriveRatings(
                     bundle?.metrics.recommendationMean ?? null,
                     bundle?.metrics.numberOfAnalystOpinions ?? null
                   )}
+                  mean={bundle?.metrics.recommendationMean ?? null}
+                  total={bundle?.metrics.numberOfAnalystOpinions ?? null}
                 />
               </div>
 
               {/* Price target chart */}
               <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
                 <PriceTargetChart
-                  candles={candles}
                   current={bundle?.quote.price ?? null}
                   high52w={bundle?.quote.fiftyTwoWeekHigh ?? null}
                   low52w={bundle?.quote.fiftyTwoWeekLow ?? null}
@@ -570,6 +603,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
             <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
               <QuarterResults
                 results={earningsData.results}
+                quarters={earningsData.quarters}
                 currency={(bundle?.currency as "BRL" | "USD") ?? "BRL"}
               />
             </div>
