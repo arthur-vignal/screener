@@ -212,7 +212,6 @@ function RevenueBarChart({
   currency: "BRL" | "USD";
 }): JSX.Element {
   const lastRevenue = data[data.length - 1]?.revenue ?? 0;
-  const lastIdx = data.length - 1;
 
   return (
     <div>
@@ -343,21 +342,21 @@ function RevenueBarChart({
               animationDuration={800}
             >
               {data.map((d, idx) => {
-                // Q atual (último): cor cheia por QoQ
-                if (idx === lastIdx) {
-                  const isUp = d.changePct != null && d.changePct >= 0;
+                // Cada barra segue cor por QoQ individual.
+                // Primeiro quarter (sem QoQ) = neutro muted.
+                if (d.changePct == null) {
                   return (
                     <Cell
                       key={`cell-${idx}`}
-                      fill={isUp ? "var(--positive)" : "var(--negative)"}
+                      fill="rgba(255, 255, 255, 0.30)"
                     />
                   );
                 }
-                // Quarters passados: cinza/muted (Reported)
+                const isUp = d.changePct >= 0;
                 return (
                   <Cell
                     key={`cell-${idx}`}
-                    fill="rgba(255, 255, 255, 0.25)"
+                    fill={isUp ? "var(--positive)" : "var(--negative)"}
                   />
                 );
               })}
@@ -366,21 +365,21 @@ function RevenueBarChart({
         </ResponsiveContainer>
       </div>
 
-      {/* Legenda Fey style: Reported | Q atual */}
+      {/* Legenda: regra de cor por QoQ */}
       <div className="flex items-center gap-4 mt-3 text-[10px] text-muted-foreground/70">
-        <div className="flex items-center gap-1.5">
-          <span
-            className="inline-block w-2 h-2 rounded-sm"
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.35)" }}
-          />
-          <span>Reported</span>
-        </div>
         <div className="flex items-center gap-1.5">
           <span
             className="inline-block w-2 h-2 rounded-sm"
             style={{ backgroundColor: "var(--positive)" }}
           />
-          <span>Current Q (QoQ)</span>
+          <span>Up QoQ</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span
+            className="inline-block w-2 h-2 rounded-sm"
+            style={{ backgroundColor: "var(--negative)" }}
+          />
+          <span>Down QoQ</span>
         </div>
       </div>
     </div>
