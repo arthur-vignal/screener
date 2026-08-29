@@ -500,12 +500,12 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
                   A
                 </span>
               </div>
-              <button
-                type="button"
+              <a
+                href={`/asset/${symbol}/analysis`}
                 className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md cursor-pointer bg-white/[0.04] border border-white/10 text-foreground text-[12px] font-medium hover:bg-white/[0.08] hover:border-white/20 transition-colors"
               >
-                All estimates
-              </button>
+                Full analysis
+              </a>
             </div>
 
             <div className="grid grid-cols-2 gap-5">
@@ -546,10 +546,10 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
                 </span>
               </div>
               <a
-                href={`/asset/${symbol}/earnings`}
+                href={`/asset/${symbol}/analysis`}
                 className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md cursor-pointer bg-white/[0.04] border border-white/10 text-foreground text-[12px] font-medium hover:bg-white/[0.08] hover:border-white/20 transition-colors"
               >
-                All earnings
+                Full analysis
               </a>
             </div>
 

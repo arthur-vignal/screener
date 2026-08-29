@@ -157,10 +157,13 @@ export type BrapiFinancialData = {
   totalCash?: number | null;
   totalCashPerShare?: number | null;
   ebitda?: number | null;
+  ebitdaMargins?: number | null;
   totalDebt?: number | null;
+  debtToEquity?: number | null;
   quickRatio?: number | null;
   currentRatio?: number | null;
   totalRevenue?: number | null;
+  revenuePerShare?: number | null;
   freeCashflow?: number | null;
   operatingCashflow?: number | null;
   revenueGrowth?: number | null;
@@ -169,6 +172,8 @@ export type BrapiFinancialData = {
   operatingMargins?: number | null;
   profitMargins?: number | null;
   returnOnEquity?: number | null;
+  returnOnAssets?: number | null;
+  dividendYield?: number | null;
 };
 
 export type BrapiProfile = {
