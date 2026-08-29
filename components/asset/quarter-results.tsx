@@ -3,34 +3,38 @@
 /**
  * QuarterResults — bar chart de revenue por quarter (estilo Fey TSLA).
  *
- * Layout (replica print Fey "Quarterly revenue"):
+ * Layout (réplica do print Fey):
  *
  *   Quarterly revenue                          R$45.8B
- *   ┌─────────────────────────────────────┐
- *   │ 200│                              █  │
- *   │    │                              █  │
- *   │ 100│       █                █     █  │  █
- *   │    │       █       █       █     █  │  █
- *   │   0│_______ █ _____ █ _____ █ ___ █ _│  █_
- *   │     Q1 25  Q2 25  Q3 25  Q1 26  Q2 26│
- *   │                                      │
- *   │ R$       R$       R$       R$       R$│
- *   │ 123.1B   -4.0B    8.8B     123.7B  45.8B│
- *   │                                      │
- *   │ EPS 27.30  -6.60   4.70     25.30  15.40
- *   │ ▲ 0.0%    ▼-97%   ▲+119%   ▲+1309% ▼-63%
- *   └─────────────────────────────────────┘
+ *   ┌──────────────────────────────────────────────┐
+ *   │                                     █        │
+ *   │                              █     █        │
+ *   │   █     █                █     █     █   █  │
+ *   │   █     █      █         █     █     █   █  │
+ *   │ 0 █_ ___ █ ____ █ _______ █ ____ █ _ █ __ █ _│
+ *   │  Q1 25  Q2 25  Q3 25    Q1 26  Q2 26        │
+ *   └──────────────────────────────────────────────┘
  *
- * - Bar chart vertical, cor por QoQ (verde subiu / vermelho caiu)
- * - Embaixo de cada barra: valor compacto + EPS + variação QoQ
- * - Sem cards duplicados — toda informação vive embaixo da coluna
+ * Réplica visual Fey:
+ * - Título "Quarterly revenue" em fonte maior (16px) bold
+ * - Y axis à DIREITA com 4 ticks discretos (R$0, R$Xb, R$Yb, R$Zb)
+ * - Barras finas com gap generoso (barSize=28, barCategoryGap=35%)
+ * - Cor sólida: cinza/muted para quarters passados (Reported),
+ *   verde/vermelho para o Q atual (QoQ change)
+ * - SEM info embaixo das colunas — limpo, Fey style
+ * - SEM cards duplicados — chart é o elemento principal
  *
  * Dados REAIS: brapi incomeStatementHistoryQuarterly.
  * Status "missed/beat" é heurístico: EPS caiu > 5% vs Q anterior
  * = missed, subiu > 5% = beat, senão flat. Brapi não dá consenso.
+ *
+ * Nota: Brapi NÃO retorna estimates/sell-side consensus pra tickers BR.
+ * A referência Fey mostra Reported (passado, cinza) + Estimates (futuro,
+ * amarelo/laranja). Como não temos estimates, usamos:
+ * - Passado (todos os quarters menos o último): muted/cinza
+ * - Q atual (último): cor cheia por QoQ (verde/vermelho)
  */
 
-import { ArrowDown, ArrowUp } from "lucide-react";
 import { useMemo } from "react";
 import type { JSX } from "react";
 import {
@@ -176,12 +180,13 @@ export function QuarterResults({
 /**
  * Bar chart vertical de revenue por quarter.
  *
- * Regras de design aplicadas (Sulfur / Fey):
- * - Título "Quarterly revenue" — 14px semibold (estilo Fey)
- * - Y axis à esquerda com 4 ticks discretos em compact (R$0, R$Xb, R$Yb…)
- * - Barras mais finas (barSize explícito = 36px) com gap generoso
- * - Cor sólida (sem fillOpacity) por QoQ
- * - Cores muted dos ticks (#2a2d33 / rgba muted)
+ * Réplica Fey TSLA:
+ * - Y axis à DIREITA com 4 ticks discretos em compact
+ * - Barras finas (barSize=28) com gap generoso (barCategoryGap=35%)
+ * - Cor: cinza/muted para quarters passados, cor cheia (verde/vermelho)
+ *   para o Q atual baseado em QoQ
+ * - SEM texto embaixo das colunas
+ * - Grid horizontal tracejado sutil (estilo Fey)
  */
 function RevenueBarChart({
   data,
@@ -197,15 +202,16 @@ function RevenueBarChart({
   currency: "BRL" | "USD";
 }): JSX.Element {
   const lastRevenue = data[data.length - 1]?.revenue ?? 0;
+  const lastIdx = data.length - 1;
 
   return (
     <div>
-      {/* Header estilo Fey: "Quarterly revenue" + valor último Q à direita */}
+      {/* Header estilo Fey: título bold + valor à direita */}
       <div className="flex items-baseline justify-between mb-4">
-        <div className="text-[14px] font-semibold tracking-tight text-foreground">
+        <div className="text-[16px] font-bold tracking-tight text-foreground">
           Quarterly revenue
         </div>
-        <div className="text-[11px] text-muted-foreground/70 tabular-nums">
+        <div className="text-[12px] text-muted-foreground/70 font-semibold tabular-nums">
           {formatCompact(lastRevenue, currency)}
         </div>
       </div>
@@ -215,9 +221,9 @@ function RevenueBarChart({
         <ResponsiveContainer>
           <BarChart
             data={data}
-            margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
-            barCategoryGap="40%"
-            barSize={36}
+            margin={{ top: 8, right: 0, left: 0, bottom: 0 }}
+            barCategoryGap="35%"
+            barSize={28}
           >
             <XAxis
               dataKey="label"
@@ -260,7 +266,7 @@ function RevenueBarChart({
               height={32}
             />
             <YAxis
-              orientation="left"
+              orientation="right"
               tick={{
                 fill: "rgba(200, 210, 230, 0.45)",
                 fontSize: 9,
@@ -271,6 +277,7 @@ function RevenueBarChart({
               tickLine={false}
               width={48}
               tickCount={4}
+              allowDecimals={false}
             />
             <Tooltip
               cursor={{ fill: "rgba(255,255,255,0.04)" }}
@@ -317,16 +324,26 @@ function RevenueBarChart({
             />
             <Bar
               dataKey="revenue"
-              radius={[4, 4, 0, 0]}
+              radius={[3, 3, 0, 0]}
               isAnimationActive={true}
               animationDuration={800}
             >
               {data.map((d, idx) => {
-                const isUp = d.changePct != null && d.changePct >= 0;
+                // Q atual (último): cor cheia por QoQ
+                if (idx === lastIdx) {
+                  const isUp = d.changePct != null && d.changePct >= 0;
+                  return (
+                    <Cell
+                      key={`cell-${idx}`}
+                      fill={isUp ? "var(--positive)" : "var(--negative)"}
+                    />
+                  );
+                }
+                // Quarters passados: cinza/muted (Reported)
                 return (
                   <Cell
                     key={`cell-${idx}`}
-                    fill={isUp ? "var(--positive)" : "var(--negative)"}
+                    fill="rgba(255, 255, 255, 0.25)"
                   />
                 );
               })}
@@ -335,69 +352,22 @@ function RevenueBarChart({
         </ResponsiveContainer>
       </div>
 
-      {/* Labels embaixo: 3 camadas por coluna (valor / EPS / QoQ) */}
-      <div
-        className="grid gap-1 mt-3"
-        style={{ gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))` }}
-      >
-        {data.map((d, idx) => {
-          const isUp = d.changePct != null && d.changePct >= 0;
-          return (
-            <div
-              key={`col-${idx}`}
-              className="flex flex-col items-center text-center gap-1"
-            >
-              {/* 1) Revenue value */}
-              <div className="text-[12px] tabular-nums font-semibold text-foreground/90">
-                {formatCompact(d.revenue, currency)}
-              </div>
-              {/* 2) EPS */}
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] uppercase tracking-[0.10em] text-muted-foreground/55 font-medium">
-                  EPS
-                </span>
-                <span
-                  className={cn(
-                    "text-[11px] tabular-nums font-semibold",
-                    d.eps == null
-                      ? "text-muted-foreground/40"
-                      : d.eps >= 0
-                        ? "text-[var(--positive)]"
-                        : "text-[var(--negative)]",
-                  )}
-                >
-                  {d.eps != null
-                    ? d.eps.toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })
-                    : "—"}
-                </span>
-              </div>
-              {/* 3) QoQ change */}
-              <div
-                className={cn(
-                  "inline-flex items-center gap-0.5 text-[10px] tabular-nums font-medium",
-                  d.changePct == null
-                    ? "text-muted-foreground/40"
-                    : isUp
-                      ? "text-[var(--positive)]"
-                      : "text-[var(--negative)]",
-                )}
-              >
-                {d.changePct != null &&
-                  (isUp ? (
-                    <ArrowUp className="h-2.5 w-2.5" strokeWidth={2.5} />
-                  ) : (
-                    <ArrowDown className="h-2.5 w-2.5" strokeWidth={2.5} />
-                  ))}
-                {d.changePct == null
-                  ? "—"
-                  : `${isUp ? "+" : "−"}${Math.abs(d.changePct).toFixed(1)}%`}
-              </div>
-            </div>
-          );
-        })}
+      {/* Legenda Fey style: Reported | Q atual */}
+      <div className="flex items-center gap-4 mt-3 text-[10px] text-muted-foreground/70">
+        <div className="flex items-center gap-1.5">
+          <span
+            className="inline-block w-2 h-2 rounded-sm"
+            style={{ backgroundColor: "rgba(255, 255, 255, 0.35)" }}
+          />
+          <span>Reported</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span
+            className="inline-block w-2 h-2 rounded-sm"
+            style={{ backgroundColor: "var(--positive)" }}
+          />
+          <span>Current Q (QoQ)</span>
+        </div>
       </div>
     </div>
   );
