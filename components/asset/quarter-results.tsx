@@ -2,8 +2,11 @@
 
 /**
  * QuarterResults — visual estilo Fey TSLA:
- *   1. Mini chart de revenue trend (line chart) com 5 quarters mais recentes
- *   2. Grid de cards (3 últimos quarters + 1 projected) abaixo
+ *   1. Mini bar chart de revenue trend (últimos 5 quarters)
+ *      - Barras verdes se revenue subiu vs quarter anterior
+ *      - Barras vermelhas se caiu
+ *      - Valor (R$X.XB) + variação % (▲ +12% / ▼ -8%) embaixo
+ *   2. Grid de cards (5 últimos quarters + 1 projected)
  *
  * Card layout (replica print Fey):
  *   ┌─────────────┐
@@ -23,9 +26,9 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { useMemo } from "react";
 import type { JSX } from "react";
 import {
-  CartesianGrid,
-  Line,
-  LineChart,
+  Bar,
+  BarChart,
+  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -73,6 +76,17 @@ function gridColsFor(n: number): string {
   return "grid-cols-2 lg:grid-cols-4";
 }
 
+/** Formata um número grande em string curta (R$127B, R$1.5B, R$250M). */
+function formatCompact(v: number, currency: "BRL" | "USD"): string {
+  const symbol = currency === "USD" ? "$" : "R$";
+  const abs = Math.abs(v);
+  if (abs >= 1e12) return `${symbol}${(v / 1e12).toFixed(2)}T`;
+  if (abs >= 1e9) return `${symbol}${(v / 1e9).toFixed(1)}B`;
+  if (abs >= 1e6) return `${symbol}${(v / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `${symbol}${(v / 1e3).toFixed(1)}K`;
+  return `${symbol}${v.toFixed(0)}`;
+}
+
 export function QuarterResults({
   results,
   quarters,
@@ -89,16 +103,29 @@ export function QuarterResults({
             revenue: r.revenue,
           }));
     // Pega últimos 5 com revenue != null
-    const withRev = src.filter(
-      (q): q is { endDate: string; epsBasic: number | null; revenue: number } =>
-        q.revenue != null,
-    );
+    const withRev = src
+      .filter(
+        (q): q is { endDate: string; epsBasic: number | null; revenue: number } =>
+          q.revenue != null,
+      )
+      // ordena asc pra calcular QoQ corretamente
+      .sort((a, b) => a.endDate.localeCompare(b.endDate));
     const last = withRev.slice(-5);
-    return last.map((q, i) => ({
-      index: i,
-      label: formatQuarterLabel(q.endDate),
-      revenue: q.revenue,
-    }));
+    return last.map((q, i, arr) => {
+      const prev = i > 0 ? arr[i - 1] : null;
+      // Variação vs quarter anterior (QoQ), não YoY — brapi não dá
+      // consensus, então QoQ é o que temos de mais direto.
+      const changePct =
+        prev && prev.revenue !== 0
+          ? ((q.revenue - prev.revenue) / Math.abs(prev.revenue)) * 100
+          : null;
+      return {
+        index: i,
+        label: formatQuarterLabel(q.endDate),
+        revenue: q.revenue,
+        changePct,
+      };
+    });
   }, [quarters, results]);
 
   if (results.length === 0) {
@@ -111,93 +138,11 @@ export function QuarterResults({
     );
   }
 
-  const currencySymbol = currency === "USD" ? "$" : "R$";
-
   return (
     <div className={cn("flex flex-col gap-4", className)}>
-      {/* Mini chart de revenue trend (últimos 5 quarters) */}
+      {/* Bar chart de revenue trend (últimos 5 quarters) */}
       {revenueChartData.length >= 2 && (
-        <div className="rounded-lg bg-[#08090c] border border-white/[0.04] px-4 py-3">
-          <div className="flex items-baseline justify-between mb-2">
-            <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 font-semibold">
-              Revenue trend (5Q)
-            </div>
-            <div className="text-[10px] text-muted-foreground/60 tabular-nums">
-              {currencySymbol}
-              {(revenueChartData[revenueChartData.length - 1]?.revenue ?? 0) /
-                1e9 >
-              0.1
-                ? `Último: ${currencySymbol}${(
-                    (revenueChartData[revenueChartData.length - 1]?.revenue ?? 0) /
-                    1e9
-                  ).toFixed(1)}B`
-                : ""}
-            </div>
-          </div>
-          <div className="h-[80px] w-full">
-            <ResponsiveContainer>
-              <LineChart
-                data={revenueChartData}
-                margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid
-                  stroke="rgba(255,255,255,0.04)"
-                  strokeWidth={1}
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="label"
-                  tick={{
-                    fill: "rgba(200, 210, 230, 0.55)",
-                    fontSize: 9,
-                    fontFamily:
-                      "var(--font-manrope), system-ui, sans-serif",
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                  interval="preserveStartEnd"
-                />
-                <YAxis
-                  hide={true}
-                  domain={["auto", "auto"]}
-                />
-                <Tooltip
-                  cursor={{ stroke: "rgba(255,255,255,0.08)", strokeWidth: 1 }}
-                  wrapperStyle={{ outline: "none" }}
-                  content={({ active, payload }) => {
-                    if (!active || !payload || payload.length === 0)
-                      return null;
-                    const d = payload[0]?.payload as
-                      | { label: string; revenue: number }
-                      | undefined;
-                    if (!d) return null;
-                    return (
-                      <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                        <div className="text-[10px] text-muted-foreground/70">
-                          {d.label}
-                        </div>
-                        <div className="text-[12px] font-semibold tabular-nums text-foreground">
-                          {currencySymbol}
-                          {(d.revenue / 1e9).toFixed(2)}B
-                        </div>
-                      </div>
-                    );
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="rgba(72, 159, 250, 0.85)"
-                  strokeWidth={1.5}
-                  dot={{ r: 2.5, fill: "#489ffa", strokeWidth: 0 }}
-                  activeDot={{ r: 4, fill: "#489ffa" }}
-                  isAnimationActive={true}
-                  animationDuration={1000}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        <RevenueBars data={revenueChartData} currency={currency} />
       )}
 
       {/* Cards grid */}
@@ -210,6 +155,138 @@ export function QuarterResults({
   );
 }
 
+/** Bar chart horizontal de revenue por quarter com cor por QoQ. */
+function RevenueBars({
+  data,
+  currency,
+}: {
+  data: Array<{ label: string; revenue: number; changePct: number | null; index: number }>;
+  currency: "BRL" | "USD";
+}): JSX.Element {
+  return (
+    <div className="rounded-lg bg-[#08090c] border border-white/[0.04] px-4 py-3">
+      <div className="flex items-baseline justify-between mb-2">
+        <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 font-semibold">
+          Revenue (5Q)
+        </div>
+        <div className="text-[10px] text-muted-foreground/60 tabular-nums">
+          {formatCompact(data[data.length - 1].revenue, currency)}
+        </div>
+      </div>
+      <div className="h-[100px] w-full">
+        <ResponsiveContainer>
+          <BarChart
+            data={data}
+            margin={{ top: 4, right: 0, left: 0, bottom: 0 }}
+            barCategoryGap="22%"
+          >
+            <XAxis
+              dataKey="label"
+              tick={{
+                fill: "rgba(200, 210, 230, 0.55)",
+                fontSize: 9,
+                fontFamily: "var(--font-manrope), system-ui, sans-serif",
+              }}
+              axisLine={false}
+              tickLine={false}
+              interval={0}
+            />
+            <YAxis hide={true} domain={[0, "dataMax"]} />
+            <Tooltip
+              cursor={{ fill: "rgba(255,255,255,0.04)" }}
+              content={({ active, payload }) => {
+                if (!active || !payload || payload.length === 0) return null;
+                const d = payload[0]?.payload as
+                  | { label: string; revenue: number; changePct: number | null }
+                  | undefined;
+                if (!d) return null;
+                return (
+                  <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
+                    <div className="text-[10px] text-muted-foreground/70">
+                      {d.label}
+                    </div>
+                    <div className="text-[12px] font-semibold tabular-nums text-foreground">
+                      {formatCompact(d.revenue, currency)}
+                    </div>
+                    {d.changePct != null && (
+                      <div
+                        className={cn(
+                          "text-[10px] tabular-nums mt-0.5",
+                          d.changePct >= 0
+                            ? "text-[var(--positive)]"
+                            : "text-[var(--negative)]",
+                        )}
+                      >
+                        {d.changePct >= 0 ? "▲" : "▼"}{" "}
+                        {Math.abs(d.changePct).toFixed(1)}% QoQ
+                      </div>
+                    )}
+                  </div>
+                );
+              }}
+            />
+            <Bar
+              dataKey="revenue"
+              radius={[3, 3, 0, 0]}
+              isAnimationActive={true}
+              animationDuration={800}
+            >
+              {data.map((d, idx) => {
+                const isUp = d.changePct != null && d.changePct >= 0;
+                return (
+                  <Cell
+                    key={`cell-${idx}`}
+                    fill={isUp ? "var(--positive)" : "var(--negative)"}
+                    fillOpacity={0.85}
+                  />
+                );
+              })}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      {/* Labels embaixo: valor + variação QoQ por quarter */}
+      <div className="grid gap-1 mt-1" style={{ gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))` }}>
+        {data.map((d, idx) => {
+          const changeLabel =
+            d.changePct == null
+              ? "—"
+              : `${d.changePct >= 0 ? "+" : "−"}${Math.abs(d.changePct).toFixed(1)}%`;
+          const isUp = d.changePct != null && d.changePct >= 0;
+          return (
+            <div
+              key={`label-${idx}`}
+              className="flex flex-col items-center text-center"
+            >
+              <div className="text-[10px] tabular-nums font-semibold text-foreground/85">
+                {formatCompact(d.revenue, currency)}
+              </div>
+              <div
+                className={cn(
+                  "inline-flex items-center gap-0.5 text-[9px] tabular-nums font-medium mt-0.5",
+                  d.changePct == null
+                    ? "text-muted-foreground/40"
+                    : isUp
+                      ? "text-[var(--positive)]"
+                      : "text-[var(--negative)]",
+                )}
+              >
+                {d.changePct != null &&
+                  (isUp ? (
+                    <ArrowUp className="h-2.5 w-2.5" strokeWidth={2.5} />
+                  ) : (
+                    <ArrowDown className="h-2.5 w-2.5" strokeWidth={2.5} />
+                  ))}
+                {changeLabel}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function QuarterCard({
   result,
   currency,
@@ -217,13 +294,6 @@ function QuarterCard({
   result: QuarterResult;
   currency: "BRL" | "USD";
 }): JSX.Element {
-  const fmtCurrency = (v: number) =>
-    v.toLocaleString("en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 2,
-    });
-
   const fmtCompact = (v: number) =>
     v.toLocaleString("en-US", {
       style: "currency",
