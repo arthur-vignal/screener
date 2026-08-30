@@ -40,6 +40,17 @@ import type {
   MultiplesBands,
 } from "@/lib/analytics/valuation-bands";
 
+import { ROICVsWACC } from "@/components/analysis/roic-vs-wacc";
+import { LeverageChart } from "@/components/analysis/leverage-chart";
+import type {
+  ROICWACCPoint,
+  ROICWACCSummary,
+} from "@/lib/analytics/roic-wacc";
+import type {
+  LeveragePoint,
+  LeverageSummary,
+} from "@/lib/analytics/leverage";
+
 const emptyBands: MultiplesBands = {
   pe: { current: null, mean: null, std: null, sigma1Low: null, sigma1High: null, sigma2Low: null, sigma2High: null, percentile: null, series: [], rawSeries: [], count: 0, insufficient: true },
   evebitda: { current: null, mean: null, std: null, sigma1Low: null, sigma1High: null, sigma2Low: null, sigma2High: null, percentile: null, series: [], rawSeries: [], count: 0, insufficient: true },
@@ -49,7 +60,6 @@ const emptyBands: MultiplesBands = {
 };
 import { EarningsYieldVsRiskFree } from "@/components/analysis/earnings-yield-vs-risk-free";
 import { MarginTrend } from "@/components/analysis/margin-trend";
-import { ROICVsSelic } from "@/components/analysis/roic-vs-selic";
 import { RevenueVsPIB } from "@/components/analysis/revenue-vs-pib";
 
 import { AssetHeader } from "@/components/asset/asset-header";
@@ -99,6 +109,8 @@ type AnalysisResponse = {
     earningsYield: number | null;
   }>;
   valuationBands: MultiplesBands;
+  roicWacc: { series: ROICWACCPoint[]; summary: ROICWACCSummary };
+  leverage: { series: LeveragePoint[]; summary: LeverageSummary };
   macro: {
     selic?: Array<{ date: string; value: number }>;
     ipca12m?: Array<{ date: string; value: number }>;
@@ -278,21 +290,31 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
                 history={bundle?.marginsHistory ?? []}
                 limit={16}
               />
-              <ROICVsSelic
-                marginsHistory={bundle?.marginsHistory ?? []}
-                selic={selicMacro}
+              <ROICVsWACC
+                series={bundle?.roicWacc.series ?? []}
+                summary={bundle?.roicWacc.summary ?? {
+                  roic: null,
+                  wacc: null,
+                  spread: null,
+                  beta: null,
+                  settings: { erp: 5.5, riskFreeRate: 13.5, marginalTaxRate: 34 },
+                  isFinancial: false,
+                }}
               />
             </div>
             <div>
-              {/* A5 fix (spec 2026-08-29): OwnershipDonut deletado —
-                  heldPercentInsiders/Institutions vinham null pra maioria
-                  dos ativos BR e o componente degradava pra "100% Float".
-                  Composição acionária real exige o item 15 do Formulário de
-                  Referência (CVM), fora do escopo. Slot vai receber
-                  LeverageChart (B2). */}
-              <div className="text-[10px] text-muted-foreground/45 text-center py-12">
-                Slot liberado (A5). Aguardando LeverageChart (B2).
-              </div>
+              {/* B2 (spec 2026-08-29): substitui o slot do antigo
+                  OwnershipDonut (A5). Alavancagem + cobertura de juros
+                  com bandas de risco. Empty state pra Financial Services. */}
+              <LeverageChart
+                series={bundle?.leverage.series ?? []}
+                summary={bundle?.leverage.summary ?? {
+                  leverage: null,
+                  coverage: null,
+                  netCash: false,
+                  isFinancial: false,
+                }}
+              />
             </div>
           </div>
         </StaggerOnMount>

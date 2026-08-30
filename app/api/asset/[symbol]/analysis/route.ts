@@ -17,6 +17,8 @@ import {
   computeValuationBands,
   type MultiplesBands,
 } from "@/lib/analytics/valuation-bands";
+import { computeROICvsWACC, type ROICWACCSummary, type ROICWACCPoint } from "@/lib/analytics/roic-wacc";
+import { computeLeverage, type LeverageSummary, type LeveragePoint } from "@/lib/analytics/leverage";
 
 /**
  * /api/asset/[symbol]/analysis — bundle consolidado pra página
@@ -284,6 +286,26 @@ export async function GET(
       // e média do P/L 5a pra fair value.
       valuationBands: computeValuationBands(
         Array.isArray(statsHistoryRaw) ? statsHistoryRaw : null,
+      ),
+
+      // ROIC vs WACC (A4) — substitui o antigo ROE vs SELIC.
+      // Calcula NOPAT, capital investido, Kd via despesa financeira LTM,
+      // Ke via CAPM (NTN-B + beta × ERP 5.5%), WACC.
+      roicWacc: computeROICvsWACC(
+        incomeHistoryRaw,
+        balanceHistoryRaw,
+        cashflowHistoryRaw,
+        fdHistory,
+        Array.isArray(statsHistoryRaw) ? statsHistoryRaw : null,
+        { sectorDisp: profile?.sectorDisp ?? null },
+      ),
+
+      // Alavancagem (B2) — dívida líquida / EBITDA LTM + cobertura de juros.
+      // Empty state pra Financial Services (capital regulatório ≠ operacional).
+      leverage: computeLeverage(
+        incomeHistoryRaw,
+        balanceHistoryRaw,
+        { sectorDisp: profile?.sectorDisp ?? null },
       ),
 
       // Macro BR (SELIC, IPCA 12m, CDI — 2 anos)
