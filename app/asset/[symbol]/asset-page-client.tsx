@@ -44,7 +44,7 @@ import { PEHistoryChart, type PEHistoryRow, type PESectorStats } from "@/compone
 import { PERatioComparison, type PeerRow } from "@/components/asset/pe-ratio-comparison";
 import { PriceChart, type RangeKey } from "@/components/asset/price-chart";
 import { PriceHero } from "@/components/asset/price-hero";
-import { PriceTargetChart } from "@/components/asset/price-target-chart";
+import { FairValueChart } from "@/components/asset/fair-value-chart";
 import {
   QuarterResults,
   type QuarterResult,
@@ -521,14 +521,13 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
                 />
               </div>
 
-              {/* Price target chart (mock — brapi não tem sell-side target pra BR) */}
-              <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
-                <PriceTargetChart
-                  candles={candles}
-                  current={bundle?.quote.price ?? null}
-                  currency={(bundle?.currency as "BRL" | "USD") ?? "BRL"}
-                />
-              </div>
+              {/* A7 fix (spec 2026-08-29): substituir PriceTargetChart (que
+                  mockava target sell-side — brapi não tem pra BR) por
+                  FairValueChart que plota preço vs fair value implícito
+                  (= EPS LTM × P/L médio 5a). Só dado real. */}
+              <FairValueChart
+                earningsYieldHistory={bundle?.earningsYieldHistory ?? []}
+              />
             </div>
           </div>
         </StaggerOnMount>

@@ -5,8 +5,69 @@
  */
 
 import type { JSX } from "react";
+import { XAxis } from "recharts";
 
 import { cn } from "@/lib/utils";
+
+/**
+ * Eixo X que renderiza tempo real no eixo (não por índice).
+ *
+ * A3 fix (spec 2026-08-29): antes, gráficos que plotavam séries
+ * trimestrais filtradas (com buracos de dado) usavam `dataKey="index"`,
+ * que espaçava os pontos uniformemente — buracos viravam compressão
+ * silenciosa do tempo. PETR4 tinha Q1-11, Q2-11, Q3-11, Q4-11, depois
+ * pulava pra Q1-14 sem indicação visual do gap.
+ *
+ * Correção: `type="number"`, `scale="time"`, `domain={`[`[`dataMin", "dataMax"`,
+ * `dataKey="ts"` (timestamp numérico, ms unix). Tick formatter converte
+ * ms → label PT-BR.
+ *
+ * Caller passa `data` com `{ ..., ts: new Date(endDate).getTime() }`
+ * (helper abaixo faz isso).
+ */
+export function TimeXAxis({
+  tickFontSize = 9,
+}: {
+  tickFontSize?: number;
+}): JSX.Element {
+  return (
+    <XAxis
+      dataKey="ts"
+      type="number"
+      scale="time"
+      domain={["dataMin", "dataMax"]}
+      tick={{
+        fill: "rgba(200, 210, 230, 0.55)",
+        fontSize: tickFontSize,
+        fontFamily: "var(--font-manrope), system-ui, sans-serif",
+      }}
+      tickFormatter={(ts: number) => {
+        if (!Number.isFinite(ts)) return "";
+        const d = new Date(ts);
+        if (Number.isNaN(d.getTime())) return "";
+        return d.toLocaleDateString("pt-BR", {
+          month: "short",
+          year: "2-digit",
+        });
+      }}
+      axisLine={false}
+      tickLine={false}
+      interval="preserveStartEnd"
+      minTickGap={48}
+    />
+  );
+}
+
+/**
+ * Adiciona `ts` (timestamp numérico em ms) num array de rows baseado em
+ * `endDate` (string ISO `YYYY-MM-DD`). Usar antes de passar pro chart
+ * que usa `<TimeXAxis>`.
+ */
+export function attachTimestamps<
+  T extends { endDate: string },
+>(rows: T[]): Array<T & { ts: number }> {
+  return rows.map((r) => ({ ...r, ts: new Date(r.endDate + "T00:00:00Z").getTime() }));
+}
 
 /** Formata número grande em string curta (R$127B, R$1.5B). */
 export function formatCompactCurrency(

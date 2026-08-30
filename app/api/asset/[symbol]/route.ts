@@ -10,6 +10,9 @@ import {
   brapiHistorical,
   normalizeYield,
 } from "@/lib/brapi";
+import {
+  computeEarningsYieldHistory,
+} from "@/lib/analytics/earnings-yield-history";
 
 /**
  * /api/asset/[symbol] — single ticker bundle.
@@ -47,6 +50,7 @@ export async function GET(
     incomeAnnual,
     cashflowAnnual,
     candles,
+    statsHistoryRaw,
   ] = await Promise.all([
     brapiQuote([symbol]),
     brapiProfile(symbol),
@@ -56,6 +60,9 @@ export async function GET(
     brapiIncomeStatement({ symbol, period: "annual" }),
     brapiCashflow({ symbol, period: "annual" }),
     brapiHistorical(symbol, { range: "1y", interval: "1d" }),
+    // A7: stats history (quarterly) pra alimentar FairValueChart (preço vs
+    // valor justo implícito = EPS LTM × P/L médio 5a).
+    brapiStatistics({ symbol, mode: "history", period: "quarterly" }),
   ]);
 
   const q = quoteMap.get(symbol);
@@ -149,5 +156,10 @@ export async function GET(
       keyStatistics: [],
       financialData: [],
     },
+    // A7: earnings yield histórico (1/trailingPE por quarter) — alimenta
+    // FairValueChart na raiz.
+    earningsYieldHistory: computeEarningsYieldHistory(
+      Array.isArray(statsHistoryRaw) ? statsHistoryRaw : null,
+    ),
   });
 }

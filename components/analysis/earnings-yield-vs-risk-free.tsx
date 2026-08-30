@@ -26,20 +26,15 @@ import {
   Line,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
   YAxis,
 } from "recharts";
 
-import { ChartCard, ChartCardHeader, tooltipWrapperStyle } from "./analysis-utils";
+import { ChartCard, ChartCardHeader, TimeXAxis, tooltipWrapperStyle, attachTimestamps } from "./analysis-utils";
+import type { EarningsYieldHistoryPoint } from "@/lib/analytics/earnings-yield-history";
 
 type MacroObs = { date: string; value: number };
 
-export type EarningsYieldHistoryPoint = {
-  endDate: string;
-  epsLtm: number | null;
-  price: number | null;
-  earningsYield: number | null;
-};
+export type { EarningsYieldHistoryPoint };
 
 type Props = {
   earningsYieldHistory: EarningsYieldHistoryPoint[];
@@ -69,7 +64,7 @@ export function EarningsYieldVsRiskFree({
       selicByMonth.set(k, vs.reduce((s, v) => s + v, 0) / vs.length);
     }
 
-    return [...earningsYieldHistory]
+    const mapped = [...earningsYieldHistory]
       .filter(
         (r) =>
           r.earningsYield != null &&
@@ -89,6 +84,8 @@ export function EarningsYieldVsRiskFree({
           selic: selicByMonth.get(month) ?? null,
         };
       });
+    // A3 fix: timestamp numérico pro eixo X usar `scale="time"`.
+    return attachTimestamps(mapped);
   }, [earningsYieldHistory, selic, limit]);
 
   if (data.length < 2) return null;
@@ -136,26 +133,7 @@ export function EarningsYieldVsRiskFree({
               strokeWidth={1}
               vertical={false}
             />
-            <XAxis
-              dataKey="endDate"
-              tick={{
-                fill: "rgba(200, 210, 230, 0.55)",
-                fontSize: 9,
-                fontFamily: "var(--font-manrope), system-ui, sans-serif",
-              }}
-              tickFormatter={(v: string) => {
-                const d = new Date(v + "T00:00:00Z");
-                if (Number.isNaN(d.getTime())) return v;
-                return d.toLocaleDateString("pt-BR", {
-                  month: "short",
-                  year: "2-digit",
-                });
-              }}
-              axisLine={false}
-              tickLine={false}
-              interval="preserveStartEnd"
-              minTickGap={48}
-            />
+            <TimeXAxis />
             <YAxis
               tick={{
                 fill: "rgba(200, 210, 230, 0.55)",

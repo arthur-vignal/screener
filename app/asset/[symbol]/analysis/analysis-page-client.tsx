@@ -16,7 +16,8 @@
  *
  *   SEÇÃO 2 — Qualidade do ativo (3 cards: 2 + 1 menor)
  *   ┌────────────────────┬───────────────┐
- *   │ MarginTrend (16Q)  │ OwnershipDonut│
+ *   │ MarginTrend (16Q)  │ (livre — era OwnershipDonut, A5)        │
+ *   │                   │ LeverageChart (B2)                       │
  *   │                    │               │
  *   ├────────────────────┤               │
  *   │ ROICVsSelic        │               │
@@ -37,7 +38,6 @@ import { PESelicScatter } from "@/components/analysis/pe-selic-scatter";
 import { EarningsYieldVsRiskFree } from "@/components/analysis/earnings-yield-vs-risk-free";
 import { MarginTrend } from "@/components/analysis/margin-trend";
 import { ROICVsSelic } from "@/components/analysis/roic-vs-selic";
-import { OwnershipDonut } from "@/components/analysis/ownership-donut";
 import { RevenueVsPIB } from "@/components/analysis/revenue-vs-pib";
 
 import { AssetHeader } from "@/components/asset/asset-header";
@@ -83,6 +83,7 @@ type AnalysisResponse = {
     endDate: string;
     epsLtm: number | null;
     price: number | null;
+    trailingPE: number | null;
     earningsYield: number | null;
   }>;
   macro: {
@@ -273,14 +274,17 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
                 selic={selicMacro}
               />
             </div>
-            <OwnershipDonut
-              heldPercentInsiders={
-                bundle?.metrics.heldPercentInsiders ?? null
-              }
-              heldPercentInstitutions={
-                bundle?.metrics.heldPercentInstitutions ?? null
-              }
-            />
+            <div>
+              {/* A5 fix (spec 2026-08-29): OwnershipDonut deletado —
+                  heldPercentInsiders/Institutions vinham null pra maioria
+                  dos ativos BR e o componente degradava pra "100% Float".
+                  Composição acionária real exige o item 15 do Formulário de
+                  Referência (CVM), fora do escopo. Slot vai receber
+                  LeverageChart (B2). */}
+              <div className="text-[10px] text-muted-foreground/45 text-center py-12">
+                Slot liberado (A5). Aguardando LeverageChart (B2).
+              </div>
+            </div>
           </div>
         </StaggerOnMount>
 

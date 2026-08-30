@@ -19,11 +19,10 @@ import {
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
   YAxis,
 } from "recharts";
 
-import { ChartCard, ChartCardHeader, tooltipWrapperStyle } from "./analysis-utils";
+import { ChartCard, ChartCardHeader, TimeXAxis, tooltipWrapperStyle, attachTimestamps } from "./analysis-utils";
 
 type MarginsRow = { endDate: string; returnOnEquity?: number | null };
 type MacroObs = { date: string; value: number };
@@ -64,7 +63,7 @@ export function ROICVsSelic({
 
   const data = useMemo(() => {
     const selicByMonth = alignSelicToQuarters(selic);
-    return marginsHistory
+    const rows = marginsHistory
       .filter((r) => r.returnOnEquity != null && r.endDate >= BCB_WINDOW_START)
       .sort((a, b) => a.endDate.localeCompare(b.endDate))
       .map((r) => {
@@ -80,6 +79,8 @@ export function ROICVsSelic({
           spread,
         };
       });
+    // A3 fix: timestamp numérico pro eixo X usar `scale="time"`.
+    return attachTimestamps(rows);
   }, [marginsHistory, selic]);
 
   if (data.length < 2) return null;
@@ -124,26 +125,7 @@ export function ROICVsSelic({
               strokeWidth={1}
               vertical={false}
             />
-            <XAxis
-              dataKey="endDate"
-              tick={{
-                fill: "rgba(200, 210, 230, 0.55)",
-                fontSize: 9,
-                fontFamily: "var(--font-manrope), system-ui, sans-serif",
-              }}
-              tickFormatter={(v: string) => {
-                const d = new Date(v + "T00:00:00Z");
-                if (Number.isNaN(d.getTime())) return v;
-                return d.toLocaleDateString("pt-BR", {
-                  month: "short",
-                  year: "2-digit",
-                });
-              }}
-              axisLine={false}
-              tickLine={false}
-              interval="preserveStartEnd"
-              minTickGap={48}
-            />
+            <TimeXAxis />
             <YAxis
               domain={[Math.min(min, -5), Math.max(max, 20)]}
               tick={{

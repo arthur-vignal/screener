@@ -9,8 +9,10 @@ import {
   brapiIncomeStatement,
   brapiCashflow,
   brapiHistorical,
-  type BrapiKeyStatisticsPeriod,
 } from "@/lib/brapi";
+import {
+  computeEarningsYieldHistory,
+} from "@/lib/analytics/earnings-yield-history";
 
 /**
  * /api/asset/[symbol]/analysis — bundle consolidado pra página
@@ -34,68 +36,9 @@ export const maxDuration = 30;
 
 type MacroObs = { date: string; value: number };
 
-type EarningsYieldHistoryPoint = {
-  endDate: string;
-  /** EPS LTM em R$ (soma dos últimos 4 quarters terminando em t). */
-  epsLtm: number | null;
-  /** Preço no quarter end em R$ (do stats-history da brapi). */
-  price: number | null;
-  /** earnings yield em % a.a. = epsLtm / price × 100. */
-  earningsYield: number | null;
-};
-
-/**
- * Calcula earnings yield histórico a partir de stats-history da brapi.
- *
- * Implementa a opção (a) da spec A1: `earningsYield[t] = 1 / trailingPE[t]`.
- *
- * Por que não opção (b) (somar 4 quarters de basicEarningsPerShare)?
- * Brapi tem DUAS definições conflitantes de EPS no payload:
- *   - `/v2/stocks/income-statement?basicEarningsPerCommonShare` = EPS por
- *     CLASSE específica (ON ou PN), em centavos. Não é normalizado por
- *     shares outstanding, então somá-lo não dá LTM válido pra valuation.
- *   - `/v2/stocks/statistics?earningsPerShare` (em `mode=history`) = EPS
- *     **trimestral** (= NI / shares daquele quarter). Não é TTM.
- *   - `trailingPE` (em `mode=history`) = preço / TTM-EPS interno da brapi
- *     (fórmula não exposta). É o que entra na "earnings yield" da spec.
- *
- * Resultado: a opção (b) não é defensável sem expor a fórmula TTM da
- * brapi. Usamos `1/trailingPE` que é equivalente ao cálculo interno.
- *
- * Outliers (>40%): reais em empresas cíclicas (PETR4 nos booms do petróleo
- * 2010-14 e 2022 teve P/L < 3, ou seja EY > 33%). Logamos pra review mas
- * NÃO mascaramos — são pontos legítimos da série.
- */
-function computeEarningsYieldHistory(
-  statsHistory: BrapiKeyStatisticsPeriod[] | null,
-): EarningsYieldHistoryPoint[] {
-  if (statsHistory == null) return [];
-  const out: EarningsYieldHistoryPoint[] = [];
-  for (const row of statsHistory) {
-    const pe =
-      row.trailingPE != null && Number.isFinite(row.trailingPE) ? row.trailingPE : null;
-    const price =
-      row.price != null && Number.isFinite(row.price) ? row.price : null;
-    if (pe == null || pe <= 0) continue;
-
-    const earningsYield = (1 / pe) * 100;
-
-    // Outlier > 40% é real em cíclicas — logar mas manter o ponto.
-    if (Math.abs(earningsYield) > 40) {
-      console.warn(
-        `[analysis] earnings yield ${earningsYield.toFixed(1)}% em ${row.endDate} (pe=${pe}, price=${price})`,
-      );
-    }
-
-    out.push({
-      endDate: row.endDate,
-      epsLtm: pe > 0 ? price! / pe : null, // TTM EPS implícito (= price/pe)
-      price,
-      earningsYield,
-    });
-  }
-  return out;
-}
+// computeEarningsYieldHistory + EarningsYieldHistoryPoint foram movidos
+// pra /lib/analytics/earnings-yield-history.ts — usado tanto aqui quanto
+// em /api/asset/[symbol] (raiz) pra alimentar FairValueChart (A7).
 
 const COMMON_HEADERS = {
   "User-Agent": "Mozilla/5.0",

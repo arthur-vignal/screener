@@ -29,11 +29,10 @@ import {
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
   YAxis,
 } from "recharts";
 
-import { ChartCard, ChartCardHeader, tooltipWrapperStyle } from "./analysis-utils";
+import { ChartCard, ChartCardHeader, TimeXAxis, tooltipWrapperStyle, attachTimestamps } from "./analysis-utils";
 
 type IncomeRow = {
   endDate: string;
@@ -125,7 +124,7 @@ export function RevenueVsPIB({
         ibcByMonth.set(d.endDate.slice(0, 7), d.growth);
       }
     }
-    return revYoY
+    const mapped = revYoY
       .filter((r) => r.endDate >= BCB_WINDOW_START)
       .map((r) => {
         const month = r.endDate.slice(0, 7);
@@ -137,6 +136,8 @@ export function RevenueVsPIB({
       })
       .filter((d) => d.revenueGrowth != null)
       .slice(-12);
+    // A3 fix: timestamp numérico pro eixo X usar `scale="time"`.
+    return attachTimestamps(mapped);
   }, [incomeHistory, ibcBr]);
 
   if (data.length < 2) return null;
@@ -186,26 +187,7 @@ export function RevenueVsPIB({
               strokeWidth={1}
               vertical={false}
             />
-            <XAxis
-              dataKey="endDate"
-              tick={{
-                fill: "rgba(200, 210, 230, 0.55)",
-                fontSize: 9,
-                fontFamily: "var(--font-manrope), system-ui, sans-serif",
-              }}
-              tickFormatter={(v: string) => {
-                const d = new Date(v + "T00:00:00Z");
-                if (Number.isNaN(d.getTime())) return v;
-                return d.toLocaleDateString("pt-BR", {
-                  month: "short",
-                  year: "2-digit",
-                });
-              }}
-              axisLine={false}
-              tickLine={false}
-              interval="preserveStartEnd"
-              minTickGap={48}
-            />
+            <TimeXAxis />
             <YAxis
               tick={{
                 fill: "rgba(200, 210, 230, 0.55)",

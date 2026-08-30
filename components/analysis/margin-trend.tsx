@@ -1,20 +1,20 @@
 "use client";
 
 /**
- * MarginTrend — margins (gross / operating / profit) em área empilhada
- * ao longo dos últimos 16 quarters.
+ * MarginTrend — margins (gross / operating / profit) ao longo dos últimos
+ * 16 quarters.
  *
- * Visual:
- *   Margins (16Q)
- *   60%┤
- *   40%┤      ━━━━━━━━━━━  ━━━  gross (52%)
- *       ─────────────────────────────────────── operating (37%)
- *   20%┤                                              ━━ profit (24%)
- *   ────────────────────────────────────────────────
- *        Q1 22   Q1 23   Q1 24   Q1 25   Q1 26
+ * A2 fix (spec 2026-08-29): antes usava `<Area stackId="margins">` empilhado,
+ * mas margem é aninhada (lucro ⊂ operacional ⊂ bruto), não aditiva. Empilhar
+ * somava 52+37+24=113%, eixo Y ia a 128% — número sem interpretação.
  *
- * Cores: gross = primary (azul), operating = positive (verde),
- * profit = muted (cinza claro).
+ * Correção: 3 áreas SEM `stackId`, fillOpacity baixo, ordem de render do
+ * maior pro menor (gross no fundo, profit no topo) pra profit não ser
+ * coberto. Eixo Y com `domain={[0, 'auto']}` — teto natural é a margem
+ * bruta máxima.
+ *
+ * Assert em dev (TODO: adicionar): `gross ≥ operating ≥ profit` em todo
+ * ponto. Violação indica erro de mapeamento.
  */
 
 import { useMemo } from "react";
@@ -25,11 +25,10 @@ import {
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
   YAxis,
 } from "recharts";
 
-import { ChartCard, ChartCardHeader, tooltipWrapperStyle } from "./analysis-utils";
+import { ChartCard, ChartCardHeader, TimeXAxis, tooltipWrapperStyle, attachTimestamps } from "./analysis-utils";
 
 type MarginsRow = {
   endDate: string;
@@ -51,7 +50,7 @@ export function MarginTrend({
   className,
 }: Props): JSX.Element | null {
   const data = useMemo(() => {
-    return [...history]
+    const rows = [...history]
       .filter(
         (r) =>
           r.grossMargins != null &&
@@ -66,6 +65,25 @@ export function MarginTrend({
         operating: (r.operatingMargins ?? 0) * 100,
         profit: (r.profitMargins ?? 0) * 100,
       }));
+
+    // A3 fix: adiciona timestamp numérico pro eixo X usar `scale="time"`
+    // (distância proporcional ao tempo decorrido, não ao índice).
+    return attachTimestamps(rows);
+
+    // A2 assert (rodado em dev; em prod é no-op). Margem deve ser aninhada:
+    // gross ≥ operating ≥ profit em todo ponto. Se violar, há erro de
+    // mapeamento de conta no endpoint — não gráfico.
+    if (process.env.NODE_ENV !== "production") {
+      for (const r of rows) {
+        if (r.operating > r.gross + 0.5 || r.profit > r.operating + 0.5) {
+          console.warn(
+            `[MarginTrend] margem não-aninhada em ${r.endDate}: gross=${r.gross.toFixed(1)}, op=${r.operating.toFixed(1)}, profit=${r.profit.toFixed(1)}`,
+          );
+        }
+      }
+    }
+
+    return rows;
   }, [history, limit]);
 
   if (data.length < 2) return null;
@@ -86,16 +104,16 @@ export function MarginTrend({
           >
             <defs>
               <linearGradient id="mt-gross" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#489ffa" stopOpacity={0.5} />
-                <stop offset="100%" stopColor="#489ffa" stopOpacity={0.1} />
+                <stop offset="0%" stopColor="#489ffa" stopOpacity={0.18} />
+                <stop offset="100%" stopColor="#489ffa" stopOpacity={0.04} />
               </linearGradient>
               <linearGradient id="mt-op" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--positive)" stopOpacity={0.6} />
-                <stop offset="100%" stopColor="var(--positive)" stopOpacity={0.15} />
+                <stop offset="0%" stopColor="var(--positive)" stopOpacity={0.16} />
+                <stop offset="100%" stopColor="var(--positive)" stopOpacity={0.04} />
               </linearGradient>
               <linearGradient id="mt-profit" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#9ba1a8" stopOpacity={0.55} />
-                <stop offset="100%" stopColor="#9ba1a8" stopOpacity={0.15} />
+                <stop offset="0%" stopColor="#9ba1a8" stopOpacity={0.14} />
+                <stop offset="100%" stopColor="#9ba1a8" stopOpacity={0.03} />
               </linearGradient>
             </defs>
             <CartesianGrid
@@ -103,26 +121,7 @@ export function MarginTrend({
               strokeWidth={1}
               vertical={false}
             />
-            <XAxis
-              dataKey="endDate"
-              tick={{
-                fill: "rgba(200, 210, 230, 0.55)",
-                fontSize: 9,
-                fontFamily: "var(--font-manrope), system-ui, sans-serif",
-              }}
-              tickFormatter={(v: string) => {
-                const d = new Date(v + "T00:00:00Z");
-                if (Number.isNaN(d.getTime())) return v;
-                return d.toLocaleDateString("pt-BR", {
-                  month: "short",
-                  year: "2-digit",
-                });
-              }}
-              axisLine={false}
-              tickLine={false}
-              interval="preserveStartEnd"
-              minTickGap={48}
-            />
+            <TimeXAxis />
             <YAxis
               tick={{
                 fill: "rgba(200, 210, 230, 0.55)",
@@ -134,7 +133,7 @@ export function MarginTrend({
               tickLine={false}
               width={36}
               tickCount={4}
-              domain={[0, 100]}
+              domain={[0, "auto"]}
             />
             <Tooltip
               wrapperStyle={tooltipWrapperStyle}
@@ -164,14 +163,15 @@ export function MarginTrend({
                 );
               }}
             />
-            {/* Em ordem do mais alto (fundo) ao mais baixo (topo).
-                Stack invertida: gross por baixo, profit por cima. */}
+            {/* A2 fix: sem `stackId` — áreas sobrepostas, não empilhadas.
+                Render do maior (fundo) pro menor (topo): gross primeiro,
+                depois operating, profit por cima. fillOpacity baixo pra
+                não cobrir totalmente a área debaixo. */}
             <Area
               type="monotone"
               dataKey="gross"
-              stackId="margins"
               stroke="#489ffa"
-              strokeWidth={1}
+              strokeWidth={1.5}
               fill="url(#mt-gross)"
               isAnimationActive={true}
               animationDuration={1200}
@@ -179,9 +179,8 @@ export function MarginTrend({
             <Area
               type="monotone"
               dataKey="operating"
-              stackId="margins"
               stroke="var(--positive)"
-              strokeWidth={1}
+              strokeWidth={1.5}
               fill="url(#mt-op)"
               isAnimationActive={true}
               animationDuration={1200}
@@ -189,9 +188,8 @@ export function MarginTrend({
             <Area
               type="monotone"
               dataKey="profit"
-              stackId="margins"
               stroke="#9ba1a8"
-              strokeWidth={1}
+              strokeWidth={1.5}
               fill="url(#mt-profit)"
               isAnimationActive={true}
               animationDuration={1200}

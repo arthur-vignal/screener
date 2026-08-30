@@ -85,6 +85,14 @@ export type AssetBundle = {
     cashflow?: Array<Record<string, unknown>>;
     keyStatistics?: Array<Record<string, unknown>>;
   };
+  /** A7: earnings yield histórico (1/trailingPE por quarter) — alimenta FairValueChart. */
+  earningsYieldHistory?: Array<{
+    endDate: string;
+    epsLtm: number | null;
+    price: number | null;
+    trailingPE: number | null;
+    earningsYield: number | null;
+  }>;
 };
 
 /** Range presets suportados pelo PriceChart. */
