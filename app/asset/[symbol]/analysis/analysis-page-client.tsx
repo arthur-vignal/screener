@@ -35,6 +35,7 @@ import useSWR from "swr";
 
 import { AnalysisHero } from "@/components/analysis/analysis-hero";
 import { ValuationBands } from "@/components/analysis/valuation-bands";
+import { PeerScatter } from "@/components/analysis/peer-scatter";
 import type {
   BandStats,
   MultiplesBands,
@@ -120,7 +121,13 @@ type AnalysisResponse = {
   fetchedAt: string;
 };
 
-type Peer = { symbol: string; pe: number | null };
+type Peer = {
+  symbol: string;
+  name: string;
+  evEbitda: number | null;
+  roe: number | null;
+  pe: number | null;
+};
 
 type PeerBenchmarksResponse = {
   symbol: string;
@@ -128,8 +135,12 @@ type PeerBenchmarksResponse = {
   peerCount: number;
   peers: Peer[];
   medians: {
+    evEbitda: number | null;
+    roe: number | null;
     pe: number | null;
   };
+  asset: { evEbitda: number | null; roe: number | null; pe: number | null };
+  sectorFallback: boolean;
 };
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -271,9 +282,24 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
               valuationBands={bundle?.valuationBands ?? emptyBands}
               earningsYieldHistory={bundle?.earningsYieldHistory ?? []}
             />
-            {/* B4 (spec 2026-08-29): PeerScatter (ROIC × EV/EBITDA com reta
-                OLS) entra no slot da direita quando implementado. */}
-            {/* TODO: PeerScatter */}
+            {/* B4 (spec 2026-08-29): PeerScatter (ROE × EV/EBITDA com
+                reta OLS). Mostra o ativo vs peers do subsetor. Reta OLS
+                só é plotada com ≥5 peers. */}
+            <PeerScatter
+              peers={peers as unknown as Peer[]}
+              asset={peerData?.asset ?? {
+                evEbitda: null,
+                roe: null,
+                pe: null,
+              }}
+              subSector={peerData?.subSector ?? null}
+              medians={peerData?.medians ?? {
+                evEbitda: null,
+                roe: null,
+                pe: null,
+              }}
+              sectorFallback={peerData?.sectorFallback ?? false}
+            />
           </div>
         </StaggerOnMount>
 
