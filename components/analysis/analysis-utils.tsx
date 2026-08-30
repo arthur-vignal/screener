@@ -4,7 +4,7 @@
  * Helpers compartilhados pelos 8 gráficos da página /analysis.
  */
 
-import type { JSX } from "react";
+import type { JSX, ReactNode } from "react";
 import { XAxis } from "recharts";
 
 import { cn } from "@/lib/utils";
@@ -139,7 +139,7 @@ export function ChartCard({
   children,
   className,
 }: {
-  children: JSX.Element | JSX.Element[];
+  children: ReactNode;
   className?: string;
 }): JSX.Element {
   return (

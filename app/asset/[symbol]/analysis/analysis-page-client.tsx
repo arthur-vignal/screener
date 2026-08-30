@@ -34,7 +34,19 @@ import type { JSX } from "react";
 import useSWR from "swr";
 
 import { AnalysisHero } from "@/components/analysis/analysis-hero";
-import { PESelicScatter } from "@/components/analysis/pe-selic-scatter";
+import { ValuationBands } from "@/components/analysis/valuation-bands";
+import type {
+  BandStats,
+  MultiplesBands,
+} from "@/lib/analytics/valuation-bands";
+
+const emptyBands: MultiplesBands = {
+  pe: { current: null, mean: null, std: null, sigma1Low: null, sigma1High: null, sigma2Low: null, sigma2High: null, percentile: null, series: [], rawSeries: [], count: 0, insufficient: true },
+  evebitda: { current: null, mean: null, std: null, sigma1Low: null, sigma1High: null, sigma2Low: null, sigma2High: null, percentile: null, series: [], rawSeries: [], count: 0, insufficient: true },
+  pbv: { current: null, mean: null, std: null, sigma1Low: null, sigma1High: null, sigma2Low: null, sigma2High: null, percentile: null, series: [], rawSeries: [], count: 0, insufficient: true },
+  peMean5a: null,
+  windowYears: 5,
+};
 import { EarningsYieldVsRiskFree } from "@/components/analysis/earnings-yield-vs-risk-free";
 import { MarginTrend } from "@/components/analysis/margin-trend";
 import { ROICVsSelic } from "@/components/analysis/roic-vs-selic";
@@ -86,6 +98,7 @@ type AnalysisResponse = {
     trailingPE: number | null;
     earningsYield: number | null;
   }>;
+  valuationBands: MultiplesBands;
   macro: {
     selic?: Array<{ date: string; value: number }>;
     ipca12m?: Array<{ date: string; value: number }>;
@@ -238,21 +251,17 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
             question="Está caro ou barato em relação ao que rende a renda fixa?"
           />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-4">
-            <PESelicScatter
-              mainPe={bundle?.metrics.trailingPE ?? null}
-              peers={peers}
-              selic={lastSelic}
-              highlightSymbol={symbol}
+            {/* B1 (spec 2026-08-29): ValuationBands substitui PESelicScatter
+                na seção 1. Mostra o múltiplo histórico (P/L | EV/EBITDA |
+                P/VP) com bandas ±1σ/±2σ, percentil atual e sub-gráfico
+                de preço vs fair value (B1.b). */}
+            <ValuationBands
+              valuationBands={bundle?.valuationBands ?? emptyBands}
+              earningsYieldHistory={bundle?.earningsYieldHistory ?? []}
             />
-            {/*
-            // A6 fix (spec 2026-08-29): removido EarningsYieldVsCDI — vai
-            // virar EquityRiskPremium (B5) que compara com NTN-B real,
-            // mais defensável que CDI nominal.
-            <EarningsYieldVsCDI
-              statsHistory={statsHistoryFiltered}
-              cdiDaily={cdiMacro}
-            />
-            */}
+            {/* B4 (spec 2026-08-29): PeerScatter (ROIC × EV/EBITDA com reta
+                OLS) entra no slot da direita quando implementado. */}
+            {/* TODO: PeerScatter */}
           </div>
         </StaggerOnMount>
 

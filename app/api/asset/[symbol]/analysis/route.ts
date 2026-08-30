@@ -13,6 +13,10 @@ import {
 import {
   computeEarningsYieldHistory,
 } from "@/lib/analytics/earnings-yield-history";
+import {
+  computeValuationBands,
+  type MultiplesBands,
+} from "@/lib/analytics/valuation-bands";
 
 /**
  * /api/asset/[symbol]/analysis — bundle consolidado pra página
@@ -272,6 +276,13 @@ export async function GET(
       // Vantagem: usa a MESMA definição de EPS que entra no trailingPE
       // da brapi — equivale a `1/trailingPE[t]` mas com campo explícito.
       earningsYieldHistory: computeEarningsYieldHistory(
+        Array.isArray(statsHistoryRaw) ? statsHistoryRaw : null,
+      ),
+
+      // Bandas de múltiplo histórico (B1 — feature principal da spec).
+      // P/L, EV/EBITDA, P/VP com winsorização p1/p99, percentil atual,
+      // e média do P/L 5a pra fair value.
+      valuationBands: computeValuationBands(
         Array.isArray(statsHistoryRaw) ? statsHistoryRaw : null,
       ),
 
