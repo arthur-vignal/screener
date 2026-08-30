@@ -45,6 +45,7 @@ import { ROICVsWACC } from "@/components/analysis/roic-vs-wacc";
 import { LeverageChart } from "@/components/analysis/leverage-chart";
 import { YieldComparison } from "@/components/analysis/yield-comparison";
 import { EquityRiskPremium } from "@/components/analysis/equity-risk-premium";
+import { ReturnBridge } from "@/components/analysis/return-bridge";
 import type {
   ROICWACCPoint,
   ROICWACCSummary,
@@ -61,6 +62,11 @@ import type {
   EquityRiskPremiumPoint,
   EquityRiskPremiumSummary,
 } from "@/lib/analytics/equity-risk-premium";
+import type {
+  ReturnBridgeResult,
+  ReturnBridgeInputPoint,
+  DividendSignal,
+} from "@/lib/analytics/return-bridge";
 
 const emptyBands: MultiplesBands = {
   pe: { current: null, mean: null, std: null, sigma1Low: null, sigma1High: null, sigma2Low: null, sigma2High: null, percentile: null, series: [], rawSeries: [], count: 0, insufficient: true },
@@ -124,6 +130,8 @@ type AnalysisResponse = {
   leverage: { series: LeveragePoint[]; summary: LeverageSummary };
   yieldComparison: { series: YieldPoint[]; summary: YieldSummary };
   equityRiskPremium: { series: EquityRiskPremiumPoint[]; summary: EquityRiskPremiumSummary };
+  returnBridge: ReturnBridgeResult;
+  returnBridgeInputs: { series: ReturnBridgeInputPoint[]; dividends: DividendSignal[] };
   macro: {
     selic?: Array<{ date: string; value: number }>;
     ipca12m?: Array<{ date: string; value: number }>;
@@ -311,6 +319,15 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
                 pe: null,
               }}
               sectorFallback={peerData?.sectorFallback ?? false}
+            />
+          </div>
+          {/* B6 (spec 2026-08-29): ponte de retorno (waterfall) — full
+              width abaixo do grid da seção 1. Decompõe retorno total em
+              ΔLucro + ΔMúltiplo + Dividendos + Outros. */}
+          <div className="mt-5">
+            <ReturnBridge
+              series={bundle?.returnBridgeInputs.series ?? []}
+              dividends={bundle?.returnBridgeInputs.dividends ?? []}
             />
           </div>
         </StaggerOnMount>

@@ -682,6 +682,35 @@ export async function brapiTreasuryIndicators(
  * Histórico de indicadores do Tesouro Direto (série diária).
  * Cache 24h.
  */
+// ─────────────────────────────────────────────────────────────────────────────
+// brapiDividends — eventos de proventos (dividendos + JCP). B6.
+// Endpoint v2: /api/v2/stocks/dividends?symbols=X&range=5y
+// ⚠️ `rate` é fração da cotação (não valor absoluto em BRL). Caller precisa
+// multiplicar pelo preço na data pra yield real. Documentado no helper.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type BrapiCashDividend = {
+  paymentDate: string;
+  rate: number | null;
+  label: string | null;
+  isinCode?: string;
+  lastDatePrior?: string;
+};
+
+export async function brapiDividends(symbol: string): Promise<BrapiCashDividend[]> {
+  const norm = symbol.toLowerCase();
+  return cached(`brapi:v2:dividends:${norm}`, 6 * 3600, async () => {
+    const params = new URLSearchParams({ symbols: norm });
+    const t = getToken();
+    if (t) params.set("token", t);
+    const url = `${BRAPI_BASE}/v2/stocks/dividends?${params.toString()}`;
+    const res = (await fetchJson(url)) as {
+      results?: Array<{ data?: { cashDividends?: BrapiCashDividend[] } }>;
+    } | null;
+    return res?.results?.[0]?.data?.cashDividends ?? [];
+  });
+}
+
 export async function brapiTreasuryHistory(
   symbol: string,
 ): Promise<Array<Record<string, unknown>>> {
