@@ -1,22 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cached } from "@/lib/cache";
-import { getBrapiFundamentals } from "@/lib/brapi";
+import {
+  brapiQuote,
+  brapiProfile,
+  brapiStatistics,
+  brapiFinancialData,
+  brapiBalanceSheet,
+  brapiIncomeStatement,
+  brapiCashflow,
+  brapiHistorical,
+} from "@/lib/brapi";
 
 /**
  * /api/asset/[symbol]/analysis — bundle consolidado pra página
- * /asset/[symbol]/analysis (drilldown com 8 gráficos analíticos).
+ * /asset/[symbol]/analysis (drilldown com gráficos analíticos).
  *
- * Retorna em UMA call tudo que a página precisa:
- *   - core: quote + métricas (mesma do /api/asset/[symbol])
- *   - fundamentals: defaultKeyStatistics completo (insider/inst/short/P/B etc)
- *   - marginsHistory: financialDataHistoryQuarterly (margins 8-16 quarters)
- *   - incomeHistory: incomeStatementHistoryQuarterly (revenue/eps 16 quarters)
- *   - macro: SELIC, IPCA 12m, CDI últimos 2 anos
+ * Migrado pra brapi v2 (2026-08-30): usa wrappers granulares
+ * (`brapiQuote`, `brapiProfile`, `brapiStatistics`, `brapiFinancialData`,
+ * `brapiIncomeStatement`, etc) em vez do antigo `getBrapiFundamentals` +
+ * módulos `?modules=financialDataHistoryQuarterly`.
  *
- * Nota: brapi não tem sell-side target pra BR — `targets` retorna null
- * em todos os campos. Price target chart usa mocks.
+ * v2 já retorna histórico trimestral nativo em `mode=history&period=quarterly`
+ * — substitui a chamada legacy `financialDataHistoryQuarterly` e simplifica
+ * o pipeline. Antes era: v1 quote + v2 statistics + v1 module override;
+ * agora é só v2.
  *
- * Cache: 30min bundle + 24h macro/financials.
+ * Cache: 30min bundle + 24h macro.
  */
 
 export const dynamic = "force-dynamic";
@@ -24,12 +33,14 @@ export const maxDuration = 30;
 
 type MacroObs = { date: string; value: number };
 
+const COMMON_HEADERS = {
+  "User-Agent": "Mozilla/5.0",
+  Accept: "application/json",
+} as const;
+
 async function fetchJson(url: string): Promise<unknown> {
-  const token = process.env.BRAPI_TOKEN ?? process.env.BRAPI_API_TOKEN ?? "";
-  const sep = url.includes("?") ? "&" : "?";
-  const finalUrl = token ? `${url}${sep}token=${encodeURIComponent(token)}` : url;
-  const r = await fetch(finalUrl, {
-    headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" },
+  const r = await fetch(url, {
+    headers: COMMON_HEADERS,
     signal: AbortSignal.timeout(15000),
   });
   if (!r.ok) throw new Error(`brapi ${r.status}`);
@@ -44,7 +55,8 @@ async function fetchMacroObservations(
     // brapi limita ~20 obs sem filtros. Com `sortOrder=desc&limit=500`
     // retorna as 500 MAIS RECENTES — cobre ~1.5 anos pra SELIC/CDI e
     // 40 anos pra IBC-Br (mensal).
-    const url = `https://brapi.dev/api/v2/macro?symbols=${symbols.join(",")}&sortOrder=desc&limit=500`;
+    const token = process.env.BRAPI_TOKEN ?? process.env.BRAPI_API_TOKEN ?? "";
+    const url = `https://brapi.dev/api/v2/macro?symbols=${symbols.join(",")}&sortOrder=desc&limit=500${token ? `&token=${encodeURIComponent(token)}` : ""}`;
     const data = (await fetchJson(url)) as {
       results?: Array<{
         series?: { slug?: string };
@@ -74,98 +86,87 @@ export async function GET(
   }
 
   try {
-    // Core + fundamentals via lib
-    const data = await cached(
-      `brapi:full:${symbol}`,
-      30 * 60,
-      () => getBrapiFundamentals(symbol),
-    );
-    if (!data) {
+    // Fan-out em paralelo: quote, profile, fundamentals current,
+    // history trimestral (margins via financial-data history, income,
+    // balance, cashflow), candles 1Y. Cada wrapper cacheia
+    // independentemente — aqui só orquestramos.
+    const [
+      quoteMap,
+      profile,
+      ksCurrent,
+      fdCurrent,
+      fdHistoryRaw,
+      incomeHistoryRaw,
+      balanceHistoryRaw,
+      cashflowHistoryRaw,
+      candles,
+    ] = await Promise.all([
+      brapiQuote([symbol]),
+      brapiProfile(symbol),
+      brapiStatistics({ symbol, mode: "current", period: "annual" }),
+      brapiFinancialData({ symbol, mode: "current" }),
+      brapiFinancialData({ symbol, mode: "history", period: "quarterly" }),
+      brapiIncomeStatement({ symbol, period: "quarterly" }),
+      brapiBalanceSheet({ symbol, period: "quarterly" }),
+      brapiCashflow({ symbol, period: "quarterly" }),
+      brapiHistorical(symbol, { range: "1y", interval: "1d" }),
+    ]);
+
+    const q = quoteMap.get(symbol);
+    if (!q) {
       return NextResponse.json({ error: "Ticker inválido" }, { status: 404 });
     }
 
-    // Pull financial history (margins trimestral, 63 quarters)
-    // brapi v2 não tem endpoint /stocks/financial-data-history — vem
-    // como módulo em /quote/{t}?modules=financialDataHistoryQuarterly
-    let marginsHistory: Array<{
-      endDate: string;
-      grossMargins?: number | null;
-      operatingMargins?: number | null;
-      profitMargins?: number | null;
-      ebitdaMargins?: number | null;
-      revenueGrowth?: number | null;
-      earningsGrowth?: number | null;
-      returnOnEquity?: number | null;
-      returnOnAssets?: number | null;
-    }> = [];
-    try {
-      const fdhResp = (await fetchJson(
-        `https://brapi.dev/api/quote/${symbol}?modules=financialDataHistoryQuarterly`,
-      )) as { results?: Array<{ financialDataHistoryQuarterly?: Array<Record<string, unknown>> }> };
-      const arr = fdhResp.results?.[0]?.financialDataHistoryQuarterly ?? [];
-      marginsHistory = arr
-        .filter((r) => r.endDate != null)
-        .map((r) => ({
-          endDate: String(r.endDate ?? ""),
-          grossMargins: r.grossMargins as number | null,
-          operatingMargins: r.operatingMargins as number | null,
-          profitMargins: r.profitMargins as number | null,
-          ebitdaMargins: r.ebitdaMargins as number | null,
-          revenueGrowth: r.revenueGrowth as number | null,
-          earningsGrowth: r.earningsGrowth as number | null,
-          returnOnEquity: r.returnOnEquity as number | null,
-          returnOnAssets: r.returnOnAssets as number | null,
-        }))
-        .sort((a, b) => a.endDate.localeCompare(b.endDate));
-    } catch {
-      // ignore
-    }
+    // ks/fd em mode=current são objeto único
+    const ks = (ksCurrent && !Array.isArray(ksCurrent) ? ksCurrent : {}) as Record<string, unknown>;
+    const fd = (fdCurrent && !Array.isArray(fdCurrent) ? fdCurrent : {}) as Record<string, unknown>;
 
-    // Pull income history (revenue/eps trimestral)
-    let incomeHistory: Array<{
-      endDate: string;
-      totalRevenue?: number | null;
-      basicEarningsPerShare?: number | null;
-      dilutedEarningsPerShare?: number | null;
-    }> = [];
-    try {
-      const incResp = (await fetchJson(
-        `https://brapi.dev/api/v2/stocks/income-statement?symbols=${symbol}&period=quarterly`,
-      )) as { results?: Array<{ data?: unknown[] }> };
-      const arr = incResp.results?.[0]?.data ?? [];
-      incomeHistory = (arr as Array<Record<string, unknown>>)
-        .filter((r) => r.endDate != null)
-        .map((r) => {
-          // Mesma heurística do income-quarterly: basicEarningsPerShare null
-          // cai pra basicEarningsPerCommonShare / 100 (em centavos).
-          const becs = r.basicEarningsPerCommonShare;
-          const decs = r.dilutedEarningsPerCommonShare;
-          const basicEps =
-            r.basicEarningsPerShare != null && Number.isFinite(r.basicEarningsPerShare)
-              ? Number(r.basicEarningsPerShare)
-              : becs != null && Number.isFinite(becs)
-                ? Number(becs) / 100
-                : null;
-          const dilutedEps =
-            r.dilutedEarningsPerShare != null && Number.isFinite(r.dilutedEarningsPerShare)
-              ? Number(r.dilutedEarningsPerShare)
-              : decs != null && Number.isFinite(decs)
-                ? Number(decs) / 100
-                : null;
-          return {
-            endDate: String(r.endDate ?? ""),
-            totalRevenue: r.totalRevenue != null ? Number(r.totalRevenue) : null,
-            basicEarningsPerShare: basicEps,
-            dilutedEarningsPerShare: dilutedEps,
-          };
-        })
-        .sort((a, b) => a.endDate.localeCompare(b.endDate));
-    } catch {
-      // ignore
-    }
+    // fdHistory é array de períodos
+    const fdHistory = Array.isArray(fdHistoryRaw) ? fdHistoryRaw : [];
+    const marginsHistory = fdHistory
+      .filter((r) => r.endDate != null)
+      .map((r) => ({
+        endDate: r.endDate,
+        grossMargins: r.grossMargins,
+        operatingMargins: r.operatingMargins,
+        profitMargins: r.profitMargins,
+        ebitdaMargins: r.ebitdaMargins,
+        revenueGrowth: r.revenueGrowth,
+        earningsGrowth: r.earningsGrowth,
+        returnOnEquity: r.returnOnEquity,
+        returnOnAssets: r.returnOnAssets,
+      }))
+      .sort((a, b) => a.endDate.localeCompare(b.endDate));
+
+    // incomeHistory com normalização de EPS em centavos (legado brapi quirk)
+    const incomeHistory = incomeHistoryRaw
+      .filter((r) => r.endDate != null)
+      .map((r) => {
+        const becs = r.basicEarningsPerCommonShare;
+        const decs = r.dilutedEarningsPerCommonShare;
+        const basicEps =
+          r.basicEarningsPerShare != null && Number.isFinite(r.basicEarningsPerShare)
+            ? r.basicEarningsPerShare
+            : becs != null && Number.isFinite(becs)
+              ? becs / 100
+              : null;
+        const dilutedEps =
+          r.dilutedEarningsPerShare != null && Number.isFinite(r.dilutedEarningsPerShare)
+            ? r.dilutedEarningsPerShare
+            : decs != null && Number.isFinite(decs)
+              ? decs / 100
+              : null;
+        return {
+          endDate: r.endDate,
+          totalRevenue: r.totalRevenue,
+          basicEarningsPerShare: basicEps,
+          dilutedEarningsPerShare: dilutedEps,
+        };
+      })
+      .sort((a, b) => a.endDate.localeCompare(b.endDate));
 
     // Macro: SELIC, IPCA 12m, CDI, IBC-Br.
-    // Cache: 24h. brapi limita ~20 obs sem filtros; com limit=500 retorna
+    // Cache 24h. brapi limita ~20 obs sem filtros; com limit=500 retorna
     // ~1.5 ano de SELIC/CDI (diário) e anos de IBC-Br (mensal).
     const macro = await cached(
       `brapi:macro:v3`,
@@ -174,21 +175,16 @@ export async function GET(
     );
 
     // Resposta consolidada — espelha o que /api/asset/[symbol] retorna
-    // + extras pros 8 gráficos de /analysis.
-    const q = data.quote;
-    const ks = data.keyStatistics ?? {};
-    const fd = data.financialData ?? {};
-    const profile = data.profile ?? {};
-
+    // + extras pros gráficos de /analysis.
     return NextResponse.json({
       symbol: q.symbol,
       shortName: q.shortName,
       longName: q.longName,
-      sector: profile.sector ?? "—",
-      industry: profile.industry ?? "—",
+      sector: profile?.sector ?? "—",
+      industry: profile?.industry ?? "—",
       currency: q.currency,
       marketState: q.marketState,
-      logoUrl: q.logoUrl ?? profile.logoUrl ?? null,
+      logoUrl: q.logoUrl ?? profile?.logoUrl ?? null,
 
       quote: {
         price: q.price,
@@ -206,67 +202,61 @@ export async function GET(
       },
 
       metrics: {
-        trailingPE: q.trailingPE ?? null,
-        forwardPE: (ks as Record<string, unknown>).forwardPE as number | null,
-        pegRatio: (ks as Record<string, unknown>).pegRatio as number | null,
-        priceToBook: (ks as Record<string, unknown>).priceToBook as number | null,
-        bookValue: (ks as Record<string, unknown>).bookValue as number | null,
-        enterpriseValue:
-          (ks as Record<string, unknown>).enterpriseValue as number | null,
-        enterpriseToEbitda:
-          (ks as Record<string, unknown>).enterpriseToEbitda as number | null,
-        enterpriseToRevenue:
-          (ks as Record<string, unknown>).enterpriseToRevenue as number | null,
-        heldPercentInsiders:
-          (ks as Record<string, unknown>).heldPercentInsiders as number | null,
+        trailingPE: (ks.trailingPE as number | null | undefined) ?? null,
+        forwardPE: (ks.forwardPE as number | null | undefined) ?? null,
+        pegRatio: (ks.pegRatio as number | null | undefined) ?? null,
+        priceToBook: (ks.priceToBook as number | null | undefined) ?? null,
+        bookValue: (ks.bookValue as number | null | undefined) ?? null,
+        enterpriseValue: (ks.enterpriseValue as number | null | undefined) ?? null,
+        enterpriseToEbitda: (ks.enterpriseToEbitda as number | null | undefined) ?? null,
+        enterpriseToRevenue: (ks.enterpriseToRevenue as number | null | undefined) ?? null,
+        heldPercentInsiders: (ks.heldPercentInsiders as number | null | undefined) ?? null,
         heldPercentInstitutions:
-          (ks as Record<string, unknown>).heldPercentInstitutions as number | null,
-        shortPercentOfFloat:
-          (ks as Record<string, unknown>).shortPercentOfFloat as number | null,
-        shortRatio: (ks as Record<string, unknown>).shortRatio as number | null,
-        sharesOutstanding:
-          (ks as Record<string, unknown>).sharesOutstanding as number | null,
+          (ks.heldPercentInstitutions as number | null | undefined) ?? null,
+        shortPercentOfFloat: (ks.shortPercentOfFloat as number | null | undefined) ?? null,
+        shortRatio: (ks.shortRatio as number | null | undefined) ?? null,
+        sharesOutstanding: (ks.sharesOutstanding as number | null | undefined) ?? null,
         // Sell-side target — brapi schema existe mas dados nulos pra BR.
-        targetHighPrice: fd.targetHighPrice ?? null,
-        targetLowPrice: fd.targetLowPrice ?? null,
-        targetMeanPrice: fd.targetMeanPrice ?? null,
-        targetMedianPrice: fd.targetMedianPrice ?? null,
-        recommendationMean: fd.recommendationMean ?? null,
-        recommendationKey: fd.recommendationKey ?? null,
-        numberOfAnalystOpinions: fd.numberOfAnalystOpinions ?? null,
-        returnOnEquity: fd.returnOnEquity ?? null,
-        returnOnAssets: fd.returnOnAssets ?? null,
-        grossMargins: fd.grossMargins ?? null,
-        profitMargins: fd.profitMargins ?? null,
-        operatingMargins: fd.operatingMargins ?? null,
-        ebitdaMargins: fd.ebitdaMargins ?? null,
-        revenueGrowth: fd.revenueGrowth ?? null,
-        earningsGrowth: fd.earningsGrowth ?? null,
-        freeCashflow: fd.freeCashflow ?? null,
-        operatingCashflow: fd.operatingCashflow ?? null,
-        totalCash: fd.totalCash ?? null,
-        totalDebt: fd.totalDebt ?? null,
-        debtToEquity: fd.debtToEquity ?? null,
-        currentRatio: fd.currentRatio ?? null,
-        quickRatio: fd.quickRatio ?? null,
-        beta: (ks as Record<string, unknown>).beta as number | null,
-        trailingEps: (ks as Record<string, unknown>).trailingEps as number | null,
-        forwardEps: (ks as Record<string, unknown>).forwardEps as number | null,
-        revenuePerShare: fd.revenuePerShare ?? null,
-        totalRevenue: fd.totalRevenue ?? null,
-        eps: (ks as Record<string, unknown>).trailingEps as number | null,
-        dividendYield: fd.dividendYield ?? null,
+        targetHighPrice: (fd.targetHighPrice as number | null | undefined) ?? null,
+        targetLowPrice: (fd.targetLowPrice as number | null | undefined) ?? null,
+        targetMeanPrice: (fd.targetMeanPrice as number | null | undefined) ?? null,
+        targetMedianPrice: (fd.targetMedianPrice as number | null | undefined) ?? null,
+        recommendationMean: (fd.recommendationMean as number | null | undefined) ?? null,
+        recommendationKey: (fd.recommendationKey as string | null | undefined) ?? null,
+        numberOfAnalystOpinions:
+          (fd.numberOfAnalystOpinions as number | null | undefined) ?? null,
+        returnOnEquity: (fd.returnOnEquity as number | null | undefined) ?? null,
+        returnOnAssets: (fd.returnOnAssets as number | null | undefined) ?? null,
+        grossMargins: (fd.grossMargins as number | null | undefined) ?? null,
+        profitMargins: (fd.profitMargins as number | null | undefined) ?? null,
+        operatingMargins: (fd.operatingMargins as number | null | undefined) ?? null,
+        ebitdaMargins: (fd.ebitdaMargins as number | null | undefined) ?? null,
+        revenueGrowth: (fd.revenueGrowth as number | null | undefined) ?? null,
+        earningsGrowth: (fd.earningsGrowth as number | null | undefined) ?? null,
+        freeCashflow: (fd.freeCashflow as number | null | undefined) ?? null,
+        operatingCashflow: (fd.operatingCashflow as number | null | undefined) ?? null,
+        totalCash: (fd.totalCash as number | null | undefined) ?? null,
+        totalDebt: (fd.totalDebt as number | null | undefined) ?? null,
+        debtToEquity: (fd.debtToEquity as number | null | undefined) ?? null,
+        currentRatio: (fd.currentRatio as number | null | undefined) ?? null,
+        quickRatio: (fd.quickRatio as number | null | undefined) ?? null,
+        beta: (ks.beta as number | null | undefined) ?? null,
+        trailingEps: (ks.trailingEps as number | null | undefined) ?? null,
+        forwardEps: (ks.forwardEps as number | null | undefined) ?? null,
+        revenuePerShare: (fd.revenuePerShare as number | null | undefined) ?? null,
+        totalRevenue: (fd.totalRevenue as number | null | undefined) ?? null,
+        eps: (ks.trailingEps as number | null | undefined) ?? null,
+        dividendYield: (fd.dividendYield as number | null | undefined) ?? null,
       },
 
       // Históricos
       marginsHistory,
       incomeHistory,
+      balanceHistory: balanceHistoryRaw,
+      cashflowHistory: cashflowHistoryRaw,
 
       // Macro BR (SELIC, IPCA 12m, CDI — 2 anos)
       macro,
-
-      // Subsetores / peers (pega via /api/peer-benchmarks separado)
-      // — não consolido aqui pra não duplicar request.
 
       // Data de fetch
       fetchedAt: new Date().toISOString(),

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBrapiCandles, type BrapiCandle } from "@/lib/brapi";
-import { cached } from "@/lib/cache";
+import { brapiHistorical, type BrapiCandle } from "@/lib/brapi";
 
 /**
  * /api/asset/[symbol]/candles?range=24h|7d|3m|1y|5y|max
@@ -26,6 +25,9 @@ import { cached } from "@/lib/cache";
  *   5y    → range=5y, interval=1d   (native daily; ~1,250 candles)
  *   max   → range=5y, interval=1d   (native daily; brapi's max cap is
  *                                      ~5y for most tickers)
+ *
+ * Migrado pra v2 (2026-08-30): usa `brapiHistorical` (cache interno 5min)
+ * em vez do antigo `/api/quote/{t}?range=...&interval=...` legacy.
  *
  * The chart on the client uses recharts type="monotone" to render a
  * smooth curve through these real candle points.
@@ -87,18 +89,14 @@ async function fetchCandlesForRange(
     case "24h": {
       // Intraday 5m candles. Pull 5d so we get yesterday's session too,
       // then slice the last 24h.
-      const all = await cached(`brapiIntraday5m:${symbol}`, 60, () =>
-        getBrapiCandlesRaw(symbol, "5d", "5m"),
-      );
+      const all = await brapiHistorical(symbol, { range: "5d", interval: "5m" });
       const cutoff = Date.now() - 24 * HOUR;
       return sliceAndFormat(filterTradingHours(all.filter((c) => c.timestamp >= cutoff)));
     }
 
     case "7d": {
       // 5m candles over the last month; we slice the last 7 days.
-      const all = await cached(`brapiIntraday7d:${symbol}`, 60, () =>
-        getBrapiCandlesRaw(symbol, "1mo", "5m"),
-      );
+      const all = await brapiHistorical(symbol, { range: "1mo", interval: "5m" });
       const cutoff = Date.now() - 7 * 24 * HOUR;
       return sliceAndFormat(filterTradingHours(all.filter((c) => c.timestamp >= cutoff)));
     }
@@ -107,18 +105,14 @@ async function fetchCandlesForRange(
       // 30m candles across 3 months (~330 candles; well under brapi's
       // ~5k cap). 5m over 3mo would blow past the cap and silently
       // lose early candles.
-      const all = await cached(`brapi30m3mo:${symbol}`, 120, () =>
-        getBrapiCandlesRaw(symbol, "3mo", "30m"),
-      );
+      const all = await brapiHistorical(symbol, { range: "3mo", interval: "30m" });
       return sliceAndFormat(filterTradingHours(all));
     }
 
     case "ytd": {
       // Year-to-date: pull 1y daily and slice candles since Jan 1 of
       // current year (Brasília time).
-      const daily = await cached(`brapiDaily1y:${symbol}`, 300, () =>
-        getBrapiCandlesRaw(symbol, "1y", "1d"),
-      );
+      const daily = await brapiHistorical(symbol, { range: "1y", interval: "1d" });
       const yearStart = new Date();
       yearStart.setMonth(0, 1);
       yearStart.setHours(0, 0, 0, 0);
@@ -129,17 +123,13 @@ async function fetchCandlesForRange(
 
     case "1y": {
       // Daily candles over 1y resampled to 4h buckets.
-      const daily = await cached(`brapiDaily1y:${symbol}`, 300, () =>
-        getBrapiCandlesRaw(symbol, "1y", "1d"),
-      );
+      const daily = await brapiHistorical(symbol, { range: "1y", interval: "1d" });
       return sliceAndFormat(resample(filterTradingHours(daily), 4 * HOUR));
     }
 
     case "5y": {
       // Daily candles over 5y, native (no resample). ~1,250 candles.
-      const daily = await cached(`brapiDaily5y:${symbol}`, 300, () =>
-        getBrapiCandlesRaw(symbol, "5y", "1d"),
-      );
+      const daily = await brapiHistorical(symbol, { range: "5y", interval: "1d" });
       return sliceAndFormat(filterTradingHours(daily));
     }
 
@@ -147,61 +137,10 @@ async function fetchCandlesForRange(
       // Brapi's "max" cap is ~5y for most tickers. If the asset has
       // less history than that, hide the 5y button (handled on the
       // client by inspecting candle count) and use the daily series.
-      const daily = await cached(`brapiDailyMax:${symbol}`, 300, () =>
-        getBrapiCandlesRaw(symbol, "5y", "1d"),
-      );
+      const daily = await brapiHistorical(symbol, { range: "5y", interval: "1d" });
       return sliceAndFormat(filterTradingHours(daily));
     }
   }
-}
-
-async function getBrapiCandlesRaw(
-  symbol: string,
-  range: "1d" | "5d" | "1mo" | "3mo" | "6mo" | "1y" | "2y" | "5y" | "max",
-  interval: "5m" | "15m" | "30m" | "1h" | "1d" | "1wk" | "1mo",
-): Promise<BrapiCandle[]> {
-  // We bypass getBrapiCandles' own cache because we control the
-  // cache key per range+interval above. But we DO need to include
-  // the Brapi PRO token, otherwise the upstream returns 401.
-  const token = process.env.BRAPI_TOKEN ?? process.env.BRAPI_API_TOKEN ?? "";
-  const params: Record<string, string> = { range, interval };
-  if (token) params.token = token;
-  const qs = new URLSearchParams(params).toString();
-  const r = await fetch(
-    `https://brapi.dev/api/quote/${encodeURIComponent(symbol)}?${qs}`,
-    {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json",
-      },
-      signal: AbortSignal.timeout(15000),
-    },
-  );
-  if (!r.ok) throw new Error(`brapi ${r.status}`);
-  const data = (await r.json()) as {
-    results?: Array<{
-      historicalDataPrice?: Array<{
-        date: number;
-        open: number;
-        high: number;
-        low: number;
-        close: number;
-        adjustedClose: number;
-        volume: number;
-      }>;
-    }>;
-  };
-  const raw = data.results?.[0]?.historicalDataPrice ?? [];
-  return raw.map((c) => ({
-    date: new Date(c.date * 1000).toISOString().slice(0, 10),
-    timestamp: c.date * 1000,
-    open: c.open,
-    high: c.high,
-    low: c.low,
-    close: c.close,
-    adjClose: c.adjustedClose,
-    volume: c.volume,
-  }));
 }
 
 /**

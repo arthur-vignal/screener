@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cached } from "@/lib/cache";
+import { brapiStatistics, type BrapiKeyStatistics } from "@/lib/brapi";
 
 /**
  * /api/peer-benchmarks/[symbol] — benchmarks do subsetor para o scatter
@@ -13,47 +13,28 @@ import { cached } from "@/lib/cache";
  *   - asset: { evEbitda, roic, pe } — o próprio ticker
  *   - fetchedAt, source
  *
- * Mudança 2026-08-29: refator pra usar `/quote/{t}?modules=summaryProfile`
- * (que funciona pra BR) em vez do antigo
- * `/quote/{t}?modules=defaultKeyStatistics,financialData` (que dá 404).
+ * Migrado pra v2 (2026-08-30): substitui `/quote/{t}?modules=summaryProfile`
+ * (que agora exige token Pro) por `/v2/stocks/profile?symbols=X` (free tier)
+ * + `/v2/stocks/statistics?symbols=X,Y,Z` (já era v2).
  *
  * Estratégia:
- *   1. /quote/{symbol}?modules=summaryProfile → sector/industry do alvo
- *   2. /v2/tickers?limit=30 → lista de candidatos
- *   3. Batch /quote/{cand1,cand2,...}?modules=summaryProfile → filtra
- *      por mesmo sectorDisp
- *   4. Batch /stocks/statistics?symbols=X,Y,... → trailingPE, EV/EBITDA,
- *      returnOnEquity
+ *   1. /v2/stocks/profile?symbols={symbol} → sectorDisp do alvo
+ *   2. /v2/tickers?limit=100 → lista de candidatos (B3 universe)
+ *   3. Batch /v2/stocks/profile?symbols=X,Y,Z → filtra por mesmo sectorDisp
+ *   4. /v2/stocks/statistics?symbols=X,Y,Z&mode=current → trailingPE,
+ *      EV/EBITDA, ROE dos peers + alvo
  *
- * Cache 1h — peers não mudam frequentemente.
+ * Cache 1h (via brapiStatisticsBatch + brapiProfile internos).
  */
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 25;
 
-type PeerQuote = {
-  symbol: string;
-  shortName?: string | null;
-  longName?: string | null;
-  sector?: string;
-  sectorDisp?: string;
-  industryDisp?: string;
-  type?: string;
-  summaryProfile?: { sectorDisp?: string; sector?: string; industryDisp?: string };
-};
-
 type StatsRow = {
   symbol?: string;
   trailingPE?: number | null;
-  priceEarnings?: number | null;
   returnOnEquity?: number | null;
-  earningsPerShare?: number | null;
-  priceToBook?: number | null;
-  beta?: number | null;
-  dividendYield?: number | null;
-  yield?: number | null;
   enterpriseToEbitda?: number | null;
-  enterpriseToRevenue?: number | null;
 };
 
 async function fetchJson(url: string): Promise<unknown> {
@@ -83,128 +64,84 @@ export async function GET(
   const symbol = raw.toUpperCase().replace(/\.SA$/, "");
 
   try {
-    // 1) Descobre subsetor via /quote/{t}?modules=summaryProfile.
-    // Note: sectorDisp vem em `summaryProfile.sectorDisp` (não no nível raiz).
-    const targetQuote = (await fetchJson(
-      `https://brapi.dev/api/quote/${encodeURIComponent(symbol)}?modules=summaryProfile`,
-    )) as { results?: Array<PeerQuote> };
-    const target = targetQuote?.results?.[0];
-    const sectorDisp =
-      target?.sectorDisp ??
-      target?.summaryProfile?.sectorDisp ??
-      target?.summaryProfile?.sector ??
-      null;
+    // 1) Descobre subsetor via `/v2/tickers`. NOTA: brapi tem 3 representações
+    // de subsetor diferentes e inconsistentes entre endpoints —
+    //   /v2/stocks/profile?symbols=X → sectorDisp (setor amplo, ex: "Energia")
+    //   /v2/tickers → subsector (subsetor granular, ex: "Petróleo e Gás Integrado")
+    //   /api/quote/{t}?modules=summaryProfile → industryDisp (subsetor granular)
+    // O subsetor granular só existe em `/v2/tickers` e no legacy `/quote`.
+    // Aqui usamos `/v2/tickers` pra ficar no v2.
+    const targetTickersResp = (await fetchJson(
+      `https://brapi.dev/api/v2/tickers?search=${encodeURIComponent(symbol)}`,
+    )) as { results?: Array<{ symbol?: string; subsector?: string }> };
+    const targetTicker = targetTickersResp.results?.find(
+      (t) => t.symbol === symbol,
+    );
+    const subsector = targetTicker?.subsector ?? null;
 
-    // 2) Lista todos os tickers (B3 universo).
-    // /v2/tickers retorna `results[]` (não `tickers[]`).
+    // 2) Lista todos os tickers (B3 universo). Cada item já traz tudo que
+    // precisamos: `subsector` (filtro de subsetor), `name`/`longName`
+    // (label do peer). Não precisa de round-trip extra em /profile.
     const tickersResp = (await fetchJson(
-      `https://brapi.dev/api/v2/tickers?limit=100`,
-    )) as { results?: PeerQuote[] };
+      `https://brapi.dev/api/v2/tickers?limit=200`,
+    )) as {
+      results?: Array<{
+        symbol?: string;
+        name?: string;
+        longName?: string;
+        subsector?: string;
+      }>;
+    };
     const allCandidates = (tickersResp?.results ?? []).filter(
       (t) => t.symbol && t.symbol !== symbol,
     );
 
-    // 3) Batch fetch summaryProfile de todos os candidatos pra filtrar
-    // por mesmo sectorDisp. Limite de 20 tickers por request (plano Pro).
-    // 19 candidatos por batch (1 slot livre).
-    const candidatesSymbols = allCandidates
-      .slice(0, 19)
-      .map((t) => t.symbol)
-      .join(",");
-    const candidatesResp = (await fetchJson(
-      `https://brapi.dev/api/quote/${encodeURIComponent(
-        candidatesSymbols,
-      )}?modules=summaryProfile`,
-    )) as { results?: PeerQuote[] };
-
-    // Segunda leva de 19 (pega mais peers se o subsetor for raro).
-    let candidates: PeerQuote[] = candidatesResp?.results ?? [];
-    if (allCandidates.length > 19) {
-      const moreSymbols = allCandidates
-        .slice(19, 38)
-        .map((t) => t.symbol)
-        .join(",");
-      try {
-        const moreResp = (await fetchJson(
-          `https://brapi.dev/api/quote/${encodeURIComponent(
-            moreSymbols,
-          )}?modules=summaryProfile`,
-        )) as { results?: PeerQuote[] };
-        candidates = candidates.concat(moreResp?.results ?? []);
-      } catch {
-        // ignore — first batch é suficiente
-      }
-    }
-
-    // sectorDisp vem em `summaryProfile.sectorDisp` (não no nível raiz).
-    const sameSector = sectorDisp
-      ? candidates
-          .filter(
-            (c) => c.sectorDisp === sectorDisp ||
-              c.summaryProfile?.sectorDisp === sectorDisp,
-          )
+    // Filtra por mesmo subsetor. Se `subsector` for null (não veio no
+    // /tickers), aceita qualquer (fallback).
+    const sameSector = subsector
+      ? allCandidates
+          .filter((p) => p.subsector === subsector)
           .slice(0, 12)
-      : candidates.slice(0, 12);
+      : allCandidates.slice(0, 12);
 
-    if (sameSector.length === 0) {
-      // Sem peers do mesmo subsetor — retorna com arrays vazios em vez de erro.
-      const targetStats = await fetchSelfStats(symbol);
-      return NextResponse.json({
-        symbol,
-        subSector: sectorDisp,
-        peers: [],
-        medians: { evEbitda: null, roic: null, pe: null },
-        asset: targetStats,
-        peerCount: 0,
-        fetchedAt: new Date().toISOString(),
-        source: "brapi-batch",
+    // 3) Statistics por símbolo. brapi `/v2/stocks/statistics?symbols=X,Y,Z`
+    // tem bug conhecido: em batch retorna `returnOnEquity=null` pra todos
+    // os itens (single endpoint funciona). Workaround: chama single por
+    // símbolo em paralelo. Cache interno mitiga custo.
+    const allSymbols = [symbol, ...sameSector.map((p) => p.symbol!).filter(Boolean)];
+    const statsEntries = await Promise.all(
+      allSymbols.map(async (s) => [s, await brapiStatistics({ symbol: s, mode: "current", period: "annual" })] as const),
+    );
+    const statsBySymbol = new Map<string, BrapiKeyStatistics>();
+    for (const [s, stats] of statsEntries) {
+      if (stats && !Array.isArray(stats)) statsBySymbol.set(s, stats);
+    }
+
+    // Monta peers com EV/EBITDA + ROIC (proxy: ROE) + P/E.
+    const peers = sameSector
+      .filter((p) => p.symbol)
+      .map((p) => {
+        const ks = statsBySymbol.get(p.symbol!);
+        const evEbitda =
+          ks?.enterpriseToEbitda != null && Number.isFinite(ks.enterpriseToEbitda)
+            ? ks.enterpriseToEbitda
+            : null;
+        const roic =
+          ks?.returnOnEquity != null && Number.isFinite(ks.returnOnEquity)
+            ? ks.returnOnEquity
+            : null;
+        const pe =
+          ks?.trailingPE != null && Number.isFinite(ks.trailingPE)
+            ? ks.trailingPE
+            : null;
+        return {
+          symbol: p.symbol!,
+          name: p.name ?? p.longName ?? p.symbol!,
+          evEbitda,
+          roic,
+          pe,
+        };
       });
-    }
-
-    // 4) Batch fetch statistics dos peers + ticker alvo.
-    const symbolsParam = [symbol, ...sameSector.map((p) => p.symbol)]
-      .filter(Boolean)
-      .join(",");
-    const statsResp = (await fetchJson(
-      `https://brapi.dev/api/v2/stocks/statistics?symbols=${encodeURIComponent(
-        symbolsParam,
-      )}&mode=current`,
-    )) as { results?: Array<{ symbol?: string; data?: StatsRow }> };
-
-    const statsBySymbol = new Map<string, StatsRow>();
-    for (const r of statsResp?.results ?? []) {
-      if (r.symbol && r.data) statsBySymbol.set(r.symbol, r.data);
-    }
-
-    // Monta peers com EV/EBITDA + ROIC (proxy: ROE) + P/E (dados REAIS).
-    const peers: Array<{
-      symbol: string;
-      name: string;
-      evEbitda: number | null;
-      roic: number | null;
-      pe: number | null;
-    }> = sameSector.map((p) => {
-      const ks = statsBySymbol.get(p.symbol);
-      const evEbitda =
-        ks?.enterpriseToEbitda != null && Number.isFinite(ks.enterpriseToEbitda)
-          ? ks.enterpriseToEbitda
-          : null;
-      const roic =
-        ks?.returnOnEquity != null && Number.isFinite(ks.returnOnEquity)
-          ? ks.returnOnEquity
-          : null;
-      const pe =
-        ks?.trailingPE != null && Number.isFinite(ks.trailingPE)
-          ? ks.trailingPE
-          : null;
-      return {
-        symbol: p.symbol,
-        name: p.shortName ?? p.longName ?? p.symbol,
-        evEbitda,
-        roic,
-        pe,
-      };
-    });
 
     // Stats do próprio ticker.
     const selfStats = statsBySymbol.get(symbol);
@@ -229,9 +166,9 @@ export async function GET(
     const roics = peers.map((p) => p.roic).filter((v): v is number => v != null);
     const pes = peers.map((p) => p.pe).filter((v): v is number => v != null);
 
-    const result = {
+    return NextResponse.json({
       symbol,
-      subSector: sectorDisp,
+      subSector: subsector,
       peers,
       medians: {
         evEbitda: median(evEbitdas),
@@ -241,43 +178,12 @@ export async function GET(
       asset,
       peerCount: peers.length,
       fetchedAt: new Date().toISOString(),
-      source: "brapi-batch",
-    };
-
-    return NextResponse.json(result);
+      source: "brapi-v2-batch",
+    });
   } catch (err) {
     return NextResponse.json(
       { error: "Peer benchmarks indisponível", detail: String(err) },
       { status: 502 },
     );
-  }
-}
-
-async function fetchSelfStats(symbol: string): Promise<{
-  evEbitda: number | null;
-  roic: number | null;
-  pe: number | null;
-}> {
-  try {
-    const resp = (await fetchJson(
-      `https://brapi.dev/api/v2/stocks/statistics?symbols=${encodeURIComponent(symbol)}&mode=current`,
-    )) as { results?: Array<{ data?: StatsRow }> };
-    const ks = resp?.results?.[0]?.data;
-    return {
-      evEbitda:
-        ks?.enterpriseToEbitda != null && Number.isFinite(ks.enterpriseToEbitda)
-          ? ks.enterpriseToEbitda
-          : null,
-      roic:
-        ks?.returnOnEquity != null && Number.isFinite(ks.returnOnEquity)
-          ? ks.returnOnEquity
-          : null,
-      pe:
-        ks?.trailingPE != null && Number.isFinite(ks.trailingPE)
-          ? ks.trailingPE
-          : null,
-    };
-  } catch {
-    return { evEbitda: null, roic: null, pe: null };
   }
 }

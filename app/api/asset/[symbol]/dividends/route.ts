@@ -4,13 +4,15 @@ import { cached } from "@/lib/cache";
 /**
  * /api/asset/[symbol]/dividends — historical dividend / JCP events.
  *
- * Returns `cashDividends` from Brapi's `dividendsData` module. We
- * fetch `?dividends=true` on the same /quote/{symbol} endpoint and
- * pull out the array. The `rate` field is a fraction (not an
- * absolute BRL amount), so clients should treat it as a proxy and
- * multiply by the price at payment date for true yield.
+ * Migrado pra brapi v2 (2026-08-30): `/api/v2/stocks/dividends?symbols=X`
+ * (substitui o antigo `/api/quote/{t}?dividends=true`). Shape mudou —
+ * resposta vem em `results[0].data.cashDividends` (objeto) em vez de
+ * `results[0].dividendsData.cashDividends` direto.
  *
- * Cached for 6h — dividends don't change intraday.
+ * O `rate` da Brapi é uma fração da cotação (não valor absoluto em BRL).
+ * Cliente deve multiplicar pelo preço no `paymentDate` pra yield real.
+ *
+ * Cache: 6h — dividendos não mudam intraday.
  */
 
 export const dynamic = "force-dynamic";
@@ -36,7 +38,7 @@ export async function GET(
 
   try {
     const data = await cached(
-      `brapiDividends:${symbol}`,
+      `brapi:v2:dividends:${symbol}`,
       6 * 3600,
       async () => fetchDividends(symbol),
     );
@@ -51,11 +53,10 @@ export async function GET(
 
 async function fetchDividends(symbol: string): Promise<CashDividend[]> {
   const token = process.env.BRAPI_TOKEN ?? process.env.BRAPI_API_TOKEN ?? "";
-  const params: Record<string, string> = { dividends: "true" };
-  if (token) params.token = token;
-  const qs = new URLSearchParams(params).toString();
+  const params = new URLSearchParams({ symbols: symbol });
+  if (token) params.set("token", token);
   const r = await fetch(
-    `https://brapi.dev/api/quote/${encodeURIComponent(symbol)}?${qs}`,
+    `https://brapi.dev/api/v2/stocks/dividends?${params.toString()}`,
     {
       headers: {
         "User-Agent": "Mozilla/5.0",
@@ -67,8 +68,8 @@ async function fetchDividends(symbol: string): Promise<CashDividend[]> {
   if (!r.ok) return [];
   const data = (await r.json()) as {
     results?: Array<{
-      dividendsData?: { cashDividends?: CashDividend[] };
+      data?: { cashDividends?: CashDividend[] };
     }>;
   };
-  return data.results?.[0]?.dividendsData?.cashDividends ?? [];
+  return data.results?.[0]?.data?.cashDividends ?? [];
 }
