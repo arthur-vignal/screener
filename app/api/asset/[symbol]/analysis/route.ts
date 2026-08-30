@@ -9,6 +9,7 @@ import {
   brapiIncomeStatement,
   brapiCashflow,
   brapiHistorical,
+  brapiTreasuryHistory,
 } from "@/lib/brapi";
 import {
   computeEarningsYieldHistory,
@@ -19,6 +20,8 @@ import {
 } from "@/lib/analytics/valuation-bands";
 import { computeROICvsWACC, type ROICWACCSummary, type ROICWACCPoint } from "@/lib/analytics/roic-wacc";
 import { computeLeverage, type LeverageSummary, type LeveragePoint } from "@/lib/analytics/leverage";
+import { computeYieldComparison, type YieldPoint, type YieldSummary } from "@/lib/analytics/yield-comparison";
+import { computeEquityRiskPremium, type EquityRiskPremiumPoint, type EquityRiskPremiumSummary, NTNB_LONG_SYMBOL } from "@/lib/analytics/equity-risk-premium";
 
 /**
  * /api/asset/[symbol]/analysis — bundle consolidado pra página
@@ -114,6 +117,7 @@ export async function GET(
       cashflowHistoryRaw,
       candles,
       statsHistoryRaw,
+      ntnbHistoryRaw,
     ] = await Promise.all([
       brapiQuote([symbol]),
       brapiProfile(symbol),
@@ -125,6 +129,8 @@ export async function GET(
       brapiCashflow({ symbol, period: "quarterly" }),
       brapiHistorical(symbol, { range: "1y", interval: "1d" }),
       brapiStatistics({ symbol, mode: "history", period: "quarterly" }),
+      // B5: NTN-B 2045 (mais longa líquida listada, 19.7a duration)
+      brapiTreasuryHistory(NTNB_LONG_SYMBOL),
     ]);
 
     const q = quoteMap.get(symbol);
@@ -191,6 +197,12 @@ export async function GET(
 
     // Resposta consolidada — espelha o que /api/asset/[symbol] retorna
     // + extras pros gráficos de /analysis.
+    // Earnings yield history (re-computado aqui para passar adiante pros
+    // B3/B5 que precisam do formato EarningsYieldHistoryPoint).
+    const earningsHistory = computeEarningsYieldHistory(
+      Array.isArray(statsHistoryRaw) ? statsHistoryRaw : null,
+    );
+
     return NextResponse.json({
       symbol: q.symbol,
       shortName: q.shortName,
@@ -217,9 +229,6 @@ export async function GET(
       },
 
       metrics: {
-        trailingPE: (ks.trailingPE as number | null | undefined) ?? null,
-        forwardPE: (ks.forwardPE as number | null | undefined) ?? null,
-        pegRatio: (ks.pegRatio as number | null | undefined) ?? null,
         priceToBook: (ks.priceToBook as number | null | undefined) ?? null,
         bookValue: (ks.bookValue as number | null | undefined) ?? null,
         enterpriseValue: (ks.enterpriseValue as number | null | undefined) ?? null,
@@ -279,6 +288,25 @@ export async function GET(
       // da brapi — equivale a `1/trailingPE[t]` mas com campo explícito.
       earningsYieldHistory: computeEarningsYieldHistory(
         Array.isArray(statsHistoryRaw) ? statsHistoryRaw : null,
+      ),
+
+      // B3: 3 yields (EY + FCFY + DY) no mesmo eixo.
+      // FCF yield = (FCO LTM - CapEx LTM) / market_cap.
+      // DY = proventos 12m / preço. Sem dados de dividendos brapi no
+      // payload atual, DY fica null (provavelmente virá de cache).
+      yieldComparison: computeYieldComparison(
+        earningsHistory,
+        cashflowHistoryRaw,
+        q.marketCap,
+        null, // dividendos histórico — virá via endpoint /dividends separado
+        q.price,
+      ),
+
+      // B5: prêmio de equity vs NTN-B 2045 real.
+      equityRiskPremium: computeEquityRiskPremium(
+        earningsHistory,
+        ntnbHistoryRaw,
+        NTNB_LONG_SYMBOL,
       ),
 
       // Bandas de múltiplo histórico (B1 — feature principal da spec).
