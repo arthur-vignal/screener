@@ -63,7 +63,7 @@ export function AnalysisHero(props: AnalysisHeroProps): JSX.Element {
       ? "—"
       : `${v.toFixed(1)}%`;
   const fmtCDI = (v: number | null) =>
-    v == null ? "—" : `${(v * 365).toFixed(2)}% a.a.`;
+    v == null ? "—" : `${v.toFixed(2)}% a.a.`;
 
   return (
     <div className="rounded-2xl border border-white/10 bg-[#101116] p-6">

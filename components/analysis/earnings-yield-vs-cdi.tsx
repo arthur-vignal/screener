@@ -43,22 +43,15 @@ export function EarningsYieldVsCDI({
   const data = useMemo(() => {
     if (statsHistory.length === 0) return [];
     // Para cada quarter, pega o PE e calcula earnings yield = 1/PE (em %).
-    // Depois pega o CDI anual mais próximo (proxy: último valor diário
-    // do quarter, anualizado por *365).
-    const cdiByDate = new Map<string, number>();
-    if (cdiDaily) {
-      for (const o of cdiDaily) cdiByDate.set(o.date, o.value);
-    }
-    const cdiAnnualByDate = new Map<string, number>();
-    for (const o of cdiDaily ?? []) {
-      cdiAnnualByDate.set(o.date, o.value * 365);
-    }
+    // Depois pega o CDI anualizado do mês correspondente. A série 4389
+    // (BCB CDI Over) já vem anualizada em % a.a., então não multiplica
+    // por 365 (isso daria 4980% errado).
     // Agrupa CDI por mês pra alinhar com quarters (que são mensais).
     const cdiMonthlyAvg = new Map<string, number[]>();
     for (const o of cdiDaily ?? []) {
       const month = o.date.slice(0, 7); // YYYY-MM
       if (!cdiMonthlyAvg.has(month)) cdiMonthlyAvg.set(month, []);
-      cdiMonthlyAvg.get(month)!.push(o.value * 365);
+      cdiMonthlyAvg.get(month)!.push(o.value);
     }
     const cdiMonthMap = new Map<string, number>();
     for (const [k, vs] of cdiMonthlyAvg) {
