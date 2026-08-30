@@ -59,7 +59,7 @@ export function ROICVsWACC({
           title="ROIC vs WACC"
           subtitle="Capital investido não tem significado em Financial Services"
         />
-        <div className="h-[200px] flex items-center justify-center text-[10px] text-muted-foreground/55 text-center px-6">
+        <div className="h-[200px] flex items-center justify-center text-[10px] text-foreground/60 text-center px-6">
           Setor financeiro: capital regulatório ≠ capital operacional.
           Pra bancos, use métricas próprias (ROE, Índice de Basileia).
         </div>
@@ -158,7 +158,7 @@ export function ROICVsWACC({
                 if (!d) return null;
                 return (
                   <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                    <div className="text-[10px] text-muted-foreground/70 mb-1">
+                    <div className="text-[10px] text-foreground/70 mb-1">
                       {label}
                     </div>
                     <div className="text-[11px] tabular-nums text-[var(--positive)]">
@@ -179,7 +179,7 @@ export function ROICVsWACC({
                         {Math.abs(d.spread).toFixed(2)} pp
                       </div>
                     )}
-                    <div className="text-[9px] text-muted-foreground/55 mt-2 leading-tight border-t border-white/[0.05] pt-1.5">
+                    <div className="text-[9px] text-foreground/60 mt-2 leading-tight border-t border-white/[0.05] pt-1.5">
                       Premissas: ERP {summary.settings.erp}% · β {summary.beta?.toFixed(2) ?? "1.00"} · Ke{" "}
                       {summary.settings.riskFreeRate}% · t{" "}
                       {summary.settings.marginalTaxRate}%
@@ -224,7 +224,7 @@ export function ROICVsWACC({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-3 flex items-center gap-3 text-[10px] text-muted-foreground/70 flex-wrap">
+      <div className="mt-3 flex items-center gap-3 text-[10px] text-foreground/70 flex-wrap">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-px bg-[var(--positive)]" />
           <span>ROIC</span>
@@ -233,7 +233,7 @@ export function ROICVsWACC({
           <span className="inline-block w-3 h-px bg-[#489ffa]" />
           <span>WACC</span>
         </div>
-        <div className="text-muted-foreground/45">
+        <div className="text-foreground/60">
           ROIC {last?.roic?.toFixed(1)}% vs WACC {last?.wacc?.toFixed(1)}%
         </div>
       </div>

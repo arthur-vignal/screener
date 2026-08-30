@@ -138,7 +138,7 @@ export function EquityRiskPremium({
                 if (!d) return null;
                 return (
                   <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                    <div className="text-[10px] text-muted-foreground/70 mb-1">
+                    <div className="text-[10px] text-foreground/70 mb-1">
                       {label}
                     </div>
                     <div className="text-[11px] tabular-nums text-[var(--positive)]">
@@ -163,7 +163,7 @@ export function EquityRiskPremium({
                         {Math.abs(d.premium).toFixed(2)}pp
                       </div>
                     )}
-                    <div className="text-[9px] text-muted-foreground/50 mt-1.5 leading-tight border-t border-white/[0.05] pt-1.5">
+                    <div className="text-[9px] text-foreground/70/50 mt-1.5 leading-tight border-t border-white/[0.05] pt-1.5">
                       EY nominal, NTN-B real. Spread = repasse
                       inflacionário implícito + prêmio de risco.
                     </div>
@@ -207,7 +207,7 @@ export function EquityRiskPremium({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-3 flex items-center gap-3 text-[10px] text-muted-foreground/70 flex-wrap">
+      <div className="mt-3 flex items-center gap-3 text-[10px] text-foreground/70 flex-wrap">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-px bg-[var(--positive)]" />
           <span>EY (nominal)</span>
@@ -222,7 +222,7 @@ export function EquityRiskPremium({
           />
           <span>NTN-B 2045 (real)</span>
         </div>
-        <div className="text-muted-foreground/45">
+        <div className="text-foreground/60">
           Atual: EY {summary.earningsYield?.toFixed(1)}% vs NTN-B {summary.ntnbRate?.toFixed(1)}%
         </div>
       </div>

@@ -106,10 +106,10 @@ export function ValuationBands({
   const current = valuationBands[tab];
 
   const percentileColor = useMemo(() => {
-    if (current.percentile == null) return "text-muted-foreground/70";
+    if (current.percentile == null) return "text-foreground/70";
     if (current.percentile < 25) return "text-[var(--positive)]";
     if (current.percentile > 75) return "text-[var(--negative)]";
-    return "text-muted-foreground/85";
+    return "text-foreground/85";
   }, [current.percentile]);
 
   const sigmaZ = useMemo(() => {
@@ -146,7 +146,7 @@ export function ValuationBands({
           title="Bandas de múltiplo"
           subtitle={`Histórico insuficiente (${current.count} obs · mínimo 12)`}
         />
-        <div className="h-[200px] flex items-center justify-center text-[10px] text-muted-foreground/55">
+        <div className="h-[200px] flex items-center justify-center text-[10px] text-foreground/60">
           Sem histórico suficiente pra calcular bandas.
         </div>
       </ChartCard>
@@ -168,7 +168,7 @@ export function ValuationBands({
             <div className={`text-[14px] font-semibold tabular-nums ${percentileColor}`}>
               {current.current != null ? `${current.current.toFixed(2)}×` : "—"}
             </div>
-            <div className="text-[9px] text-muted-foreground/55">
+            <div className="text-[9px] text-foreground/60">
               {current.percentile != null
                 ? `p${Math.round(current.percentile)} · ${
                     sigmaZ != null ? `${sigmaZ >= 0 ? "+" : "−"}${Math.abs(sigmaZ).toFixed(1)}σ` : ""
@@ -191,7 +191,7 @@ export function ValuationBands({
               className={`text-[10px] font-semibold px-2.5 py-1 rounded transition-colors ${
                 active
                   ? "bg-white/[0.06] text-foreground"
-                  : "text-muted-foreground/60 hover:text-muted-foreground/85"
+                  : "text-foreground/60 hover:text-foreground/85"
               }`}
             >
               {t.label}
@@ -249,18 +249,18 @@ export function ValuationBands({
                   raw != null && Math.abs(raw.value - d.value) > 0.001;
                 return (
                   <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                    <div className="text-[10px] text-muted-foreground/70 mb-1">
+                    <div className="text-[10px] text-foreground/70 mb-1">
                       {label}
                     </div>
                     <div className="text-[11px] tabular-nums text-[var(--positive)]">
                       Múltiplo: {d.value.toFixed(2)}×
                     </div>
                     {isClipped && raw && (
-                      <div className="text-[9px] text-muted-foreground/55 mt-0.5">
+                      <div className="text-[9px] text-foreground/60 mt-0.5">
                         raw: {raw.value.toFixed(2)}× (winsorizado)
                       </div>
                     )}
-                    <div className="text-[10px] tabular-nums text-muted-foreground/85 mt-1">
+                    <div className="text-[10px] tabular-nums text-foreground/85 mt-1">
                       Média 5a: {d.mean.toFixed(2)}×
                     </div>
                   </div>
@@ -339,7 +339,7 @@ export function ValuationBands({
       {fairValueData.length >= 4 && lastFair && (
         <>
           <div className="mt-4 mb-2 flex items-center justify-between">
-            <div className="text-[10px] text-muted-foreground/70">
+            <div className="text-[10px] text-foreground/70">
               Preço vs valor justo (EPS LTM × P/L médio 5a = {valuationBands.peMean5a?.toFixed(1)}×)
             </div>
             <div
@@ -394,11 +394,11 @@ export function ValuationBands({
                     if (!d) return null;
                     return (
                       <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                        <div className="text-[10px] text-muted-foreground/70 mb-1">{label}</div>
+                        <div className="text-[10px] text-foreground/70 mb-1">{label}</div>
                         <div className="text-[11px] tabular-nums text-[var(--positive)]">
                           Preço: R$ {d.price.toFixed(2)}
                         </div>
-                        <div className="text-[11px] tabular-nums text-muted-foreground/85">
+                        <div className="text-[11px] tabular-nums text-foreground/85">
                           Fair value: R$ {d.fairValue.toFixed(2)}
                         </div>
                       </div>
@@ -433,7 +433,7 @@ export function ValuationBands({
         </>
       )}
 
-      <div className="mt-3 flex items-center gap-3 text-[10px] text-muted-foreground/70 flex-wrap">
+      <div className="mt-3 flex items-center gap-3 text-[10px] text-foreground/70 flex-wrap">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-px bg-[var(--positive)]" />
           <span>{TABS.find((t) => t.key === tab)?.label}</span>

@@ -147,7 +147,7 @@ export function MarginTrend({
                 if (!d) return null;
                 return (
                   <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                    <div className="text-[10px] text-muted-foreground/70 mb-1">
+                    <div className="text-[10px] text-foreground/70 mb-1">
                       {label}
                     </div>
                     <div className="text-[11px] tabular-nums text-[#489ffa]">
@@ -156,7 +156,7 @@ export function MarginTrend({
                     <div className="text-[11px] tabular-nums text-[var(--positive)]">
                       Operating: {d.operating.toFixed(1)}%
                     </div>
-                    <div className="text-[11px] tabular-nums text-muted-foreground/85">
+                    <div className="text-[11px] tabular-nums text-foreground/85">
                       Profit: {d.profit.toFixed(1)}%
                     </div>
                   </div>
@@ -197,7 +197,7 @@ export function MarginTrend({
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-3 flex items-center gap-3 text-[10px] text-muted-foreground/70">
+      <div className="mt-3 flex items-center gap-3 text-[10px] text-foreground/70">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-2.5 h-2.5 rounded-sm bg-[#489ffa]/60" />
           <span>Gross</span>
@@ -207,7 +207,7 @@ export function MarginTrend({
           <span>Operating</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-muted-foreground/55" />
+          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-foreground/45" />
           <span>Profit</span>
         </div>
       </div>

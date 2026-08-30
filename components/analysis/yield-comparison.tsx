@@ -96,7 +96,7 @@ export function YieldComparison({
                   ? "bg-[var(--negative)]/15 text-[var(--negative)]"
                   : summary.earningsFcfGapAvg < -1
                     ? "bg-[var(--positive)]/15 text-[var(--positive)]"
-                    : "bg-white/[0.06] text-muted-foreground/85"
+                    : "bg-white/[0.06] text-foreground/85"
               }`}
             >
               {summary.earningsFcfGapAvg >= 0 ? "+" : "−"}
@@ -141,7 +141,7 @@ export function YieldComparison({
                     : null;
                 return (
                   <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                    <div className="text-[10px] text-muted-foreground/70 mb-1">
+                    <div className="text-[10px] text-foreground/70 mb-1">
                       {label}
                     </div>
                     <div className="text-[11px] tabular-nums text-[var(--positive)]">
@@ -159,7 +159,7 @@ export function YieldComparison({
                         ? `${d.fcfYield.toFixed(2)}%`
                         : "—"}
                     </div>
-                    <div className="text-[11px] tabular-nums text-muted-foreground/85">
+                    <div className="text-[11px] tabular-nums text-foreground/85">
                       DY:{" "}
                       {d.dividendYield != null
                         ? `${d.dividendYield.toFixed(2)}%`
@@ -177,7 +177,7 @@ export function YieldComparison({
                         {Math.abs(gap).toFixed(2)}pp
                       </div>
                     )}
-                    <div className="text-[9px] text-muted-foreground/50 mt-1.5 leading-tight border-t border-white/[0.05] pt-1.5">
+                    <div className="text-[9px] text-foreground/60 mt-1.5 leading-tight border-t border-white/[0.05] pt-1.5">
                       DY bruto (não líquido de IR).
                     </div>
                   </div>
@@ -231,7 +231,7 @@ export function YieldComparison({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-3 flex items-center gap-3 text-[10px] text-muted-foreground/70 flex-wrap">
+      <div className="mt-3 flex items-center gap-3 text-[10px] text-foreground/70 flex-wrap">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-px bg-[var(--positive)]" />
           <span>EY (1/trailingPE)</span>

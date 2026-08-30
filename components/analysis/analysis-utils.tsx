@@ -124,7 +124,7 @@ export function ChartCardHeader({
           {title}
         </div>
         {subtitle && (
-          <div className="text-[10px] text-muted-foreground/70 mt-0.5">
+          <div className="text-[11px] text-foreground/60 mt-0.5">
             {subtitle}
           </div>
         )}

@@ -185,7 +185,7 @@ export function PESelicScatter({
                     <div className="text-[12px] font-semibold tabular-nums text-foreground">
                       P/L: {d.pe.toFixed(2)}x
                     </div>
-                    <div className="text-[10px] text-muted-foreground/70 tabular-nums">
+                    <div className="text-[10px] text-foreground/70 tabular-nums">
                       SELIC: {d.selic.toFixed(2)}%
                     </div>
                   </div>

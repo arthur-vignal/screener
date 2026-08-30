@@ -144,7 +144,7 @@ export function PeerScatter({
           title="Qualidade × Múltiplo (peers)"
           subtitle="Sem peers com dados suficientes"
         />
-        <div className="h-[200px] flex items-center justify-center text-[10px] text-muted-foreground/55">
+        <div className="h-[200px] flex items-center justify-center text-[10px] text-foreground/60">
           Nenhum peer com ROE e EV/EBITDA conhecidos.
         </div>
       </ChartCard>
@@ -265,7 +265,7 @@ export function PeerScatter({
                 if (!d) return null;
                 return (
                   <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                    <div className="text-[10px] text-muted-foreground/70 mb-1">
+                    <div className="text-[10px] text-foreground/70 mb-1">
                       {d.isAsset ? "★ Ativo" : d.symbol}
                     </div>
                     <div className="text-[11px] tabular-nums text-[var(--positive)]">
@@ -311,7 +311,7 @@ export function PeerScatter({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-3 flex items-center gap-3 text-[10px] text-muted-foreground/70 flex-wrap">
+      <div className="mt-3 flex items-center gap-3 text-[10px] text-foreground/70 flex-wrap">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-2 h-2 rounded-full bg-[var(--muted)]" />
           <span>Peers (n={peers.length})</span>
@@ -332,12 +332,12 @@ export function PeerScatter({
             <span>OLS (regressão linear)</span>
           </div>
         ) : (
-          <div className="text-muted-foreground/45">
+          <div className="text-foreground/60">
             Mínimo 5 peers pra OLS (atual: {peers.length})
           </div>
         )}
         {medians.roe != null && medians.evEbitda != null && (
-          <div className="text-muted-foreground/45">
+          <div className="text-foreground/60">
             Mediana subsetor: ROE {(medians.roe * 100).toFixed(1)}% · EV/EBITDA{" "}
             {medians.evEbitda.toFixed(1)}×
           </div>

@@ -23,7 +23,6 @@ import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ChevronDown, GitBranch } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   computeReturnBridge,
   RETURN_BRIDGE_WINDOWS,
@@ -118,10 +117,10 @@ export function ReturnBridge({ series }: Props) {
   if (result.insufficient || data.length === 0) {
     return (
       <Card className="bg-[var(--surface)] border-[var(--border)] p-5">
-        <div className="text-sm text-[var(--muted)]">
+        <div className="text-sm text-foreground/70">
           Sem dados suficientes pra decompor o retorno em {windowYearsY(windowYears)}.
           <br />
-          <span className="text-xs">
+          <span className="text-xs text-foreground/55">
             É preciso histórico de EPS e P/L com pelo menos um ponto no início da
             janela. Stats-history da brapi cobre ~{series.length || 0} quarters.
           </span>
@@ -138,22 +137,23 @@ export function ReturnBridge({ series }: Props) {
     <Card className="bg-[var(--surface)] border-[var(--border)] p-5">
       <header className="flex items-start justify-between gap-3 mb-4">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 text-[var(--muted)] text-xs uppercase tracking-wide mb-1">
+            <div className="flex items-center gap-2 text-foreground/60 text-[13px] font-semibold tracking-tight mb-1">
               <GitBranch className="size-3.5" />
-              Ponte de retorno · {windowYearsY(windowYears)}
+              Ponte de retorno
             </div>
             <div className="flex items-baseline gap-3 flex-wrap">
-              <span className="text-3xl font-semibold tabular-nums text-[var(--foreground)]">
+              <span className="text-[28px] font-bold tabular-nums tracking-tight text-foreground">
                 {formatPct(total)}
               </span>
-              <span className="text-xs text-[var(--muted)]">
-                retorno total · {result.startDate} → {result.endDate}
+              <span className="text-[12px] text-foreground/55 tabular-nums">
+                {windowYearsY(windowYears)} · {result.startDate} → {result.endDate}
               </span>
             </div>
             {dominatedBy && (
-              <div className="mt-2 text-xs text-[var(--muted)]">
-                Dominado por <strong className="text-[var(--foreground)] font-medium">{dominatedBy.label}</strong>{" "}
-                ({formatPct(dominatedBy.value)}).
+              <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.06]">
+                <span className="text-foreground/60">dominante</span>
+                <span className="font-semibold text-foreground">{dominatedBy.label}</span>
+                <span className="text-foreground/70 tabular-nums">{formatPct(dominatedBy.value)}</span>
               </div>
             )}
           </div>
@@ -161,25 +161,7 @@ export function ReturnBridge({ series }: Props) {
           <WindowSelector value={windowYears} onChange={setWindowYears} />
         </header>
 
-        {/* Badge resumo — decomposition sanity check */}
-        <div className="flex flex-wrap gap-2 mb-3">
-          <Badge tone="neutral" className="font-normal text-xs">
-            Δ preço: {formatPct(result.priceReturn)}
-          </Badge>
-          <Badge tone="brand" className="font-normal text-xs">
-            Dividendos: {formatPct(result.dividendYieldTotal * 100)}
-          </Badge>
-          {Math.abs(result.reconciliationGap) > 0.5 && (
-            <Badge
-              tone="negative"
-              className="font-normal text-xs"
-            >
-              Gap reconciliação: {formatPct(result.reconciliationGap)}
-            </Badge>
-          )}
-        </div>
-
-        <div className="h-56 w-full">
+        <div className="h-[260px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
@@ -189,18 +171,18 @@ export function ReturnBridge({ series }: Props) {
               <CartesianGrid stroke="var(--border)" strokeDasharray="2 4" vertical={false} />
               <XAxis
                 dataKey="label"
-                tick={{ fill: "var(--muted)", fontSize: 11 }}
-                axisLine={{ stroke: "var(--border)" }}
+                tick={{ fill: "rgba(238,239,241,0.7)", fontSize: 11 }}
+                axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
                 tickLine={false}
               />
               <YAxis
                 tickFormatter={(v: number) => `${v.toFixed(0)}%`}
-                tick={{ fill: "var(--muted)", fontSize: 11 }}
+                tick={{ fill: "rgba(238,239,241,0.7)", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
                 width={42}
               />
-              <ReferenceLine y={0} stroke="var(--border)" />
+              <ReferenceLine y={0} stroke="rgba(255,255,255,0.10)" />
               <Tooltip
                 cursor={{ fill: "rgba(255,255,255,0.04)" }}
                 content={({ active, payload }) => {
@@ -211,17 +193,17 @@ export function ReturnBridge({ series }: Props) {
                   const value = d.value * (d.kind === "negative" ? -1 : 1);
                   return (
                     <div className="rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-xs shadow-md max-w-[260px]">
-                      <div className="font-medium text-[var(--foreground)] mb-1">
+                      <div className="font-semibold text-foreground mb-1">
                         {d.label}
                       </div>
-                      <div className="text-[var(--muted)] mb-1">
-                        <span className="tabular-nums text-[var(--foreground)]">
+                      <div className="text-foreground/70 mb-1">
+                        <span className="tabular-nums text-foreground font-semibold">
                           {sign}
                           {Math.abs(value).toFixed(2)}%
                         </span>{" "}
                         do retorno total
                       </div>
-                      <div className="text-[var(--muted)] leading-relaxed">
+                      <div className="text-foreground/55 leading-relaxed">
                         {d.description}
                       </div>
                     </div>
@@ -240,15 +222,6 @@ export function ReturnBridge({ series }: Props) {
             </BarChart>
           </ResponsiveContainer>
         </div>
-
-        <footer className="mt-3 pt-3 border-t border-[var(--border)]/60 text-[11px] text-[var(--muted)] leading-relaxed">
-          Retorno total = (1 + Δpreço) × (1 + Σdividendos/preço) − 1. Decomposto em
-          logaritmo: <code className="text-[var(--foreground)]">ln(1+r) ≈ ΔLucro + ΔMúltiplo + Outros + Dividendos</code>.
-          <br />
-          ΔLucro = ln(EPS<sub>final</sub>/EPS<sub>inicial</sub>). ΔMúltiplo = ln(PE<sub>final</sub>/PE<sub>inicial</sub>).
-          Dividendos = soma bruta de proventos por ação no período / preço inicial.
-          Outros = resíduo quando preço ≠ EPS × PE (inconsistência temporal nos dados brapi).
-        </footer>
     </Card>
   );
 }

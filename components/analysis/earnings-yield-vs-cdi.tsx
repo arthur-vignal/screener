@@ -93,7 +93,7 @@ export function EarningsYieldVsCDI({
       ? spread >= 0
         ? "text-[var(--positive)]"
         : "text-[var(--negative)]"
-      : "text-muted-foreground/70";
+      : "text-foreground/70";
 
   return (
     <ChartCard className={className}>
@@ -168,14 +168,14 @@ export function EarningsYieldVsCDI({
                 if (!d) return null;
                 return (
                   <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                    <div className="text-[10px] text-muted-foreground/70">
+                    <div className="text-[10px] text-foreground/70">
                       {d.endDate}
                     </div>
                     <div className="text-[12px] font-semibold tabular-nums text-[var(--positive)]">
                       EY: {d.earningsYield.toFixed(2)}%
                     </div>
                     {d.cdi != null && (
-                      <div className="text-[10px] tabular-nums text-muted-foreground/85">
+                      <div className="text-[10px] tabular-nums text-foreground/85">
                         CDI: {d.cdi.toFixed(2)}%
                       </div>
                     )}
@@ -209,7 +209,7 @@ export function EarningsYieldVsCDI({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-3 flex items-center gap-4 text-[10px] text-muted-foreground/70">
+      <div className="mt-3 flex items-center gap-4 text-[10px] text-foreground/70">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-px bg-[var(--positive)]" />
           <span>Earnings yield (1/P/L)</span>

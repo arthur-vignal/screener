@@ -64,7 +64,7 @@ export function LeverageChart({
           title="Alavancagem"
           subtitle="Setor financeiro: dívida líquida / EBITDA não é a métrica certa"
         />
-        <div className="h-[200px] flex items-center justify-center text-[10px] text-muted-foreground/55 text-center px-6">
+        <div className="h-[200px] flex items-center justify-center text-[10px] text-foreground/60 text-center px-6">
           Bancos e seguradoras têm estrutura de capital diferente.
           Métrica apropriada: Índice de Basileia, Inadimplência, Spread.
         </div>
@@ -152,7 +152,7 @@ export function LeverageChart({
                 if (!d) return null;
                 return (
                   <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                    <div className="text-[10px] text-muted-foreground/70 mb-1">
+                    <div className="text-[10px] text-foreground/70 mb-1">
                       {label}
                     </div>
                     <div className="text-[11px] tabular-nums">
@@ -160,7 +160,7 @@ export function LeverageChart({
                       {d.leverage != null ? `${d.leverage.toFixed(2)}×` : "—"}
                     </div>
                     {d.netDebt != null && (
-                      <div className="text-[10px] tabular-nums text-muted-foreground/70">
+                      <div className="text-[10px] tabular-nums text-foreground/70">
                         Dívida líquida:{" "}
                         {d.netDebt < 0
                           ? `−R$ ${(Math.abs(d.netDebt) / 1e9).toFixed(1)}B (caixa)`
@@ -168,7 +168,7 @@ export function LeverageChart({
                       </div>
                     )}
                     {d.ebitdaLtm != null && (
-                      <div className="text-[10px] tabular-nums text-muted-foreground/70">
+                      <div className="text-[10px] tabular-nums text-foreground/70">
                         EBITDA LTM: R$ {(d.ebitdaLtm / 1e9).toFixed(1)}B
                       </div>
                     )}
@@ -216,11 +216,11 @@ export function LeverageChart({
 
       {/* Cobertura de juros */}
       <div className="mt-3 mb-1 flex items-center justify-between">
-        <div className="text-[10px] text-muted-foreground/70">
+        <div className="text-[10px] text-foreground/70">
           Cobertura de juros (EBIT / despesa financeira LTM)
         </div>
         {summary.coverage != null && (
-          <div className="text-[10px] tabular-nums text-muted-foreground/55">
+          <div className="text-[10px] tabular-nums text-foreground/60">
             {summary.coverage.toFixed(2)}×
           </div>
         )}
@@ -257,7 +257,7 @@ export function LeverageChart({
                 if (!d) return null;
                 return (
                   <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                    <div className="text-[10px] text-muted-foreground/70 mb-1">
+                    <div className="text-[10px] text-foreground/70 mb-1">
                       {label}
                     </div>
                     <div className="text-[11px] tabular-nums">
@@ -289,7 +289,7 @@ export function LeverageChart({
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-3 flex items-center gap-3 text-[10px] text-muted-foreground/70 flex-wrap">
+      <div className="mt-3 flex items-center gap-3 text-[10px] text-foreground/70 flex-wrap">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-2.5 h-2.5 rounded-sm bg-[var(--positive)]/15" />
           <span>&lt; 2×</span>
