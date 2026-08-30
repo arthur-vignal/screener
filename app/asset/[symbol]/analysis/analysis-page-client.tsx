@@ -292,7 +292,7 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
             title="Valuation contextualizada"
             question="Está caro ou barato em relação ao que rende a renda fixa?"
           />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
             {/* B1 (spec 2026-08-29): ValuationBands substitui PESelicScatter
                 na seção 1. Mostra o múltiplo histórico (P/L | EV/EBITDA |
                 P/VP) com bandas ±1σ/±2σ, percentil atual e sub-gráfico
@@ -337,8 +337,8 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
             title="Qualidade do ativo"
             question="Quão lucrativo é o negócio e quem está segurando?"
           />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-4">
-            <div className="lg:col-span-2 flex flex-col gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
+            <div className="flex flex-col gap-5">
               <MarginTrend
                 history={bundle?.marginsHistory ?? []}
                 limit={16}
@@ -379,7 +379,7 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
             title="Earnings power vs macro"
             question="O ativo está gerando valor acima do custo de oportunidade?"
           />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
             <EarningsYieldVsRiskFree
               earningsYieldHistory={bundle?.earningsYieldHistory ?? []}
               selic={selicMacro}
@@ -398,7 +398,7 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
             title="Quanto você espera ganhar"
             question="A ação paga mais que a renda fixa?"
           />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
             <YieldComparison
               series={bundle?.yieldComparison.series ?? []}
               summary={bundle?.yieldComparison.summary ?? {
