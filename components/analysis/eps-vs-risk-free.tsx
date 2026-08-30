@@ -207,8 +207,9 @@ export function EPSVsRiskFree({
               type="monotone"
               dataKey="selic"
               stroke="#489ffa"
-              strokeWidth={1.5}
-              strokeDasharray="3 3"
+              strokeWidth={2}
+              strokeOpacity={1}
+              strokeDasharray="5 3"
               dot={false}
               activeDot={{ r: 4, fill: "#489ffa" }}
               isAnimationActive={true}
