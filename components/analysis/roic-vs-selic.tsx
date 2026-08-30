@@ -212,7 +212,6 @@ export function ROICVsSelic({
               stroke="#489ffa"
               strokeWidth={2}
               strokeOpacity={1}
-              strokeDasharray="5 3"
               dot={false}
               activeDot={{ r: 4, fill: "#489ffa" }}
               isAnimationActive={true}
@@ -228,13 +227,7 @@ export function ROICVsSelic({
           <span>ROE (retorno sobre equity)</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span
-            className="inline-block w-3 h-px"
-            style={{
-              background:
-                "repeating-linear-gradient(90deg, #489ffa 0 3px, transparent 3px 6px)",
-            }}
-          />
+          <span className="inline-block w-3 h-px bg-[#489ffa]" />
           <span>SELIC (proxy WACC)</span>
         </div>
       </div>
