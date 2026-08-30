@@ -66,8 +66,15 @@ export function EPSVsRiskFree({
     for (const [k, vs] of selicMonthly) {
       selicByMonth.set(k, vs.reduce((s, v) => s + v, 0) / vs.length);
     }
+    // BCB SELIC limita janela em 10 anos. Pra alinhar os gráficos,
+    // limitamos incomeHistory à mesma janela.
+    const BCB_WINDOW_START = "2016-08-01";
+
     return [...incomeHistory]
-      .filter((r) => r.basicEarningsPerShare != null)
+      .filter(
+        (r) =>
+          r.basicEarningsPerShare != null && r.endDate >= BCB_WINDOW_START,
+      )
       .sort((a, b) => a.endDate.localeCompare(b.endDate))
       .slice(-limit)
       .map((r) => {

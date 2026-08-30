@@ -111,6 +111,10 @@ export function RevenueVsPIB({
   ibcBr,
   className,
 }: Props): JSX.Element | null {
+  // BCB IBC-Br limita janela em 20 anos. Pra alinhar, limitamos
+  // incomeHistory à mesma janela (10 anos de qualquer jeito).
+  const BCB_WINDOW_START = "2006-08-01";
+
   const data = useMemo(() => {
     const revYoY = buildRevenueYoY(incomeHistory);
     const ibcYoY = buildIBCBrYoY(ibcBr);
@@ -122,6 +126,7 @@ export function RevenueVsPIB({
       }
     }
     return revYoY
+      .filter((r) => r.endDate >= BCB_WINDOW_START)
       .map((r) => {
         const month = r.endDate.slice(0, 7);
         return {

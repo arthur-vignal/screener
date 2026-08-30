@@ -58,10 +58,14 @@ export function ROICVsSelic({
   selic,
   className,
 }: Props): JSX.Element | null {
+  // BCB SELIC limita janela em 10 anos (atual). Pra alinhar os
+  // gráficos, limitamos as séries do ativo à mesma janela.
+  const BCB_WINDOW_START = "2016-08-01";
+
   const data = useMemo(() => {
     const selicByMonth = alignSelicToQuarters(selic);
     return marginsHistory
-      .filter((r) => r.returnOnEquity != null)
+      .filter((r) => r.returnOnEquity != null && r.endDate >= BCB_WINDOW_START)
       .sort((a, b) => a.endDate.localeCompare(b.endDate))
       .map((r) => {
         const month = r.endDate.slice(0, 7);

@@ -130,15 +130,32 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
     revalidateOnFocus: false,
   });
 
+  // Macro histórico (10 anos SELIC/CDI, 20 anos IBC-Br) via BCB SGS.
+  // brapi limita SELIC/CDI a ~1.5 anos, então usamos BCB pra ter
+  // histórico comparável ao do ativo (que vai de 2016+).
+  type BcbResponse = {
+    series: {
+      selic?: Array<{ date: string; value: number }>;
+      cdi?: Array<{ date: string; value: number }>;
+      ibcbr?: Array<{ date: string; value: number }>;
+    };
+  };
+  const { data: bcbData } = useSWR<BcbResponse>(
+    `/api/macro/bcb?series=selic,cdi,ibcbr`,
+    fetchJson,
+    { revalidateOnFocus: false },
+  );
+
   const peers: Peer[] = useMemo(
     () => peerData?.peers ?? [],
     [peerData],
   );
 
-  const selicMacro = bundle?.macro?.selic ?? null;
+  // Preferência: BCB (longo) > bundle.macro (brapi, curto).
+  const selicMacro = bcbData?.series?.selic ?? bundle?.macro?.selic ?? null;
+  const ibcBrMacro = bcbData?.series?.ibcbr ?? bundle?.macro?.ibcbr ?? null;
+  const cdiMacro = bcbData?.series?.cdi ?? bundle?.macro?.cdi ?? null;
   const ipca12mMacro = bundle?.macro?.ipca12m ?? null;
-  const cdiMacro = bundle?.macro?.cdi ?? null;
-  const ibcBrMacro = bundle?.macro?.ibcbr ?? null;
 
   const lastSelic =
     selicMacro && selicMacro.length > 0
