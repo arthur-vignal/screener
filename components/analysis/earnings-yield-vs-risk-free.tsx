@@ -1,20 +1,21 @@
 "use client";
 
 /**
- * EPSYieldVsSelic — earnings yield (EPS/price) vs SELIC real.
+ * EarningsYieldVsRiskFree — earnings yield histórico vs SELIC.
  *
- * Earnings yield = EPS / currentPrice × 100. Quando a linha do earnings
- * yield (verde) está acima da SELIC (azul tracejado), a ação paga mais
- * que a renda fixa. Mesma unidade (% a.a.) — eixo Y único, sem dual-axis.
+ * Mostra a evolução do earnings yield (= 1/trailingPE) ao longo do tempo,
+ * comparado com a SELIC. Quando o EY está acima da SELIC (azul), a ação
+ * paga mais que a renda fixa.
  *
- * Visual:
- *   EY % / SELIC %
- *    ^
- *  20%┤   ● EPS yield
- *  15%┤
- *  10%┤
- *   5%┤ ─ ─ ─ SELIC (~14%) ─ ─ ─ ─ ─ ─
- *      └────────────────────────────────
+ * Diferença vs versão anterior (fix A1 da spec 2026-08-29):
+ *   - Antes: EPS / currentPrice × 100 (yield implícito se o preço se
+ *     mantivesse constante — distorcia todos os pontos passados)
+ *   - Agora: server retorna `earningsYieldHistory` calculado via
+ *     1/trailingPE[t] (equivalente à definição de "earnings yield" da
+ *     brapi) usando preço histórico.
+ *
+ * Mesma unidade (% a.a.) — eixo Y único, sem dual-axis. Linha sólida
+ * verde (EY) + linha sólida azul (SELIC).
  */
 
 import { useMemo } from "react";
@@ -31,31 +32,32 @@ import {
 
 import { ChartCard, ChartCardHeader, tooltipWrapperStyle } from "./analysis-utils";
 
-type IncomeRow = {
-  endDate: string;
-  basicEarningsPerShare?: number | null;
-};
 type MacroObs = { date: string; value: number };
 
+export type EarningsYieldHistoryPoint = {
+  endDate: string;
+  epsLtm: number | null;
+  price: number | null;
+  earningsYield: number | null;
+};
+
 type Props = {
-  incomeHistory: IncomeRow[];
+  earningsYieldHistory: EarningsYieldHistoryPoint[];
   selic: MacroObs[] | null;
-  /** Preço atual pra calcular earnings yield. */
-  currentPrice: number | null;
   /** Limite de quarters a plotar (default 16). */
   limit?: number;
   className?: string;
 };
 
-export function EPSVsRiskFree({
-  incomeHistory,
+export function EarningsYieldVsRiskFree({
+  earningsYieldHistory,
   selic,
-  currentPrice,
   limit = 16,
   className,
 }: Props): JSX.Element | null {
   const data = useMemo(() => {
-    if (!selic || incomeHistory.length === 0) return [];
+    if (!selic || earningsYieldHistory.length === 0) return [];
+    // Média de SELIC por mês pra alinhar com quarters.
     const selicMonthly = new Map<string, number[]>();
     for (const o of selic) {
       const month = o.date.slice(0, 7);
@@ -66,14 +68,16 @@ export function EPSVsRiskFree({
     for (const [k, vs] of selicMonthly) {
       selicByMonth.set(k, vs.reduce((s, v) => s + v, 0) / vs.length);
     }
-    // BCB SELIC limita janela em 10 anos. Pra alinhar os gráficos,
-    // limitamos incomeHistory à mesma janela.
-    const BCB_WINDOW_START = "2016-08-01";
 
-    return [...incomeHistory]
+    return [...earningsYieldHistory]
       .filter(
         (r) =>
-          r.basicEarningsPerShare != null && r.endDate >= BCB_WINDOW_START,
+          r.earningsYield != null &&
+          // Winsorizar outliers históricos (anos de boom cíclico). Mantém
+          // o ponto mas clampa em ±80% pra escala do gráfico não ser
+          // dominada por eles. Não mascara — só protege o eixo Y.
+          // (Anotação: outlier >40% é real em cíclicas; logar no server.)
+          Math.abs(r.earningsYield) <= 80,
       )
       .sort((a, b) => a.endDate.localeCompare(b.endDate))
       .slice(-limit)
@@ -81,17 +85,11 @@ export function EPSVsRiskFree({
         const month = r.endDate.slice(0, 7);
         return {
           endDate: r.endDate,
-          // Earnings yield = EPS / price × 100. Mas EPS varia por quarter
-          // e preço é "agora" — usamos o preço atual como referência
-          // (yield implícito se o preço se mantivesse constante).
-          earningsYield:
-            currentPrice != null && currentPrice > 0
-              ? ((r.basicEarningsPerShare ?? 0) / currentPrice) * 100
-              : null,
+          earningsYield: r.earningsYield,
           selic: selicByMonth.get(month) ?? null,
         };
       });
-  }, [incomeHistory, selic, currentPrice, limit]);
+  }, [earningsYieldHistory, selic, limit]);
 
   if (data.length < 2) return null;
 
@@ -228,7 +226,7 @@ export function EPSVsRiskFree({
       <div className="mt-3 flex items-center gap-3 text-[10px] text-muted-foreground/70">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-px bg-[var(--positive)]" />
-          <span>Earnings yield (EPS / preço)</span>
+          <span>Earnings yield (1 / trailingPE)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-px bg-[#489ffa]" />

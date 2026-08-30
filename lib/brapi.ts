@@ -188,6 +188,19 @@ export type BrapiKeyStatistics = {
 };
 
 /**
+ * Item da série histórica de `/api/v2/stocks/statistics?mode=history`.
+ * Inclui `endDate` e `price` (preço de fechamento no quarter end) —
+ * ambos vêm na resposta da brapi e são usados pra derivar earnings
+ * yield histórico.
+ */
+export type BrapiKeyStatisticsPeriod = BrapiKeyStatistics & {
+  type: "annual" | "quarterly";
+  endDate: string;
+  /** Preço de fechamento no quarter end (em R$). */
+  price?: number | null;
+};
+
+/**
  * Output de `/api/v2/stocks/financial-data` em `mode=current`. Decimal margins.
  * Note que v2 separou EBITDA (em financial-data) de margens operacionais (em
  * statistics).
@@ -481,7 +494,7 @@ export async function brapiStatistics(opts: {
   symbol: string;
   mode: "current" | "history";
   period?: "annual" | "quarterly";
-}): Promise<BrapiKeyStatistics | BrapiKeyStatistics[] | null> {
+}): Promise<BrapiKeyStatistics | BrapiKeyStatisticsPeriod[] | null> {
   const upper = opts.symbol.toUpperCase().replace(/\.SA$/, "");
   const period = opts.period ?? "annual";
   const ttl = opts.mode === "current" ? 30 * 60 : 6 * 60 * 60;
@@ -499,7 +512,7 @@ export async function brapiStatistics(opts: {
     const data = extractData(res?.results);
     if (!data) return null;
     if (opts.mode === "current") return data as unknown as BrapiKeyStatistics;
-    return (data as unknown as BrapiKeyStatistics[]) ?? [];
+        return (data as unknown as BrapiKeyStatisticsPeriod[]) ?? [];
   });
 }
 

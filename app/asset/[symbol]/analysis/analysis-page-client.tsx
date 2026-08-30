@@ -24,7 +24,7 @@
  *
  *   SEÇÃO 3 — Earnings power vs macro (2 cols)
  *   ┌────────────────────┬─────────────────────┐
- *   │ EPSVsRiskFree      │ RevenueVsPIB        │
+ *   │ EarningsYieldVsRiskFree │ RevenueVsPIB    │
  *   └────────────────────┴─────────────────────┘
  */
 
@@ -34,12 +34,12 @@ import useSWR from "swr";
 
 import { AnalysisHero } from "@/components/analysis/analysis-hero";
 import { PESelicScatter } from "@/components/analysis/pe-selic-scatter";
-import { EarningsYieldVsCDI } from "@/components/analysis/earnings-yield-vs-cdi";
+import { EarningsYieldVsRiskFree } from "@/components/analysis/earnings-yield-vs-risk-free";
 import { MarginTrend } from "@/components/analysis/margin-trend";
 import { ROICVsSelic } from "@/components/analysis/roic-vs-selic";
 import { OwnershipDonut } from "@/components/analysis/ownership-donut";
 import { RevenueVsPIB } from "@/components/analysis/revenue-vs-pib";
-import { EPSVsRiskFree } from "@/components/analysis/eps-vs-risk-free";
+
 import { AssetHeader } from "@/components/asset/asset-header";
 import { DashboardDock } from "@/components/foundation/dashboard-dock";
 import { StaggerOnMount } from "@/components/foundation/stagger";
@@ -78,6 +78,12 @@ type AnalysisResponse = {
     totalRevenue?: number | null;
     basicEarningsPerShare?: number | null;
     dilutedEarningsPerShare?: number | null;
+  }>;
+  earningsYieldHistory: Array<{
+    endDate: string;
+    epsLtm: number | null;
+    price: number | null;
+    earningsYield: number | null;
   }>;
   macro: {
     selic?: Array<{ date: string; value: number }>;
@@ -237,10 +243,15 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
               selic={lastSelic}
               highlightSymbol={symbol}
             />
+            {/*
+            // A6 fix (spec 2026-08-29): removido EarningsYieldVsCDI — vai
+            // virar EquityRiskPremium (B5) que compara com NTN-B real,
+            // mais defensável que CDI nominal.
             <EarningsYieldVsCDI
               statsHistory={statsHistoryFiltered}
               cdiDaily={cdiMacro}
             />
+            */}
           </div>
         </StaggerOnMount>
 
@@ -281,10 +292,9 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
             question="O ativo está gerando valor acima do custo de oportunidade?"
           />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-4">
-            <EPSVsRiskFree
-              incomeHistory={bundle?.incomeHistory ?? []}
+            <EarningsYieldVsRiskFree
+              earningsYieldHistory={bundle?.earningsYieldHistory ?? []}
               selic={selicMacro}
-              currentPrice={bundle?.quote?.price ?? null}
             />
             <RevenueVsPIB
               incomeHistory={bundle?.incomeHistory ?? []}
