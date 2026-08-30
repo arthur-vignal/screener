@@ -16,6 +16,18 @@ export type ReturnBridgeInputPoint = {
   price: number | null;
   epsLtm: number | null; // em R$ (já normalizado — brapi stats vem em R$)
   trailingPE: number | null;
+  /**
+   * Dividend yield anualizado do quarter (fração — ex: 0.09 = 9% a.a.).
+   * Vem direto de `statsHistory.dividendYield` da brapi e é a fonte
+   * mais confiável pro yield: brapi /v2/stocks/dividends mistura
+   * formato (rate em fração OU R$/share, inconsistente entre eventos
+   * antigos/recentes — ITUB4 paga 0.018 mensal em 2026 e 1.86 anual
+   * em 2025).
+   *
+   * Usado pra calcular dividend yield total acumulado: somar DY/4
+   * por quarter dentro da janela (sem reinvestimento).
+   */
+  dividendYieldAnnual: number | null;
 };
 
 export type ReturnBridgeComponent = {
@@ -50,15 +62,6 @@ export const RETURN_BRIDGE_WINDOWS = [1, 3, 5] as const;
 export type ReturnBridgeWindow = (typeof RETURN_BRIDGE_WINDOWS)[number];
 
 /**
- * Sinais de dividendos ao longo do período (de DividendHistory ou similar).
- * Cada item: data (YYYY-MM-DD) e valor em R$/share.
- */
-export type DividendSignal = {
-  date: string;
-  value: number; // R$ por share (JCP bruto + dividendos)
-};
-
-/**
  * Constrói a série quarterly alinhada de preço / EPS / P/L a partir dos
  * pontos disponíveis.
  *
@@ -78,6 +81,7 @@ export function buildReturnBridgeInput(
     const epsRaw = row.trailingEps;
     const peRaw = row.trailingPE;
     const priceRaw = row.price;
+    const dyRaw = row.dividendYield;
     const eps =
       typeof epsRaw === "number" && Number.isFinite(epsRaw) ? epsRaw : null;
     const pe =
@@ -88,7 +92,17 @@ export function buildReturnBridgeInput(
       typeof priceRaw === "number" && Number.isFinite(priceRaw) && priceRaw > 0
         ? priceRaw
         : null;
-    out.push({ endDate, price, epsLtm: eps, trailingPE: pe });
+    const dy =
+      typeof dyRaw === "number" && Number.isFinite(dyRaw) && dyRaw > 0
+        ? dyRaw
+        : null;
+    out.push({
+      endDate,
+      price,
+      epsLtm: eps,
+      trailingPE: pe,
+      dividendYieldAnnual: dy,
+    });
   }
   return out;
 }
@@ -96,17 +110,28 @@ export function buildReturnBridgeInput(
 /**
  * Soma proventos por share dentro de [startDate, endDate]. Aproximação
  * ingênua (sem J-curve nem divisor de "tipo") — pra BR, dividendYield da
- * brapi já entra líquido de IR em alguns casos; sem doc oficial a gente
- * trata como bruto. Documentado.
+ * Soma dividend yields anuais dos quarters na janela [startDate, endDate].
+ * `dividendYieldAnnual` é fração (ex: 0.09 = 9% a.a.). Dividimos por 4
+ * pra ter o yield trimestral e somar.
+ *
+ * Sem reinvestimento — esse é o retorno bruto de dividendos que se
+ * ganha mantendo a ação (não incorporando).
  */
-export function sumDividendsInWindow(
-  dividends: DividendSignal[],
+function sumDividendYieldsInWindow(
+  series: ReturnBridgeInputPoint[],
   startDate: string,
   endDate: string,
 ): number {
   let sum = 0;
-  for (const d of dividends) {
-    if (d.date >= startDate && d.date <= endDate) sum += d.value;
+  for (const p of series) {
+    if (
+      p.dividendYieldAnnual != null &&
+      p.dividendYieldAnnual > 0 &&
+      p.endDate >= startDate &&
+      p.endDate <= endDate
+    ) {
+      sum += p.dividendYieldAnnual / 4;
+    }
   }
   return sum;
 }
@@ -128,7 +153,6 @@ export function sumDividendsInWindow(
  */
 export function computeReturnBridge(
   series: ReturnBridgeInputPoint[],
-  dividends: DividendSignal[],
   windowYears: number,
 ): ReturnBridgeResult {
   const insufficient = series.length < 2;
@@ -197,10 +221,11 @@ export function computeReturnBridge(
       ? endPrice / startPrice - 1
       : null;
 
-  // Dividend yield total (sem reinvestimento).
-  // `rate` da brapi é fração (ex: 0.05 = 5% do preço). Somar direto.
-  const divSum = sumDividendsInWindow(dividends, start.endDate, end.endDate);
-  const divYieldTotal = divSum; // já é fração
+  // Dividend yield total acumulado = Σ DY/4 nos quarters da janela.
+  // Sem reinvestimento. Fonte: statsHistory.dividendYield (já vem
+  // anualizado e normalizado — não tem inconsistência de unidade
+  // como /v2/stocks/dividends que mistura fração e R$/share).
+  const divYieldTotal = sumDividendYieldsInWindow(series, start.endDate, end.endDate);
 
   // Em log: ln(1+r_preço) = ln(1+r_eps) + ln(1+r_pe) por definição
   // (preço = eps × pe → 1+r_preço = (1+r_eps)(1+r_pe)). Mas brapi pode
@@ -308,5 +333,6 @@ export function fromEarningsHistory(
     price: p.price,
     epsLtm: p.epsLtm,
     trailingPE: p.trailingPE,
+    dividendYieldAnnual: null,
   }));
 }

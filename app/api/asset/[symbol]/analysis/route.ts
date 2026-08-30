@@ -10,7 +10,6 @@ import {
   brapiCashflow,
   brapiHistorical,
   brapiTreasuryHistory,
-  brapiDividends,
 } from "@/lib/brapi";
 import {
   computeEarningsYieldHistory,
@@ -23,7 +22,11 @@ import { computeROICvsWACC, type ROICWACCSummary, type ROICWACCPoint } from "@/l
 import { computeLeverage, type LeverageSummary, type LeveragePoint } from "@/lib/analytics/leverage";
 import { computeYieldComparison, type YieldPoint, type YieldSummary } from "@/lib/analytics/yield-comparison";
 import { computeEquityRiskPremium, type EquityRiskPremiumPoint, type EquityRiskPremiumSummary, NTNB_LONG_SYMBOL } from "@/lib/analytics/equity-risk-premium";
-import { buildReturnBridgeInput, computeReturnBridge, type DividendSignal, type ReturnBridgeResult } from "@/lib/analytics/return-bridge";
+import {
+  buildReturnBridgeInput,
+  computeReturnBridge,
+  type ReturnBridgeResult,
+} from "@/lib/analytics/return-bridge";
 
 /**
  * /api/asset/[symbol]/analysis — bundle consolidado pra página
@@ -120,7 +123,6 @@ export async function GET(
       candles,
       statsHistoryRaw,
       ntnbHistoryRaw,
-      dividendsRaw,
     ] = await Promise.all([
       brapiQuote([symbol]),
       brapiProfile(symbol),
@@ -134,8 +136,6 @@ export async function GET(
       brapiStatistics({ symbol, mode: "history", period: "quarterly" }),
       // B5: NTN-B 2045 (mais longa líquida listada, 19.7a duration)
       brapiTreasuryHistory(NTNB_LONG_SYMBOL),
-      // B6: eventos de proventos (dividendos + JCP).
-      brapiDividends(symbol),
     ]);
 
     const q = quoteMap.get(symbol);
@@ -208,27 +208,14 @@ export async function GET(
       Array.isArray(statsHistoryRaw) ? statsHistoryRaw : null,
     );
 
-    // B6: `rate` da brapi é fração da cotação (não valor absoluto).
-    // Por isso multiplicamos por endPrice no server... espera, NÃO
-    // multiplicamos — `rate` já é fração (ex: 0.05 = 5%). O helper
-    // soma os rates diretamente. Esse erro multiplicou pelo preço e
-    // inflou dividendYieldTotal em ~30x (preço médio BR).
-    const dividendSignals: DividendSignal[] = (dividendsRaw ?? [])
-      .filter((d) => d.paymentDate && d.rate != null)
-      .map((d) => ({
-        date: d.paymentDate,
-        value: d.rate ?? 0,
-      }));
-
     // B6: ponte de retorno — janela 5 anos.
-    // `rate` da brapi é fração da cotação (não valor absoluto), então
-    // multiplicamos por endPrice como aproximação. Sem candles 5y,
-    // não dá pra ser exato. Documentado no componente.
+    // Fonte de dividendos: statsHistory.dividendYield (anualizado e
+    // normalizado pela brapi). Mais confiável que /v2/stocks/dividends
+    // que mistura formato (fração vs R$/share). Sem reinvestimento.
     const returnBridge5y: ReturnBridgeResult = computeReturnBridge(
       buildReturnBridgeInput(
         Array.isArray(statsHistoryRaw) ? statsHistoryRaw : null,
       ),
-      dividendSignals,
       5,
     );
 
@@ -344,7 +331,6 @@ export async function GET(
         series: buildReturnBridgeInput(
           Array.isArray(statsHistoryRaw) ? statsHistoryRaw : null,
         ),
-        dividends: dividendSignals,
       },
       // P/L, EV/EBITDA, P/VP com winsorização p1/p99, percentil atual,
       // e média do P/L 5a pra fair value.

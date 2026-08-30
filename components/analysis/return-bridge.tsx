@@ -27,7 +27,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   computeReturnBridge,
   RETURN_BRIDGE_WINDOWS,
-  type DividendSignal,
   type ReturnBridgeComponent,
   type ReturnBridgeInputPoint,
   type ReturnBridgeWindow,
@@ -37,7 +36,6 @@ import { TimeXAxis } from "./analysis-utils";
 
 type Props = {
   series: ReturnBridgeInputPoint[];
-  dividends: DividendSignal[];
 };
 
 // ────────────────────────────────────────────────────────────────────────
@@ -106,12 +104,12 @@ function formatPct(v: number): string {
 
 // ────────────────────────────────────────────────────────────────────────
 
-export function ReturnBridge({ series, dividends }: Props) {
+export function ReturnBridge({ series }: Props) {
   const [windowYears, setWindowYears] = useState<ReturnBridgeWindow>(5);
 
   const result = useMemo(
-    () => computeReturnBridge(series, dividends, windowYears),
-    [series, dividends, windowYears],
+    () => computeReturnBridge(series, windowYears),
+    [series, windowYears],
   );
 
   const data = useMemo(() => buildWaterfallData(result.components), [result]);

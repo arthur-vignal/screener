@@ -683,33 +683,18 @@ export async function brapiTreasuryIndicators(
  * Cache 24h.
  */
 // ─────────────────────────────────────────────────────────────────────────────
-// brapiDividends — eventos de proventos (dividendos + JCP). B6.
-// Endpoint v2: /api/v2/stocks/dividends?symbols=X&range=5y
-// ⚠️ `rate` é fração da cotação (não valor absoluto em BRL). Caller precisa
-// multiplicar pelo preço na data pra yield real. Documentado no helper.
+// brapiDividends — REMOVIDO na refatoração do B6 (2026-08-30).
+// Inicialmente usado pra decompor o retorno total (ΔLucro + ΔMúltiplo +
+// Dividendos), mas brapi /v2/stocks/dividends mistura formato entre
+// eventos: `rate` é fração da cotação em dividendos recentes (ITUB4
+// paga 0.018182/mês em 2026) e R$/share em dividendos antigos/avulsos
+// (ITUB4 paga 1.86 anual em 2025). Sem candles históricos, não dá pra
+// normalizar. Solução: usar `dividendYield` do stats-history (anualizado
+// e normalizado pela brapi). Ver commit `feat(analysis): fix B6 — usar
+// dividendYield do stats-history`.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type BrapiCashDividend = {
-  paymentDate: string;
-  rate: number | null;
-  label: string | null;
-  isinCode?: string;
-  lastDatePrior?: string;
-};
-
-export async function brapiDividends(symbol: string): Promise<BrapiCashDividend[]> {
-  const norm = symbol.toLowerCase();
-  return cached(`brapi:v2:dividends:${norm}`, 6 * 3600, async () => {
-    const params = new URLSearchParams({ symbols: norm });
-    const t = getToken();
-    if (t) params.set("token", t);
-    const url = `${BRAPI_BASE}/v2/stocks/dividends?${params.toString()}`;
-    const res = (await fetchJson(url)) as {
-      results?: Array<{ data?: { cashDividends?: BrapiCashDividend[] } }>;
-    } | null;
-    return res?.results?.[0]?.data?.cashDividends ?? [];
-  });
-}
+export type BrapiCashDividend = never;
 
 export async function brapiTreasuryHistory(
   symbol: string,

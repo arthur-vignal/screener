@@ -65,7 +65,6 @@ import type {
 import type {
   ReturnBridgeResult,
   ReturnBridgeInputPoint,
-  DividendSignal,
 } from "@/lib/analytics/return-bridge";
 
 const emptyBands: MultiplesBands = {
@@ -131,7 +130,7 @@ type AnalysisResponse = {
   yieldComparison: { series: YieldPoint[]; summary: YieldSummary };
   equityRiskPremium: { series: EquityRiskPremiumPoint[]; summary: EquityRiskPremiumSummary };
   returnBridge: ReturnBridgeResult;
-  returnBridgeInputs: { series: ReturnBridgeInputPoint[]; dividends: DividendSignal[] };
+  returnBridgeInputs: { series: ReturnBridgeInputPoint[] };
   macro: {
     selic?: Array<{ date: string; value: number }>;
     ipca12m?: Array<{ date: string; value: number }>;
@@ -327,7 +326,6 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
           <div className="mt-5">
             <ReturnBridge
               series={bundle?.returnBridgeInputs.series ?? []}
-              dividends={bundle?.returnBridgeInputs.dividends ?? []}
             />
           </div>
         </StaggerOnMount>
