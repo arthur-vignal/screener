@@ -118,8 +118,11 @@ de string** — buracos de dado viram compressão silenciosa do tempo.
 - `/api/v2/stocks/statistics?symbols=X,Y,Z` (BATCH) tem **bug conhecido**:
   retorna `returnOnEquity=null` em todos os itens. **Workaround**: chamar
   single por símbolo em paralelo. Cache interno mitiga custo.
-- `/api/v2/treasury/indicators/history` requer **token Pro** (free tier
-  devolve `{results: []}`). Ver B5 abaixo.
+**Arthur tem brapi Pro** — token em `.env.local` (`BRAPI_TOKEN`). Não presuma
+que endpoints brapi retornam `[]` — antes de qualquer feature que precisa
+de dado histórico premium (treasury history, quote intraday), fazer curl
+direto com o token pra confirmar shape real. Nunca documentar
+"requer Pro" sem antes testar com o token.
 - Brapi limita `/v2/macro` a **500 obs** sem filtros. Pra histórico
   longo (>10 anos), **usar BCB SGS** em `/api/macro/bcb`.
 - `brapi` income-statement histórico: `basicEarningsPerShare` vem null
@@ -152,12 +155,11 @@ SELIC (432) também já é % a.a. direto.
 
 Limitações: séries diárias janela máxima de 10 anos. Cache 24h.
 
-### brapi Treasury (requer token Pro)
-`/v2/treasury/indicators?symbols=tesouro-ipca-15052045` (snapshot) e
-`/v2/treasury/indicators/history?symbols=...` (histórico) — **ambos
-retornam `{results: []}` no free tier**. B5 (EquityRiskPremium) fica
-sem dado de NTN-B até o plano Pro ser ativado. Componente renderiza
-com `premium=null` e mostra empty state quando vir.
+### brapi Treasury (acesso via Pro token em .env.local)
+`/v2/treasury/indicators/history?symbols=tesouro-ipca-15052045` —
+**249 pontos históricos** com seu token Pro (testado em 2026-08-30,
+mais recente: 2026-08-28, buyRate 7.29% a.a. real). B5
+(EquityRiskPremium) usa NTN-B 2045 longa.
 
 ## Tokens de design
 
@@ -241,11 +243,7 @@ Ordem cronológica inversa (mais recente primeiro):
    — bug upstream. Workaround: chamadas single em paralelo (cache
    mitiga). Ver `app/api/peer-benchmarks/[symbol]/route.ts`.
 
-6. **brapi v2 `/treasury/indicators/history` requer Pro** — free tier
-   devolve `{results: []}`. B5 (EquityRiskPremium) renderiza sem
-   dado até o plano Pro ser ativado. Componente mostra empty state.
-
-7. **`basicEarningsPerCommonShare` em centavos** — `income-statement`
+6. **`basicEarningsPerCommonShare` em centavos** — `income-statement`
    retorna esse campo em centavos, dividido por classe (ON vs PN),
    não serve pra derivar P/L confiável. Usar `trailingPE` do
    `/statistics` que já vem correto.

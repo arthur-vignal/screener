@@ -112,7 +112,16 @@ export function computeEquityRiskPremium(
     });
   }
 
-  const last = series[series.length - 1];
+  // Pega o ponto mais recente por endDate (input pode vir em qualquer
+  // ordem — brapi costuma vir decrescente, mas stats-history vai
+  // crescente). `reduce` acha o max por endDate.
+  const last = series.reduce<EquityRiskPremiumPoint | null>(
+    (acc, p) => {
+      if (!acc) return p;
+      return p.endDate > acc.endDate ? p : acc;
+    },
+    null,
+  );
   return {
     series,
     summary: {
