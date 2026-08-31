@@ -40,6 +40,7 @@ import {
   ChartCardHeader,
   tooltipWrapperStyle,
 } from "./analysis-utils";
+import { CHART_PALETTE, colorForSeries } from "@/lib/chart-palette";
 
 type Peer = {
   symbol: string;
@@ -171,6 +172,18 @@ export function PeerScatter({
     yMax + yRange * 0.15,
   ];
 
+  // Linha horizontal/vertical da mediana — sempre plotada quando tem
+  // mediana calculada e cabe no domínio. É a "fallback visual" quando
+  // não dá pra rodar OLS (≤4 peers) mas ainda dá pra comparar o ativo
+  // contra o ponto médio do subsetor.
+  const hasMedians =
+    medians.roe != null &&
+    medians.evEbitda != null &&
+    medians.roe * 100 >= xDomain[0] &&
+    medians.roe * 100 <= xDomain[1] &&
+    medians.evEbitda >= yDomain[0] &&
+    medians.evEbitda <= yDomain[1];
+
   return (
     <ChartCard className={className}>
       <ChartCardHeader
@@ -285,26 +298,69 @@ export function PeerScatter({
                   { x: xDomain[0], y: ols.intercept + ols.slope * xDomain[0] },
                   { x: xDomain[1], y: ols.intercept + ols.slope * xDomain[1] },
                 ]}
-                stroke="var(--muted)"
-                strokeWidth={1}
-                strokeDasharray="4 4"
+                stroke={CHART_PALETTE.amber}
+                strokeWidth={1.5}
+                strokeDasharray="5 4"
+                strokeOpacity={0.8}
               />
             )}
-            {/* Peers (muted, pequenos) */}
-            <Scatter
-              name="Peers"
-              data={data.filter((d) => !d.isAsset)}
-              fill="var(--muted)"
-              fillOpacity={0.55}
-              line={false}
-              shape="circle"
-            />
+            {/* Mediana do subsetor — cruzamento de linhas tracejadas (visível
+                sempre que tem mediana e cabe no domínio). Funciona como
+                referência visual quando OLS não roda (≤4 peers). */}
+            {hasMedians && medians.roe != null && medians.evEbitda != null && (
+              <>
+                <ReferenceLine
+                  x={medians.roe * 100}
+                  stroke={CHART_PALETTE.purple}
+                  strokeWidth={1}
+                  strokeDasharray="3 4"
+                  strokeOpacity={0.55}
+                  label={{
+                    value: "ROE mediana",
+                    position: "insideBottom",
+                    fill: CHART_PALETTE.purple,
+                    fontSize: 8,
+                    offset: -2,
+                  }}
+                />
+                <ReferenceLine
+                  y={medians.evEbitda}
+                  stroke={CHART_PALETTE.purple}
+                  strokeWidth={1}
+                  strokeDasharray="3 4"
+                  strokeOpacity={0.55}
+                  label={{
+                    value: "EV/EBITDA mediana",
+                    position: "insideLeft",
+                    fill: CHART_PALETTE.purple,
+                    fontSize: 8,
+                    offset: 10,
+                  }}
+                />
+              </>
+            )}
+            {/* Peers — um Scatter por peer pra dar cor única da paleta.
+                Gambiarra mas é o jeito do Recharts; alternativa seria
+                criar um custom shape com fill dinâmico via payload. */}
+            {data
+              .filter((d) => !d.isAsset)
+              .map((peer, idx) => (
+                <Scatter
+                  key={peer.symbol}
+                  name={peer.symbol}
+                  data={[peer]}
+                  fill={colorForSeries(idx + 2)}
+                  fillOpacity={0.85}
+                  line={false}
+                  shape="circle"
+                />
+              ))}
             {/* Ativo (verde, maior, com label) */}
             <Scatter
               name="Ativo"
               data={data.filter((d) => d.isAsset)}
               fill="var(--positive)"
-              fillOpacity={0.9}
+              fillOpacity={0.95}
               line={false}
               shape="circle"
             />
@@ -313,32 +369,42 @@ export function PeerScatter({
       </div>
       <div className="mt-3 flex items-center gap-3 text-[10px] text-foreground/70 flex-wrap">
         <div className="flex items-center gap-1.5">
-          <span className="inline-block w-2 h-2 rounded-full bg-[var(--muted)]" />
-          <span>Peers (n={peers.length})</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="inline-block w-2.5 h-2.5 rounded-full bg-[var(--positive)]" />
+          <span className="inline-block w-2 h-2 rounded-full bg-[var(--positive)]" />
           <span>Ativo</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-foreground/60">
+          <span>·</span>
+          <span>Peers ({peers.length})</span>
         </div>
         {canDrawRegression ? (
           <div className="flex items-center gap-1.5">
             <span
               className="inline-block w-3 h-px"
               style={{
-                background:
-                  "repeating-linear-gradient(90deg, var(--muted) 0 3px, transparent 3px 6px)",
+                background: `repeating-linear-gradient(90deg, ${CHART_PALETTE.amber} 0 4px, transparent 4px 7px)`,
               }}
             />
-            <span>OLS (regressão linear)</span>
+            <span>OLS regressão</span>
           </div>
         ) : (
           <div className="text-foreground/60">
-            Mínimo 5 peers pra OLS (atual: {peers.length})
+            OLS precisa ≥5 peers (atual: {peers.length})
+          </div>
+        )}
+        {hasMedians && (
+          <div className="flex items-center gap-1.5">
+            <span
+              className="inline-block w-3 h-px"
+              style={{
+                background: `repeating-linear-gradient(90deg, ${CHART_PALETTE.purple} 0 3px, transparent 3px 6px)`,
+              }}
+            />
+            <span>Mediana subsetor</span>
           </div>
         )}
         {medians.roe != null && medians.evEbitda != null && (
-          <div className="text-foreground/60">
-            Mediana subsetor: ROE {(medians.roe * 100).toFixed(1)}% · EV/EBITDA{" "}
+          <div className="text-foreground/60 tabular-nums">
+            ROE {(medians.roe * 100).toFixed(1)}% · EV/EBITDA{" "}
             {medians.evEbitda.toFixed(1)}×
           </div>
         )}

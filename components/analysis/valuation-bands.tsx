@@ -43,6 +43,7 @@ import {
   tooltipWrapperStyle,
   attachTimestamps,
 } from "./analysis-utils";
+import { CHART_PALETTE } from "@/lib/chart-palette";
 import type { EarningsYieldHistoryPoint } from "@/lib/analytics/earnings-yield-history";
 import type { BandStats, MultiplesBands } from "@/lib/analytics/valuation-bands";
 
@@ -340,7 +341,7 @@ export function ValuationBands({
         <>
           <div className="mt-4 mb-2 flex items-center justify-between">
             <div className="text-[10px] text-foreground/70">
-              Preço vs valor justo (EPS LTM × P/L médio 5a = {valuationBands.peMean5a?.toFixed(1)}×)
+              Preço vs valor justo · EPS LTM × P/L médio 5a ({valuationBands.peMean5a?.toFixed(1)}×)
             </div>
             <div
               className={`text-[10px] tabular-nums font-semibold px-2 py-0.5 rounded ${
@@ -361,8 +362,8 @@ export function ValuationBands({
               >
                 <defs>
                   <linearGradient id="fv-b1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--muted)" stopOpacity={0.15} />
-                    <stop offset="100%" stopColor="var(--muted)" stopOpacity={0.03} />
+                    <stop offset="0%" stopColor={CHART_PALETTE.purple} stopOpacity={0.28} />
+                    <stop offset="100%" stopColor={CHART_PALETTE.purple} stopOpacity={0.04} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid
@@ -398,8 +399,8 @@ export function ValuationBands({
                         <div className="text-[11px] tabular-nums text-[var(--positive)]">
                           Preço: R$ {d.price.toFixed(2)}
                         </div>
-                        <div className="text-[11px] tabular-nums text-foreground/85">
-                          Fair value: R$ {d.fairValue.toFixed(2)}
+                        <div className="text-[11px] tabular-nums" style={{ color: CHART_PALETTE.purple }}>
+                          Valor justo: R$ {d.fairValue.toFixed(2)}
                         </div>
                       </div>
                     );
@@ -408,10 +409,12 @@ export function ValuationBands({
                 <Area
                   type="monotone"
                   dataKey="fairValue"
-                  stroke="var(--muted)"
-                  strokeWidth={1}
-                  strokeDasharray="3 3"
+                  stroke={CHART_PALETTE.purple}
+                  strokeWidth={2}
+                  strokeOpacity={1}
                   fill="url(#fv-b1)"
+                  dot={false}
+                  activeDot={{ r: 4, fill: CHART_PALETTE.purple }}
                   isAnimationActive={true}
                   animationDuration={1200}
                 />
@@ -419,7 +422,7 @@ export function ValuationBands({
                   type="monotone"
                   dataKey="price"
                   stroke="var(--positive)"
-                  strokeWidth={1.5}
+                  strokeWidth={2}
                   strokeOpacity={1}
                   fill="none"
                   dot={false}
