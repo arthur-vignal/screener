@@ -33,7 +33,6 @@ import { useMemo } from "react";
 import type { JSX } from "react";
 import useSWR from "swr";
 
-import { AnalysisHero } from "@/components/analysis/analysis-hero";
 import { ValuationBands } from "@/components/analysis/valuation-bands";
 import { PeerScatter } from "@/components/analysis/peer-scatter";
 import type {
@@ -253,38 +252,6 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
           />
         </StaggerOnMount>
 
-        {/* Hero */}
-        <StaggerOnMount className="mt-6">
-          {bundle ? (
-            <AnalysisHero
-              symbol={symbol}
-              longName={bundle.longName}
-              sector={bundle.sector}
-              industry={bundle.industry}
-              trailingPE={bundle.metrics.trailingPE}
-              enterpriseToEbitda={bundle.metrics.enterpriseToEbitda}
-              returnOnEquity={bundle.metrics.returnOnEquity}
-              dividendYield={bundle.metrics.dividendYield}
-              selic={lastSelic}
-              ipca12m={
-                ipca12mMacro && ipca12mMacro.length > 0
-                  ? ipca12mMacro[ipca12mMacro.length - 1].value
-                  : null
-              }
-              cdiDaily={
-                cdiMacro && cdiMacro.length > 0
-                  ? cdiMacro[cdiMacro.length - 1].value
-                  : null
-              }
-              sectorPeMedian={peerData?.medians?.pe ?? null}
-            />
-          ) : bundleLoading ? (
-            <HeroSkeleton />
-          ) : (
-            <ErrorCard message="Não foi possível carregar os dados desta ação." />
-          )}
-        </StaggerOnMount>
-
         {/* Seção 1 — Valuation contextualizada */}
         <StaggerOnMount className="mt-6">
           <SectionHeader
@@ -454,32 +421,9 @@ function SectionHeader({
       <h2 className="text-[18px] font-bold tracking-tight text-foreground">
         {title}
       </h2>
-      <p className="mt-1 text-[12px] text-muted-foreground/85">
+      <p className="mt-1 text-[12px] text-foreground/85">
         {question}
       </p>
-    </div>
-  );
-}
-
-function HeroSkeleton(): JSX.Element {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] p-6 animate-pulse">
-      <div className="h-6 w-32 bg-white/[0.04] rounded mb-3" />
-      <div className="h-3 w-3/4 bg-white/[0.04] rounded mb-4" />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-16 bg-white/[0.04] rounded-lg" />
-        ))}
-      </div>
-      <div className="h-3 w-1/2 bg-white/[0.04] rounded" />
-    </div>
-  );
-}
-
-function ErrorCard({ message }: { message: string }): JSX.Element {
-  return (
-    <div className="rounded-2xl border border-[var(--negative)]/30 bg-[var(--negative)]/5 p-6 text-center">
-      <p className="text-[13px] text-[var(--negative)]">{message}</p>
     </div>
   );
 }
