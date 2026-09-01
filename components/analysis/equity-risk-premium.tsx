@@ -38,6 +38,8 @@ import {
   TimeXAxis,
   tooltipWrapperStyle,
   attachTimestamps,
+  ChartPeriodTabs,
+  useChartPeriod,
 } from "./analysis-utils";
 import type {
   EquityRiskPremiumPoint,
@@ -55,7 +57,9 @@ export function EquityRiskPremium({
   summary,
   className,
 }: Props): JSX.Element | null {
-  const data = useMemo(() => attachTimestamps(series), [series]);
+  const { range, setRange, filtered } = useChartPeriod(series);
+  const data = useMemo(() => attachTimestamps(filtered), [filtered]);
+  const yearsInData = Math.ceil(series.length / 4);
 
   if (data.length < 4) {
     return (
@@ -81,19 +85,26 @@ export function EquityRiskPremium({
         title="Prêmio de equity vs NTN-B"
         subtitle={`EY nominal vs NTN-B 2045 real · ${summary.ntnbSymbol}`}
         rightSlot={
-          summary.premium != null ? (
-            <div
-              className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${
-                summary.premium >= 0
-                  ? "bg-[var(--positive)]/15 text-[var(--positive)]"
-                  : "bg-[var(--negative)]/15 text-[var(--negative)]"
-              }`}
-            >
-              {summary.premium >= 0 ? "+" : "−"}
-              {Math.abs(summary.premium).toFixed(1)}pp
-            </div>
-          ) : null
-        }
+                  <div className="flex items-center gap-2">
+                    <ChartPeriodTabs
+                      range={range}
+                      onChange={setRange}
+                      dataLength={yearsInData}
+                    />
+                    {summary.premium != null ? (
+                      <div
+                        className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${
+                          summary.premium >= 0
+                            ? "bg-[var(--positive)]/15 text-[var(--positive)]"
+                            : "bg-[var(--negative)]/15 text-[var(--negative)]"
+                        }`}
+                      >
+                        {summary.premium >= 0 ? "+" : "−"}
+                        {Math.abs(summary.premium).toFixed(1)}pp
+                      </div>
+                    ) : null}
+                  </div>
+                }
       />
       <div className="h-[200px] w-full">
         <ResponsiveContainer>
