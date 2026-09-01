@@ -19,6 +19,8 @@ import { useState } from "react";
 import type { JSX } from "react";
 
 import { Skeleton } from "@/components/foundation/skeleton";
+import { renderHeadline } from "@/components/news/headline-with-tickers";
+import { tagTickers } from "@/lib/news-tagger";
 import { cn } from "@/lib/utils";
 
 export type NewsSummaryItem = {
@@ -28,6 +30,8 @@ export type NewsSummaryItem = {
   source: string;
   /** ISO timestamp. */
   publishedAt: string;
+  /** Tickers mencionados — usado pra chips clicáveis no headline. */
+  tickers?: string[];
 };
 
 type Tab = "news" | "kpis" | "about";
@@ -82,7 +86,7 @@ export function NewsSummaryCard({
           ) : primary ? (
             <article>
               <h3 className="text-[15px] font-medium text-foreground leading-snug pl-3 border-l-2 border-white/30">
-                {primary.title}
+                {renderHeadlineWithChips(primary.title, primary.tickers)}
               </h3>
               {primary.summary && (
                 <p className="mt-2.5 text-[12.5px] text-muted-foreground/85 leading-relaxed">
@@ -161,4 +165,37 @@ function NewsLoadingBody(): JSX.Element {
       <Skeleton className="h-3 w-3/4 mt-3" />
     </div>
   );
+}
+
+function renderHeadlineWithChips(
+  title: string,
+  tickers: string[] | undefined,
+): React.ReactNode {
+  // Tenta primeiro com os símbolos que o servidor mandou. Se vazio,
+  // roda o tagger client-side como fallback. Se nada bater, retorna
+  // texto puro (sem chip falso).
+  let matches = tickers && tickers.length > 0
+    ? matchTickersInText(title, tickers)
+    : tagTickers(title).matches;
+  if (matches.length === 0) return title;
+  return renderHeadline(title, matches);
+}
+
+function matchTickersInText(
+  text: string,
+  symbols: string[],
+): { symbol: string; start: number; end: number }[] {
+  const out: { symbol: string; start: number; end: number }[] = [];
+  const seen = new Set<number>();
+  for (const symbol of symbols) {
+    const re = new RegExp(`\\b${symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      if (!seen.has(m.index)) {
+        seen.add(m.index);
+        out.push({ symbol, start: m.index, end: m.index + m[0].length });
+      }
+    }
+  }
+  return out.sort((a, b) => a.start - b.start);
 }
