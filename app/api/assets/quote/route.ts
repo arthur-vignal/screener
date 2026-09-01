@@ -14,35 +14,90 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getBrapiQuoteBatchLight } from "@/lib/brapi-quote-batch";
-import { isBrazilianTicker } from "@/lib/brapi";
+import { isBrazilianTicker, brapiQuote } from "@/lib/brapi";
 import { B3_LIST } from "@/lib/b3-list";
 import { classifyB3Ticker, type BrAssetType } from "@/lib/b3-classify";
 import { IBOV_BY_SYMBOL } from "@/lib/ibovespa";
 import { cached } from "@/lib/cache";
 
 const BRAPI_BASE = "https://brapi.dev/api";
+const BATCH_LIMIT = 19;
 const RANK_LIMIT = 2000;
 
+type B3RankEntry = {
+  /** Rank na lista do brapi /available (free-float mkt cap desc). */
+  ffRank: number;
+  /** Market cap total em BRL. `null` se brapi não retornou. */
+  marketCap: number | null;
+};
+
 /**
- * Ranking B3 inteiro por market cap (chamada única de ~1k tickers).
- * Cache 24h server-side — só muda em rebalanceamento.
+ * Map { symbol → { ffRank, marketCap } } pra TUDO que está em
+ * B3_LIST. Cache 24h server-side.
+ *
+ * 1) `/available?sortBy=market-cap-basic&sortOrder=desc&limit=2000`
+ *    dá a lista completa rankeada por free-float mkt cap (1 request).
+ * 2) `/v2/stocks/quote?symbols=X,Y,Z` em chunks de 19 dá o `marketCap`
+ *    total de cada um (~53 requests pra 1000+ tickers, paralelo).
+ * 3) Combina: símbolo → { ffRank, marketCap }.
+ *
+ * O ranking FINAL da /home usa `marketCap` desc (não free-float), com
+ * fallback `ffRank` se marketCap não vier. Ativos sem nenhum ficam
+ * no fim (alfabético).
  */
-async function fetchB3Rank(): Promise<Record<string, number>> {
-  return cached("b3:rank:v1", 24 * 60 * 60, async () => {
-    const t = process.env.BRAPI_TOKEN ?? "";
-    const url = `${BRAPI_BASE}/available?sortBy=market-cap-basic&sortOrder=desc&page=1&limit=${RANK_LIMIT}${t ? `&token=${encodeURIComponent(t)}` : ""}`;
-    const r = await fetch(url, {
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!r.ok) return {};
-    const data = (await r.json()) as { stocks?: string[] };
-    const symbols = data.stocks ?? [];
-    const rank: Record<string, number> = {};
-    symbols.forEach((s, i) => {
-      rank[s] = i + 1;
-    });
-    return rank;
-  });
+async function fetchB3RankAndMarketCap(): Promise<Record<string, B3RankEntry>> {
+  return cached(
+    "b3:rank-and-mcap:v1",
+    24 * 60 * 60,
+    async () => {
+      const t = process.env.BRAPI_TOKEN ?? "";
+      const auth = t ? `&token=${encodeURIComponent(t)}` : "";
+
+      // 1) Lista rankeada por free-float mkt cap.
+      let ffRanked: string[] = [];
+      try {
+        const r = await fetch(
+          `${BRAPI_BASE}/available?sortBy=market-cap-basic&sortOrder=desc&page=1&limit=${RANK_LIMIT}${auth}`,
+          { signal: AbortSignal.timeout(20_000) },
+        );
+        if (r.ok) {
+          const data = (await r.json()) as { stocks?: string[] };
+          ffRanked = data.stocks ?? [];
+        }
+      } catch {
+        // ignore — usa só market cap
+      }
+
+      const out: Record<string, B3RankEntry> = {};
+      ffRanked.forEach((s, i) => {
+        out[s] = { ffRank: i + 1, marketCap: null };
+      });
+
+      // 2) Pega market cap em batches de 19 (limite Pro do brapi).
+      const allSymbols = Array.from(
+        new Set<string>([...ffRanked, ...B3_LIST]),
+      );
+      for (let i = 0; i < allSymbols.length; i += BATCH_LIMIT) {
+        const batch = allSymbols.slice(i, i + BATCH_LIMIT);
+        try {
+          const quotes = await brapiQuote(batch);
+          for (const sym of batch) {
+            const q = quotes.get(sym.toUpperCase());
+            const mc = q?.marketCap ?? null;
+            const existing = out[sym] ?? {
+              ffRank: Number.MAX_SAFE_INTEGER,
+              marketCap: null,
+            };
+            out[sym] = { ...existing, marketCap: mc ?? existing.marketCap };
+          }
+        } catch {
+          // skip batch
+        }
+      }
+
+      return out;
+    },
+  );
 }
 
 export const dynamic = "force-dynamic";
@@ -76,13 +131,25 @@ export async function GET(req: NextRequest) {
     return classifyB3Ticker(clean) === type;
   });
 
-  // Reordena por ranking global B3 (mkt cap desc, do brapi /available).
-  // Ativos sem rank (BDRs, FIIs recém-listados) vão pro fim.
-  const rank = await fetchB3Rank();
+  // Reordena por market cap total desc (do brapi /v2/stocks/quote,
+  // cacheado 24h). Fallback: rank do /available (free-float). Sem
+  // nenhum dos dois: alfabético.
+  const rankMap = await fetchB3RankAndMarketCap();
   const allOfType = [...allOfTypeUnordered].sort((a, b) => {
-    const ra = rank[a] ?? Number.MAX_SAFE_INTEGER;
-    const rb = rank[b] ?? Number.MAX_SAFE_INTEGER;
-    return ra - rb;
+    const ra = rankMap[a];
+    const rb = rankMap[b];
+    const ma = ra?.marketCap;
+    const mb = rb?.marketCap;
+    // primary: market cap desc
+    if (ma != null && mb != null) return mb - ma;
+    if (ma != null) return -1; // a tem, b não → a primeiro
+    if (mb != null) return 1;  // b tem, a não → b primeiro
+    // fallback: ffRank asc
+    const ffa = ra?.ffRank ?? Number.MAX_SAFE_INTEGER;
+    const ffb = rb?.ffRank ?? Number.MAX_SAFE_INTEGER;
+    if (ffa !== ffb) return ffa - ffb;
+    // último fallback: alfabético
+    return a.localeCompare(b);
   });
 
   const total = allOfType.length;
