@@ -79,7 +79,7 @@ import { MarginTrend } from "@/components/analysis/margin-trend";
 import { RevenueVsPIB } from "@/components/analysis/revenue-vs-pib";
 
 import { AssetHeader } from "@/components/asset/asset-header";
-import { DashboardDock } from "@/components/foundation/dashboard-dock";
+import { AnimatedFloatingDock } from "@/components/foundation/animated-floating-dock";
 import { StaggerOnMount } from "@/components/foundation/stagger";
 
 import { cn } from "@/lib/utils";
@@ -397,7 +397,7 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
           esses valores viram dados reais.
         </p>
       </main>
-      <DashboardDock />
+      <AnimatedFloatingDock />
     </div>
   );
 }

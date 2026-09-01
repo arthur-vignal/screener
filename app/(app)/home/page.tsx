@@ -30,7 +30,7 @@ import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { JSX } from "react";
 
-import { DashboardDock } from "@/components/foundation/dashboard-dock";
+import { AnimatedFloatingDock } from "@/components/foundation/animated-floating-dock";
 import { StaggerOnMount, staggerParentVariants } from "@/components/foundation/stagger";
 import { StatusBar } from "@/components/foundation/status-bar";
 import { TypedGreeting } from "@/components/foundation/typed-greeting";
@@ -286,7 +286,10 @@ export default function HomePage(): JSX.Element {
         <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)_360px] gap-5 items-stretch">
           {/* ── Coluna esquerda ─────────────────────────────────────────── */}
           <div className="flex flex-col gap-5">
-            <StaggerOnMount>
+            {/* Portfolio estica até o fundo do grid (alinha com o card de
+                Cotações à direita). DayHighlight fica com altura natural
+                abaixo dele. */}
+            <StaggerOnMount className="flex-1 min-h-0">
               <PortfolioCard state={portfolio} />
             </StaggerOnMount>
             <StaggerOnMount>
@@ -330,7 +333,7 @@ export default function HomePage(): JSX.Element {
         </div>
       </motion.main>
 
-      <DashboardDock />
+      <AnimatedFloatingDock />
     </div>
   );
 }

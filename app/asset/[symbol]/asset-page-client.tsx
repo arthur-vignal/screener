@@ -22,7 +22,7 @@ import useSWR from "swr";
 import { useMemo, useState } from "react";
 import type { JSX } from "react";
 
-import { DashboardDock } from "@/components/foundation/dashboard-dock";
+import { AnimatedFloatingDock } from "@/components/foundation/animated-floating-dock";
 import {
   StaggerOnMount,
   staggerParentVariants,
@@ -599,7 +599,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
         </StaggerOnMount>
       </motion.main>
 
-      <DashboardDock />
+      <AnimatedFloatingDock />
     </div>
   );
 }

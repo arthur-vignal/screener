@@ -26,7 +26,7 @@ import {
 import type { JSX } from "react";
 
 import { AssetHeader } from "@/components/asset/asset-header";
-import { DashboardDock } from "@/components/foundation/dashboard-dock";
+import { AnimatedFloatingDock } from "@/components/foundation/animated-floating-dock";
 import { StaggerOnMount } from "@/components/foundation/stagger";
 
 type RawRow = {
@@ -108,7 +108,7 @@ export function RawDataPageClient({ symbol }: Props): JSX.Element {
         </StaggerOnMount>
       </main>
 
-      <DashboardDock />
+      <AnimatedFloatingDock />
     </div>
   );
 }
