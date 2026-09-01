@@ -212,8 +212,8 @@ export default function HomePage(): JSX.Element {
     try {
       const r = await fetch("/api/news/multi", { cache: "no-store" });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const data = (await r.json()) as { news?: NewsApiItem[] };
-      const mapped = (data.news ?? []).slice(0, 30).map(toNewsItem);
+      const data = (await r.json()) as { items?: NewsApiItem[] };
+      const mapped = (data.items ?? []).slice(0, 30).map(toNewsItem);
       setNews(mapped);
     } catch {
       setNews([]);
@@ -375,10 +375,8 @@ type NewsApiItem = {
   id: string;
   headline: string;
   source: string;
-  /** ISO timestamp — server retorna `publishedAt` direto (não `datetime` unix). */
   publishedAt: string;
   url: string;
-  /** Tickers mencionados (server-side tagger em /api/news/multi). */
   tickers?: string[];
 };
 
@@ -387,7 +385,6 @@ function toNewsItem(n: NewsApiItem): NewsItem {
     id: n.id,
     headline: n.headline,
     source: n.source,
-    // publishedAt já vem em ISO do server (route.ts adiciona).
     publishedAt: n.publishedAt,
     url: n.url,
     tickers: n.tickers ?? [],
