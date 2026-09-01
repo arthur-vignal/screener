@@ -18,6 +18,32 @@ import { isBrazilianTicker } from "@/lib/brapi";
 import { B3_LIST } from "@/lib/b3-list";
 import { classifyB3Ticker, type BrAssetType } from "@/lib/b3-classify";
 import { IBOV_BY_SYMBOL } from "@/lib/ibovespa";
+import { cached } from "@/lib/cache";
+
+const BRAPI_BASE = "https://brapi.dev/api";
+const RANK_LIMIT = 2000;
+
+/**
+ * Ranking B3 inteiro por market cap (chamada única de ~1k tickers).
+ * Cache 24h server-side — só muda em rebalanceamento.
+ */
+async function fetchB3Rank(): Promise<Record<string, number>> {
+  return cached("b3:rank:v1", 24 * 60 * 60, async () => {
+    const t = process.env.BRAPI_TOKEN ?? "";
+    const url = `${BRAPI_BASE}/available?sortBy=market-cap-basic&sortOrder=desc&page=1&limit=${RANK_LIMIT}${t ? `&token=${encodeURIComponent(t)}` : ""}`;
+    const r = await fetch(url, {
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!r.ok) return {};
+    const data = (await r.json()) as { stocks?: string[] };
+    const symbols = data.stocks ?? [];
+    const rank: Record<string, number> = {};
+    symbols.forEach((s, i) => {
+      rank[s] = i + 1;
+    });
+    return rank;
+  });
+}
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -45,10 +71,20 @@ export async function GET(req: NextRequest) {
 
   // Filtra B3_LIST pelo tipo. Strip ".SA" se vier (B3_LIST é limpo mas
   // alguns callers mandam sufixo).
-  const allOfType = B3_LIST.filter((s) => {
+  const allOfTypeUnordered = B3_LIST.filter((s) => {
     const clean = s.endsWith(".SA") ? s.slice(0, -3) : s;
     return classifyB3Ticker(clean) === type;
   });
+
+  // Reordena por ranking global B3 (mkt cap desc, do brapi /available).
+  // Ativos sem rank (BDRs, FIIs recém-listados) vão pro fim.
+  const rank = await fetchB3Rank();
+  const allOfType = [...allOfTypeUnordered].sort((a, b) => {
+    const ra = rank[a] ?? Number.MAX_SAFE_INTEGER;
+    const rb = rank[b] ?? Number.MAX_SAFE_INTEGER;
+    return ra - rb;
+  });
+
   const total = allOfType.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const start = (page - 1) * pageSize;
