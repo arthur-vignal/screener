@@ -29,7 +29,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { ChartCard, ChartCardHeader, TimeXAxis, tooltipWrapperStyle, attachTimestamps } from "./analysis-utils";
+import { ChartCard, ChartCardHeader, TimeXAxis, tooltipWrapperStyle, attachTimestamps, ChartPeriodTabs, useChartPeriod } from "./analysis-utils";
 import type { EarningsYieldHistoryPoint } from "@/lib/analytics/earnings-yield-history";
 
 type MacroObs = { date: string; value: number };
@@ -39,7 +39,7 @@ export type { EarningsYieldHistoryPoint };
 type Props = {
   earningsYieldHistory: EarningsYieldHistoryPoint[];
   selic: MacroObs[] | null;
-  /** Limite de quarters a plotar (default 16). */
+  /** Limite de quarters a plotar (default 16 = ~4a, default do seletor). */
   limit?: number;
   className?: string;
 };
@@ -50,8 +50,17 @@ export function EarningsYieldVsRiskFree({
   limit = 16,
   className,
 }: Props): JSX.Element | null {
+  // `useFallback` desliga o PeriodTabs quando caller passa `limit`
+  // explícito. Mesmo padrão do MarginTrend.
+  const useFallback = limit !== 16;
+  const { range, setRange, filtered: periodFiltered } =
+    useChartPeriod(earningsYieldHistory);
+  const historyForRender = useFallback
+    ? earningsYieldHistory
+    : periodFiltered;
+
   const data = useMemo(() => {
-    if (!selic || earningsYieldHistory.length === 0) return [];
+    if (!selic || historyForRender.length === 0) return [];
     // Média de SELIC por mês pra alinhar com quarters.
     const selicMonthly = new Map<string, number[]>();
     for (const o of selic) {
@@ -64,7 +73,7 @@ export function EarningsYieldVsRiskFree({
       selicByMonth.set(k, vs.reduce((s, v) => s + v, 0) / vs.length);
     }
 
-    const mapped = [...earningsYieldHistory]
+    const mapped = [...historyForRender]
       .filter(
         (r) =>
           r.earningsYield != null &&
@@ -75,7 +84,7 @@ export function EarningsYieldVsRiskFree({
           Math.abs(r.earningsYield) <= 80,
       )
       .sort((a, b) => a.endDate.localeCompare(b.endDate))
-      .slice(-limit)
+      .slice(useFallback ? -limit : undefined)
       .map((r) => {
         const month = r.endDate.slice(0, 7);
         return {
@@ -86,7 +95,7 @@ export function EarningsYieldVsRiskFree({
       });
     // A3 fix: timestamp numérico pro eixo X usar `scale="time"`.
     return attachTimestamps(mapped);
-  }, [earningsYieldHistory, selic, limit]);
+  }, [historyForRender, selic, limit, useFallback]);
 
   if (data.length < 2) return null;
 
@@ -112,15 +121,24 @@ export function EarningsYieldVsRiskFree({
             : "Comparação entre earnings yield e taxa livre de risco"
         }
         rightSlot={
-          spread != null ? (
-            <div
-              className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${beating ? "bg-[var(--positive)]/15 text-[var(--positive)]" : "bg-[var(--negative)]/15 text-[var(--negative)]"}`}
-            >
-              {spread >= 0 ? "+" : "−"}
-              {Math.abs(spread).toFixed(2)} pp
-            </div>
-          ) : null
-        }
+                  <div className="flex items-center gap-2">
+                    {!useFallback ? (
+                      <ChartPeriodTabs
+                        range={range}
+                        onChange={setRange}
+                        dataLength={Math.ceil(earningsYieldHistory.length / 4)}
+                      />
+                    ) : null}
+                    {spread != null ? (
+                      <div
+                        className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${beating ? "bg-[var(--positive)]/15 text-[var(--positive)]" : "bg-[var(--negative)]/15 text-[var(--negative)]"}`}
+                      >
+                        {spread >= 0 ? "+" : "−"}
+                        {Math.abs(spread).toFixed(2)} pp
+                      </div>
+                    ) : null}
+                  </div>
+                }
       />
       <div className="h-[200px] w-full">
         <ResponsiveContainer>
