@@ -45,6 +45,7 @@ import { PERatioComparison, type PeerRow } from "@/components/asset/pe-ratio-com
 import { PriceChart, type RangeKey } from "@/components/asset/price-chart";
 import { PriceHero } from "@/components/asset/price-hero";
 import { FairValueChart } from "@/components/asset/fair-value-chart";
+import { CorrelatedStocksTable } from "@/components/asset/correlated-stocks-table";
 import {
   QuarterResults,
   type QuarterResult,
@@ -591,14 +592,8 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
                   currency={(bundle?.currency as "BRL" | "USD") ?? "BRL"}
                 />
               </div>
-              {/* Slot direito livre — aguardando definição do Arthur */}
-              <div className="rounded-xl bg-[#0d0d11] border border-dashed border-white/[0.06] p-5 flex items-center justify-center text-[11px] text-muted-foreground/40 min-h-[280px]">
-                <span className="text-center">
-                  Slot reservado para próxima métrica
-                  <br />
-                  (EPS YoY, Free Cash Flow, Margins, …)
-                </span>
-              </div>
+              {/* Slot direito livre — Ações correlatas do subsetor */}
+              <CorrelatedStocksTable symbol={symbol} />
             </div>
           </div>
         </StaggerOnMount>
