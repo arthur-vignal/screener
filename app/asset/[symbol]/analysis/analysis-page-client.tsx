@@ -71,6 +71,7 @@ const emptyBands: MultiplesBands = {
   evebitda: { current: null, mean: null, std: null, sigma1Low: null, sigma1High: null, sigma2Low: null, sigma2High: null, percentile: null, series: [], rawSeries: [], count: 0, insufficient: true },
   pbv: { current: null, mean: null, std: null, sigma1Low: null, sigma1High: null, sigma2Low: null, sigma2High: null, percentile: null, series: [], rawSeries: [], count: 0, insufficient: true },
   peMean5a: null,
+  peMedian5a: null,
   windowYears: 5,
 };
 import { EarningsYieldVsRiskFree } from "@/components/analysis/earnings-yield-vs-risk-free";

@@ -23,10 +23,22 @@ import type { TaggerMatch } from "@/lib/news-tagger";
  *
  * The caller is responsible for running tagTickers() and passing the
  * matches. This function does the actual slicing + rendering.
+ *
+ * Accepts any object with `{ symbol, start, end }` — extra fields
+ * (`matchedText`, `matchedAlias`) are ignored. Lets callers like
+ * `matchTickersBySymbols` (which builds matches from server-side
+ * `tickers` array) plug in without rebuilding the full TaggerMatch
+ * shape.
  */
+type TaggerMatchLike = {
+  symbol: string;
+  start: number;
+  end: number;
+};
+
 export function renderHeadline(
   text: string,
-  matches: TaggerMatch[],
+  matches: TaggerMatchLike[],
 ): React.ReactNode {
   if (!text || matches.length === 0) return text;
 
