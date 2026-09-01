@@ -11,17 +11,28 @@
  * Linhas clicáveis → /asset/[symbol].
  * Linhas com dados faltantes: muted, sem sinal.
  *
+ * Paginação client-side (2026-08-31): o card traz todas as páginas da B3
+ * (~335 stocks / 548 FIIs / 284 BDRs / 100 ETFs). Cada página tem 50
+ * ativos. Cache local em `allRows` (no /home) — prefetch sob demanda
+ * ao scrollar/navegar.
+ *
+ * Search cross-page: filtra em todas as páginas já cacheadas. Quando
+ * não acha nada, dispara prefetch da próxima página em background
+ * (até esgotar todas). Quando ainda não acha, mostra empty state
+ * com mensagem específica.
+ *
  * Coluna do meio (search + type filter) fica em <HomeMain>.
  */
 
 import Link from "next/link";
+import { useEffect } from "react";
 import type { JSX } from "react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import { Delta } from "@/components/foundation/delta";
 import { Skeleton } from "@/components/foundation/skeleton";
 import { TickerLogo } from "@/components/foundation/ticker-logo";
 import { SegmentedControl } from "@/components/foundation/segmented-control";
-import { Search } from "lucide-react";
 import { formatCompanyName } from "@/lib/company-name";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +51,24 @@ export type QuoteRow = {
 };
 
 type Props = {
+  /** Rows da página atual. Renderizadas quando search está vazia. */
   rows: QuoteRow[];
+  /**
+   * Rows de TODAS as páginas já cacheadas no /home. Usado pelo
+   * search cross-page (filtra em todas). Opcional — sem isso,
+   * search filtra só em `rows`.
+   */
+  allRows?: QuoteRow[];
+  /**
+   * Callback quando search não acha nada em `allRows` e ainda há
+   * páginas não carregadas — dispara prefetch da próxima em
+   * background. Opcional.
+   */
+  onSearchMissNextPage?: () => void;
+  /** Tem mais páginas não carregadas? Usado pra decidir se vale prefetch. */
+  hasMorePages?: boolean;
+  /** Carregando a próxima página em background (search miss). */
+  loadingPageNav?: boolean;
   loading?: boolean;
   /** Callback de retry quando erro. */
   onRetry?: () => void;
@@ -51,10 +79,18 @@ type Props = {
   /** Search query (controlada externamente). */
   search?: string;
   onSearchChange?: (v: string) => void;
+  /** Paginação. `page` é 1-indexed. */
+  page?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
 };
 
 export function QuotationsTable({
   rows,
+  allRows,
+  onSearchMissNextPage,
+  hasMorePages,
+  loadingPageNav = false,
   loading,
   onRetry,
   className,
@@ -62,14 +98,19 @@ export function QuotationsTable({
   onAssetTypeChange,
   search = "",
   onSearchChange,
+  page = 1,
+  totalPages = 1,
+  onPageChange,
 }: Props): JSX.Element {
-  // Filtra por search (símbolo ou longName), case-insensitive.
-  // Compara no raw E no formatado (lib/company-name) — brapi às vezes
-  // retorna "PETROLEO BRASILEIRO" e às vezes "Petroleo Brasileiro",
-  // então a busca precisa bater em qualquer capitalização.
+  // Search cross-page:
+  //   - search vazia → mostra rows da página atual
+  //   - search com texto → filtra em allRows (cache de páginas já
+  //     carregadas). 0 matches + hasMorePages → prefetch.
   const normalizedSearch = search.trim().toLowerCase();
+  const baseRows =
+    normalizedSearch && allRows && allRows.length > 0 ? allRows : rows;
   const filteredRows = normalizedSearch
-    ? rows.filter((r) => {
+    ? baseRows.filter((r) => {
         const sym = r.symbol.toLowerCase();
         const nameRaw = (r.longName ?? "").toLowerCase();
         const nameFmt = formatCompanyName(r.longName).toLowerCase();
@@ -81,11 +122,30 @@ export function QuotationsTable({
       })
     : rows;
 
+  useEffect(() => {
+    if (
+      normalizedSearch &&
+      filteredRows.length === 0 &&
+      hasMorePages &&
+      onSearchMissNextPage &&
+      !loadingPageNav
+    ) {
+      onSearchMissNextPage();
+    }
+  }, [
+    normalizedSearch,
+    filteredRows.length,
+    hasMorePages,
+    onSearchMissNextPage,
+    loadingPageNav,
+  ]);
+
   if (loading) return <LoadingTable className={className} />;
   if (rows.length === 0)
-    return (
-      <EmptyTable onRetry={onRetry} className={className} />
-    );
+    return <EmptyTable onRetry={onRetry} className={className} />;
+
+  const showPagination = totalPages > 1 && onPageChange !== undefined;
+  const searchActive = normalizedSearch !== "";
 
   return (
     <div
@@ -94,7 +154,6 @@ export function QuotationsTable({
         className
       )}
     >
-      {/* Header interno */}
       <div className="px-4 pt-4 pb-3 border-b border-border/40">
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <div>
@@ -102,11 +161,23 @@ export function QuotationsTable({
               Cotações oficiais
             </div>
             <div className="mt-0.5 text-[11px] text-muted-foreground/70 tabular-nums">
-              {rows.length} ativos
+              {searchActive
+                ? `${filteredRows.length} de ${(allRows ?? rows).length} ativos`
+                : showPagination
+                  ? `Página ${page} de ${totalPages}`
+                  : `${rows.length} ativos`}
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {showPagination && (
+              <PaginationNav
+                page={page}
+                totalPages={totalPages}
+                onPageChange={onPageChange}
+                loading={loadingPageNav}
+              />
+            )}
             {onAssetTypeChange && (
               <SegmentedControl
                 value={assetType}
@@ -137,7 +208,6 @@ export function QuotationsTable({
         </div>
       </div>
 
-      {/* Rows */}
       <div className="max-h-[calc(100vh-420px)] overflow-y-auto">
         {filteredRows.map((row) => (
           <Row key={row.symbol} row={row} />
@@ -145,10 +215,14 @@ export function QuotationsTable({
         {filteredRows.length === 0 && search.trim() !== "" && (
           <div className="px-5 py-10 text-center">
             <p className="text-[13px] text-foreground">
-              Nenhum ativo encontrado para "{search}".
+              Nenhum ativo encontrado para &quot;{search}&quot;.
             </p>
             <p className="mt-1.5 text-[11px] text-muted-foreground/85">
-              Busca por símbolo (ex: PETR4) ou nome da empresa.
+              {loadingPageNav
+                ? "Buscando em outras páginas…"
+                : hasMorePages
+                  ? "Buscando em outras páginas automaticamente…"
+                  : "Busca por símbolo (ex: PETR4) ou nome da empresa."}
             </p>
           </div>
         )}
@@ -158,6 +232,54 @@ export function QuotationsTable({
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
+
+function PaginationNav({
+  page,
+  totalPages,
+  onPageChange,
+  loading,
+}: {
+  page: number;
+  totalPages: number;
+  onPageChange: (p: number) => void;
+  loading?: boolean;
+}): JSX.Element {
+  const atStart = page <= 1;
+  const atEnd = page >= totalPages;
+  return (
+    <div className="inline-flex items-center gap-1">
+      <button
+        type="button"
+        onClick={() => !atStart && onPageChange(page - 1)}
+        disabled={atStart || loading}
+        className={cn(
+          "inline-flex items-center justify-center h-8 w-8 rounded-md border border-white/10 bg-white/[0.04] text-foreground/85 hover:bg-white/[0.08] hover:border-white/20 transition-colors",
+          (atStart || loading) && "opacity-40 cursor-not-allowed",
+        )}
+        title="Página anterior"
+        aria-label="Página anterior"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <div className="px-2 text-[11px] tabular-nums text-muted-foreground/85 min-w-[64px] text-center">
+        {page} / {totalPages}
+      </div>
+      <button
+        type="button"
+        onClick={() => !atEnd && onPageChange(page + 1)}
+        disabled={atEnd || loading}
+        className={cn(
+          "inline-flex items-center justify-center h-8 w-8 rounded-md border border-white/10 bg-white/[0.04] text-foreground/85 hover:bg-white/[0.08] hover:border-white/20 transition-colors",
+          (atEnd || loading) && "opacity-40 cursor-not-allowed",
+        )}
+        title="Próxima página"
+        aria-label="Próxima página"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
 
 function HeaderCell({
   children,
@@ -192,7 +314,6 @@ function Row({ row }: { row: QuoteRow }): JSX.Element {
         !hasPrice && "opacity-60"
       )}
     >
-      {/* Ativo + nome */}
       <div className="flex items-center gap-3 min-w-0">
         <TickerLogo symbol={row.symbol} size="md" />
         <div className="min-w-0">
@@ -207,26 +328,18 @@ function Row({ row }: { row: QuoteRow }): JSX.Element {
         </div>
       </div>
 
-      {/* Setor */}
       <div className="text-[13px] text-muted-foreground/85 truncate">
         {row.sector}
       </div>
 
-      {/* 24h */}
       <DeltaCell value={row.changePercent} />
-
-      {/* 7D */}
       <DeltaCell value={row.changePercent7d} />
-
-      {/* 30D */}
       <DeltaCell value={row.changePercent30d} />
 
-      {/* Vol */}
       <div className="text-[13px] tabular-nums text-muted-foreground/85 text-right">
         {row.volume != null ? formatCompact(row.volume) : "—"}
       </div>
 
-      {/* Mkt cap */}
       <div className="text-[13px] tabular-nums text-foreground text-right">
         {row.marketCap != null ? formatCompact(row.marketCap) : "—"}
       </div>
@@ -292,9 +405,7 @@ function EmptyTable({
         className
       )}
     >
-      <p className="text-[14px] text-foreground">
-        Sem cotações no momento.
-      </p>
+      <p className="text-[14px] text-foreground">Sem cotações no momento.</p>
       <p className="mt-2 text-[12px] text-muted-foreground/85">
         Pode ser horário de pré-mercado ou instabilidade na Brapi.
       </p>
