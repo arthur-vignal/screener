@@ -27,9 +27,11 @@ export async function GET(
 
     // Tag every item so the UI knows which tickers are mentioned
     // beyond the queried ones (relevant for "stocks also mentioned").
+    // Expõe como `tickers` (não `relatedTickers`) pra alinhar com o
+    // tipo client-side NewsItem compartilhado com /api/news/multi.
     const tagged = news.map((n) => ({
       ...n,
-      relatedTickers: tagNewsItem(n.headline ?? "", n.summary ?? ""),
+      tickers: tagNewsItem(n.headline ?? "", n.summary ?? ""),
     }));
 
     return NextResponse.json({ news: tagged });

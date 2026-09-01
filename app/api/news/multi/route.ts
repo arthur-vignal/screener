@@ -73,10 +73,11 @@ export async function GET() {
     });
 
     // Tag each item with the tickers it mentions (server-side work,
-    // keeps the client fast).
+    // keeps the client fast). Expõe como `tickers` (não
+    // `relatedTickers`) pra alinhar com o tipo client-side NewsItem.
     const tagged = recent.map((n) => ({
       ...n,
-      relatedTickers: tagNewsItem(n.headline ?? "", n.summary ?? ""),
+      tickers: tagNewsItem(n.headline ?? "", n.summary ?? ""),
     }));
 
     // Sort newest first, cap at 60.
