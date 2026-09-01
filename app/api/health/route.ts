@@ -1,15 +1,24 @@
+/**
+ * /api/health — healthcheck + commit SHA info.
+ *
+ * Railway injeta `RAILWAY_GIT_COMMIT_SHA` automaticamente em produção.
+ * Em dev local, retorna "dev" — útil pra confirmar qual commit tá
+ * realmente rodando (especialmente quando tu suspeita de deploy stale).
+ */
 import { NextResponse } from "next/server";
 
-/**
- * GET /api/health
- *
- * Lightweight liveness probe used by Railway (see railway.toml
- * healthcheckPath). Returns 200 as long as the Node process is
- * running and the Next.js route handler is mounted. Does not touch
- * Brapi, Supabase, or any external service.
- */
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  return NextResponse.json({ status: "ok", uptime: process.uptime() });
+  const sha =
+    process.env.RAILWAY_GIT_COMMIT_SHA ??
+    process.env.GIT_COMMIT_SHA ??
+    "dev";
+  const shortSha = sha.length >= 7 ? sha.slice(0, 7) : sha;
+  return NextResponse.json({
+    ok: true,
+    sha: shortSha,
+    env: process.env.NODE_ENV ?? "unknown",
+    now: new Date().toISOString(),
+  });
 }
