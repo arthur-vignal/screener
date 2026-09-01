@@ -21,6 +21,8 @@ import type { JSX } from "react";
 import { BrandLetter } from "@/components/foundation/brand-letter";
 import { Skeleton } from "@/components/foundation/skeleton";
 import { TickerLogo } from "@/components/foundation/ticker-logo";
+import { renderHeadline } from "@/components/news/headline-with-tickers";
+import { tagTickers } from "@/lib/news-tagger";
 import { cn } from "@/lib/utils";
 
 export type NewsItem = {
@@ -108,6 +110,13 @@ export function NewsFeed({
 function NewsCard({ item }: { item: NewsItem }): JSX.Element {
   const primary = item.tickers[0] ?? null;
   const time = formatRelative(item.publishedAt);
+  // Detecta tickers no headline pra renderizar chips clicáveis
+  // (item 9 — mini chip de ticker clicável no corpo da notícia).
+  const tagged = item.tickers.length > 0
+    ? // Se o servidor já mandou tickers, usa eles como âncoras — mais barato
+      // e bate com o tagger server-side em /api/news/multi.
+      matchTickersBySymbols(item.headline, item.tickers)
+    : tagTickers(item.headline).matches;
 
   return (
     <a
@@ -129,7 +138,7 @@ function NewsCard({ item }: { item: NewsItem }): JSX.Element {
 
         <div className="flex-1 min-w-0">
           <p className="text-[14px] font-medium text-foreground leading-snug line-clamp-2 group-hover:text-foreground/90">
-            {item.headline}
+            {tagged.length > 0 ? renderHeadline(item.headline, tagged) : item.headline}
           </p>
           <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/70 tabular-nums">
             <span className="font-medium uppercase tracking-wide">
@@ -215,4 +224,35 @@ function formatRelative(iso: string): string {
     day: "2-digit",
     month: "short",
   });
+}
+
+/**
+ * Encontra offsets de cada símbolo dentro do headline pra alimentar
+ * renderHeadline(). Usa word boundaries case-insensitive. Se o servidor
+ * mandou `relatedTickers` mas o tagger client-side não encontra (acentos,
+ * diferenças de capitalização), o card ainda mostra a headline limpa
+ * (sem chip falso).
+ */
+function matchTickersBySymbols(
+  headline: string,
+  symbols: string[],
+): { symbol: string; start: number; end: number }[] {
+  if (!headline || symbols.length === 0) return [];
+  const matches: { symbol: string; start: number; end: number }[] = [];
+  const seen = new Set<number>();
+  for (const symbol of symbols) {
+    const re = new RegExp(`\\b${escapeRegex(symbol)}\\b`, "i");
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(headline)) !== null) {
+      const start = m.index;
+      if (seen.has(start)) continue;
+      seen.add(start);
+      matches.push({ symbol, start, end: start + m[0].length });
+    }
+  }
+  return matches.sort((a, b) => a.start - b.start);
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

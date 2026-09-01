@@ -110,6 +110,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
       summary: stripHtml(n.summary ?? ""),
       source: n.source,
       publishedAt: toIso(n.datetime),
+      tickers: n.tickers ?? [],
     }));
   }, [newsData]);
 
@@ -617,6 +618,8 @@ type NewsApiItem = {
   source: string;
   /** Unix timestamp (segundos). */
   datetime?: number;
+  /** Tickers mencionados — vem do tagger server-side em /api/news/multi. */
+  tickers?: string[];
 };
 
 // Helper: strip HTML tags da summary (endpoint retorna HTML-encoded).
