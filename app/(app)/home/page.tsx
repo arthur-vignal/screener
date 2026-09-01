@@ -27,7 +27,7 @@
  */
 
 import { motion } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { JSX } from "react";
 
 import { DashboardDock } from "@/components/foundation/dashboard-dock";
@@ -42,25 +42,9 @@ import {
 } from "@/components/home/portfolio-card";
 import { QuotationsTable, type QuoteRow } from "@/components/home/quotations-table";
 
-// Seeds por tipo
-const SEED_STOCKS = [
-  "PETR4", "VALE3", "ITUB4", "BBDC4", "ABEV3", "BBAS3", "WEGE3",
-  "B3SA3", "BBSE3", "CMIG4", "EQTL3", "RDOR3", "PRIO3", "GGBR4",
-  "RENT3", "LREN3", "SUZB3", "EMBR3", "MGLU3", "CSAN3",
-  "VIVT3", "TIMS3", "SBSP3", "ENBR3", "KLBN11", "UGPA3",
-  "HAPV3", "RADL3", "BPAC11", "BBDC3",
-];
-const SEED_FIIS = ["MXRF11", "HGLG11", "XPML11", "VISC11", "BCFF11", "IRDM11", "KNRI11", "HSML11", "HGRU11", "XPLG11"];
-const SEED_ETFS = ["BOVA11", "IVVB11", "SMAL11", "DIVO11", "PIBB11"];
-const SEED_BDRS = ["AAPL34", "MSFT34", "GOOG34", "AMZO34", "TSLA34"];
-const SEEDS = {
-  stock: SEED_STOCKS,
-  fii: SEED_FIIS,
-  etf: SEED_ETFS,
-  bdr: SEED_BDRS,
-} as const;
+type AssetType = "stock" | "fii" | "etf" | "bdr";
 
-type AssetType = keyof typeof SEEDS;
+const PAGE_SIZE = 50;
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
@@ -69,8 +53,20 @@ export default function HomePage(): JSX.Element {
 
   const [assetType, setAssetType] = useState<AssetType>("stock");
   const [search, setSearch] = useState("");
-  const [rows, setRows] = useState<QuoteRow[]>([]);
+  // Cache local de páginas: Map<page, QuoteRow[]>. Mantém todas as
+  // páginas já carregadas pra search cross-page (sem refazer fetch).
+  const [pageCache, setPageCache] = useState<Map<number, QuoteRow[]>>(
+    () => new Map(),
+  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [quotesLoading, setQuotesLoading] = useState(true);
+  // Loading de fetch em background (prefetch no scroll/search miss).
+  const [loadingPageNav, setLoadingPageNav] = useState(false);
+  // `useRef` pra evitar que o efeito de reset do assetType reentre em
+  // loop quando currentPage ainda não atualizou.
+  const inFlightPageRef = useRef<number | null>(null);
 
   const [portfolio, setPortfolio] = useState<PortfolioCardState>({
     kind: "loading",
@@ -106,27 +102,70 @@ export default function HomePage(): JSX.Element {
     };
   }, []);
 
-  // ── Quotes ────────────────────────────────────────────────────────────────
-  const fetchQuotes = useCallback(async () => {
+  // ── Quotes (paginado) ──────────────────────────────────────────────────────
+  // Reset completo quando muda o tipo (cache vira do tipo novo).
+  useEffect(() => {
+    setPageCache(new Map());
+    setCurrentPage(1);
+    setTotalPages(1);
+    setTotal(0);
     setQuotesLoading(true);
-    try {
-      const symbols = SEEDS[assetType];
-      const url = `/api/assets/quote?symbols=${symbols.join(",")}`;
-      const r = await fetch(url, { cache: "no-store" });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const data = (await r.json()) as { rows?: QuoteApiRow[] };
-      const mapped = (data.rows ?? []).map(toQuoteRow);
-      setRows(mapped);
-    } catch {
-      setRows([]);
-    } finally {
-      setQuotesLoading(false);
-    }
+    void fetchPage(1, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assetType]);
 
+  // Quando currentPage muda (sem ser de reset), busca a página se ainda
+  // não tá no cache.
   useEffect(() => {
-    fetchQuotes();
-  }, [fetchQuotes]);
+    if (pageCache.has(currentPage)) return;
+    if (inFlightPageRef.current === currentPage) return;
+    void fetchPage(currentPage, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
+
+  async function fetchPage(page: number, isInitial: boolean) {
+    if (inFlightPageRef.current === page) return;
+    inFlightPageRef.current = page;
+    if (isInitial) setQuotesLoading(true);
+    else setLoadingPageNav(true);
+    try {
+      const url = `/api/assets/quote?type=${assetType}&page=${page}&pageSize=${PAGE_SIZE}`;
+      const r = await fetch(url, { cache: "no-store" });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = (await r.json()) as {
+        rows?: QuoteApiRow[];
+        page?: number;
+        totalPages?: number;
+        total?: number;
+      };
+      const mapped = (data.rows ?? []).map(toQuoteRow);
+      setPageCache((prev) => {
+        const next = new Map(prev);
+        next.set(page, mapped);
+        return next;
+      });
+      setCurrentPage(data.page ?? page);
+      setTotalPages(Math.max(1, data.totalPages ?? 1));
+      setTotal(data.total ?? 0);
+    } catch {
+      // silent — usuário vê a página anterior no cache
+    } finally {
+      inFlightPageRef.current = null;
+      if (isInitial) setQuotesLoading(false);
+      else setLoadingPageNav(false);
+    }
+  }
+
+  // Prefetch da próxima página quando search cross-page não acha nada.
+  const loadNextPage = useCallback(() => {
+    if (inFlightPageRef.current != null) return;
+    const next = currentPage + 1;
+    if (next > totalPages) return;
+    void fetchPage(next, false);
+  }, [currentPage, totalPages, assetType]);
+
+  // Rows da página atual — só atualiza quando o cache da página atual muda.
+  const rows = pageCache.get(currentPage) ?? [];
 
   // ── Portfolio ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -263,17 +302,26 @@ export default function HomePage(): JSX.Element {
           </div>
 
           {/* ── Coluna central (tabela com header interno) ─────────────── */}
-          <StaggerOnMount className="min-w-0">
-            <QuotationsTable
-              rows={rows}
-              loading={quotesLoading}
-              onRetry={fetchQuotes}
-              assetType={assetType}
-              onAssetTypeChange={setAssetType}
-              search={search}
-              onSearchChange={setSearch}
-            />
-          </StaggerOnMount>
+                <StaggerOnMount className="min-w-0">
+                  <QuotationsTable
+                    rows={rows}
+                    allRows={Array.from(pageCache.values()).flat()}
+                    onSearchMissNextPage={loadNextPage}
+                    hasMorePages={currentPage < totalPages}
+                    loadingPageNav={loadingPageNav}
+                    loading={quotesLoading}
+                    onRetry={() => fetchPage(currentPage, true)}
+                    assetType={assetType}
+                    onAssetTypeChange={setAssetType}
+                    search={search}
+                    onSearchChange={setSearch}
+                    page={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(p) => {
+                      setCurrentPage(p);
+                    }}
+                  />
+                </StaggerOnMount>
 
           {/* ── Coluna direita ─────────────────────────────────────────── */}
           <StaggerOnMount>
