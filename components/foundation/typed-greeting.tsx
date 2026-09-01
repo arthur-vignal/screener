@@ -17,7 +17,7 @@
  */
 
 import { motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { JSX } from "react";
 
 import { cn } from "@/lib/utils";
@@ -49,7 +49,13 @@ export function TypedGreeting({
   size = "lg",
   className,
 }: Props): JSX.Element | null {
-  const prefix = `${greeting()}, `;
+  // prefix é derivado da hora atual (muda a cada hora). Memoiza pra
+  // não criar uma string nova a cada render — se virasse dep do useEffect
+  // do typewriter, dispararia o setInterval cleanup a cada re-render.
+  const prefix = useMemo(() => `${greeting()}, `, []);
+
+  // fullText derivado: só pra length check + early return. NUNCA
+  // usado como dep de useEffect (causaria re-entrancia).
   const fullText = name ? `${prefix}${name}` : prefix;
 
   const [typed, setTyped] = useState("");
@@ -61,21 +67,26 @@ export function TypedGreeting({
     setMounted(true);
   }, []);
 
-  // Typewriter loop
+  // Typewriter loop. Deps: `prefix` (memoizada — muda só a cada hora)
+  // e `name` (string estável do parent). NUNCA `fullText` direto —
+  // string nova a cada render dispararia este useEffect a cada
+  // 38ms do setInterval, causando re-entrancia que trava o browser.
   useEffect(() => {
     setTyped("");
     setDone(false);
     let i = 0;
+    const target = `${prefix}${name}`;
+    if (!name) return;
     const interval = setInterval(() => {
       i += 1;
-      setTyped(fullText.slice(0, i));
-      if (i >= fullText.length) {
+      setTyped(target.slice(0, i));
+      if (i >= target.length) {
         clearInterval(interval);
         setDone(true);
       }
     }, 38);
     return () => clearInterval(interval);
-  }, [fullText]);
+  }, [name, prefix]);
 
   // Se ainda não tem nome, retorna null (evita flash "Convidado").
   if (!name) return null;
