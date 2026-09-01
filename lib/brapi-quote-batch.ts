@@ -55,7 +55,15 @@ async function getBrapiCandlesChange(
     return { changePercent7d: null, changePercent30d: null };
   }
   // Filter out candles with null/0 close (brapi sometimes has gaps).
-  const valid = candles.filter((c) => c.close != null && c.close > 0);
+  const valid = candles
+    .filter((c) => c.close != null && c.close > 0)
+    // Brapi returns candles in DESC order (newest first). Compute
+    // requires ASC — `target7 = lastDate - 7d` only finds the correct
+    // candle when `lastDate` is the newest. Without sort, both
+    // `close7` and `close30` collapse to the same point (the oldest
+    // candle) and pct becomes 0.
+    .slice()
+    .sort((a, b) => a.timestamp - b.timestamp);
   if (valid.length === 0) {
     return { changePercent7d: null, changePercent30d: null };
   }
