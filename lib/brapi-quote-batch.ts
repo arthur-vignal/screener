@@ -10,7 +10,11 @@
  */
 
 import { getBrapiFull } from "./brapi-full";
-import { isBrazilianTicker } from "./brapi";
+import {
+  isBrazilianTicker,
+  brapiQuote,
+  brapiCandlesChangeBatch,
+} from "./brapi";
 
 export type QuoteBatch = {
   symbol: string;
@@ -175,5 +179,71 @@ export async function getBrapiQuoteBatch(symbols: string[]): Promise<Map<string,
     }
   }
 
+  return map;
+}
+
+
+
+/**
+ * `getBrapiQuoteBatchLight` — versão otimizada do `getBrapiQuoteBatch`.
+ *
+ * Diferenças:
+ *   - Usa `brapiQuote` (já chunka 19 symbols/req) — 1 req HTTP por chunk
+ *     em vez de 1 req por ticker (pro Pro, era 30+ reqs por página de 50).
+ *   - Usa `brapiCandlesChangeBatch` (1mo historical batch) — mesma coisa
+ *     pra 7d/30d.
+ *   - **Não** traz fundamentals completos (incomeStatement, balanceSheet,
+ *     etc) nem profile detalhado. Só o que o card de cotações precisa:
+ *     preço, change, marketCap, sector, 7d/30d %.
+ *
+ * Use este no endpoint `/api/assets/quote?type=...&page=N` (card de
+ * cotações da /home). Use `getBrapiQuoteBatch` legado quando precisar
+ * do bundle completo (screener, etc).
+ */
+export async function getBrapiQuoteBatchLight(
+  symbols: string[],
+): Promise<Map<string, QuoteBatch>> {
+  const map = new Map<string, QuoteBatch>();
+  if (symbols.length === 0) return map;
+
+  // Quotes + candles em paralelo — ambos cacheados.
+  const [quoteMap, candleMap] = await Promise.all([
+    brapiQuote(symbols),
+    brapiCandlesChangeBatch(symbols),
+  ]);
+
+  for (const sym of symbols) {
+    const upper = sym.toUpperCase();
+    const q = quoteMap.get(upper);
+    if (!q) continue;
+    const candles = candleMap.get(upper) ?? {
+      changePercent7d: null,
+      changePercent30d: null,
+    };
+    const currency = q.currency || (isBrazilianTicker(sym) ? "BRL" : "USD");
+    map.set(upper, {
+      symbol: upper,
+      price: q.price ?? null,
+      prevClose: q.prevClose ?? null,
+      change: q.change ?? null,
+      changePercent: q.changePercent ?? null,
+      currency,
+      dayHigh: q.dayHigh ?? null,
+      dayLow: q.dayLow ?? null,
+      dayOpen: q.dayOpen ?? null,
+      volume: q.volume ?? null,
+      fiftyTwoWeekHigh: q.fiftyTwoWeekHigh ?? null,
+      fiftyTwoWeekLow: q.fiftyTwoWeekLow ?? null,
+      longName: q.longName ?? q.shortName ?? null,
+      // brapiQuote v2 não traz sector — classifica pelo ticker ou usa IBOV_BY_SYMBOL
+      sector: null,
+      marketCap: q.marketCap ?? null,
+      type: isBrazilianTicker(sym) ? "stock" : "stock",
+      earningsPerShare: q.earningsPerShare ?? null,
+      priceEarnings: q.trailingPE ?? null,
+      changePercent7d: candles.changePercent7d,
+      changePercent30d: candles.changePercent30d,
+    });
+  }
   return map;
 }
