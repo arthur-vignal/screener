@@ -118,11 +118,18 @@ de string** — buracos de dado viram compressão silenciosa do tempo.
 - `/api/v2/stocks/statistics?symbols=X,Y,Z` (BATCH) tem **bug conhecido**:
   retorna `returnOnEquity=null` em todos os itens. **Workaround**: chamar
   single por símbolo em paralelo. Cache interno mitiga custo.
-**Arthur tem brapi Pro** — token em `.env.local` (`BRAPI_TOKEN`). Não presuma
-que endpoints brapi retornam `[]` — antes de qualquer feature que precisa
-de dado histórico premium (treasury history, quote intraday), fazer curl
-direto com o token pra confirmar shape real. Nunca documentar
-"requer Pro" sem antes testar com o token.
+**Arthur tem brapi Pro** — token em `.env.local` (`BRAPI_TOKEN`). Plano **Irrestrito**. NÃO tem brapi free.
+Regras:
+1. **Antes de qualquer feature brapi, checar `https://brapi.dev/docs`** — ver se o endpoint existe, quais módulos/parâmetros o plano oferece, e o shape da resposta. Documentação é a fonte verdade, não chute.
+2. Fazer curl direto com o token pra confirmar shape real retornado. Não presumir que endpoints retornam `[]` / 402.
+3. Não documentar "requer Pro" sem antes testar com o token.
+4. Não tentar fallback pra brapi free — não existe nesse projeto.
+5. Se brapi Irrestrito não tem o campo, documentar isso (não inventar proxy via Yahoo/Google).
+- Endpoints Irrestrito já validados neste projeto (2026-08-27+):
+  `/api/v2/quote/{t}` com `?modules=summaryProfile,defaultKeyStatistics,
+  financialData,incomeStatementHistory,balanceSheetHistory,
+  cashflowHistoryQuarterly` — retorna **todos esses módulos** com
+  token Pro. Free só retorna `historicalDataPrice` + quote básico.
 - Brapi limita `/v2/macro` a **500 obs** sem filtros. Pra histórico
   longo (>10 anos), **usar BCB SGS** em `/api/macro/bcb`.
 - `brapi` income-statement histórico: `basicEarningsPerShare` vem null
@@ -292,3 +299,62 @@ Ordem cronológica inversa (mais recente primeiro):
   de debug primeiro** pra ver shape real (regra Arthur).
 - Commits granulares (um por item da spec) — fácil de reverter
   cirurgicamente se um bug aparecer.
+
+## Histórico da sessão 2026-08-31 (Fase 1 — bugs diretos + brapi pipeline)
+
+Arthur voltou pro commit `4f9e6f4` (rollback dos fixes anteriores que
+estavam mal) e pediu uma lista de 22 fixes + 1 correção de trimestre
+errado + 1 fix de design system. Kibo entregou Fase 1 em 9 commits
+granulares:
+
+**Commits entregues (em ordem):**
+- `183e48e` — fix(home): search filtra rows por símbolo/nome (item 1)
+- `b1a9ea4` — fix(news): alinhar nome do campo tickers entre server e client
+- `b991069` — fix(news): chips de ticker clicáveis no headline (itens 9 + 22)
+- `d558c77` — fix(news): NewsSummaryCard aceita tickers opcionais no type (item 12)
+- `1b373f2` — fix(asset): popular historicals com dados que vinham [] (B1+B2+B3)
+- `84838f1` — fix(quote): 7D/30D com candle na ordem errada (DESC → ASC) (item 3)
+- `18cab27` — fix(quarter): chart pega ano fiscal completo, não mistura quarters
+- `b0a2612` — fix(ui): formatar longName em Title Case (item 8)
+- `e285986` — fix(fair-value): mostra mean E median como 2 fair values (item 10)
+
+**Bug crítico paralelo descoberto (não na lista original):**
+`/api/asset/[symbol]` tinha `historicals.keyStatistics = []`,
+`historicals.financialData = []`, `historicals.incomeQuarterly = []`
+embora chamasse `brapiStatistics({mode:history})`. Resolvido em
+`1b373f2` reusando `statsHistoryRaw` e adicionando 2 chamadas
+adicionais (`brapiFinancialData mode=history`, `brapiIncomeStatement
+period=quarterly`).
+
+**Bug do item 3 (7D/30D sempre 0):** causa raiz foi brapi retornar
+candles em DESC enquanto o `getBrapiCandlesChange` assumia ASC.
+Resultado: `pickClosest(target7)` e `pickClosest(target30)` colapsavam
+na mesma candle (a mais antiga), pct = 0. Fix: ordenar ASC antes do
+cálculo.
+
+**Item 10 (EQTL3 fair value):** math estava correto (P/L 26.1 vs
+média 5a 12.79 = banda +2.8σ → FV R\$ 17.91 vs preço R\$ 36.67).
+EQTL3 está genuinamente esticada. Fix: mostrar AMBOS mean e median
+como 2 fair values pra dar contexto (median = R\$ 22.73, mais robusto
+a outliers COVID).
+
+**Pendentes (próxima sessão):**
+- Item 14: seletor de período nos 11 charts de `/analysis` que ainda
+  não usam `<PeriodTabs>`. Auditar e plugar.
+- B4: criar wrapper `brapiValueAdded` em `lib/brapi.ts` pra popular
+  `historicals.valueAdded`. Não existe ainda.
+- B5: refactor `lib/brapi-full.ts` linha 791 que chama `/v2/quote/{t}
+  ?modules=...` (404). Endpoint não existe mais.
+- Fase 2: paginação 50/página, fetch news, notícia do dia = maior mkt
+  cap, ações relacionadas em slot, pop-up widget search liquid glass,
+  raw-data page, etc.
+
+**Conhecimento novo descoberto:**
+- brapi v2 quebrou `?modules=` no `/v2/stocks/quote` — retorna 19 chaves
+  básicas ignorando modules. Path granular correto: `/v2/stocks/profile`,
+  `/v2/stocks/statistics?mode=current`, `/v2/stocks/financial-data`.
+- `/v2/quote/{t}?modules=...` (sem `/stocks/`) retorna 404.
+- `/v2/stocks/quote?symbols=X&modules=Y` retorna 200 mas SEM modules
+  extras.
+- `lib/brapi.ts` granular já tá usando os endpoints granulares corretos
+  (commit `faedca7` da migração v2). Só `brapi-full.ts` ficou pendente.
