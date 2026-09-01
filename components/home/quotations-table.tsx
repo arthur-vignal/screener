@@ -62,6 +62,16 @@ export function QuotationsTable({
   search = "",
   onSearchChange,
 }: Props): JSX.Element {
+  // Filtra por search (símbolo ou longName), case-insensitive.
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredRows = normalizedSearch
+    ? rows.filter((r) => {
+        const sym = r.symbol.toLowerCase();
+        const name = (r.longName ?? "").toLowerCase();
+        return sym.includes(normalizedSearch) || name.includes(normalizedSearch);
+      })
+    : rows;
+
   if (loading) return <LoadingTable className={className} />;
   if (rows.length === 0)
     return (
@@ -120,9 +130,19 @@ export function QuotationsTable({
 
       {/* Rows */}
       <div className="max-h-[calc(100vh-420px)] overflow-y-auto">
-        {rows.map((row) => (
+        {filteredRows.map((row) => (
           <Row key={row.symbol} row={row} />
         ))}
+        {filteredRows.length === 0 && search.trim() !== "" && (
+          <div className="px-5 py-10 text-center">
+            <p className="text-[13px] text-foreground">
+              Nenhum ativo encontrado para "{search}".
+            </p>
+            <p className="mt-1.5 text-[11px] text-muted-foreground/85">
+              Busca por símbolo (ex: PETR4) ou nome da empresa.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
