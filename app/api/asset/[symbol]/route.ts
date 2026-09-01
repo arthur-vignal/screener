@@ -51,6 +51,8 @@ export async function GET(
     cashflowAnnual,
     candles,
     statsHistoryRaw,
+    fdHistoryAnnual,
+    incomeQuarterly,
   ] = await Promise.all([
     brapiQuote([symbol]),
     brapiProfile(symbol),
@@ -63,6 +65,11 @@ export async function GET(
     // A7: stats history (quarterly) pra alimentar FairValueChart (preço vs
     // valor justo implícito = EPS LTM × P/L médio 5a).
     brapiStatistics({ symbol, mode: "history", period: "quarterly" }),
+    // B1+B2: preenche historicals.keyStatistics e historicals.financialData
+    // (antes ficavam [] por bug — rota chamava mas descartava).
+    brapiFinancialData({ symbol, mode: "history", period: "annual" }),
+    // B3: preenche historicals.incomeQuarterly (idem).
+    brapiIncomeStatement({ symbol, period: "quarterly" }),
   ]);
 
   const q = quoteMap.get(symbol);
@@ -149,12 +156,19 @@ export async function GET(
     candles: candles ?? [],
     historicals: {
       income: incomeAnnual ?? [],
-      incomeQuarterly: [],
+      // B3: trimestral vinha [] porque a rota não chamava o endpoint
+      // period=quarterly. Agora vem populado (até 62Q com token Pro).
+      incomeQuarterly: incomeQuarterly ?? [],
       balance: balanceAnnual ?? [],
       cashflow: cashflowAnnual ?? [],
       valueAdded: [],
-      keyStatistics: [],
-      financialData: [],
+      // B1: stats history (P/L, P/VP, EV/EBITDA por quarter) — vinha []
+      // apesar da rota já chamar brapiStatistics mode=history. Reaproveita
+      // statsHistoryRaw (já computado pra earningsYieldHistory).
+      keyStatistics: Array.isArray(statsHistoryRaw) ? statsHistoryRaw : [],
+      // B2: financial data history (margins, ROE, ROA por ano) — vinha []
+      // porque a rota não chamava mode=history.
+      financialData: Array.isArray(fdHistoryAnnual) ? fdHistoryAnnual : [],
     },
     // A7: earnings yield histórico (1/trailingPE por quarter) — alimenta
     // FairValueChart na raiz.
