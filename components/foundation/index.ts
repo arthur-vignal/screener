@@ -6,8 +6,8 @@
 export { BrandLetter } from "./brand-letter";
 export type { BrandLetterSize } from "./brand-letter";
 
-export { DashboardDock } from "./dashboard-dock";
-export type { DockItem } from "./dashboard-dock";
+export { DashboardDock, AnimatedFloatingDock } from "./animated-floating-dock";
+export type { DockItem } from "./animated-floating-dock";
 
 export { DataTable, rowsToCsv } from "./data-table";
 export type { Column } from "./data-table";
