@@ -406,26 +406,121 @@ export async function brapiQuote(
   const key = `brapi:v2:quote:${norm.sort().join(",")}`;
   return cached(key, 60, async () => {
     const map = new Map<string, BrapiQuote>();
-    for (const batch of chunk(norm, BATCH_LIMIT)) {
-      const url = `${BRAPI_BASE}/v2/stocks/quote?symbols=${batch.map(encodeURIComponent).join(",")}${authQuery()}`;
-      const res = (await fetchJson(url)) as { results?: unknown[] } | null;
-      const results = res?.results ?? [];
+    // Chunks paralelos pra cold cache (hot cache retorna imediato).
+    const batches = chunk(norm, BATCH_LIMIT);
+    const batchResults = await Promise.all(
+      batches.map(async (batch) => {
+        const url = `${BRAPI_BASE}/v2/stocks/quote?symbols=${batch.map(encodeURIComponent).join(",")}${authQuery()}`;
+        const res = (await fetchJson(url)) as { results?: unknown[] } | null;
+        return res?.results ?? [];
+      }),
+    );
+    for (const results of batchResults) {
       for (const item of results) {
-              const rec = item as Record<string, unknown>;
-              if (rec.changed === true) {
-                console.warn(
-                  `[brapi] ticker renomeado: ${rec.requestedSymbol} → ${rec.symbol}`,
-                );
-              }
-              const data = rec.data as Record<string, unknown> | null;
-              if (!data) continue;
-              const sym = String(rec.symbol ?? "");
-              if (!sym) continue;
-              const q = normalizeQuote(data, sym);
-              map.set(q.symbol, q);
-            }
+        const rec = item as Record<string, unknown>;
+        if (rec.changed === true) {
+          console.warn(
+            `[brapi] ticker renomeado: ${rec.requestedSymbol} → ${rec.symbol}`,
+          );
+        }
+        const data = rec.data as Record<string, unknown> | null;
+        if (!data) continue;
+        const sym = String(rec.symbol ?? "");
+        if (!sym) continue;
+        const q = normalizeQuote(data, sym);
+        map.set(q.symbol, q);
+      }
     }
     return map;
+  });
+}
+
+/**
+ * Batch: 7d / 30d % change pra uma lista de tickers, usando
+ * `/v2/stocks/historical?symbols=X,Y,Z&range=1mo&interval=1d`.
+ *
+ * Pra cada símbolo retornado, calcula close7 / close30 pelo mesmo método
+ * do `getBrapiCandlesChange` (candle mais próximo de 7d/30d atrás).
+ *
+ * Cache 1h (1mo candles não mudam intra-day). Plano Pro limita a
+ * 19 symbols/req (`BATCH_LIMIT`), então paginamos com `chunk()`.
+ */
+export async function brapiCandlesChangeBatch(
+  symbols: string[],
+): Promise<Map<string, { changePercent7d: number | null; changePercent30d: number | null }>> {
+  const map = new Map<string, { changePercent7d: number | null; changePercent30d: number | null }>();
+  if (symbols.length === 0) return map;
+
+  const norm = symbols.map((s) => s.toUpperCase().replace(/\.SA$/, ""));
+  const key = `brapi:v2:candles-change:${norm.sort().join(",")}`;
+  return cached(key, 60 * 60, async () => {
+    const out = new Map<string, { changePercent7d: number | null; changePercent30d: number | null }>();
+    // Chunks paralelos — cada batch tem no máximo 19 symbols e o servidor
+    // aguenta múltiplas requests simultâneas no Pro.
+    const batches = chunk(norm, BATCH_LIMIT);
+    const batchResults = await Promise.all(
+      batches.map(async (batch) => {
+        const params = new URLSearchParams({
+          symbols: batch.join(","),
+          range: "1mo",
+          interval: "1d",
+        });
+        const t = getToken();
+        if (t) params.set("token", t);
+        const url = `${BRAPI_BASE}/v2/stocks/historical?${params.toString()}`;
+        const res = (await fetchJson(url)) as { results?: unknown[] } | null;
+        return res?.results ?? [];
+      }),
+    );
+    for (const items of batchResults) {
+      for (const item of items) {
+        const rec = item as Record<string, unknown>;
+        const sym = String(rec.symbol ?? "").toUpperCase();
+        if (!sym) continue;
+        const data = rec.data as Record<string, unknown> | null;
+        const raws = (data?.historicalDataPrice as unknown[]) ?? [];
+        const valid = raws
+          .filter((c) => {
+            const x = c as Record<string, unknown>;
+            return typeof x.close === "number" && (x.close as number) > 0;
+          })
+          .slice()
+          .sort((a, b) => {
+            const ax = a as Record<string, unknown>;
+            const bx = b as Record<string, unknown>;
+            return (ax.date as number) - (bx.date as number);
+          });
+        if (valid.length === 0) {
+          out.set(sym, { changePercent7d: null, changePercent30d: null });
+          continue;
+        }
+        const last = valid[valid.length - 1] as Record<string, unknown>;
+        const lastDate = last.date as number;
+        const lastClose = last.close as number;
+        const target7 = lastDate - 7 * 24 * 60 * 60;
+        const target30 = lastDate - 30 * 24 * 60 * 60;
+        function pick(target: number): number | null {
+          let best: number | null = null;
+          let bestDelta = Infinity;
+          for (const c of valid) {
+            const x = c as Record<string, unknown>;
+            const delta = Math.abs((x.date as number) - target);
+            if (delta < bestDelta) {
+              bestDelta = delta;
+              best = x.close as number;
+            }
+          }
+          return best;
+        }
+        const pct = (ref: number | null): number | null =>
+          ref == null || ref <= 0 ? null : ((lastClose - ref) / ref) * 100;
+        out.set(sym, {
+          changePercent7d: pct(pick(target7)),
+          changePercent30d: pct(pick(target30)),
+        });
+      }
+    }
+    return out;
   });
 }
 
