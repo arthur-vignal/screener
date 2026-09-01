@@ -43,6 +43,8 @@ import {
   TimeXAxis,
   tooltipWrapperStyle,
   attachTimestamps,
+  ChartPeriodTabs,
+  useChartPeriod,
 } from "./analysis-utils";
 import type { LeveragePoint, LeverageSummary } from "@/lib/analytics/leverage";
 
@@ -72,7 +74,9 @@ export function LeverageChart({
     );
   }
 
-  const data = useMemo(() => attachTimestamps(series), [series]);
+  const { range, setRange, filtered } = useChartPeriod(series);
+  const data = useMemo(() => attachTimestamps(filtered), [filtered]);
+  const yearsInData = Math.ceil(series.length / 4);
 
   if (data.length < 2) {
     return (
@@ -95,24 +99,31 @@ export function LeverageChart({
             : "Dívida líquida / EBITDA LTM · <2× saudável · >3× risco"
         }
         rightSlot={
-          summary.leverage != null ? (
-            <div
-              className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${
-                summary.netCash
-                  ? "bg-[var(--positive)]/15 text-[var(--positive)]"
-                  : summary.leverage > 3
-                    ? "bg-[var(--negative)]/15 text-[var(--negative)]"
-                    : summary.leverage > 2
-                      ? "bg-yellow-500/15 text-yellow-300"
-                      : "bg-[var(--positive)]/15 text-[var(--positive)]"
-              }`}
-            >
-              {summary.netCash
-                ? "Líquido"
-                : `${summary.leverage.toFixed(2)}×`}
-            </div>
-          ) : null
-        }
+                  <div className="flex items-center gap-2">
+                    <ChartPeriodTabs
+                      range={range}
+                      onChange={setRange}
+                      dataLength={yearsInData}
+                    />
+                    {summary.leverage != null ? (
+                      <div
+                        className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${
+                          summary.netCash
+                            ? "bg-[var(--positive)]/15 text-[var(--positive)]"
+                            : summary.leverage > 3
+                              ? "bg-[var(--negative)]/15 text-[var(--negative)]"
+                              : summary.leverage > 2
+                                ? "bg-yellow-500/15 text-yellow-300"
+                                : "bg-[var(--positive)]/15 text-[var(--positive)]"
+                        }`}
+                      >
+                        {summary.netCash
+                          ? "Líquido"
+                          : `${summary.leverage.toFixed(2)}×`}
+                      </div>
+                    ) : null}
+                  </div>
+                }
       />
 
       {/* Alavancagem */}
