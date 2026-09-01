@@ -2,7 +2,7 @@
 
 /**
  * MarginTrend — margins (gross / operating / profit) ao longo dos últimos
- * 16 quarters.
+ * quarters.
  *
  * A2 fix (spec 2026-08-29): antes usava `<Area stackId="margins">` empilhado,
  * mas margem é aninhada (lucro ⊂ operacional ⊂ bruto), não aditiva. Empilhar
@@ -13,8 +13,9 @@
  * coberto. Eixo Y com `domain={[0, 'auto']}` — teto natural é a margem
  * bruta máxima.
  *
- * Assert em dev (TODO: adicionar): `gross ≥ operating ≥ profit` em todo
- * ponto. Violação indica erro de mapeamento.
+ * PeriodTabs (2026-08-31): seletor 1a/3a/5a/máx no header. Caller que
+ * passar `limit` quarters explícito desliga o seletor (comportamento
+ * legado).
  */
 
 import { useMemo } from "react";
@@ -28,7 +29,15 @@ import {
   YAxis,
 } from "recharts";
 
-import { ChartCard, ChartCardHeader, TimeXAxis, tooltipWrapperStyle, attachTimestamps } from "./analysis-utils";
+import {
+  ChartCard,
+  ChartCardHeader,
+  TimeXAxis,
+  tooltipWrapperStyle,
+  attachTimestamps,
+  ChartPeriodTabs,
+  useChartPeriod,
+} from "./analysis-utils";
 
 type MarginsRow = {
   endDate: string;
@@ -39,7 +48,10 @@ type MarginsRow = {
 
 type Props = {
   history: MarginsRow[];
-  /** Quantos quarters mostrar (default 16). */
+  /**
+   * Quantos quarters mostrar (default 16 = ~4a). Quando omitido, o
+   * seletor de período (1a/3a/5a/máx) controla o filtro.
+   */
   limit?: number;
   className?: string;
 };
@@ -49,8 +61,15 @@ export function MarginTrend({
   limit = 16,
   className,
 }: Props): JSX.Element | null {
+  // `useFallback` desliga o PeriodTabs quando o caller passa `limit`
+  // explicitamente (ex: /home com widget compacto). Quando omitido, o
+  // seletor controla o range.
+  const useFallback = limit !== 16;
+  const { range, setRange, filtered: periodFiltered } = useChartPeriod(history);
+  const baseRows = useFallback ? history : periodFiltered;
+
   const data = useMemo(() => {
-    const rows = [...history]
+    const rows = [...baseRows]
       .filter(
         (r) =>
           r.grossMargins != null &&
@@ -58,17 +77,13 @@ export function MarginTrend({
           r.profitMargins != null,
       )
       .sort((a, b) => a.endDate.localeCompare(b.endDate))
-      .slice(-limit)
+      .slice(useFallback ? -limit : undefined)
       .map((r) => ({
         endDate: r.endDate,
         gross: (r.grossMargins ?? 0) * 100,
         operating: (r.operatingMargins ?? 0) * 100,
         profit: (r.profitMargins ?? 0) * 100,
       }));
-
-    // A3 fix: adiciona timestamp numérico pro eixo X usar `scale="time"`
-    // (distância proporcional ao tempo decorrido, não ao índice).
-    return attachTimestamps(rows);
 
     // A2 assert (rodado em dev; em prod é no-op). Margem deve ser aninhada:
     // gross ≥ operating ≥ profit em todo ponto. Se violar, há erro de
@@ -83,18 +98,32 @@ export function MarginTrend({
       }
     }
 
-    return rows;
-  }, [history, limit]);
+    // A3 fix: adiciona timestamp numérico pro eixo X usar `scale="time"`
+    // (distância proporcional ao tempo decorrido, não ao índice).
+    return attachTimestamps(rows);
+  }, [baseRows, limit, useFallback]);
 
   if (data.length < 2) return null;
 
   const last = data[data.length - 1];
+  // ~anos cobertos (4 quarters por ano calendário) — usado pra
+  // desabilitar presets > dataLength no ChartPeriodSelector.
+  const yearsInData = Math.ceil(history.length / 4);
 
   return (
     <ChartCard className={className}>
       <ChartCardHeader
         title="Margins trend"
         subtitle={`Último Q: gross ${last.gross.toFixed(1)}% · op ${last.operating.toFixed(1)}% · profit ${last.profit.toFixed(1)}%`}
+        rightSlot={
+          !useFallback ? (
+            <ChartPeriodTabs
+              range={range}
+              onChange={setRange}
+              dataLength={yearsInData}
+            />
+          ) : undefined
+        }
       />
       <div className="h-[200px] w-full">
         <ResponsiveContainer>
