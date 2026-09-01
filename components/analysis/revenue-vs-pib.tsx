@@ -32,7 +32,15 @@ import {
   YAxis,
 } from "recharts";
 
-import { ChartCard, ChartCardHeader, TimeXAxis, tooltipWrapperStyle, attachTimestamps } from "./analysis-utils";
+import {
+  ChartCard,
+  ChartCardHeader,
+  TimeXAxis,
+  tooltipWrapperStyle,
+  attachTimestamps,
+  ChartPeriodTabs,
+  useChartPeriod,
+} from "./analysis-utils";
 
 type IncomeRow = {
   endDate: string;
@@ -114,8 +122,15 @@ export function RevenueVsPIB({
   // incomeHistory à mesma janela (10 anos de qualquer jeito).
   const BCB_WINDOW_START = "2006-08-01";
 
+  // Filtro de período (1a/3a/5a/máx) opera em `incomeHistory`
+  // (com `endDate`). Quando o usuário troca, o `revYoY` é recalculado
+  // a partir do subset — assim o gráfico segue o seletor.
+  const { range, setRange, filtered: periodFiltered } =
+    useChartPeriod(incomeHistory);
+  const yearsInData = Math.ceil(incomeHistory.length / 4);
+
   const data = useMemo(() => {
-    const revYoY = buildRevenueYoY(incomeHistory);
+    const revYoY = buildRevenueYoY(periodFiltered);
     const ibcYoY = buildIBCBrYoY(ibcBr);
     // Map IBC-Br YoY por mês (YYYY-MM) pra alinhar com quarters.
     const ibcByMonth = new Map<string, number>();
@@ -134,11 +149,10 @@ export function RevenueVsPIB({
           ibcBr: ibcByMonth.get(month) ?? null,
         };
       })
-      .filter((d) => d.revenueGrowth != null)
-      .slice(-12);
+      .filter((d) => d.revenueGrowth != null);
     // A3 fix: timestamp numérico pro eixo X usar `scale="time"`.
     return attachTimestamps(mapped);
-  }, [incomeHistory, ibcBr]);
+  }, [periodFiltered, ibcBr]);
 
   if (data.length < 2) return null;
 
@@ -160,21 +174,28 @@ export function RevenueVsPIB({
             : "Comparação do crescimento da receita com a economia"
         }
         rightSlot={
-          last.revenueGrowth != null && last.ibcBr != null ? (
-            <div className="text-right">
-              <div
-                className={`text-[11px] font-semibold tabular-nums ${beating ? "text-[var(--positive)]" : "text-[var(--negative)]"}`}
-              >
-                {last.revenueGrowth >= 0 ? "+" : "−"}
-                {Math.abs(last.revenueGrowth).toFixed(1)}%
-              </div>
-              <div className="text-[9px] text-foreground/60">
-                PIB {last.ibcBr >= 0 ? "+" : "−"}
-                {Math.abs(last.ibcBr).toFixed(1)}%
-              </div>
-            </div>
-          ) : null
-        }
+                  <div className="flex items-center gap-2">
+                    <ChartPeriodTabs
+                      range={range}
+                      onChange={setRange}
+                      dataLength={yearsInData}
+                    />
+                    {last.revenueGrowth != null && last.ibcBr != null ? (
+                      <div className="text-right">
+                        <div
+                          className={`text-[11px] font-semibold tabular-nums ${beating ? "text-[var(--positive)]" : "text-[var(--negative)]"}`}
+                        >
+                          {last.revenueGrowth >= 0 ? "+" : "−"}
+                          {Math.abs(last.revenueGrowth).toFixed(1)}%
+                        </div>
+                        <div className="text-[9px] text-foreground/60">
+                          PIB {last.ibcBr >= 0 ? "+" : "−"}
+                          {Math.abs(last.ibcBr).toFixed(1)}%
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                }
       />
       <div className="h-[200px] w-full">
         <ResponsiveContainer>
