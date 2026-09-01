@@ -80,18 +80,9 @@ export async function GET() {
       tickers: tagNewsItem(n.headline ?? "", n.summary ?? ""),
     }));
 
-    // Sort newest first, cap at 60. Inclui `publishedAt` ISO junto com
-    // `datetime` unix — clientes client-side preferem ISO (compat com
-    // `new Date()`); outros lugares ainda olham `datetime`. Custo zero.
+    // Sort newest first, cap at 60.
     tagged.sort((a, b) => (b.datetime ?? 0) - (a.datetime ?? 0));
-    const withIso = tagged.slice(0, 60).map((n) => ({
-      ...n,
-      publishedAt:
-        typeof n.datetime === "number" && n.datetime > 0
-          ? new Date(n.datetime * 1000).toISOString()
-          : new Date().toISOString(),
-    }));
-    return NextResponse.json({ news: withIso });
+    return NextResponse.json({ news: tagged.slice(0, 60) });
   } catch (err) {
     return NextResponse.json(
       { news: [], error: String(err) },
