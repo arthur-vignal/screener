@@ -1,11 +1,23 @@
 "use client";
 
 /**
- * Helpers compartilhados pelos 8 gráficos da página /analysis.
+ * Helpers compartilhados pelos gráficos da página /analysis.
+ *
+ * ChartPeriodTabs — seletor de período (1y / 3y / 5y / max) padronizado
+ * pra todos os 7 charts que aceitam `series` com `endDate`. Cada chart
+ * é dono do seu próprio state (state local) — igual ao que ReturnBridge
+ * já fazia. Filtra via `filterByRange` do `chart-period-selector.tsx`.
  */
 
+import { useMemo, useState } from "react";
 import type { JSX, ReactNode } from "react";
 import { XAxis } from "recharts";
+
+import {
+  ChartPeriodSelector,
+  filterByRange as filterByRangeRaw,
+  type PeriodRange,
+} from "@/components/chart-period-selector";
 
 import { cn } from "@/lib/utils";
 
@@ -151,6 +163,63 @@ export function ChartCard({
     >
       {children}
     </div>
+  );
+}
+
+/**
+ * Hook padrão pra charts da /analysis: state local de período (1y/3y/5y/max)
+ * + série filtrada via `filterByRange`. Default 5y.
+ *
+ * Caller pode usar o `range`/`filtered` retornado OU o componente
+ * `ChartPeriodTabs` pronto (passa o mesmo hook por baixo).
+ */
+export function useChartPeriod<T extends { endDate: string }>(
+  series: T[],
+  dataLength?: number,
+): {
+  range: PeriodRange;
+  setRange: (r: PeriodRange) => void;
+  filtered: T[];
+} {
+  const [range, setRange] = useState<PeriodRange>({
+    startYear: null,
+    endYear: null,
+  });
+  const filtered = useMemo(
+    () => filterByRangeRaw(series, range),
+    [series, range],
+  );
+  return {
+    range,
+    setRange,
+    filtered,
+  };
+}
+
+/**
+ * Componente pronto: seletor de período (1a/3a/5a/máx + custom) com o
+ * visual padronizado de `ChartPeriodSelector`. Pra usar dentro do
+ * `<ChartCardHeader rightSlot={...}>` de cada chart.
+ *
+ * Caller é dono do state (via `useChartPeriod`) — passamos `range` e
+ * `onChange` direto, igual a `<PeriodTabs>`.
+ */
+export function ChartPeriodTabs({
+  range,
+  onChange,
+  dataLength,
+}: {
+  range: PeriodRange;
+  onChange: (r: PeriodRange) => void;
+  /** Quantos anos tem a série. Usado pra desabilitar presets > dataLength. */
+  dataLength?: number;
+}): JSX.Element {
+  return (
+    <ChartPeriodSelector
+      value={range}
+      onChange={onChange}
+      dataLength={dataLength ?? 16}
+    />
   );
 }
 
