@@ -250,6 +250,7 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
             longName={bundle?.longName ?? null}
             shortName={bundle?.shortName ?? null}
             sector={bundle?.sector ?? "—"}
+            variant="analysis"
           />
         </StaggerOnMount>
 
