@@ -52,8 +52,8 @@ export function FairValueChart({
   windowQuarters = 20, // 5 anos × 4 quarters
   className,
 }: Props): JSX.Element | null {
-  const { data, lastFairValue, lastPrice, percentile } = useMemo(() => {
-    // P/L médio dos últimos N quarters (com PE válido e positivo).
+  const { data, lastFairValue, lastFairValueMedian, lastPrice } = useMemo(() => {
+    // P/L dos últimos N quarters (com PE válido e positivo).
     const validPE = earningsYieldHistory
       .filter(
         (r) =>
@@ -68,30 +68,38 @@ export function FairValueChart({
       .sort((a, b) => a.endDate.localeCompare(b.endDate))
       .slice(-windowQuarters);
 
-    if (validPE.length < 4) return { data: [], lastFairValue: null, lastPrice: null, percentile: null };
+    if (validPE.length < 4) return { data: [], lastFairValue: null, lastFairValueMedian: null, lastPrice: null };
 
-    const peMedio = validPE.reduce((s, r) => s + r.trailingPE!, 0) / validPE.length;
+    // Mean E median — median é mais robusto a outliers de baixa frequência
+    // (COVID 2020, etc). Quando divergem muito, é sinal de que a média
+    // histórica foi puxada por um período específico.
+    const peValues = validPE.map((r) => r.trailingPE!);
+    const peMean = peValues.reduce((s, v) => s + v, 0) / peValues.length;
+    const sorted = [...peValues].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const peMedian =
+      sorted.length % 2 === 0
+        ? (sorted[mid - 1] + sorted[mid]) / 2
+        : sorted[mid];
 
-    const series = validPE
-      .map((r) => {
-        const eps = r.epsLtm!;
-        const price = r.price!;
-        const fairValue = eps * peMedio;
-        return {
-          endDate: r.endDate,
-          ts: new Date(r.endDate + "T00:00:00Z").getTime(),
-          price,
-          fairValue,
-          discount: price / fairValue - 1, // negativo = descontado
-        };
-      });
+    const series = validPE.map((r) => {
+      const eps = r.epsLtm!;
+      const price = r.price!;
+      return {
+        endDate: r.endDate,
+        ts: new Date(r.endDate + "T00:00:00Z").getTime(),
+        price,
+        fairValue: eps * peMean,
+        fairValueMedian: eps * peMedian,
+      };
+    });
 
     const last = series[series.length - 1];
     return {
       data: series,
       lastFairValue: last.fairValue,
+      lastFairValueMedian: last.fairValueMedian,
       lastPrice: last.price,
-      percentile: null,
     };
   }, [earningsYieldHistory, windowQuarters]);
 
@@ -99,6 +107,9 @@ export function FairValueChart({
 
   const discount = lastPrice != null && lastFairValue != null
     ? (lastPrice / lastFairValue - 1) * 100
+    : null;
+  const discountMedian = lastPrice != null && lastFairValueMedian != null
+    ? (lastPrice / lastFairValueMedian - 1) * 100
     : null;
   const undervalued = discount != null && discount < 0;
 
@@ -108,16 +119,26 @@ export function FairValueChart({
         title="Preço vs valor justo"
         subtitle={
           discount != null
-            ? `Fair value = EPS LTM × P/L médio 5a. ${undervalued ? "Descontado" : "Acima"} do preço atual.`
-            : "Fair value = EPS LTM × P/L médio 5a"
+            ? `Fair value = EPS LTM × P/L histórico. Quando mean ≠ median, a média foi puxada por outliers (COVID, etc).`
+            : "Fair value = EPS LTM × P/L histórico (mean + median)"
         }
         rightSlot={
           discount != null ? (
-            <div
-              className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${undervalued ? "bg-[var(--positive)]/15 text-[var(--positive)]" : "bg-[var(--negative)]/15 text-[var(--negative)]"}`}
-            >
-              {discount >= 0 ? "+" : "−"}
-              {Math.abs(discount).toFixed(1)}%
+            <div className="flex items-center gap-1.5">
+              <div
+                className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${undervalued ? "bg-[var(--positive)]/15 text-[var(--positive)]" : "bg-[var(--negative)]/15 text-[var(--negative)]"}`}
+              >
+                mean {discount >= 0 ? "+" : "−"}
+                {Math.abs(discount).toFixed(1)}%
+              </div>
+              {discountMedian != null && (
+                <div
+                  className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${discountMedian < 0 ? "bg-[var(--positive)]/15 text-[var(--positive)]" : "bg-[var(--negative)]/15 text-[var(--negative)]"}`}
+                >
+                  med {discountMedian >= 0 ? "+" : "−"}
+                  {Math.abs(discountMedian).toFixed(1)}%
+                </div>
+              )}
             </div>
           ) : null
         }
@@ -159,9 +180,11 @@ export function FairValueChart({
                 const d = payload[0]?.payload as {
                   price: number;
                   fairValue: number;
-                  discount: number;
+                  fairValueMedian: number;
                 };
                 if (!d) return null;
+                const discount = (d.price / d.fairValue - 1) * 100;
+                const discountMed = (d.price / d.fairValueMedian - 1) * 100;
                 return (
                   <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
                     <div className="text-[10px] text-muted-foreground/70 mb-1">
@@ -171,13 +194,20 @@ export function FairValueChart({
                       Preço: R$ {d.price.toFixed(2)}
                     </div>
                     <div className="text-[11px] tabular-nums text-muted-foreground/85">
-                      Fair value: R$ {d.fairValue.toFixed(2)}
+                      FV (mean): R$ {d.fairValue.toFixed(2)}
                     </div>
-                    <div
-                      className={`text-[10px] tabular-nums mt-1 font-semibold ${d.discount >= 0 ? "text-[var(--negative)]" : "text-[var(--positive)]"}`}
-                    >
-                      Desconto: {d.discount >= 0 ? "+" : "−"}
-                      {Math.abs(d.discount * 100).toFixed(1)}%
+                    <div className="text-[11px] tabular-nums text-muted-foreground/85">
+                      FV (median): R$ {d.fairValueMedian.toFixed(2)}
+                    </div>
+                    <div className="text-[10px] tabular-nums mt-1 grid grid-cols-2 gap-2">
+                      <span className={discount >= 0 ? "text-[var(--negative)]" : "text-[var(--positive)]"}>
+                        mean {discount >= 0 ? "+" : "−"}
+                        {Math.abs(discount).toFixed(1)}%
+                      </span>
+                      <span className={discountMed >= 0 ? "text-[var(--negative)]" : "text-[var(--positive)]"}>
+                        med {discountMed >= 0 ? "+" : "−"}
+                        {Math.abs(discountMed).toFixed(1)}%
+                      </span>
                     </div>
                   </div>
                 );
@@ -195,6 +225,16 @@ export function FairValueChart({
             />
             <Line
               type="monotone"
+              dataKey="fairValueMedian"
+              stroke="rgba(255, 255, 255, 0.45)"
+              strokeWidth={1.25}
+              strokeDasharray="4 2"
+              dot={false}
+              isAnimationActive={true}
+              animationDuration={1200}
+            />
+            <Line
+              type="monotone"
               dataKey="price"
               stroke="var(--positive)"
               strokeWidth={2}
@@ -207,7 +247,7 @@ export function FairValueChart({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-3 flex items-center gap-3 text-[10px] text-muted-foreground/70">
+      <div className="mt-3 flex items-center gap-3 text-[10px] text-muted-foreground/70 flex-wrap">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-px bg-[var(--positive)]" />
           <span>Preço</span>
@@ -220,7 +260,17 @@ export function FairValueChart({
                 "repeating-linear-gradient(90deg, var(--muted) 0 3px, transparent 3px 6px)",
             }}
           />
-          <span>Fair value = EPS LTM × P/L médio 5a</span>
+          <span>FV (mean)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span
+            className="inline-block w-3 h-px"
+            style={{
+              background:
+                "repeating-linear-gradient(90deg, rgba(255,255,255,0.45) 0 4px, transparent 4px 6px)",
+            }}
+          />
+          <span>FV (median)</span>
         </div>
       </div>
     </ChartCard>

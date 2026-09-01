@@ -45,7 +45,11 @@ export type MultiplesBands = {
   pe: BandStats;
   evebitda: BandStats;
   pbv: BandStats;
-  peMean5a: number | null; // média do P/L nos últimos 5a (B1.b fair value)
+  /** Média do P/L nos últimos 5a (B1.b fair value — baseline). */
+  peMean5a: number | null;
+  /** Mediana do P/L nos últimos 5a (fair value alternativo, robusto a outliers
+   *  como anos de crise — pra EQTL3 sai ~R$ 22.73 vs R$ 17.91 da média). */
+  peMedian5a: number | null;
   windowYears: number;
 };
 
@@ -201,6 +205,7 @@ export function computeValuationBands(
       evebitda: emptyBand(),
       pbv: emptyBand(),
       peMean5a: null,
+      peMedian5a: null,
       windowYears,
     };
   }
@@ -257,10 +262,20 @@ export function computeValuationBands(
     .map((r) => r.value)
     .filter((v) => v > 0 && v < 100);
   let peMean5a: number | null = null;
+  let peMedian5a: number | null = null;
   if (peValues.length >= MIN_OBSERVATIONS) {
     const w = winsorize(peValues, WINSORIZE_P_LOW, WINSORIZE_P_HIGH);
     const m = meanStd(w);
     peMean5a = m ? m.mean : null;
+    // Mediana é mais robusta a outliers de baixa frequência (ex: 2020
+    // COVID, onde EQTL3 teve P/L < 5 puxou a média artificialmente pra
+    // baixo). Usar como segunda referência no fair value chart.
+    const sorted = [...w].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    peMedian5a =
+      sorted.length % 2 === 0
+        ? (sorted[mid - 1] + sorted[mid]) / 2
+        : sorted[mid];
   }
 
   return {
@@ -268,6 +283,7 @@ export function computeValuationBands(
     evebitda,
     pbv,
     peMean5a,
+    peMedian5a,
     windowYears,
   };
 }
