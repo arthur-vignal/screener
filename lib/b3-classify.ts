@@ -55,8 +55,11 @@ export function classifyB3Ticker(
     return "fii";
   }
 
-  // 3. BDR codes typically end with 34/35/36/39 (level classification).
-  if (/3[4569]$/.test(clean) && clean.length >= 4) {
+  // 3. BDR codes end with 3X where X = 0-9 (level classification
+  // 30-39 da B3). Regex anterior só pegava 34/35/36/39, deixando
+  // PRXB31, ITUB31 virarem "stock" — o que poluía o ranking
+  // de ações com BDRs de mkt cap baixo.
+  if (/3[0-9]$/.test(clean) && clean.length >= 4) {
     return "bdr";
   }
 
