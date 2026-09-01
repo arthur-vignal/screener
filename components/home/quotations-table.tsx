@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/foundation/skeleton";
 import { TickerLogo } from "@/components/foundation/ticker-logo";
 import { SegmentedControl } from "@/components/foundation/segmented-control";
 import { Search } from "lucide-react";
+import { formatCompanyName } from "@/lib/company-name";
 import { cn } from "@/lib/utils";
 
 export type QuoteRow = {
@@ -63,12 +64,20 @@ export function QuotationsTable({
   onSearchChange,
 }: Props): JSX.Element {
   // Filtra por search (símbolo ou longName), case-insensitive.
+  // Compara no raw E no formatado (lib/company-name) — brapi às vezes
+  // retorna "PETROLEO BRASILEIRO" e às vezes "Petroleo Brasileiro",
+  // então a busca precisa bater em qualquer capitalização.
   const normalizedSearch = search.trim().toLowerCase();
   const filteredRows = normalizedSearch
     ? rows.filter((r) => {
         const sym = r.symbol.toLowerCase();
-        const name = (r.longName ?? "").toLowerCase();
-        return sym.includes(normalizedSearch) || name.includes(normalizedSearch);
+        const nameRaw = (r.longName ?? "").toLowerCase();
+        const nameFmt = formatCompanyName(r.longName).toLowerCase();
+        return (
+          sym.includes(normalizedSearch) ||
+          nameRaw.includes(normalizedSearch) ||
+          nameFmt.includes(normalizedSearch)
+        );
       })
     : rows;
 
@@ -192,7 +201,7 @@ function Row({ row }: { row: QuoteRow }): JSX.Element {
           </div>
           {row.longName && (
             <div className="text-[12px] text-muted-foreground/85 truncate">
-              {row.longName}
+              {formatCompanyName(row.longName)}
             </div>
           )}
         </div>

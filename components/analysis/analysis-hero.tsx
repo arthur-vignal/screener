@@ -21,6 +21,7 @@
 import type { JSX } from "react";
 
 import { cn } from "@/lib/utils";
+import { formatCompanyName } from "@/lib/company-name";
 
 export type AnalysisHeroProps = {
   symbol: string;
@@ -78,7 +79,10 @@ export function AnalysisHero(props: AnalysisHeroProps): JSX.Element {
           <p className="mt-1 text-[12px] text-foreground/85">
             8 gráficos sobre valuation, qualidade e earnings power de{" "}
             <span className="font-semibold text-foreground">{symbol}</span>
-            {longName ? ` (${longName})` : ""} no contexto macro brasileiro.
+            {(() => {
+              const display = formatCompanyName(longName);
+              return display ? ` (${display})` : "";
+            })()} no contexto macro brasileiro.
           </p>
         </div>
         <div className="text-right shrink-0">
