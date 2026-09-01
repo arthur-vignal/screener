@@ -143,15 +143,39 @@ export function QuarterResults({
       )
       .sort((a, b) => a.endDate.localeCompare(b.endDate));
 
-    // Pega últimos 5 quarters COM revenue > 0 (descarta negativos —
-    // prejuízo operacional é real mas distorce a escala do chart e
-    // gera barras negativas confusas). Se houver < 2 válidos, aceita
-    // qualquer um não-zero pra não ficar vazio.
+    // Filtra buracos conhecidos: brapi às vezes retorna Q4 (dez) com
+    // revenue null e preenche com Q1+2+3 (linhas duplicadas somadas).
+    // Mantém só quarters com revenue > 0 OU exatamente 0 (não descarta
+    // prejuízo real — só negativos).
     const positives = withRev.filter((q) => q.revenue > 0);
-    const last =
-      positives.length >= 2
-        ? positives.slice(-5)
-        : withRev.filter((q) => q.revenue !== 0).slice(-5);
+
+    // Pegar o ANO FISCAL mais recente completo (4 trimestres) — antes
+    // pegava slice(-5) que misturava quarters de 2 anos diferentes
+    // (ex: 2025-Q2 + Q3 + Q4 + 2026-Q1), dando a impressão errada de
+    // "3 Qs em vez de 4".
+    //
+    // Estratégia: agrupa por ano, pega o último ano com 4 quarters
+    // válidos. Fallback: último ano parcial (3+) se nenhum cheio.
+    const byYear = new Map<string, typeof positives>();
+    for (const q of positives) {
+      const year = q.endDate.slice(0, 4);
+      if (!byYear.has(year)) byYear.set(year, []);
+      byYear.get(year)!.push(q);
+    }
+
+    const sortedYears = Array.from(byYear.keys()).sort().reverse();
+    let last: typeof positives = [];
+    for (const y of sortedYears) {
+      const qs = byYear.get(y)!;
+      if (qs.length === 4) {
+        last = qs;
+        break;
+      }
+      // guarda o mais recente incompleto como fallback
+      if (last.length < qs.length) last = qs;
+    }
+    // último fallback: slice(-4) se nada bateu
+    if (last.length === 0) last = positives.slice(-4);
 
     // Pra calcular QoQ da PRIMEIRA barra plotada, acha o último quarter
     // positivo ANTERIOR ao primeiro do array `last`. Isso dá uma cor
