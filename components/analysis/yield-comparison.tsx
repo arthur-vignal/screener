@@ -43,6 +43,8 @@ import {
   TimeXAxis,
   tooltipWrapperStyle,
   attachTimestamps,
+  ChartPeriodTabs,
+  useChartPeriod,
 } from "./analysis-utils";
 import type { YieldPoint, YieldSummary } from "@/lib/analytics/yield-comparison";
 
@@ -57,7 +59,9 @@ export function YieldComparison({
   summary,
   className,
 }: Props): JSX.Element | null {
-  const data = useMemo(() => attachTimestamps(series), [series]);
+  const { range, setRange, filtered } = useChartPeriod(series);
+  const data = useMemo(() => attachTimestamps(filtered), [filtered]);
+  const yearsInData = Math.ceil(series.length / 4);
 
   if (data.length < 4) {
     return (
@@ -89,21 +93,28 @@ export function YieldComparison({
             : "EY, FCFY e DY no mesmo eixo % a.a."
         }
         rightSlot={
-          summary.earningsFcfGapAvg != null ? (
-            <div
-              className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${
-                summary.earningsFcfGapAvg > 1
-                  ? "bg-[var(--negative)]/15 text-[var(--negative)]"
-                  : summary.earningsFcfGapAvg < -1
-                    ? "bg-[var(--positive)]/15 text-[var(--positive)]"
-                    : "bg-white/[0.06] text-foreground/85"
-              }`}
-            >
-              {summary.earningsFcfGapAvg >= 0 ? "+" : "−"}
-              {Math.abs(summary.earningsFcfGapAvg).toFixed(1)}pp
-            </div>
-          ) : null
-        }
+                  <div className="flex items-center gap-2">
+                    <ChartPeriodTabs
+                      range={range}
+                      onChange={setRange}
+                      dataLength={yearsInData}
+                    />
+                    {summary.earningsFcfGapAvg != null ? (
+                      <div
+                        className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${
+                          summary.earningsFcfGapAvg > 1
+                            ? "bg-[var(--negative)]/15 text-[var(--negative)]"
+                            : summary.earningsFcfGapAvg < -1
+                              ? "bg-[var(--positive)]/15 text-[var(--positive)]"
+                              : "bg-white/[0.06] text-foreground/85"
+                        }`}
+                      >
+                        {summary.earningsFcfGapAvg >= 0 ? "+" : "−"}
+                        {Math.abs(summary.earningsFcfGapAvg).toFixed(1)}pp
+                      </div>
+                    ) : null}
+                  </div>
+                }
       />
       <div className="h-[200px] w-full">
         <ResponsiveContainer>
