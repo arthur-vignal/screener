@@ -38,6 +38,8 @@ import {
   TimeXAxis,
   tooltipWrapperStyle,
   attachTimestamps,
+  ChartPeriodTabs,
+  useChartPeriod,
 } from "./analysis-utils";
 import type { ROICWACCPoint, ROICWACCSummary } from "@/lib/analytics/roic-wacc";
 
@@ -67,7 +69,9 @@ export function ROICVsWACC({
     );
   }
 
-  const data = useMemo(() => attachTimestamps(series), [series]);
+  const { range, setRange, filtered } = useChartPeriod(series);
+  const data = useMemo(() => attachTimestamps(filtered), [filtered]);
+  const yearsInData = Math.ceil(series.length / 4);
 
   if (data.length < 2) {
     return (
@@ -96,19 +100,26 @@ export function ROICVsWACC({
             : "ROIC = NOPAT / capital investido · WACC = (E/V)·Ke + (D/V)·Kd·(1-t)"
         }
         rightSlot={
-          summary.spread != null ? (
-            <div
-              className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${
-                creatingValue
-                  ? "bg-[var(--positive)]/15 text-[var(--positive)]"
-                  : "bg-[var(--negative)]/15 text-[var(--negative)]"
-              }`}
-            >
-              {summary.spread >= 0 ? "+" : "−"}
-              {Math.abs(summary.spread).toFixed(1)} pp
-            </div>
-          ) : null
-        }
+                  <div className="flex items-center gap-2">
+                    <ChartPeriodTabs
+                      range={range}
+                      onChange={setRange}
+                      dataLength={yearsInData}
+                    />
+                    {summary.spread != null ? (
+                      <div
+                        className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${
+                          creatingValue
+                            ? "bg-[var(--positive)]/15 text-[var(--positive)]"
+                            : "bg-[var(--negative)]/15 text-[var(--negative)]"
+                        }`}
+                      >
+                        {summary.spread >= 0 ? "+" : "−"}
+                        {Math.abs(summary.spread).toFixed(1)} pp
+                      </div>
+                    ) : null}
+                  </div>
+                }
       />
       <div className="h-[200px] w-full">
         <ResponsiveContainer>
