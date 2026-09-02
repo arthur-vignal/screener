@@ -306,8 +306,9 @@ export default function HomePage(): JSX.Element {
           </div>
 
           {/* ── Coluna central (tabela com header interno) ─────────────── */}
-                <StaggerOnMount className="min-w-0">
+                <StaggerOnMount className="flex-1 min-h-0 flex">
                   <QuotationsTable
+                    className="h-full w-full"
                     rows={rows}
                     allRows={Array.from(pageCache.values()).flat()}
                     onSearchMissNextPage={loadNextPage}

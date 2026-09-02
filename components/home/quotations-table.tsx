@@ -150,7 +150,7 @@ export function QuotationsTable({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] overflow-hidden",
+        "rounded-2xl border border-white/10 bg-[#101116] overflow-hidden flex flex-col",
         className
       )}
     >
@@ -208,7 +208,7 @@ export function QuotationsTable({
         </div>
       </div>
 
-      <div className="max-h-[calc(100vh-420px)] overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {filteredRows.map((row) => (
           <Row key={row.symbol} row={row} />
         ))}
@@ -368,7 +368,7 @@ function LoadingTable({ className }: { className?: string }): JSX.Element {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] overflow-hidden p-2",
+        "rounded-2xl border border-white/10 bg-[#101116] overflow-hidden p-2 flex flex-col",
         className
       )}
     >
