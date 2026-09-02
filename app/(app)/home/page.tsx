@@ -212,54 +212,33 @@ export default function HomePage(): JSX.Element {
     try {
       const r = await fetch("/api/news/multi", { cache: "no-store" });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const data = (await r.json()) as { items?: NewsApiItem[] };
-      const mapped = (data.items ?? []).slice(0, 30).map(toNewsItem);
+      const data = (await r.json()) as { news?: NewsApiItem[] };
+      const newsItems = data.news ?? [];
+      const mapped = newsItems.slice(0, 30).map(toNewsItem);
       setNews(mapped);
+      // Deriva o destaque do dia do primeiro item (mesma chamada, sem fetch
+      // adicional). Evita uma segunda chamada paralela ao /api/news/multi que
+      // era a fonte do travamento do site antes do revert anterior.
+      const top = mapped[0];
+      if (top) {
+        setHighlight({
+          headline: top.headline,
+          source: top.source,
+          url: top.url,
+          relatedCount: top.tickers.length,
+        });
+      }
     } catch {
       setNews([]);
     } finally {
       setNewsLoading(false);
+      setHighlightLoading(false);
     }
   }, []);
 
   useEffect(() => {
     fetchNews();
   }, [fetchNews]);
-
-  // ── Highlight ─────────────────────────────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const r = await fetch("/api/news/multi?highlight=1", {
-          cache: "no-store",
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = (await r.json()) as {
-          headline?: string;
-          source?: string;
-          url?: string;
-          relatedCount?: number;
-        };
-        if (!cancelled && data.headline && data.source && data.url) {
-          setHighlight({
-            headline: data.headline,
-            source: data.source,
-            url: data.url,
-            relatedCount: data.relatedCount ?? 0,
-          });
-        }
-      } catch {
-        // silent
-      } finally {
-        if (!cancelled) setHighlightLoading(false);
-      }
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const todayText = new Date().toLocaleDateString("pt-BR", {
     day: "2-digit",
@@ -386,17 +365,26 @@ type NewsApiItem = {
   id: string;
   headline: string;
   source: string;
-  publishedAt: string;
+  publishedAt?: string;
+  /** Unix seconds. Usado quando `publishedAt` ISO não está disponível. */
+  datetime?: number;
   url: string;
   tickers?: string[];
 };
 
 function toNewsItem(n: NewsApiItem): NewsItem {
+  // A API retorna `datetime` em unix seconds (e opcionalmente `publishedAt`
+  // ISO em algumas rotas). Normaliza pra ISO string aqui.
+  const publishedAt =
+    n.publishedAt ??
+    (typeof n.datetime === "number" && n.datetime > 0
+      ? new Date(n.datetime * 1000).toISOString()
+      : new Date().toISOString());
   return {
     id: n.id,
     headline: n.headline,
     source: n.source,
-    publishedAt: n.publishedAt,
+    publishedAt,
     url: n.url,
     tickers: n.tickers ?? [],
   };
