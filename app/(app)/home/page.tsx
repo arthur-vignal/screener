@@ -289,11 +289,12 @@ export default function HomePage(): JSX.Element {
             {/* Portfolio estica até o fundo do grid (alinha com o card de
                 Cotações à direita). DayHighlight fica com altura natural
                 abaixo dele. */}
-            <StaggerOnMount className="flex-1 min-h-0">
-              <PortfolioCard state={portfolio} />
+            <StaggerOnMount className="flex-1 min-h-0 flex">
+              <PortfolioCard state={portfolio} className="h-full w-full" />
             </StaggerOnMount>
             <StaggerOnMount>
               <DayHighlightCard
+                className="h-full"
                 headline={highlight?.headline ?? null}
                 source={highlight?.source ?? null}
                 url={highlight?.url ?? null}
