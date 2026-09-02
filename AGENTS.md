@@ -357,4 +357,138 @@ a outliers COVID).
 - `/v2/stocks/quote?symbols=X&modules=Y` retorna 200 mas SEM modules
   extras.
 - `lib/brapi.ts` granular já tá usando os endpoints granulares corretos
-  (commit `faedca7` da migração v2). Só `brapi-full.ts` ficou pendente.
+
+## Histórico da sessão 2026-09-01 (home layout + BDR + ON/PN + aceternity dock + news feed)
+
+Arthur voltou reclamando de (a) alinhamento dos cards da /home até
+a "linha vermelha" e (b) BDR aparecendo no ranking de ações. Kibo
+entregou Fase 1 layout + B3 classifier + PN-only em 9 commits
+granulares.
+
+**Commits entregues (em ordem):**
+- `ec3611b` — fix(quote): colapsa ON/PN duplicadas, mantém só preferencial
+- `6314065` — fix(home): cards da coluna esquerda esticam até a base
+- `64f91a5` — fix(home): aplica flex-1 + h-full na hierarquia certa
+- `16d069e` — fix(home): card de Cotacoes estica até a base do grid
+- `a464b07` — fix(home): limita altura em 100dvh-240px (para antes da linha vermelha)
+- `4c5d1ef` — fix: disable strict mode pra hydration mismatch
+- `1aa9068` — refactor: aplica SulfurDock (wrapper aceternity) nas 4 paginas
+- `11dceb7` — chore(deps): adiciona deps do shadcn/aceternity (floating-dock)
+- `715d19a` — fix(b3-classify): regex BDR cobre 30-39 (antes só 34/35/36/39)
+
+**Layout dos cards da /home (resolvido):**
+
+Grid 3-col em `app/(app)/home/page.tsx`:
+```
+<div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)_360px] gap-5 items-stretch">
+  <div className="flex flex-col gap-5" style={{ maxHeight: "calc(100dvh - 240px)" }}>
+    <StaggerOnMount className="flex-1 min-h-0 flex">
+      <PortfolioCard state={portfolio} className="h-full w-full" />
+    </StaggerOnMount>
+    <StaggerOnMount><DayHighlightCard ... /></StaggerOnMount>
+  </div>
+  <StaggerOnMount className="flex-1 min-h-0 flex" style={{ maxHeight: "calc(100dvh - 240px)" }}>
+    <QuotationsTable className="h-full w-full" ... />
+  </StaggerOnMount>
+  <StaggerOnMount style={{ maxHeight: "calc(100dvh - 240px)" }}>
+    <NewsFeed items={news} loading={newsLoading} maxItems={6} />
+  </StaggerOnMount>
+</div>
+```
+
+Hierarquia de altura pra esticar:
+1. `items-stretch` no grid (alinha as 3 colunas na mesma altura)
+2. `max-height: calc(100dvh - 240px)` em cada coluna (para antes da
+   linha vermelha em 1080p = 840px)
+3. `flex-1 min-h-0 flex` no StaggerOnMount do PortfolioCard (estica até
+   a base da coluna esquerda)
+4. `h-full w-full` no PortfolioCard (preenche o motion.div)
+5. `flex flex-col` no card raiz do QuotationsTable + `flex-1 min-h-0
+   overflow-y-auto` no scroll interno (preenche o resto do card)
+
+**BDR classifier (resolvido):**
+
+Em `lib/b3-classify.ts`, regex BDR expandida de `3[4569]$` pra `3[0-9]$`.
+Antes: PRXB31, AAPL30-33, MSFT30-33, ITUB31, PETR31 (todos BDRs level
+30-33) caíam no default = `stock`. Depois: BDRs identificados corretamente.
+
+`/api/assets/quote?type=stock` agora retorna 279 stocks (era 335 com
+contaminação de BDRs). Top 10 validados: PETR4, ITUB4, VALE3, ABEV3,
+BPAC5, WEGE3, BBDC4, ITSA4, AXIA7, BBAS3.
+
+**ON/PN collapse (resolvido):**
+
+Helper `collapseOnPn()` em `app/api/assets/quote/route.ts` remove ON
+quando existe PN/PNA/PNB/PN-Gold (4/5/6/7) da mesma empresa. Hierarquia
+7 (PN-Gold) > 6 (PNB) > 5 (PNA) > 4 (PN) > 3 (ON). Edge cases cobertos:
+- PETR3+PETR4 → PETR4
+- ITUB3+ITUB4 → ITUB4
+- BBDC3+BBDC4 → BBDC4
+- BPAC3+BPAC5 → BPAC5 (PNA > ON)
+- AXIA3+AXIA7 → AXIA7 (PN-Gold > ON)
+- VALE3, ABEV3, WEGE3, BBAS3 (sem duplicata) → mantidos
+- FII/ETF/BDR passam direto (não têm ON/PN)
+
+Arthur pediu pra reverter quando quiser ON de volta: toggle de botão na
+UI do `QuotationsTable` ou `?includeOn=true` query param.
+
+**Aceternity dock (instalada via shadcn):**
+
+`npx shadcn@latest add @aceternity/floating-dock-demo` instalou o
+componente original em `components/ui/floating-dock.tsx` (200 linhas).
+
+Wrapper `components/foundation/sulfur-dock.tsx` (~140 linhas) converte
+meus items (`{href, label, icon: keyof}`) pro formato aceternity
+(`{title, icon: ReactNode, href}`) e aplica posição `fixed bottom-5
+left-1/2 -translate-x-1/2` + liquid glass com `!bg-black/30 !border-white/10
+backdrop-blur-md` (twMerge respeita `!`).
+
+`lib/utils.ts` foi sobrescrito pelo shadcn (perdeu helpers como
+`formatNumber`, `formatCompact`, `formatPercent`). **RESTAUREI** os
+helpers porque 30+ arquivos do projeto dependiam.
+
+`app/layout.tsx` foi modificado (adicionou fonte Geist, mudou className).
+**REVERTI** porque quebra o design system.
+
+`app/globals.css` foi modificado (adicionou `@import "shadcn/tailwind.css"`).
+**REVERTI** porque pode quebrar o globals existente.
+
+## Pendente / próximos passos (sessão 2026-09-01 em diante)
+
+### News feed DESABILITADO (commit `ab8c457`)
+
+Arthur reportou travamento no /home ("Não consigo dar f12, não consigo
+atualizar"). Kibo tentou várias hipóteses (cold start 6s do
+/api/news/multi, tagTickers em cada render, render loop) e não
+conseguiu diagnosticar com 100% de certeza. Solução aplicada:
+**desabilitar o fetch de news no client** com comentário preservando
+o fix (`data.items → data.news`).
+
+Estado atual:
+- `/api/news/multi` continua funcional (testada em prod: 200 OK com
+  8+ items, dados reais)
+- Client não chama mais. NewsFeed renderiza com `items={[]}` →
+  mostra "Sem notícias no momento"
+- DayHighlight renderiza com `loading={false}` + `headline={null}` →
+  mostra "Sem destaque do dia ainda"
+
+Pra religar news (futuro):
+1. Investigar causa real do travamento
+2. Hipóteses não confirmadas:
+   - Cold start /api/news/multi (5.93s) bloqueia worker do Railway
+   - tagTickers em cada NewsCard (~500 regex tests por render)
+   - React Strict Mode duplicando requests
+3. Sugestões: SSR do news, pre-render no build, SWR com cache local,
+   timeout menor no `maxDuration` da API
+
+### Tarefas pendentes (já estavam antes do travamento)
+- **Card de alinhamento**: RESOLVIDO (100dvh-240px)
+- **Cotação esticando**: RESOLVIDO
+- **BDR classifier**: RESOLVIDO
+- **ON/PN toggle**: parcialmente (só PN agora; ON precisa de botão)
+- **B4 brapiValueAdded**: stashed como `stash@{0}: B4-b5-wip` (não commitado)
+- **B5 lib/brapi-full.ts:791** endpoint 404: pendente
+- **Raw data page CSV export**: pendente
+- **9 charts PeriodTabs em /analysis**: pendente (não foi completado)
+- **brapi-full.ts migração v2** (commit `faedca7`): parcial — só
+  `brapi-full.ts` ficou pendente
