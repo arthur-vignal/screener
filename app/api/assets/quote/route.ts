@@ -109,6 +109,49 @@ const TYPE_VALUES = new Set(["stock", "fii", "etf", "bdr"]);
 
 type QuoteBatch = Awaited<ReturnType<typeof getBrapiQuoteBatchLight>>;
 
+/**
+ * Colapsa ações ON/PN duplicadas: quando a mesma empresa tem tanto
+ * a ação ordinária (termina em 3) quanto a preferencial (termina em 4),
+ * mantém só a PN (termina em 4). PN é consistentemente mais líquida
+ * no Brasil. Só aplica a stocks.
+ *
+ * Edge case: algumas empresas têm só ON (BBSE3, BBAS3) — mantém.
+ * Outras têm só PN (ITSA4 sem ITSA3) — mantém. Algumas têm PNA
+ * (termina em 5, ex: BPAC5) que é mais líquido que a ON — se existir
+ * 5 E 3, preferimos 5. Mesma lógica pro 6 (PNB) com 3.
+ */
+function collapseOnPn(
+  symbols: string[],
+  type: BrAssetType,
+): string[] {
+  if (type !== "stock") return symbols;
+
+  const set = new Set(symbols);
+  const out: string[] = [];
+
+  for (const sym of symbols) {
+    // Pula a ON (termina em 3) se a mesma empresa tem versão
+    // preferencial mais alta (4=PN, 5=PNA, 6=PNB, 7=PN-Gold).
+    // Hierarquia: 7 > 6 > 5 > 4 > 3.
+    if (sym.endsWith("3") && sym.length >= 4) {
+      const root = sym.slice(0, -1);
+      // Procura do sufixo mais alto pro mais baixo. Se qualquer
+      // um existe, pula a ON.
+      if (
+        set.has(root + "7") ||
+        set.has(root + "6") ||
+        set.has(root + "5") ||
+        set.has(root + "4")
+      ) {
+        continue;
+      }
+    }
+    out.push(sym);
+  }
+
+  return out;
+}
+
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   const typeParam = (params.get("type") ?? "stock").toLowerCase();
@@ -131,11 +174,18 @@ export async function GET(req: NextRequest) {
     return classifyB3Ticker(clean) === type;
   });
 
+  // Colapsa ON/PN: se a mesma empresa tem ações ON (termina em 3)
+  // E PN (termina em 4), mantém só a PN. Mais líquido no Brasil.
+  // Só aplica a stocks (FII/ETF/BDR não têm ON/PN).
+  // Edge case: PNA (termina em 5) também é preferencial mas tem volume
+  // alto — vamos manter se existir (ex: BPAC5 é mais líquido que BPAC3).
+  const allUniqueShares = collapseOnPn(allOfTypeUnordered, type);
+
   // Reordena por market cap total desc (do brapi /v2/stocks/quote,
   // cacheado 24h). Fallback: rank do /available (free-float). Sem
   // nenhum dos dois: alfabético.
   const rankMap = await fetchB3RankAndMarketCap();
-  const allOfType = [...allOfTypeUnordered].sort((a, b) => {
+  const allOfType = [...allUniqueShares].sort((a, b) => {
     const ra = rankMap[a];
     const rb = rankMap[b];
     const ma = ra?.marketCap;
