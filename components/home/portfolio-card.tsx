@@ -75,7 +75,7 @@ function ReadyCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-6",
+        "h-full rounded-2xl border border-white/10 bg-[#101116] p-6",
         className
       )}
     >
@@ -134,7 +134,7 @@ function EmptyCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-6",
+        "h-full rounded-2xl border border-white/10 bg-[#101116] p-6",
         className
       )}
     >
@@ -173,7 +173,7 @@ function LoadingCard({ className }: { className?: string }): JSX.Element {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-6",
+        "h-full rounded-2xl border border-white/10 bg-[#101116] p-6",
         className
       )}
     >
@@ -192,7 +192,7 @@ function ErrorCard({ className }: { className?: string }): JSX.Element {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-6",
+        "h-full rounded-2xl border border-white/10 bg-[#101116] p-6",
         className
       )}
     >
