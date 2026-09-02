@@ -20,9 +20,7 @@ import type { JSX } from "react";
 
 import { BrandLetter } from "@/components/foundation/brand-letter";
 import { Skeleton } from "@/components/foundation/skeleton";
-import { TickerLogo } from "@/components/foundation/ticker-logo";
 import { renderHeadline } from "@/components/news/headline-with-tickers";
-import { tagTickers } from "@/lib/news-tagger";
 import { cn } from "@/lib/utils";
 
 export type NewsItem = {
@@ -110,13 +108,15 @@ export function NewsFeed({
 function NewsCard({ item }: { item: NewsItem }): JSX.Element {
   const primary = item.tickers[0] ?? null;
   const time = formatRelative(item.publishedAt);
-  // Detecta tickers no headline pra renderizar chips clicáveis
-  // (item 9 — mini chip de ticker clicável no corpo da notícia).
-  const tagged = item.tickers.length > 0
-    ? // Se o servidor já mandou tickers, usa eles como âncoras — mais barato
-      // e bate com o tagger server-side em /api/news/multi.
-      matchTickersBySymbols(item.headline, item.tickers)
-    : tagTickers(item.headline).matches;
+  // Só renderiza chip se o servidor mandou tickers. NÃO roda tagTickers
+  // no client — varreria 500+ regex tests da B3 inteira por card, e em
+  // cards com tickers vazios causava re-renders pesados em cascata
+  // combinados com onError do TickerLogo. Custo: 40% dos items ficam
+  // sem chip inline (headline pura). Aceitável.
+  const tagged =
+    item.tickers.length > 0
+      ? matchTickersBySymbols(item.headline, item.tickers)
+      : [];
 
   return (
     <a
@@ -131,7 +131,12 @@ function NewsCard({ item }: { item: NewsItem }): JSX.Element {
     >
       <div className="flex gap-3">
         {primary ? (
-          <TickerLogo symbol={primary} size="md" className="mt-0.5" />
+          // BrandLetter direto — sem <img>, sem onError, sem setFailed.
+          // TickerLogo tenta carregar icons.brapi.dev/icons/{SYMBOL}.svg,
+          // falha em ~70% dos tickers de fontes como BPMoney/Investidor10,
+          // e cada falha dispara setState que re-renderiza o card.
+          // BrandLetter é determinístico e sem custo de I/O.
+          <BrandLetter symbol={primary} size="md" className="mt-0.5" />
         ) : (
           <div className="h-10 w-10 rounded-full bg-white/[0.04] shrink-0 mt-0.5" />
         )}

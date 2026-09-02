@@ -20,7 +20,6 @@ import type { JSX } from "react";
 
 import { Skeleton } from "@/components/foundation/skeleton";
 import { renderHeadline } from "@/components/news/headline-with-tickers";
-import { tagTickers } from "@/lib/news-tagger";
 import { cn } from "@/lib/utils";
 
 export type NewsSummaryItem = {
@@ -171,12 +170,14 @@ function renderHeadlineWithChips(
   title: string,
   tickers: string[] | undefined,
 ): React.ReactNode {
-  // Tenta primeiro com os símbolos que o servidor mandou. Se vazio,
-  // roda o tagger client-side como fallback. Se nada bater, retorna
-  // texto puro (sem chip falso).
-  let matches = tickers && tickers.length > 0
-    ? matchTickersInText(title, tickers)
-    : tagTickers(title).matches;
+  // Só renderiza chip se o servidor mandou tickers. NÃO roda tagTickers
+  // no client (mesma justificativa do NewsFeed — varreria 500+ regex
+  // tests da B3 inteira, combinado com onError do TickerLogo causava
+  // travamento no /home). Sem chip → headline pura.
+  const matches =
+    tickers && tickers.length > 0
+      ? matchTickersInText(title, tickers)
+      : [];
   if (matches.length === 0) return title;
   return renderHeadline(title, matches);
 }
