@@ -30,7 +30,7 @@ import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { JSX } from "react";
 
-import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
+import { AnimatedFloatingDock } from "@/components/foundation/animated-floating-dock";
 import { StaggerOnMount, staggerParentVariants } from "@/components/foundation/stagger";
 import { StatusBar } from "@/components/foundation/status-bar";
 import { TypedGreeting } from "@/components/foundation/typed-greeting";
