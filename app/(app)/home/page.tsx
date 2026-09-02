@@ -210,23 +210,35 @@ export default function HomePage(): JSX.Element {
   const fetchNews = useCallback(async () => {
     setNewsLoading(true);
     try {
-      const r = await fetch("/api/news/multi", { cache: "no-store" });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const data = (await r.json()) as { news?: NewsApiItem[] };
-      const newsItems = data.news ?? [];
-      const mapped = newsItems.slice(0, 30).map(toNewsItem);
-      setNews(mapped);
-      // Deriva o destaque do dia do primeiro item (mesma chamada, sem fetch
-      // adicional). Evita uma segunda chamada paralela ao /api/news/multi que
-      // era a fonte do travamento do site antes do revert anterior.
-      const top = mapped[0];
-      if (top) {
-        setHighlight({
-          headline: top.headline,
-          source: top.source,
-          url: top.url,
-          relatedCount: top.tickers.length,
+      // Timeout de 8s no client pra não travar a UI caso o Railway cold-start
+      // demore. Em cache warm a chamada responde em ~700ms.
+      const ctrl = new AbortController();
+      const timeoutId = setTimeout(() => ctrl.abort(), 8000);
+      try {
+        const r = await fetch("/api/news/multi", {
+          cache: "no-store",
+          signal: ctrl.signal,
         });
+        clearTimeout(timeoutId);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = (await r.json()) as { news?: NewsApiItem[] };
+        const newsItems = data.news ?? [];
+        const mapped = newsItems.slice(0, 30).map(toNewsItem);
+        setNews(mapped);
+        // Deriva o destaque do dia do primeiro item (mesma chamada, sem fetch
+        // adicional). Evita uma segunda chamada paralela ao /api/news/multi
+        // que era a fonte do travamento do site antes do revert anterior.
+        const top = mapped[0];
+        if (top) {
+          setHighlight({
+            headline: top.headline,
+            source: top.source,
+            url: top.url,
+            relatedCount: top.tickers.length,
+          });
+        }
+      } finally {
+        clearTimeout(timeoutId);
       }
     } catch {
       setNews([]);

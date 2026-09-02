@@ -23,9 +23,10 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 25;
 
 // Lightweight seed of high-volume B3 tickers for the Google News tail.
+// Reduzido de 12 → 6 pra cortar a chamada pela metade em cold start
+// (cada ticker = 1 fetch Google News paralelo, com timeout 6s cada).
 const SEED_TICKERS = [
   "PETR4", "VALE3", "ITUB4", "BBDC4", "ABEV3", "BBAS3",
-  "WEGE3", "B3SA3", "BBSE3", "CMIG4", "EQTL3", "RDOR3",
 ];
 
 export async function GET() {
