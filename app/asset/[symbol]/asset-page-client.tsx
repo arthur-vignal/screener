@@ -22,7 +22,7 @@ import useSWR from "swr";
 import { useMemo, useState } from "react";
 import type { JSX } from "react";
 
-import { AnimatedFloatingDock } from "@/components/foundation/animated-floating-dock";
+import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
 import {
   StaggerOnMount,
   staggerParentVariants,
