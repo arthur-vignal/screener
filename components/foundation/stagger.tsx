@@ -43,13 +43,16 @@ export const staggerChildVariants: Variants = {
 export function StaggerOnMount({
   children,
   className,
+  style,
 }: {
   children: ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }): JSX.Element {
   return (
     <motion.div
       className={className}
+      style={style}
       variants={staggerChildVariants}
       initial="hidden"
       animate="show"

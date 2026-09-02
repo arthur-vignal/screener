@@ -285,7 +285,10 @@ export default function HomePage(): JSX.Element {
         {/* 3-col grid — stretch natural (alinha fim dos cards) */}
         <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)_360px] gap-5 items-stretch">
           {/* ── Coluna esquerda ─────────────────────────────────────────── */}
-          <div className="flex flex-col gap-5">
+          <div
+            className="flex flex-col gap-5"
+            style={{ maxHeight: "calc(100dvh - 240px)" }}
+          >
             {/* Portfolio estica até o fundo do grid (alinha com o card de
                 Cotações à direita). DayHighlight fica com altura natural
                 abaixo dele. */}
@@ -306,7 +309,10 @@ export default function HomePage(): JSX.Element {
           </div>
 
           {/* ── Coluna central (tabela com header interno) ─────────────── */}
-                <StaggerOnMount className="flex-1 min-h-0 flex">
+                <StaggerOnMount
+                  className="flex-1 min-h-0 flex"
+                  style={{ maxHeight: "calc(100dvh - 240px)" }}
+                >
                   <QuotationsTable
                     className="h-full w-full"
                     rows={rows}
@@ -329,7 +335,7 @@ export default function HomePage(): JSX.Element {
                 </StaggerOnMount>
 
           {/* ── Coluna direita ─────────────────────────────────────────── */}
-          <StaggerOnMount>
+          <StaggerOnMount style={{ maxHeight: "calc(100dvh - 240px)" }}>
             <NewsFeed items={news} loading={newsLoading} maxItems={6} />
           </StaggerOnMount>
         </div>
