@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import {
   BrandLetter,
-  AnimatedFloatingDock as DashboardDock,
+  SulfurDock as DashboardDock,
   DataTable,
   Delta,
   IndexLogo,

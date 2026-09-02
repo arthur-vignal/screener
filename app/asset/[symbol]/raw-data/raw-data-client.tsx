@@ -26,7 +26,7 @@ import {
 import type { JSX } from "react";
 
 import { AssetHeader } from "@/components/asset/asset-header";
-import { AnimatedFloatingDock } from "@/components/foundation/animated-floating-dock";
+import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
 import { StaggerOnMount } from "@/components/foundation/stagger";
 
 type RawRow = {
