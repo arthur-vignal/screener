@@ -81,13 +81,17 @@ export default function HomeDebug3Page(): JSX.Element {
           </div>
 
           <ul className="mt-4 space-y-3">
-            {(items ?? Array.from({ length: 6 })).map((item, i) => (
-              <li key={item.id ?? i} className="text-[13px] text-foreground/80">
-                {items === null
-                  ? `▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒`
-                  : item.headline}
-              </li>
-            ))}
+            {items === null
+              ? Array.from({ length: 6 }).map((_, i) => (
+                  <li key={i} className="text-[13px] text-foreground/80">
+                    ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+                  </li>
+                ))
+              : items.map((item, i) => (
+                  <li key={item.id ?? i} className="text-[13px] text-foreground/80">
+                    {item.headline}
+                  </li>
+                ))}
           </ul>
         </div>
       </div>
