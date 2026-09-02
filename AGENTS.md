@@ -485,6 +485,8 @@ Pra religar news (futuro):
 - **Card de alinhamento**: RESOLVIDO (100dvh-240px)
 - **Cotação esticando**: RESOLVIDO
 - **BDR classifier**: RESOLVIDO
+- **News feed travamento (sessão 2026-09-02)**: CAUSA RAIZ IDENTIFICADA,
+  fix aplicado em `11e1137`. Ver seção própria abaixo.
 - **ON/PN toggle**: parcialmente (só PN agora; ON precisa de botão)
 - **B4 brapiValueAdded**: stashed como `stash@{0}: B4-b5-wip` (não commitado)
 - **B5 lib/brapi-full.ts:791** endpoint 404: pendente
@@ -492,3 +494,74 @@ Pra religar news (futuro):
 - **9 charts PeriodTabs em /analysis**: pendente (não foi completado)
 - **brapi-full.ts migração v2** (commit `faedca7`): parcial — só
   `brapi-full.ts` ficou pendente
+
+## Histórico da sessão 2026-09-02 (isolamento + fix do travamento do news)
+
+Arthur reportou que `/home-debug` (página isolada de teste com NewsFeed)
+travava 100% no browser (F12 vazio, página não responsiva). Kibo
+montou 3 páginas debug pra isolar camada por camada.
+
+### Isolamento via páginas debug (todas em prod, remover depois)
+
+| URL | NewsFeed | (app)/layout | Skeleton | resultado |
+|---|---|---|---|---|
+| `/home-debug3` | ❌ | ❌ | ❌ | ✅ FUNCIONOU (6 headlines em 2.5s) |
+| `/home-debug2` | ❌ | ✅ | ❌ | ✅ FUNCIONOU |
+| `/home-debug` | ✅ | ✅ | ✅ | ❌ **travou** (ANTES do fix) |
+
+Conclusão: bug é do `NewsFeed` + `Skeleton` + `TickerLogo`, **não** do
+`(app)/layout` (PageFade/SelectionProvider/MultiSelectToolbar) nem do
+`/api/news/multi` server-side.
+
+### Causa raiz (duas somadas)
+
+1. **`NewsCard` chamava `tagTickers()` no client quando `item.tickers=[]`.**
+   ~500-1000 regex tests da B3 inteira por card. Em prod, ~40% dos
+   items vêm com `tickers:[]` (tagger server-side falhou em encontrar
+   símbolo — ex: "BofA eleva recomendação de B3" não tem B3SA3 literal),
+   então 2-3 cards caíam no fallback. Custo: 3-6ms de trabalho
+   síncrono por render.
+
+2. **`<TickerLogo>` faz `<img src=icons.brapi.dev/icons/{SYMBOL}.svg>`
+   com `onError={() => setFailed(true)}`.** Em prod, ~70% dos tickers
+   mencionados por fontes como BPMoney/Investidor10 (CXSE3, B3SA3, etc)
+   não têm SVG oficial e retornam 404. Cada 404 dispara setState que
+   re-renderiza o card. Combinado com o `tagTickers` síncrono acima,
+   cascateia em main thread travado.
+
+### Fix aplicado (commit `11e1137`)
+
+- `components/home/news-feed.tsx`:
+  - Removido import de `tagTickers` e `TickerLogo`
+  - `NewsCard`: quando `item.tickers=[]` → retorna `[]` sem tentar
+    tagTickers. Headline fica sem chip inline (aceitável — 40% dos items).
+  - `NewsCard`: trocado `<TickerLogo>` por `<BrandLetter>` (puro cálculo
+    de cor, zero I/O, zero re-render).
+- `components/asset/news-summary-card.tsx`:
+  - Mesmo fix no `renderHeadlineWithChips` (mesma lógica de chip inline).
+
+### Pendente próximo dia (sessão 2026-09-02 → 2026-09-03)
+
+1. **Arthur testar `/home-debug` com fix `11e1137`.** Se não travar mais,
+   o fix tá validado em isolamento.
+2. **Religar news no `/home` real** (mesmo padrão do `/home-debug`,
+   com layout 3-colunas completo). Editar `app/(app)/home/page.tsx:209-234`
+   pra descomentar o `fetchNews` + remover `setNewsLoading(false)` fixo.
+3. **Remover páginas debug** (`/home-debug`, `/home-debug2`,
+   `/home-debug3`) — eram só pra isolamento, devem sair antes de
+   qualquer commit pra main.
+4. **Melhorar tagger server-side** (secundário): quando `tagNewsItem`
+   retorna `[]`, manter `relatedTickers` da fonte original em vez de
+   perder. Editar `app/api/news/multi/route.ts:78-81` pra preservar
+   o campo. Isso restaura o chip inline nos 40% dos items que perdem.
+5. **Verificar se `/api/portfolio/summary` foi commitado em algum lugar**
+   — em prod retorna 404, e `app/api/portfolio/` não existe localmente.
+   Pode ter sido commitado e depois revertido, ou nunca chegou no main.
+   Investigar com `git log --all -- app/api/portfolio/`.
+
+### Bug de build do Next 16 encontrado
+
+`npm run build` quebrava silenciosamente em `(items ?? Array.from(...)).map(item => item.id)`
+no SSR (sem useEffect ainda, items=null virava map de undefined). Fix:
+branches explícitos `items === null ? Array.from(...).map(i) : items.map(item)`.
+Next 16 + webpack é mais estrito que Next 14.
