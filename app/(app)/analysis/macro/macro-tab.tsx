@@ -3,21 +3,20 @@
 /**
  * MacroTab — primeira aba do /analysis.
  *
- * Estrutura vertical (full-width):
- *   1. MacroNewsCard    — lista de notícias macro (top-5 cards verticais)
- *   2. MacroChartCarousel — 1 chart grande com auto-rotação 5s entre
- *      SELIC, IPCA, IBC-Br (3 charts pricipais). Setas manuais.
- *   3. MacroIndicesList — tabela de índices B3 (YTD), personalizável
- *      com add/remove + localStorage.
- *   4. MacroCalendar    — calendário econômico (eventos BR hardcoded).
+ * Estrutura vertical inspirada no print 2 do chart-pack-references
+ * (Fey mobbin), adaptada pra BR com os 4 cards que o usuário pediu:
  *
- * Cards herdam estilo glyph:
- *   - Background dark + border border-white/5
- *   - Padding generoso (24-32px)
- *   - Cantos arredondados rounded-2xl
- *   - Header: 12px uppercase tracking-[0.18em] font-semibold muted
+ *   1. News | Chart carousel      → grid 2-cols (60% / 40%)
+ *   2. MacroIndicesList         → full-width
+ *   3. MacroCalendar            → full-width (com split Today/Upcoming)
  *
- * Inspirado no layout 07 do chart-pack-references.
+ * Card "Macro overview" do Fey (resumo macro textual) ainda não tem
+ * contraparte no nosso feed — pode entrar como header da News ou como
+ * sub-card futuro.
+ *
+ * Layout responsivo:
+ *   - >= lg: 2-col grid nas linhas 1 e indicators full-width
+ *   - < lg: stack vertical (todos os cards viram full-width)
  */
 
 import { motion, type Variants } from "motion/react";
@@ -27,6 +26,7 @@ import { MacroNewsCard } from "./macro-news-card";
 import { MacroChartCarousel } from "./macro-chart-carousel";
 import { MacroIndicesList } from "./macro-indices-list";
 import { MacroCalendar } from "./macro-calendar";
+import { cn } from "@/lib/utils";
 
 const listVariants: Variants = {
   hidden: {},
@@ -48,18 +48,24 @@ export function MacroTab(): JSX.Element {
       aria-label="Análise macro"
       className="flex flex-col gap-5"
     >
-      <motion.div variants={itemVariants as any}>
+      {/* Linha 1: News (60%) + Chart carousel (40%) */}
+      <motion.div
+        variants={itemVariants as any}
+        className={cn(
+          "grid grid-cols-1 gap-5",
+          "lg:grid-cols-[3fr_2fr]",
+        )}
+      >
         <MacroNewsCard />
-      </motion.div>
-
-      <motion.div variants={itemVariants as any}>
         <MacroChartCarousel />
       </motion.div>
 
+      {/* Linha 2: Lista de índices B3 full-width */}
       <motion.div variants={itemVariants as any}>
         <MacroIndicesList />
       </motion.div>
 
+      {/* Linha 3: Calendário econômico full-width */}
       <motion.div variants={itemVariants as any}>
         <MacroCalendar />
       </motion.div>

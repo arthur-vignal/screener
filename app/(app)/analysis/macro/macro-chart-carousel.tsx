@@ -164,50 +164,60 @@ export function MacroChartCarousel(): JSX.Element {
         {loading ? (
           <Skeleton className="h-full w-full" />
         ) : data && data.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data}>
-              <defs>
-                <linearGradient
-                  id={`fill-positive-${cfg.key}`}
-                  x1="0" x2="0" y1="0" y2="1"
-                >
-                  <stop offset="0%" stopColor="#4dbe95" stopOpacity={0.28} />
-                  <stop offset="100%" stopColor="#4dbe95" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient
-                  id={`fill-negative-${cfg.key}`}
-                  x1="0" x2="0" y1="0" y2="1"
-                >
-                  <stop offset="0%" stopColor="#d84f68" stopOpacity={0.28} />
-                  <stop offset="100%" stopColor="#d84f68" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid
-                strokeDasharray="2 4"
-                stroke="rgba(255,255,255,0.06)"
-                vertical={false}
-              />
-              <XAxis dataKey="date" hide />
-              <YAxis
-                orientation="right"
-                tick={{ fill: "rgba(200,210,230,0.55)", fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `${v.toFixed(1)}`}
-                width={48}
-              />
-              <Area
-                type="linear"
-                dataKey="value"
-                stroke="#e8eaed"
-                strokeWidth={1.5}
-                fill={cfg.bidirectional ? "url(#fill-positive-selic)" : `url(#fill-positive-${cfg.key})`}
-                isAnimationActive={true}
-                animationDuration={600}
-                connectNulls={true}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          (() => {
+            // Bidirecional (IBC-Br YoY, etc): usa gradiente verde se último
+            // ponto >= 0, vermelho se < 0. Para séries onde bidirectional=false
+            // (SELIC, IPCA), sempre verde.
+            const last = data[data.length - 1]?.value ?? 0;
+            const isPositive = !cfg.bidirectional || last >= 0;
+            const gradientId = `fill-${isPositive ? "positive" : "negative"}-${cfg.key}`;
+            return (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data}>
+                  <defs>
+                    <linearGradient
+                      id={`fill-positive-${cfg.key}`}
+                      x1="0" x2="0" y1="0" y2="1"
+                    >
+                      <stop offset="0%" stopColor="#4dbe95" stopOpacity={0.28} />
+                      <stop offset="100%" stopColor="#4dbe95" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient
+                      id={`fill-negative-${cfg.key}`}
+                      x1="0" x2="0" y1="0" y2="1"
+                    >
+                      <stop offset="0%" stopColor="#d84f68" stopOpacity={0.28} />
+                      <stop offset="100%" stopColor="#d84f68" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="2 4"
+                    stroke="rgba(255,255,255,0.06)"
+                    vertical={false}
+                  />
+                  <XAxis dataKey="date" hide />
+                  <YAxis
+                    orientation="right"
+                    tick={{ fill: "rgba(200,210,230,0.55)", fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => `${v.toFixed(1)}`}
+                    width={48}
+                  />
+                  <Area
+                    type="linear"
+                    dataKey="value"
+                    stroke={isPositive ? "#e8eaed" : "#e8eaed"}
+                    strokeWidth={1.5}
+                    fill={`url(#${gradientId})`}
+                    isAnimationActive={true}
+                    animationDuration={600}
+                    connectNulls={true}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            );
+          })()
         ) : (
           <div className="h-full flex items-center justify-center text-[13px] text-muted-foreground/70">
             Sem dados disponíveis.

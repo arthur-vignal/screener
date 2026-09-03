@@ -165,10 +165,14 @@ export function MacroIndicesList(): JSX.Element {
           aria-expanded={addOpen}
           aria-label="Adicionar ou remover índices"
           className={cn(
+            // Pack typography 03: button rectangular Tesla-style
+            // h-8 px-3 rounded-md (não rounded-full pois é ação, não chip).
             "inline-flex items-center gap-1.5 h-8 px-3 rounded-md",
             "bg-white/[0.04] border border-white/10 text-foreground",
             "text-[12px] font-medium",
-            "hover:bg-white/[0.08] hover:border-white/20 transition-colors",
+            "hover:bg-white/[0.08] hover:border-white/20",
+            "transition-colors",
+            "focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-white/30",
           )}
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={2} />

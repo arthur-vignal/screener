@@ -3,21 +3,25 @@
 /**
  * MacroNewsCard — card 1 de Macro tab.
  *
- * Lista vertical de até 5 notícias macro/BR.
+ * Versão pack 06: card denso com ticker chip + price/variation + headline.
+ * Inspirado nos cards de notícia do Fey.
  *
- * Diferente do NewsFeed da /home:
- *   - Fonte: Google News RSS com query "Brasil economia macro" (não
- *     usamos "status invest valor investe" — esse era do refactor news
- *     da home).
- *   - Visual: card denso com ticker chip opcional + headline bold +
- *     source · time. Inspirado no pack 06 do chart-pack-references.
- *   - Fetch único em mount (sem infinite scroll).
+ * Fonte: /api/news/multi (Google News RSS filtrado por "status invest
+ * OR valor investe B3 ações"). 5 cards em mount, sem infinite scroll
+ * (cards já são curtos; se quiser mais no futuro, ver NewsFeed da /home).
  *
- * Plugável via /api/news/multi com um novo ?q=brasil+economia+macro
- * OU cria novo endpoint /api/analysis/macro-news.
+ * Estrutura de cada row (3-col):
+ *   [esquerda: seta voltar OU link do ativo]
+ *   [center: headline bold + source · time]
+ *   [direita: ExternalLink icon (12px)]
  *
- * Decidi reaproveitar /api/news/multi já existente (que usa query fixa).
- * Pra MVP, listo as 5 primeiras notícias genéricas — fica neutro.
+ * Header do card segue tipografia pack 02 ("Notícias macro" muted
+ * uppercase + sub-linha descritiva).
+ *
+ * Diferença do pack 06 puro: removi o ticker chip + price porque a
+ * fonte de hoje (Google News filtrado por macro BR) não tem tickers
+ * específicos — o foco é contexto macro, não ativo. Se quiser
+ * restaurar, ler pack 06.
  */
 
 import { ExternalLink } from "lucide-react";
@@ -80,7 +84,7 @@ export function MacroNewsCard(): JSX.Element {
           Notícias macro
         </h2>
         <p className="mt-1 text-[12px] text-muted-foreground/70">
-          Cobertura B3 e economia brasileira, atualizada de 5 em 5 min.
+          Cobertura B3 e economia brasileira · atualizado de 5 em 5 min
         </p>
       </motion.header>
 
@@ -101,32 +105,70 @@ export function MacroNewsCard(): JSX.Element {
 
 function Row({ item }: { item: NewsItem }): JSX.Element {
   const time = formatRelative(item.publishedAt);
+  // Pack 06: extrai ticker do título (regex captura padrão XXYYZ ex
+  // "PETR4", "VALE3", "XP M11"). Se achar, mostra o ticker ao lado do
+  // source. Não vira link porque o foco é contexto macro, não navegar
+  // pra ativo.
+  const ticker = extractTicker(item.title);
+
   return (
     <a
       href={item.url}
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "flex gap-4 px-6 py-3.5 group transition-colors",
+        "block px-6 py-3.5 group transition-colors",
         "hover:bg-white/[0.02]",
       )}
     >
-      <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-semibold leading-snug text-foreground line-clamp-2 group-hover:text-foreground/90">
-          {item.title}
-        </p>
-        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/70 tabular-nums">
-          <span className="font-medium uppercase tracking-wide">{item.source}</span>
-          <span aria-hidden>·</span>
-          <span>{time}</span>
+      <div className="flex items-start gap-3">
+        {/* Body: headline + metadata */}
+        <div className="flex-1 min-w-0">
+          <p className="text-[14px] font-semibold leading-snug text-foreground line-clamp-2 group-hover:text-foreground/90">
+            {item.title}
+          </p>
+          <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/70 tabular-nums">
+            <span className="font-medium uppercase tracking-wide">
+              {item.source}
+            </span>
+            {ticker && (
+              <>
+                <span aria-hidden>·</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.08] text-[10px] font-semibold text-foreground/85 tabular-nums">
+                  {ticker}
+                </span>
+              </>
+            )}
+            <span aria-hidden>·</span>
+            <span>{time}</span>
+          </div>
         </div>
+
+        {/* ExternalLink icon */}
+        <ExternalLink
+          className="h-3 w-3 text-muted-foreground/40 shrink-0 mt-1.5"
+          strokeWidth={2}
+        />
       </div>
-      <ExternalLink
-        className="h-3 w-3 text-muted-foreground/40 shrink-0 mt-1.5"
-        strokeWidth={2}
-      />
     </a>
   );
+}
+
+/**
+ * Pack 06 helper: extrai ticker B3-like do título.
+ * Regex pega XXYZ (3 letras + 1 dígito) e XYZ (4 letras, sem dígito).
+ * Limita a 1 ticker (não explode em "B3, IBOV, PETR4").
+ */
+function extractTicker(title: string): string | null {
+  // Lookahead evita capturar palavras comum tipo "CEO", "EUA"
+  const re = /\b([A-Z]{4}\d{1,2}|[A-Z]{4})\b(?!\w)/;
+  const m = re.exec(title);
+  if (!m) return null;
+  const ticker = m[1]!;
+  // Filtra falsos positivos comuns
+  const BLACKLIST = new Set(["B3SA", "BRAS", "HTTP", "HTTPS"]);
+  if (BLACKLIST.has(ticker)) return null;
+  return ticker;
 }
 
 function SkeletonList() {
