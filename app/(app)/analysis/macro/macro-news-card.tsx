@@ -53,7 +53,7 @@ export function MacroNewsCard(): JSX.Element {
     let cancelled = false;
     async function load() {
       try {
-        const r = await fetch("/api/news/multi?limit=5", { cache: "no-store" });
+        const r = await fetch("/api/news/multi-macro?limit=5", { cache: "no-store" });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const data = (await r.json()) as { news?: NewsItem[] };
         if (!cancelled) setItems((data.news ?? []).slice(0, 5));

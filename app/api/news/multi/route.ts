@@ -1,18 +1,21 @@
 import { NextResponse } from "next/server";
 
-import { fetchB3News } from "@/lib/google-news";
+import { fetchB3ActionsNews } from "@/lib/news-aggregator";
 
 /**
  * GET /api/news/multi
  *
- * B3 news feed sourced from Google News RSS (single source).
+ * News feed de AÇÕES B3 (sem macro). Source: InfoMoney Ações + Brazil Journal
+ * via `lib/news-aggregator.ts`.
  *
  * Query params:
  *   - limit: number, default 20, max 50
  *   - cursor: optional datetime (unix seconds). Returns items older than this.
  *     Used by infinite scroll on the home page.
  *
- * Returns: { news: GoogleNewsItem[] }
+ * Returns: { news: NewsItem[] }
+ *
+ * NOTA: macro tab usa /api/news/multi-macro (não este endpoint).
  */
 
 export const dynamic = "force-dynamic";
@@ -27,7 +30,7 @@ export async function GET(request: Request) {
   const cursorRaw = url.searchParams.get("cursor");
   const cursor = cursorRaw ? Number(cursorRaw) : null;
 
-  const all = await fetchB3News(50); // ask max, slice below
+  const all = await fetchB3ActionsNews(50);
   if (all.length === 0) {
     return NextResponse.json({ news: [] });
   }
