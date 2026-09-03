@@ -9,7 +9,8 @@
  * cruzada do Google News), todos com cobertura editorial da B3.
  *
  * Yields:
- *   { title, url, source, publishedAt (ISO), datetime (unix seconds) }
+ *   { title, url, source, publishedAt (ISO), datetime (unix seconds),
+ *     ticker?: string }  // B3 ticker pattern detectado (PETR4, VALE3, etc)
  */
 
 export type GoogleNewsItem = {
@@ -25,7 +26,38 @@ export type GoogleNewsItem = {
   publishedAt: string;
   /** unix seconds. For sorting/dedupe. */
   datetime: number;
+  /** B3 ticker detected (PETR4, VALE3, etc) — used by NewsCard pack 06. */
+  ticker?: string;
 };
+
+/**
+ * Regex usada pra extrair ticker B3 (PETR4, VALE3, BBDC4) ou ativo
+ * 4 letras tipo BDR (AAPL, MSFT mas vamos ignorar fora B3). Ordem:
+ *
+ *   1. Ticker B3 clássico: 4 letras + 1-2 dígitos (PETR4, VALE3, BBDC4)
+ *   2. Ticker BDR: 4 letras + 2 dígitos + letra (AAPL34)
+ *
+ * Lookbehind em palavras evita capturar "B3B3" tipo coincidência e
+ * `CEO`, "EUA", "IPO" que são comuns em texto PT-BR.
+ */
+const TICKER_RE = /\b([A-Z]{4}\d{1,2}|[A-Z]{4}\d[A-Z])\b/;
+
+const TICKER_BLACKLIST = new Set([
+  "B3SA", // false positive comum (B3 + SA de Razão Social)
+  "BRAS", // "BRASil" (não tem mas defensivo)
+  "HTTP", "HTTPS",
+  // Macroeconômicos comuns em manchetes que não são ações
+  "SELIC", "CDIE", "IPCA", "PIB", "IGPM", "IPGM",
+  "IBOV", "IFIX", "IDIV", "BDRX", "SMLL", "IVBX",
+]);
+
+function extractTicker(title: string): string | undefined {
+  const m = TICKER_RE.exec(title);
+  if (!m) return undefined;
+  const ticker = m[1]!;
+  if (TICKER_BLACKLIST.has(ticker)) return undefined;
+  return ticker;
+}
 
 const QUERY = '"status invest" OR "valor investe" B3 ações';
 const URL = `https://news.google.com/rss/search?q=${encodeURIComponent(QUERY)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
@@ -66,6 +98,7 @@ function parseRss(xml: string, limit: number): GoogleNewsItem[] {
       url: link,
       publishedAt: new Date(ts).toISOString(),
       datetime: Math.floor(ts / 1000),
+      ticker: extractTicker(title),
     });
   }
   return items;

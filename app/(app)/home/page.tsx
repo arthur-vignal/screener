@@ -19,10 +19,14 @@
  *   - /api/portfolio/summary    → patrimônio
  *   - /api/assets/quote?type=…  → cotações paginadas
  *   - /api/news/multi           → feed B3 (Google News, infinite scroll)
+ *
+ * NewsFeed (pack 06): cada card mostra chip do ticker (extraído do
+ * título pelo GoogleNewsItem.ticker server-side) + preço/variação
+ * derivado do `pageCache` já carregado (zero requests extra).
  */
 
 import { motion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JSX } from "react";
 
 import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
@@ -97,7 +101,6 @@ export default function HomePage(): JSX.Element {
   }, []);
 
   // ── Quotes (paginado) ──────────────────────────────────────────────────────
-  // Reset completo quando muda o tipo (cache vira do tipo novo).
   useEffect(() => {
     setPageCache(new Map());
     setCurrentPage(1);
@@ -108,7 +111,6 @@ export default function HomePage(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assetType]);
 
-  // Quando currentPage muda, busca a página se ainda não tá no cache.
   useEffect(() => {
     if (pageCache.has(currentPage)) return;
     if (inFlightPageRef.current === currentPage) return;
@@ -141,7 +143,7 @@ export default function HomePage(): JSX.Element {
       setTotalPages(Math.max(1, data.totalPages ?? 1));
       setTotal(data.total ?? 0);
     } catch {
-      // silent — usuário vê a página anterior no cache
+      // silent
     } finally {
       inFlightPageRef.current = null;
       if (isInitial) setQuotesLoading(false);
@@ -156,8 +158,24 @@ export default function HomePage(): JSX.Element {
     void fetchPage(next, false);
   }, [currentPage, totalPages, assetType]);
 
-  // Rows da página atual — só atualiza quando o cache da página atual muda.
   const rows = pageCache.get(currentPage) ?? [];
+
+  // Index de preço derivado das páginas já carregadas (pack 06).
+  // Não faz request extra — o NewsFeed recebe só esse Map.
+  const priceIndex = useMemo(() => {
+    const m = new Map<string, { price: number; changePercent: number }>();
+    for (const rowsForPage of pageCache.values()) {
+      for (const r of rowsForPage) {
+        if (r.price != null) {
+          m.set(r.symbol, {
+            price: r.price,
+            changePercent: r.changePercent ?? 0,
+          });
+        }
+      }
+    }
+    return m;
+  }, [pageCache]);
 
   // ── Portfolio ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -211,7 +229,9 @@ export default function HomePage(): JSX.Element {
         });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const data = (await r.json()) as {
-          news?: Array<NewsItem & { datetime?: number }>;
+          news?: Array<
+            NewsItem & { datetime?: number }
+          >;
         };
         const items = data.news ?? [];
         const mapped: NewsItem[] = items.map((n) => ({
@@ -220,6 +240,7 @@ export default function HomePage(): JSX.Element {
           source: n.source,
           publishedAt: n.publishedAt,
           url: n.url,
+          ticker: n.ticker,
         }));
         setNews((prev) => (cursor === null ? mapped : [...prev, ...mapped]));
         if (items.length > 0) {
@@ -252,8 +273,6 @@ export default function HomePage(): JSX.Element {
     void fetchNews(newsCursor);
   }, [fetchNews, newsCursor, newsHasMore, newsLoadingMore]);
 
-  // Highlight do dia: sem endpoint server-side ainda; deixa loading false
-  // pra mostrar o card vazio em vez de skeleton perpétuo.
   useEffect(() => {
     setHighlightLoading(false);
   }, []);
@@ -328,8 +347,7 @@ export default function HomePage(): JSX.Element {
             />
           </StaggerOnMount>
 
-          {/* Coluna direita — NewsFeed alinha ao fim do card de cotações via
-              maxHeight + flex; infinite scroll sem barra de scroll visível */}
+          {/* Coluna direita */}
           <StaggerOnMount
             className="flex flex-col"
             style={{ maxHeight: "calc(100dvh - 240px)" }}
@@ -341,6 +359,7 @@ export default function HomePage(): JSX.Element {
               onLoadMore={loadMoreNews}
               hasMore={newsHasMore}
               onRetry={() => fetchNews(null)}
+              priceIndex={priceIndex}
               className="flex-1 min-h-0"
             />
           </StaggerOnMount>

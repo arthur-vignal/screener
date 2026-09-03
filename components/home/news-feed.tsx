@@ -3,19 +3,24 @@
 /**
  * NewsFeed — feed vertical de notícias (coluna direita da /home).
  *
- * Versão minimalista (2026-09-02): sem ticker detection, sem regex, sem
- * tagger, sem ícones de marca. Cada card tem só:
- *   - título (link externo, abre em nova aba)
- *   - fonte · tempo relativo
+ * Pack 06 do chart-pack-references (SMCI card):
+ *   - Ticker chip (canto sup. esquerdo, clicável → /asset/[ticker])
+ *   - Preço + variação (canto sup. direito)
+ *   - Headline em destaque (corpo principal, bold ~14px)
+ *   - Source · tempo na linha de metadata
  *
- * Fontes via Google News RSS → `lib/google-news.ts` → `/api/news/multi`.
+ * Fonte de preço: vem do parent /home via prop `priceIndex` (Map<symbol,
+ * {price, changePercent}>). Construído uma vez no /home a partir do
+ * /api/assets/quote?type=stock&page=1 — sem requests extra.
  *
- * Infinite scroll por IntersectionObserver no sentinel (alinhado com o
- * fim do card de cotações na coluna central). Sem barra de scroll visível
- * no aside — apenas overflow natural.
+ * Sem flag de preço: o card renderiza sem chip de preço (apenas ticker)
+ * pra evitar rejete e manter o pack 06 honesto.
+ *
+ * Infinite scroll cursor (igual antes).
  */
 
 import { ExternalLink } from "lucide-react";
+import Link from "next/link";
 import type { JSX } from "react";
 
 import { Skeleton } from "@/components/foundation/skeleton";
@@ -29,7 +34,11 @@ export type NewsItem = {
   publishedAt: string;
   /** Absolute URL — link out. */
   url: string;
+  /** B3 ticker pattern extracted from title (PETR4, VALE3). */
+  ticker?: string;
 };
+
+export type PriceIndex = Map<string, { price: number; changePercent: number }>;
 
 type Props = {
   items: NewsItem[];
@@ -38,6 +47,8 @@ type Props = {
   onRetry?: () => void;
   onLoadMore?: () => void;
   hasMore?: boolean;
+  /** Optional index of ticker → price/variation for the card header. */
+  priceIndex?: PriceIndex;
   className?: string;
 };
 
@@ -48,6 +59,7 @@ export function NewsFeed({
   onRetry,
   onLoadMore,
   hasMore,
+  priceIndex,
   className,
 }: Props): JSX.Element {
   return (
@@ -78,7 +90,7 @@ export function NewsFeed({
           <ul className="space-y-1">
             {items.map((item) => (
               <li key={item.id}>
-                <NewsCard item={item} />
+                <NewsCard item={item} priceIndex={priceIndex} />
               </li>
             ))}
           </ul>
@@ -105,37 +117,83 @@ export function NewsFeed({
   );
 }
 
-// ─── Card ───────────────────────────────────────────────────────────────────
+// ─── Card (pack 06) ──────────────────────────────────────────────────────────
 
-function NewsCard({ item }: { item: NewsItem }): JSX.Element {
+function NewsCard({
+  item, priceIndex,
+}: { item: NewsItem; priceIndex?: PriceIndex }): JSX.Element {
   const time = formatRelative(item.publishedAt);
+  const quote = item.ticker ? priceIndex?.get(item.ticker) : undefined;
+  const price = quote?.price;
+  const change = quote?.changePercent;
+
   return (
     <a
       href={item.url}
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "block rounded-lg p-3.5",
+        "block rounded-lg p-3.5 group transition-colors",
         "hover:bg-white/[0.02]",
-        "transition-colors group",
       )}
     >
-      <div className="flex gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-medium text-foreground leading-snug line-clamp-2 group-hover:text-foreground/90">
-            {item.title}
-          </p>
-          <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/70 tabular-nums">
-            <span className="font-medium uppercase tracking-wide">
-              {item.source}
-            </span>
-            <span aria-hidden="true">·</span>
-            <span>{time}</span>
+      {/* Linha 1: ticker chip à esquerda + preço/variação à direita */}
+      {(item.ticker || price != null) && (
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2 min-w-0">
+            {item.ticker && (
+              <Link
+                href={`/asset/${item.ticker}`}
+                onClick={(e) => e.stopPropagation()}
+                className={cn(
+                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-full",
+                  "bg-white/[0.06] hover:bg-white/[0.1]",
+                  "text-[11px] font-semibold tracking-tight",
+                  "text-foreground transition-colors",
+                  "border border-white/[0.08]",
+                )}
+                title={`Ver ${item.ticker}`}
+              >
+                {item.ticker}
+              </Link>
+            )}
           </div>
+          {price != null && (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-[12px] font-semibold tabular-nums text-foreground">
+                {price.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              {change != null && (
+                <span
+                  className={cn(
+                    "inline-flex items-center px-1.5 py-0.5 rounded-md",
+                    "text-[10px] font-semibold tabular-nums",
+                    change >= 0
+                      ? "bg-[#d84f68]/20 text-[#d84f68]"
+                      : "bg-[#4dbe95]/20 text-[#4dbe95]",
+                  )}
+                >
+                  {change >= 0 ? "+" : ""}
+                  {change.toFixed(2)}%
+                </span>
+              )}
+            </div>
+          )}
         </div>
+      )}
 
+      {/* Headline */}
+      <p className="text-[14px] font-semibold leading-snug text-foreground line-clamp-2 group-hover:text-foreground/90">
+        {item.title}
+      </p>
+
+      {/* Metadata */}
+      <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/70 tabular-nums">
+        <span className="font-medium uppercase tracking-wide">{item.source}</span>
+        <span aria-hidden>·</span>
+        <span>{time}</span>
         <ExternalLink
-          className="h-3 w-3 text-muted-foreground/40 shrink-0 mt-1"
+          className="ml-auto h-3 w-3 text-muted-foreground/40 shrink-0"
           strokeWidth={2}
         />
       </div>
