@@ -556,6 +556,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
                   quarters={earningsData.quarters}
                   currency={(bundle?.currency as "BRL" | "USD") ?? "BRL"}
                   limit={5}
+                  forwardEps={bundle?.metrics?.forwardEps ?? null}
                 />
               </div>
             </div>

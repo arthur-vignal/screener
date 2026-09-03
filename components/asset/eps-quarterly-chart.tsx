@@ -11,11 +11,23 @@
  *       0.60         0.52        0.72         0.73         0.52
  *   Q1 2024      Q2 2024      Q3 2024      Q4 2024      Q1 2025
  *
- * - 5 quarters mais recentes
+ * - 5 quarters mais recentes (reais) + 1 projected opcional (forwardEps)
  * - Marker circular por quarter (verde/vermelho/neutro)
  * - Seta ▲/▼ indicando variação vs quarter anterior
  * - Status heurístico: missed/beat/flat baseado em ±5% de variação
  * - Label "EPS forecast down X%" calculado (TTM vs year-ago TTM)
+ *
+ * Packs aplicados (sessão 2026-09-03):
+ * - Pack 02 (fill sólido vs contorno vazio — forecast vs reported):
+ *   quarrer real = fill sólido + stroke; quarter projected = fill
+ *   transparente + stroke PACK.muted tracejado. Comunica 'ainda não
+ *   reportado' sem legenda cognitiva.
+ * - Pack 04 (linhas retas para medições discretas): type="linear" na
+ *   linha de conexão entre pontos. EPS é calculado por quarter — não
+ *   há interpolação honesta entre quarters, então monotone inventava
+ *   curva onde não tem dado.
+ * - Cores via lib/chart-pack.ts (PACK.asset beat, PACK.negative missed,
+ *   PACK.foreground flat, PACK.muted projected stroke).
  *
  * Dados REAIS: brapi incomeStatementHistoryQuarterly.
  * Brapi NÃO retorna consenso pré-resultado, então "missed/beat" é
@@ -38,12 +50,7 @@ import {
 import { ArrowDown, ArrowUp } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import {
-  CHART_COLORS,
-  cartesianGridProps,
-  cursorProps,
-  tooltipWrapperStyle,
-} from "@/lib/chart-theme";
+import { PACK, packGrid } from "@/lib/chart-pack";
 
 export type QuarterPoint = {
   /** Quarter end date (ISO "YYYY-MM-DD"). */
@@ -61,6 +68,12 @@ type Props = {
   currency: "BRL" | "USD";
   /** Quantos quarters exibir (default: 5). */
   limit?: number;
+  /**
+   * EPS forward (próximo quarter projetado). Quando informado, adiciona
+   * 1 ponto extra com pack 02 aplicado (contorno vazio tracejado).
+   * Mesmo label da QuarterResults (quarter atual + próximo Q projetado).
+   */
+  forwardEps?: number | null;
   className?: string;
 };
 
@@ -80,10 +93,11 @@ export function EPSQuarterlyChart({
   quarters,
   currency,
   limit = 5,
+  forwardEps,
   className,
 }: Props): JSX.Element | null {
   // Pega últimos N quarters com EPS válido
-  const data = useMemo(() => {
+  const realData = useMemo(() => {
     const valid = quarters
       .filter((q): q is QuarterPoint & { epsBasic: number } => q.epsBasic != null)
       .sort((a, b) => a.endDate.localeCompare(b.endDate))
@@ -101,15 +115,41 @@ export function EPSQuarterlyChart({
         changePct,
         status,
         isPositive: q.epsBasic >= 0,
+        // Pack 02: "reported" — solid fill
+        isProjected: false,
       };
     });
   }, [quarters, limit]);
 
+  // Pack 02: ponto projected extra (forwardEps) — recebe fill transparente
+  // + stroke tracejado. Mesmo valor que o ponto real anterior × (1+growth)
+  // se forwardEps não for passado, deixa sem projected.
+  const data = useMemo(() => {
+    if (forwardEps == null || realData.length === 0) return realData;
+    const lastReal = realData[realData.length - 1];
+    const projected = {
+      endDate: `${lastReal.endDate}_proj`,
+      epsBasic: forwardEps,
+      revenue: null,
+      index: realData.length,
+      changePct:
+        lastReal.epsBasic !== 0
+          ? ((forwardEps - lastReal.epsBasic) / Math.abs(lastReal.epsBasic)) * 100
+          : null,
+      status: "flat" as const,
+      isPositive: forwardEps >= 0,
+      isProjected: true,
+    };
+    return [...realData, projected];
+  }, [realData, forwardEps]);
+
   // Texto descritivo: "EPS forecast down X%"
   const forecastText = useMemo(() => {
     if (data.length < 2) return null;
-    const ttmNow = data.slice(-4).reduce((s, d) => s + d.epsBasic, 0);
-    const ttmPrev = data
+    const realPoints = data.filter((d) => !d.isProjected);
+    if (realPoints.length < 2) return null;
+    const ttmNow = realPoints.slice(-4).reduce((s, d) => s + d.epsBasic, 0);
+    const ttmPrev = realPoints
       .slice(-8, -4)
       .reduce((s, d) => s + d.epsBasic, 0);
     if (ttmPrev === 0) return null;
@@ -122,7 +162,7 @@ export function EPSQuarterlyChart({
 
   if (data.length === 0) return null;
 
-  // Domain do Y: do menor ao maior valor
+  // Domain do Y: do menor ao maior valor (incluindo projected)
   const values: number[] = data.map((d) => d.epsBasic);
   const yMin = values.length > 0 ? Math.min(...values, 0) : 0;
   const yMax = values.length > 0 ? Math.max(...values, 0) : 0;
@@ -163,17 +203,13 @@ export function EPSQuarterlyChart({
             data={data}
             margin={{ top: 24, right: 16, left: 0, bottom: 24 }}
           >
-            <CartesianGrid
-              stroke={CHART_COLORS.gridLine}
-              strokeWidth={1}
-              vertical={false}
-            />
+            <CartesianGrid {...packGrid} />
             <XAxis
               dataKey="index"
               type="number"
               domain={["dataMin", "dataMax"]}
               tick={{
-                fill: CHART_COLORS.axisTick,
+                fill: PACK.tick,
                 fontSize: 10,
                 fontFamily: CHART_FONT_FAMILY,
               }}
@@ -191,7 +227,7 @@ export function EPSQuarterlyChart({
               type="number"
               domain={[yMin - yPad, yMax + yPad]}
               tick={{
-                fill: CHART_COLORS.axisTick,
+                fill: PACK.tick,
                 fontSize: 10,
                 fontFamily: CHART_FONT_FAMILY,
               }}
@@ -203,7 +239,7 @@ export function EPSQuarterlyChart({
             <ZAxis dataKey="epsBasic" range={[40, 40]} />
 
             <Tooltip
-              cursor={{ ...cursorProps }}
+              cursor={{ stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 }}
               wrapperStyle={{ outline: "none" }}
               content={({ active, payload }) => {
                 if (!active || !payload || payload.length === 0) return null;
@@ -214,37 +250,25 @@ export function EPSQuarterlyChart({
                       changePct: number | null;
                       status: RowStatus;
                       isPositive: boolean;
+                      isProjected: boolean;
                     })
                   | undefined;
                 if (!d) return null;
                 return (
-                  <div style={tooltipWrapperStyle}>
-                    <p
-                      style={{
-                        color: CHART_COLORS.tooltipMuted,
-                        fontSize: 10,
-                        marginBottom: 4,
-                      }}
-                    >
+                  <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
+                    <p className="text-[10px] text-foreground/70 mb-1">
                       {formatQuarterLabel(d.endDate)}
+                      {d.isProjected && (
+                        <span className="ml-1.5 text-foreground/60">
+                          (projetado)
+                        </span>
+                      )}
                     </p>
-                    <p
-                      style={{
-                        color: CHART_COLORS.tooltipText,
-                        fontSize: 13,
-                        fontWeight: 600,
-                      }}
-                    >
+                    <p className="text-[13px] font-semibold tabular-nums text-foreground">
                       EPS: {fmtCurrency(d.epsBasic)}
                     </p>
                     {d.revenue != null && (
-                      <p
-                        style={{
-                          color: CHART_COLORS.tooltipMuted,
-                          fontSize: 10,
-                          marginTop: 4,
-                        }}
-                      >
+                      <p className="text-[10px] tabular-nums text-foreground/70 mt-0.5">
                         Revenue:{" "}
                         {d.revenue.toLocaleString("en-US", {
                           notation: "compact",
@@ -253,15 +277,10 @@ export function EPSQuarterlyChart({
                       </p>
                     )}
                     {d.changePct != null && (
-                      <p
-                        style={{
-                          color: CHART_COLORS.tooltipMuted,
-                          fontSize: 10,
-                          marginTop: 2,
-                        }}
-                      >
-                        {d.changePct >= 0 ? "+" : ""}
-                        {d.changePct.toFixed(1)}% vs Q anterior
+                      <p className="text-[10px] tabular-nums mt-1 pt-1 border-t border-white/[0.05] text-foreground/70">
+                        {d.isProjected
+                          ? `${d.changePct >= 0 ? "+" : ""}${d.changePct.toFixed(1)}% vs Q anterior (real)`
+                          : `${d.changePct >= 0 ? "+" : ""}${d.changePct.toFixed(1)}% vs Q anterior`}
                       </p>
                     )}
                   </div>
@@ -269,49 +288,74 @@ export function EPSQuarterlyChart({
               }}
             />
 
-            {/* Linha conectando os pontos (suave) */}
+            {/* Pack 04: linha de conexão entre pontos, type="linear".
+                type="monotone" inventava interpolação onde não tem dado. */}
             <Line
-              type="monotone"
+              type="linear"
               dataKey="epsBasic"
-              stroke={CHART_COLORS.seriesPrimary}
+              stroke={PACK.foreground}
               strokeWidth={1}
-              strokeOpacity={0.3}
+              strokeOpacity={0.45}
               dot={false}
               isAnimationActive={false}
               connectNulls={false}
             />
 
-            {/* Pontos coloridos por status */}
+            {/* Pontos coloridos por status. Pack 02 aplicado aqui: real =
+                fill sólido, projected = fill transparente + stroke tracejado. */}
             <Scatter
               data={data}
               dataKey="epsBasic"
               shape={(props: {
                 cx?: number;
                 cy?: number;
-                payload?: { isPositive: boolean; status: RowStatus };
-              }) => (
-                <circle
-                  cx={props.cx}
-                  cy={props.cy}
-                  r={6}
-                  fill={
-                    props.payload?.status === "beat"
-                      ? "var(--positive)"
-                      : props.payload?.status === "missed"
-                        ? "var(--negative)"
-                        : "var(--foreground)"
-                  }
-                  stroke="#070709"
-                  strokeWidth={1.5}
-                />
-              )}
+                payload?: {
+                  isPositive: boolean;
+                  status: RowStatus;
+                  isProjected: boolean;
+                };
+              }) => {
+                const p = props.payload;
+                if (p?.isProjected) {
+                  return (
+                    <circle
+                      cx={props.cx}
+                      cy={props.cy}
+                      r={6}
+                      fill="rgba(0,0,0,0)"
+                      stroke={PACK.muted}
+                      strokeWidth={1.5}
+                      strokeDasharray="3 2"
+                    />
+                  );
+                }
+                const fill =
+                  p?.status === "beat"
+                    ? PACK.asset
+                    : p?.status === "missed"
+                      ? PACK.negative
+                      : PACK.foreground;
+                return (
+                  <circle
+                    cx={props.cx}
+                    cy={props.cy}
+                    r={6}
+                    fill={fill}
+                    stroke="#070709"
+                    strokeWidth={1.5}
+                  />
+                );
+              }}
             />
           </ScatterChart>
         </ResponsiveContainer>
       </div>
 
       {/* Labels embaixo: seta + status + EPS value por quarter */}
-      <div className="mt-3 grid gap-1" style={{ gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))` }}>
+      <div
+        className="mt-3 grid gap-1"
+        style={{ gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))` }}
+      >
         {data.map((d, idx) => (
           <div
             key={`${d.endDate}-${idx}`}
@@ -321,11 +365,13 @@ export function EPSQuarterlyChart({
             <div
               className={cn(
                 "flex items-center gap-0.5 text-[10px] tabular-nums",
-                d.status === "beat"
-                  ? "text-[var(--positive)]"
-                  : d.status === "missed"
-                    ? "text-[var(--negative)]"
-                    : "text-muted-foreground/70"
+                d.isProjected
+                  ? "text-foreground/60"
+                  : d.status === "beat"
+                    ? "text-[var(--positive)]"
+                    : d.status === "missed"
+                      ? "text-[var(--negative)]"
+                      : "text-foreground/70"
               )}
             >
               {d.changePct == null ? (
@@ -335,10 +381,17 @@ export function EPSQuarterlyChart({
               ) : (
                 <ArrowDown className="h-3 w-3" strokeWidth={2.25} />
               )}
-              <span>{d.status}</span>
+              <span>{d.isProjected ? "proj" : d.status}</span>
             </div>
             {/* Valor */}
-            <div className="mt-1 text-[13px] tabular-nums text-foreground font-medium">
+            <div
+              className={cn(
+                "mt-1 text-[13px] tabular-nums font-medium",
+                d.isProjected
+                  ? "text-foreground/60"
+                  : "text-foreground"
+              )}
+            >
               {d.epsBasic.toLocaleString("en-US", { maximumFractionDigits: 2 })}
             </div>
           </div>
@@ -348,9 +401,13 @@ export function EPSQuarterlyChart({
   );
 }
 
-// Helper: formata endDate (ISO "YYYY-MM-DD") pra "Q1 2024"
+// Helper: formata endDate (ISO "YYYY-MM-DD") pra "Q1 2024".
+// Sufixo "_proj" vira "Q1 2024 · proj" pra distinguir quarter real do projected.
 function formatQuarterLabel(endDate: string): string {
   if (endDate === "TTM") return "TTM";
+  if (endDate.endsWith("_proj")) {
+    return `${formatQuarterLabel(endDate.replace("_proj", ""))} · proj`;
+  }
   const d = new Date(endDate + "T00:00:00Z");
   if (Number.isNaN(d.getTime())) return endDate;
   const month = d.getUTCMonth() + 1;
