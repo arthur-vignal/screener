@@ -53,6 +53,8 @@ export const PACK = {
   positive: CHART_PALETTE.positive,
   negative: CHART_PALETTE.negative,
   muted: CHART_PALETTE.muted,
+  /** Branco off — linha primária do chart (preço, P/L histórico). */
+  foreground: "#eeeff1",
 
   // Tokens de chart (do chart-theme.ts, replicados aqui pra um único import)
   tick: "rgba(200, 210, 230, 0.55)",

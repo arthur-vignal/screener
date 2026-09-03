@@ -5,11 +5,21 @@
  *
  * Visual:
  *   - Linha do P/L histórico (4 anos, dados trimestrais da brapi)
- *   - Banda sombreada ±1σ (média ± 1 desvio padrão)
- *   - Linha horizontal tracejada da média
- *   - Marker circular do valor atual
- *   - Cores: verde se atual < média (barato), vermelho se > média+1σ (caro)
- *   - Label "Current: 4.1x | Median: 8.2x | Z-score: -1.2" abaixo
+ *   - Banda P25-P75 do subsetor (área com gradient sutil)
+ *   - Linha horizontal tracejada da mediana do subsetor
+ *   - Marker circular do valor atual (verde se barato, vermelho se caro)
+ *   - Footer com stats: mínimo / mediana setor / atual
+ *
+ * Packs aplicados (sessão 2026-09-03):
+ * - Pack 04 (linhas retas pra pontos discretos): type="linear" no P/L
+ *   histórico. P/L é calculado em pontos trimestrais — não há interpolação
+ *   honesta entre quarters (cada P/L depende do EPS LTM e preço daquele
+ *   quarter). Linear respeita os pontos sem inventar curva.
+ * - Pack 05 (área com gradient): banda P25-P75 vira Area com gradient
+ *   vertical (PACK.muted com 12% topo → 2% fundo). Comunica "zona de
+ *   normalidade do subsetor" sem competir com a linha do P/L.
+ * - Cores via lib/chart-pack.ts (PACK.macro azul mediana, PACK.muted
+ *   cinza banda, PACK.asset/PACK.negative marker do valor atual).
  *
  * Dados REAIS: brapi /api/v2/stocks/statistics?mode=history&period=quarterly
  * (wrapper em /api/asset/[symbol]/pe-history).
@@ -21,6 +31,7 @@ import {
   CartesianGrid,
   ComposedChart,
   Line,
+  ReferenceArea,
   ReferenceDot,
   ReferenceLine,
   ResponsiveContainer,
@@ -30,12 +41,7 @@ import {
 } from "recharts";
 
 import { cn } from "@/lib/utils";
-import {
-  CHART_COLORS,
-  cartesianGridProps,
-  cursorProps,
-  tooltipWrapperStyle,
-} from "@/lib/chart-theme";
+import { PACK, packGrid } from "@/lib/chart-pack";
 
 export type PEHistoryRow = {
   endDate: string;
@@ -164,16 +170,15 @@ export function PEHistoryChart({
       : null;
   const currentColor =
     vsMedian == null || sectorStats == null || currentPe == null
-      ? "var(--foreground)"
+      ? PACK.foreground
       : currentPe < (sectorStats.p25 ?? Infinity)
-        ? "var(--positive)" // barato (< P25 do subsetor)
+        ? PACK.asset // barato (< P25 do subsetor)
         : currentPe > (sectorStats.p75 ?? -Infinity)
-          ? "var(--negative)" // caro (> P75)
-          : "var(--foreground)"; // dentro da banda
+          ? PACK.negative // caro (> P75)
+          : PACK.foreground; // dentro da banda
 
-  // Linha de mediana do subsetor + banda P25-P75.
-  // Plotado como ReferenceLines horizontais (mais simples que área cheia).
   const hasSectorStats = sectorStats?.median != null;
+  const hasBand = sectorStats?.p25 != null && sectorStats?.p75 != null;
 
   return (
     <div className={cn("flex flex-col", className)}>
@@ -182,7 +187,7 @@ export function PEHistoryChart({
           Histórico de P/L
         </div>
         {hasSectorStats && sectorStats && (
-          <div className="text-[10px] text-muted-foreground/70 tabular-nums">
+          <div className="text-[10px] text-foreground/70 tabular-nums">
             Setor ({sectorStats.count}): {sectorStats.p25?.toFixed(1)}–{sectorStats.p75?.toFixed(1)}x
           </div>
         )}
@@ -191,7 +196,7 @@ export function PEHistoryChart({
       <div className="h-[180px] w-full">
         {data.length === 0 && currentPe == null ? (
           <div className="h-full flex items-center justify-center">
-            <p className="text-[12px] text-muted-foreground/70">
+            <p className="text-[12px] text-foreground/70">
               Sem histórico de P/L disponível.
             </p>
           </div>
@@ -201,17 +206,20 @@ export function PEHistoryChart({
               data={data}
               margin={{ top: 8, right: 32, left: 0, bottom: 0 }}
             >
-              <CartesianGrid
-                stroke={CHART_COLORS.gridLine}
-                strokeWidth={1}
-                vertical={false}
-              />
+              <defs>
+                {/* Pack 05: gradient pra banda P25-P75 do subsetor */}
+                <linearGradient id="pe-band" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={PACK.muted} stopOpacity={0.12} />
+                  <stop offset="100%" stopColor={PACK.muted} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid {...packGrid} />
               <XAxis
                 dataKey="index"
                 type="number"
                 domain={["dataMin", "dataMax"]}
                 tick={{
-                  fill: CHART_COLORS.axisTick,
+                  fill: PACK.tick,
                   fontSize: 10,
                   fontFamily: "var(--font-manrope), system-ui, sans-serif",
                 }}
@@ -225,7 +233,7 @@ export function PEHistoryChart({
                     year: "2-digit",
                   });
                 }}
-                axisLine={{ stroke: CHART_COLORS.axisLine, strokeWidth: 1 }}
+                axisLine={{ stroke: "rgba(255,255,255,0.06)", strokeWidth: 1 }}
                 tickLine={false}
                 height={24}
                 interval="preserveStartEnd"
@@ -233,7 +241,7 @@ export function PEHistoryChart({
               <YAxis
                 domain={[yStats.min, yStats.max]}
                 tick={{
-                  fill: CHART_COLORS.axisTick,
+                  fill: PACK.tick,
                   fontSize: 10,
                   fontFamily: "var(--font-manrope), system-ui, sans-serif",
                 }}
@@ -244,7 +252,7 @@ export function PEHistoryChart({
               />
 
               <Tooltip
-                cursor={{ ...cursorProps }}
+                cursor={{ stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 }}
                 wrapperStyle={{ outline: "none" }}
                 content={({ active, payload }) => {
                   if (!active || !payload || payload.length === 0) return null;
@@ -253,76 +261,51 @@ export function PEHistoryChart({
                     | undefined;
                   if (!d) return null;
                   return (
-                    <div style={tooltipWrapperStyle}>
-                      <p
-                        style={{
-                          color: CHART_COLORS.tooltipMuted,
-                          fontSize: 10,
-                          marginBottom: 4,
-                        }}
-                      >
+                    <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
+                      <p className="text-[10px] text-foreground/70 mb-1">
                         Q{(Math.floor(d.index / 4) + 1) % 4 || 4}{" "}
                         {d.endDate.slice(0, 4)}
                       </p>
-                      <p
-                        style={{
-                          color: CHART_COLORS.tooltipText,
-                          fontSize: 13,
-                          fontWeight: 600,
-                        }}
-                      >
+                      <p className="text-[13px] font-semibold tabular-nums text-foreground">
                         {d.pe.toFixed(2)}x
                       </p>
+                      {sectorStats?.p25 != null && sectorStats?.p75 != null && (
+                        <p className="text-[10px] text-foreground/60 tabular-nums mt-1 pt-1 border-t border-white/[0.05]">
+                          Setor P25–P75: {sectorStats.p25.toFixed(1)}–{sectorStats.p75.toFixed(1)}x
+                        </p>
+                      )}
                     </div>
                   );
                 }}
               />
 
-              {/* Banda do subsetor: P25 e P75 como linhas tracejadas.
-                  Mais útil que ±1σ porque contextualiza o ticker vs pares. */}
-              {sectorStats?.p25 != null && (
-                <ReferenceLine
-                  y={sectorStats.p25}
-                  stroke={CHART_COLORS.gridLine}
-                  strokeDasharray="2 4"
-                  strokeWidth={1}
+              {/* Pack 05: banda P25-P75 do subsetor como área com gradient.
+                  Usa ReferenceArea que cobre todo o range X (dataMin..dataMax). */}
+              {sectorStats?.p25 != null && sectorStats?.p75 != null && (
+                <ReferenceArea
+                  x1={data[0]?.index ?? 0}
+                  x2={data[data.length - 1]?.index ?? 0}
+                  y1={sectorStats.p25}
+                  y2={sectorStats.p75}
+                  fill={PACK.muted}
+                  fillOpacity={0.10}
+                  stroke="none"
                   yAxisId={0}
-                  label={{
-                    value: "P25",
-                    fill: CHART_COLORS.tooltipMuted,
-                    fontSize: 9,
-                    position: "left",
-                  }}
                 />
               )}
-              {sectorStats?.p75 != null && (
-                <ReferenceLine
-                  y={sectorStats.p75}
-                  stroke={CHART_COLORS.gridLine}
-                  strokeDasharray="2 4"
-                  strokeWidth={1}
-                  yAxisId={0}
-                  label={{
-                    value: "P75",
-                    fill: CHART_COLORS.tooltipMuted,
-                    fontSize: 9,
-                    position: "left",
-                  }}
-                />
-              )}
-              {/* Mediana do subsetor — mais visível (strokeWidth 1.5 + cor
-                  accent azul #489ffa pra contrastar com a linha branca). */}
+
+              {/* Mediana do subsetor — linha azul sólida (PACK.macro) */}
               {sectorStats?.median != null && (
                 <ReferenceLine
                   y={sectorStats.median}
-                  stroke="#489ffa"
+                  stroke={PACK.macro}
                   strokeDasharray="5 3"
                   strokeWidth={1.5}
-                  strokeOpacity={0.7}
+                  strokeOpacity={0.75}
                   yAxisId={0}
                   label={{
                     value: `mediana ${sectorStats.median.toFixed(1)}x`,
-                    fill: "#489ffa",
+                    fill: PACK.macro,
                     fontSize: 10,
                     fontWeight: 600,
                     position: "left",
@@ -330,14 +313,16 @@ export function PEHistoryChart({
                 />
               )}
 
-              {/* Linha do P/L histórico */}
+              {/* Pack 04: linha do P/L histórico com type="linear" + dots
+                  pequenos nos pontos reais. Linear respeita a natureza
+                  discreta (trimestral) do dado. */}
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="pe"
-                stroke={CHART_COLORS.seriesPrimary}
+                stroke={PACK.foreground}
                 strokeWidth={1.5}
-                dot={false}
-                activeDot={{ r: 4, fill: CHART_COLORS.seriesPrimary }}
+                dot={{ r: 2, fillOpacity: 1, strokeWidth: 0 }}
+                activeDot={{ r: 4, fill: PACK.foreground }}
                 isAnimationActive={true}
                 animationDuration={1200}
                 animationEasing="ease-out"
@@ -367,7 +352,7 @@ export function PEHistoryChart({
           <StatBlock
             label="Mínimo"
             value={formatPe(Math.min(...data.map((d) => d.pe)))}
-            color="text-muted-foreground/70"
+            color="text-foreground/70"
           />
           <StatBlock
             label="Mediana setor"
@@ -412,14 +397,14 @@ function StatBlock({
 }): JSX.Element {
   return (
     <div className="rounded-md bg-white/[0.02] border border-white/[0.04] px-3 py-2">
-      <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 font-semibold mb-0.5">
+      <div className="text-[10px] uppercase tracking-[0.14em] text-foreground/70 font-semibold mb-0.5">
         {label}
       </div>
       <div className={cn("text-[14px] font-semibold tabular-nums", color)}>
         {value}
       </div>
       {sublabel && (
-        <div className="text-[10px] text-muted-foreground/60 tabular-nums mt-0.5">
+        <div className="text-[10px] text-foreground/60 tabular-nums mt-0.5">
           {sublabel}
         </div>
       )}
