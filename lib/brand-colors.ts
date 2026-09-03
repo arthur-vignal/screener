@@ -37,7 +37,49 @@ export const BRAND_COLOR: Record<string, string> = {
 
 export const BRAND_COLOR_FALLBACK = "#475569"; // slate-600
 
+/**
+ * Resolve cor dominante de um ticker B3.
+ *
+ * Estratégia de busca (em ordem):
+ *   1. Match exato (PETR4 → verde Petrobras)
+ *   2. Fallback pra mesma empresa com classe diferente (PETR3 → PETR4,
+ *      BBDC3 → BBDC4, ITUB3 → ITUB4) quando a ação tem classe ON/PN
+ *      e só uma das classes está mapeada. Cobertura de "1 mapa cobre
+ *      empresa toda" — funciona pra Petrobras, Vale, Itaú, Bradesco,
+ *      BB Seguridade, Ambev, Renner, Localiza, WEG, Embraer, Suzano,
+ *      etc.
+ *   3. Ticker X3 → X4 fallback (convenção B3: maioria de empresas
+ *      tem PN como classe mais líquida).
+ *   4. Fallback cinza neutro se nenhuma regra casa.
+ */
 export function getBrandColor(symbol: string): string {
   const key = symbol.toUpperCase().replace(/\.SA$/, "");
-  return BRAND_COLOR[key] ?? BRAND_COLOR_FALLBACK;
+
+  // 1. Match exato
+  if (BRAND_COLOR[key]) return BRAND_COLOR[key]!;
+
+  // 2. Tenta mesma base ticker trocando 3↔4 (PETR3 → PETR4)
+  if (key.endsWith("3")) {
+    const swap4 = `${key.slice(0, -1)}4`;
+    if (BRAND_COLOR[swap4]) return BRAND_COLOR[swap4]!;
+  } else if (key.endsWith("4")) {
+    const swap3 = `${key.slice(0, -1)}3`;
+    if (BRAND_COLOR[swap3]) return BRAND_COLOR[swap3]!;
+  }
+
+  // 3. Tenta mesma base trocando 5↔6 (BBDC5 → BBDC4 não, mas
+  //    ITUB3 → ITUB4 e ITUB5 → ITUB4 são úteis)
+  if (key.endsWith("5")) {
+    const swap4 = `${key.slice(0, -1)}4`;
+    if (BRAND_COLOR[swap4]) return BRAND_COLOR[swap4]!;
+  } else if (key.endsWith("6")) {
+    const swap3 = `${key.slice(0, -1)}3`;
+    if (BRAND_COLOR[swap3]) return BRAND_COLOR[swap3]!;
+  }
+
+  // 4. Tenta strip total do último dígito (caso unit/itUB11 etc.)
+  const baseTicker = key.replace(/\d+$/, "");
+  if (BRAND_COLOR[baseTicker]) return BRAND_COLOR[baseTicker]!;
+
+  return BRAND_COLOR_FALLBACK;
 }
