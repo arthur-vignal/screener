@@ -24,6 +24,7 @@ import Link from "next/link";
 import type { JSX } from "react";
 
 import { Skeleton } from "@/components/foundation/skeleton";
+import { getBrandColor } from "@/lib/brand-colors";
 import { cn } from "@/lib/utils";
 
 export type NewsItem = {
@@ -151,20 +152,10 @@ function NewsCard({
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2 min-w-0">
             {item.ticker && (
-              <Link
-                href={`/asset/${item.ticker}`}
-                onClick={(e) => e.stopPropagation()}
-                className={cn(
-                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-full",
-                  "bg-white/[0.06] hover:bg-white/[0.1]",
-                  "text-[11px] font-semibold tracking-tight",
-                  "text-foreground transition-colors",
-                  "border border-white/[0.08]",
-                )}
-                title={`Ver ${item.ticker}`}
-              >
-                {item.ticker}
-              </Link>
+              // Ticker chip com liquid glass da cor da marca (mesma cor do
+              // glow background em /asset/[ticker]). `getBrandColor` cobre
+              // ~17 tickers IBOVESPA; resto usa slate-600 fallback.
+              <BrandTickerChip ticker={item.ticker} />
             )}
           </div>
           {price != null && (
@@ -207,6 +198,45 @@ function NewsCard({
         />
       </div>
     </a>
+  );
+}
+
+/**
+ * Ticker chip com efeito liquid glass da cor dominante do ticker.
+ *
+ * Mesma cor do glow background em `/asset/[ticker]` (mesmo getBrandColor).
+ *
+ * Implementação:
+ *   - bg: linear-gradient vertical com 18% / 8% da cor da marca
+ *   - border: 1px solid 28% da cor da marca
+ *   - backdrop-filter: blur(8px) (liquid glass)
+ *   - hover: opacity sobe (sem mudar cor)
+ */
+function BrandTickerChip({ ticker }: { ticker: string }): JSX.Element {
+  const hex = getBrandColor(ticker);
+  return (
+    <Link
+      href={`/asset/${ticker}`}
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        // liquid glass usando color-mix direto (não via variável CSS)
+        // pra evitar flash de cor fallback enquanto o CSS variables carrega
+        background: `linear-gradient(180deg, ${hex}2e 0%, ${hex}14 100%)`,
+        borderColor: `${hex}47`,
+      }}
+      className={cn(
+        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full",
+        "backdrop-blur-md",
+        "border",
+        "text-[11px] font-semibold tracking-tight",
+        "text-foreground transition-all duration-150",
+        "hover:opacity-80",
+        "focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-white/30",
+      )}
+      title={`Ver ${ticker}`}
+    >
+      {ticker}
+    </Link>
   );
 }
 

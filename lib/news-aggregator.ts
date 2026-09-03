@@ -389,18 +389,21 @@ async function fetchPricesForTickers(
     const data = (await r.json()) as {
       results?: Array<{
         symbol: string;
-        regularMarketPrice?: number;
-        regularMarketChangePercent?: number;
+        data?: {
+          regularMarketPrice?: number;
+          regularMarketChangePercent?: number;
+        };
       }>;
     };
     const m = new Map<string, TickerPrice>();
     for (const it of data.results ?? []) {
-      if (it.regularMarketPrice != null) {
+      // brapi v2 envelope: { results: [{ symbol, data: { regularMarketPrice, ... } }] }
+      const d = it.data;
+      if (d?.regularMarketPrice != null) {
         m.set(it.symbol, {
-          price: it.regularMarketPrice,
-          // brapi retorna em % direto (ex: 2.4 = +2.4%). UI aplica /100
-          // se necessário via formato, mantendo valor em %.
-          changePercent: it.regularMarketChangePercent ?? 0,
+          price: d.regularMarketPrice,
+          // brapi retorna em % direto (ex: 4.18 = +4.18%).
+          changePercent: d.regularMarketChangePercent ?? 0,
         });
       }
     }
