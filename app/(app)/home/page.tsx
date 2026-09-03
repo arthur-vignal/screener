@@ -206,38 +206,32 @@ export default function HomePage(): JSX.Element {
     };
   }, []);
 
-  // ── News ───────────────────────────────────────────────────────────────────
-    // Religa em 2026-09-02 após o fix `11e1137`:
-    //   - NewsFeed usa BrandLetter (sem <img>, sem onError, sem icons.brapi.dev).
-    //   - tagTickers client foi removido — o servidor já manda `tickers`.
-    //   - matchTickersBySymbols só roda quando o servidor mandou algo.
-    // Causa raiz do travamento original (`TypedGreeting` CPU 100%) já foi
-    // corrigida em `7ec77a0`.
-    const fetchNews = useCallback(async () => {
-      setNewsLoading(true);
-      try {
-        const r = await fetch("/api/news/multi", { cache: "no-store" });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        // /api/news/multi retorna `{ news: NewsApiItem[] }` (não `items`).
-        const data = (await r.json()) as { news?: NewsApiItem[] };
-        const mapped = (data.news ?? []).slice(0, 30).map(toNewsItem);
-        setNews(mapped);
-      } catch {
-        setNews([]);
-      } finally {
-        setNewsLoading(false);
-      }
-    }, []);
+  // ── News (DESABILITADO — travava o site. Volta quando achar a causa.) ──
+  // const fetchNews = useCallback(async () => {
+  //   setNewsLoading(true);
+  //   try {
+  //     const r = await fetch("/api/news/multi", { cache: "no-store" });
+  //     if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  //     const data = (await r.json()) as { items?: NewsApiItem[] };
+  //     const mapped = (data.items ?? []).slice(0, 30).map(toNewsItem);
+  //     setNews(mapped);
+  //   } catch {
+  //     setNews([]);
+  //   } finally {
+  //     setNewsLoading(false);
+  //     setHighlightLoading(false);
+  //   }
+  // }, []);
+  //
+  // useEffect(() => {
+  //   fetchNews();
+  // }, [fetchNews]);
 
-    useEffect(() => {
-      fetchNews();
-    }, [fetchNews]);
-
-    // Highlight do dia: ainda não tem endpoint server-side; deixa loading
-    // false pra mostrar o card vazio em vez de skeleton perpétuo.
-    useEffect(() => {
-      setHighlightLoading(false);
-    }, []);
+  // News fica vazio por enquanto (loading false pra mostrar 'Sem notícias').
+  useEffect(() => {
+    setNewsLoading(false);
+    setHighlightLoading(false);
+  }, []);
 
   const todayText = new Date().toLocaleDateString("pt-BR", {
     day: "2-digit",
