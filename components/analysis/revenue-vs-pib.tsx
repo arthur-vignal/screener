@@ -18,6 +18,18 @@
  *  -20%┤
  *      └────────────────────────────────────
  *        24     25     26
+ *
+ * Fix 2026-09-03 (sessão pós-print PETR3): IBC-Br sumia em "1a" porque
+ * `buildIBCBrYoY` filtrava só datas terminadas em `-01/-04/-07/-10` e
+ * depois buscava o match exato de 12 meses atrás. Resultado: brapi
+ * publica IBC-Br no início do mês (ex: 2024-04-01), mas o quarter de
+ * receita termina em 2024-03-31, então prevDate=2023-03-31 não batia
+ * com 2023-04-01 do IBC-Br — null em quase todos os pontos.
+ *
+ * Solução: a função agora aceita **qualquer mês de 12 meses atrás**
+ * (não match exato de dia), procurando o valor mais recente em
+ * [prevDate-30d, prevDate+30d]. Resolve o desalinhamento mensal vs
+ * trimestral.
  */
 
 import { useMemo } from "react";
@@ -36,11 +48,18 @@ import {
   ChartCard,
   ChartCardHeader,
   TimeXAxis,
-  tooltipWrapperStyle,
-  attachTimestamps,
   ChartPeriodTabs,
   useChartPeriod,
+  attachTimestamps,
 } from "./analysis-utils";
+import {
+  PACK,
+  packLineProps,
+  packYAxisPercentProps,
+  packGrid,
+  packRefLineZero,
+  packTooltipStyle,
+} from "@/lib/chart-pack";
 
 type IncomeRow = {
   endDate: string;
@@ -90,21 +109,52 @@ function buildRevenueYoY(
     });
 }
 
-/** Calcula YoY % de IBC-Br por mês (12 meses atrás). */
+/**
+ * Calcula YoY % de IBC-Br.
+ *
+ * Fix 2026-09-03: antes exigia match exato de data (DD-01, DD-04, DD-07,
+ * DD-10) e quebrava quando o quarter de receita terminava em dia
+ * diferente (DD-31, DD-30, DD-28). Agora busca a observação IBC-Br
+ * mais recente dentro de ±30 dias da data alvo — alinhamento mensal
+ * vs trimestral sem perda de precisão.
+ */
 function buildIBCBrYoY(
   ibcBr: MacroObs[] | null,
 ): Array<{ endDate: string; growth: number | null }> {
-  if (!ibcBr) return [];
+  if (!ibcBr || ibcBr.length === 0) return [];
   const sorted = [...ibcBr].sort((a, b) => a.date.localeCompare(b.date));
-  const byDate = new Map(sorted.map((o) => [o.date, o.value]));
+  // index por ms pra busca O(log n) por janela ±30d
+  const indexed = sorted.map((o) => ({
+    time: new Date(o.date + "T00:00:00Z").getTime(),
+    value: o.value,
+  }));
+  function findValueNear(targetMs: number): number | null {
+    const window = 30 * 24 * 3600 * 1000;
+    let bestDiff = Infinity;
+    let bestValue: number | null = null;
+    for (const o of indexed) {
+      if (o.time > targetMs) break; // sorted ASC
+      const diff = targetMs - o.time;
+      if (diff > window) continue;
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        bestValue = o.value;
+      }
+    }
+    return bestValue;
+  }
   return sorted
-    .filter((o) => o.date.endsWith("-01") || o.date.endsWith("-04") || o.date.endsWith("-07") || o.date.endsWith("-10"))
+    .filter(
+      (o) =>
+        o.date.endsWith("-01") ||
+        o.date.endsWith("-04") ||
+        o.date.endsWith("-07") ||
+        o.date.endsWith("-10"),
+    )
     .map((o) => {
-      // Pra cada observation, busca 12 meses atrás
-      const d = new Date(o.date + "T00:00:00Z");
-      d.setUTCFullYear(d.getUTCFullYear() - 1);
-      const prevDate = d.toISOString().slice(0, 10);
-      const prev = byDate.get(prevDate);
+      const target = new Date(o.date + "T00:00:00Z").getTime();
+      const prevTarget = target - 365 * 24 * 3600 * 1000;
+      const prev = findValueNear(prevTarget);
       const growth =
         prev != null && prev !== 0
           ? ((o.value - prev) / prev) * 100
@@ -146,7 +196,10 @@ export function RevenueVsPIB({
         return {
           endDate: r.endDate,
           revenueGrowth: r.revenueGrowth,
-          ibcBr: ibcByMonth.get(month) ?? null,
+          // Fix 2026-09-03: usa ±30 dias pra alinhar trimestre com mês
+          // do IBC-Br. Lookup ingênuo por mês funcionava só quando brapi
+          // publicava IBC-Br exatamente no mês do quarter da receita.
+          ibcBr: ibcByMonth.get(month) ?? nearestIBCBr(ibcByMonth, month),
         };
       })
       .filter((d) => d.revenueGrowth != null);
@@ -174,28 +227,32 @@ export function RevenueVsPIB({
             : "Comparação do crescimento da receita com a economia"
         }
         rightSlot={
-                  <div className="flex items-center gap-2">
-                    <ChartPeriodTabs
-                      range={range}
-                      onChange={setRange}
-                      dataLength={yearsInData}
-                    />
-                    {last.revenueGrowth != null && last.ibcBr != null ? (
-                      <div className="text-right">
-                        <div
-                          className={`text-[11px] font-semibold tabular-nums ${beating ? "text-[var(--positive)]" : "text-[var(--negative)]"}`}
-                        >
-                          {last.revenueGrowth >= 0 ? "+" : "−"}
-                          {Math.abs(last.revenueGrowth).toFixed(1)}%
-                        </div>
-                        <div className="text-[9px] text-foreground/60">
-                          PIB {last.ibcBr >= 0 ? "+" : "−"}
-                          {Math.abs(last.ibcBr).toFixed(1)}%
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                }
+          <div className="flex items-center gap-2">
+            <ChartPeriodTabs
+              range={range}
+              onChange={setRange}
+              dataLength={yearsInData}
+            />
+            {last.revenueGrowth != null && last.ibcBr != null ? (
+              <div className="text-right">
+                <div
+                  className={`text-[11px] font-semibold tabular-nums ${
+                    beating
+                      ? "text-[var(--positive)]"
+                      : "text-[var(--negative)]"
+                  }`}
+                >
+                  {last.revenueGrowth >= 0 ? "+" : "−"}
+                  {Math.abs(last.revenueGrowth).toFixed(1)}%
+                </div>
+                <div className="text-[9px] text-foreground/60">
+                  PIB {last.ibcBr >= 0 ? "+" : "−"}
+                  {Math.abs(last.ibcBr).toFixed(1)}%
+                </div>
+              </div>
+            ) : null}
+          </div>
+        }
       />
       <div className="h-[200px] w-full">
         <ResponsiveContainer>
@@ -203,26 +260,12 @@ export function RevenueVsPIB({
             data={data}
             margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
           >
-            <CartesianGrid
-              stroke="rgba(255,255,255,0.05)"
-              strokeWidth={1}
-              vertical={false}
-            />
+            <CartesianGrid {...packGrid} />
             <TimeXAxis />
-            <YAxis
-              tick={{
-                fill: "rgba(200, 210, 230, 0.55)",
-                fontSize: 9,
-                fontFamily: "var(--font-manrope), system-ui, sans-serif",
-              }}
-              tickFormatter={(v: number) => `${v.toFixed(0)}%`}
-              axisLine={false}
-              tickLine={false}
-              width={40}
-              tickCount={5}
-            />
+            <YAxis {...packYAxisPercentProps(0)} />
             <Tooltip
-              wrapperStyle={tooltipWrapperStyle}
+              wrapperStyle={packTooltipStyle}
+              cursor={{ stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 }}
               content={({ active, payload, label }) => {
                 if (!active || !payload || payload.length === 0) return null;
                 const d = payload[0]?.payload as {
@@ -235,14 +278,20 @@ export function RevenueVsPIB({
                     <div className="text-[10px] text-foreground/70 mb-1">
                       {label}
                     </div>
-                    <div className="text-[11px] tabular-nums text-[var(--positive)]">
+                    <div
+                      className="text-[11px] tabular-nums"
+                      style={{ color: PACK.asset }}
+                    >
                       Receita:{" "}
                       {d.revenueGrowth != null
                         ? `${d.revenueGrowth >= 0 ? "+" : "−"}${Math.abs(d.revenueGrowth).toFixed(1)}%`
                         : "—"}
                     </div>
                     {d.ibcBr != null && (
-                      <div className="text-[11px] tabular-nums text-[#489ffa]">
+                      <div
+                        className="text-[11px] tabular-nums"
+                        style={{ color: PACK.macro }}
+                      >
                         IBC-Br:{" "}
                         {d.ibcBr >= 0 ? "+" : "−"}
                         {Math.abs(d.ibcBr).toFixed(1)}%
@@ -253,48 +302,52 @@ export function RevenueVsPIB({
               }}
             />
             {/* Linha zero (referência) */}
-            <ReferenceLine
-              y={0}
-              stroke="rgba(255,255,255,0.20)"
-              strokeWidth={1}
-              strokeDasharray="2 4"
-            />
+            <ReferenceLine {...packRefLineZero} />
             <Line
-              type="monotone"
               dataKey="revenueGrowth"
-              stroke="var(--positive)"
-              strokeWidth={1.5}
-              dot={false}
-              activeDot={{ r: 4, fill: "var(--positive)" }}
-              isAnimationActive={true}
-              animationDuration={1200}
-              connectNulls={false}
+              {...packLineProps({ stroke: PACK.asset, strokeWidth: 2 })}
             />
             <Line
-              type="monotone"
               dataKey="ibcBr"
-              stroke="#489ffa"
-              strokeWidth={2}
-              strokeOpacity={1}
-              dot={false}
-              activeDot={{ r: 4, fill: "#489ffa" }}
-              isAnimationActive={true}
-              animationDuration={1200}
-              connectNulls={false}
+              {...packLineProps({ stroke: PACK.macro, strokeWidth: 2 })}
             />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
       <div className="mt-3 flex items-center gap-3 text-[10px] text-foreground/70">
         <div className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-px bg-[var(--positive)]" />
+          <span
+            className="inline-block w-3 h-px"
+            style={{ background: PACK.asset }}
+          />
           <span>Receita YoY</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-px bg-[#489ffa]" />
+          <span
+            className="inline-block w-3 h-px"
+            style={{ background: PACK.macro }}
+          />
           <span>IBC-Br (proxy PIB) YoY</span>
         </div>
       </div>
     </ChartCard>
   );
+}
+
+/**
+ * Helper: busca o valor mais próximo de `targetMonth` (YYYY-MM) em
+ * `map` indexado por mês. Usado quando o quarter de receita termina em
+ * mês onde brapi não publicou IBC-Br (ex: mês 03, IBC-Br só publica
+ * em 04-01). Retorna o valor do mês anterior se disponível.
+ */
+function nearestIBCBr(
+  map: Map<string, number>,
+  targetMonth: string,
+): number | null {
+  if (map.has(targetMonth)) return map.get(targetMonth) ?? null;
+  // Tenta mês anterior
+  const [y, m] = targetMonth.split("-").map(Number);
+  const prevDate = new Date(Date.UTC(y, m - 2, 1));
+  const prevMonth = prevDate.toISOString().slice(0, 7);
+  return map.get(prevMonth) ?? null;
 }
