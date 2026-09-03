@@ -286,14 +286,18 @@ export default function HomePage(): JSX.Element {
           >;
         };
         const items = data.news ?? [];
-        const mapped: NewsItem[] = items.map((n) => ({
-          id: n.id,
-          title: n.title,
-          source: n.source,
-          publishedAt: n.publishedAt,
-          url: n.url,
-          ticker: n.ticker,
-        }));
+                // Pack 06 + brapi batch: copia price e changePercent (server-side).
+                // Antes: descartava silenciosamente; agora persiste no state.
+                const mapped: NewsItem[] = items.map((n) => ({
+                  id: n.id,
+                  title: n.title,
+                  source: n.source,
+                  publishedAt: n.publishedAt,
+                  url: n.url,
+                  ticker: n.ticker,
+                  price: n.price,
+                  changePercent: n.changePercent,
+                }));
         setNews((prev) => (cursor === null ? mapped : [...prev, ...mapped]));
         if (items.length > 0) {
           const oldest = Math.min(
