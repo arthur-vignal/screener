@@ -1,92 +1,40 @@
 import { NextResponse } from "next/server";
-import {
-  fetchStatusInvest,
-  fetchSmallcaps,
-  fetchBrazilianVerified,
-  type NewsItem,
-} from "@/lib/news-sources";
-import { tagNewsItem } from "@/lib/news-tagger";
+
+import { fetchB3News } from "@/lib/google-news";
 
 /**
  * GET /api/news/multi
  *
- * Multi-source B3 news across two high-quality portals:
- *  - Status Invest (análise fundamentalista)
- *  - Smallcaps (small caps brasileiras)
- *  - Plus a Google News tail from the seed tickers to keep
- *    fresh coverage of the most-active B3 names.
+ * B3 news feed sourced from Google News RSS (single source).
  *
- * Each item has been tagged for B3 ticker mentions server-side, so
- * the UI can render clickable ticker chips inside the headline.
+ * Query params:
+ *   - limit: number, default 20, max 50
+ *   - cursor: optional datetime (unix seconds). Returns items older than this.
+ *     Used by infinite scroll on the home page.
+ *
+ * Returns: { news: GoogleNewsItem[] }
  */
+
 export const dynamic = "force-dynamic";
-export const maxDuration = 25;
+export const maxDuration = 10;
 
-// Lightweight seed of high-volume B3 tickers for the Google News tail.
-const SEED_TICKERS = [
-  "PETR4", "VALE3", "ITUB4", "BBDC4", "ABEV3", "BBAS3",
-  "WEGE3", "B3SA3", "BBSE3", "CMIG4", "EQTL3", "RDOR3",
-];
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const limit = Math.min(
+    50,
+    Math.max(1, Number(url.searchParams.get("limit") ?? "20")),
+  );
+  const cursorRaw = url.searchParams.get("cursor");
+  const cursor = cursorRaw ? Number(cursorRaw) : null;
 
-export async function GET() {
-  try {
-    // Fetch the three dedicated portals in parallel.
-    const [statusNews, smallcapsNews] = await Promise.all([
-      fetchStatusInvest().catch(() => []),
-      fetchSmallcaps().catch(() => []),
-    ]);
-
-    // Fetch a Google News tail, batched to avoid throttle.
-    const BATCH = 4;
-    const googleNews: NewsItem[] = [];
-    for (let i = 0; i < SEED_TICKERS.length; i += BATCH) {
-      const slice = SEED_TICKERS.slice(i, i + BATCH);
-      const batch = await Promise.all(
-        slice.map((t) => fetchBrazilianVerified(t).catch(() => [])),
-      );
-      googleNews.push(...batch.flat());
-      if (i + BATCH < SEED_TICKERS.length) {
-        await new Promise((r) => setTimeout(r, 200));
-      }
-    }
-
-    const merged: NewsItem[] = [
-      ...statusNews,
-      ...smallcapsNews,
-      ...googleNews,
-    ];
-
-    // Dedupe by URL.
-    const seen = new Set<string>();
-    const deduped = merged.filter((n) => {
-      if (!n.url || seen.has(n.url)) return false;
-      seen.add(n.url);
-      return true;
-    });
-
-    // Drop items older than 90 days — three portals, we can be more
-    // generous with the recency window than the general feed.
-    const cutoff = Date.now() - 90 * 24 * 3600 * 1000;
-    const recent = deduped.filter((n) => {
-      const dt = (n.datetime ?? 0) * 1000;
-      return dt === 0 || dt >= cutoff;
-    });
-
-    // Tag each item with the tickers it mentions (server-side work,
-    // keeps the client fast). Expõe como `tickers` (não
-    // `relatedTickers`) pra alinhar com o tipo client-side NewsItem.
-    const tagged = recent.map((n) => ({
-      ...n,
-      tickers: tagNewsItem(n.headline ?? "", n.summary ?? ""),
-    }));
-
-    // Sort newest first, cap at 60.
-    tagged.sort((a, b) => (b.datetime ?? 0) - (a.datetime ?? 0));
-    return NextResponse.json({ news: tagged.slice(0, 60) });
-  } catch (err) {
-    return NextResponse.json(
-      { news: [], error: String(err) },
-      { status: 500 },
-    );
+  const all = await fetchB3News(50); // ask max, slice below
+  if (all.length === 0) {
+    return NextResponse.json({ news: [] });
   }
+
+  let sliced = all;
+  if (cursor && Number.isFinite(cursor)) {
+    sliced = all.filter((n) => n.datetime < cursor);
+  }
+  return NextResponse.json({ news: sliced.slice(0, limit) });
 }

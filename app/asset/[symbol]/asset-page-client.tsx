@@ -36,10 +36,6 @@ import { AssetHeader } from "@/components/asset/asset-header";
 import type { AssetBundle } from "@/components/asset/asset-bundle";
 import { EPSQuarterlyChart, type QuarterPoint } from "@/components/asset/eps-quarterly-chart";
 import { MetricStrip, type MetricCell } from "@/components/asset/metric-strip";
-import {
-  NewsSummaryCard,
-  type NewsSummaryItem,
-} from "@/components/asset/news-summary-card";
 import { PEHistoryChart, type PEHistoryRow, type PESectorStats } from "@/components/asset/pe-history-chart";
 import { PERatioComparison, type PeerRow } from "@/components/asset/pe-ratio-comparison";
 import { PriceChart, type RangeKey } from "@/components/asset/price-chart";
@@ -97,23 +93,6 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     { keepPreviousData: true }
   );
   const candles = candlesData?.candles ?? bundle?.candles ?? [];
-
-  // News summary (pega primeira notícia relevante do ticker)
-  const { data: newsData, isLoading: newsLoading } = useSWR<{ news?: NewsApiItem[] }>(
-    `/api/news/multi?tickers=${symbol}`,
-    fetchJson
-  );
-  const newsItems = useMemo<NewsSummaryItem[]>(() => {
-    const items = newsData?.news ?? [];
-    return items.slice(0, 1).map((n) => ({
-      id: n.id,
-      title: n.headline,
-      summary: stripHtml(n.summary ?? ""),
-      source: n.source,
-      publishedAt: toIso(n.datetime),
-      tickers: n.tickers ?? [],
-    }));
-  }, [newsData]);
 
   // ── Peer benchmarks (subsetor) ──────────────────────────────────────
   // O endpoint retorna lista de peers do subsetor do ativo, mais as
@@ -472,19 +451,18 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
           />
         </StaggerOnMount>
 
-        {/* Grid 2-col: gráfico (2/3) + news (1/3) */}
-        <StaggerOnMount>
-          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-5">
-            <PriceChart
-              candles={candles}
-              range={range}
-              onRangeChange={setRange}
-              prevClose={bundle?.quote.prevClose ?? null}
-              loading={isLoading && candles.length === 0}
-            />
-            <NewsSummaryCard items={newsItems} loading={newsLoading && newsItems.length === 0} />
-          </div>
-        </StaggerOnMount>
+        {/* Grid 2-col: gráfico (full-width agora; NewsSummary removido — news é feature da /home) */}
+                <StaggerOnMount>
+                  <div className="grid grid-cols-1 lg:grid-cols-[1fr] gap-5">
+                    <PriceChart
+                      candles={candles}
+                      range={range}
+                      onRangeChange={setRange}
+                      prevClose={bundle?.quote.prevClose ?? null}
+                      loading={isLoading && candles.length === 0}
+                    />
+                  </div>
+                </StaggerOnMount>
 
         <StaggerOnMount className="mt-6">
           <MetricStrip cells={metricCells} />
@@ -616,17 +594,6 @@ type NewsApiItem = {
   /** Tickers mencionados — vem do tagger server-side em /api/news/multi. */
   tickers?: string[];
 };
-
-// Helper: strip HTML tags da summary (endpoint retorna HTML-encoded).
-function stripHtml(s: string): string {
-  return s.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
-}
-
-// Helper: converte datetime (segundos) → ISO string.
-function toIso(seconds: number | undefined): string {
-  if (!seconds) return new Date().toISOString();
-  return new Date(seconds * 1000).toISOString();
-}
 
 // Helper: formata endDate (ISO "YYYY-MM-DD") pra "Q1 2024".
 // Se endDate for "TTM" (fallback), retorna como está.
