@@ -33,12 +33,15 @@
  *   + stroke PACK.muted tracejado (3 2). Mantida no novo shape de 4 anos —
  *   projected vai pra Q1 do ano mais recente (próximo quarter projetado).
  *
+ * IMPORTANTE (fix 2026-09-03 print PETR4): os <linearGradient> PRECISAM
+ * ficar dentro do <BarChart> (não num SVG invisível separado). Recharts
+ * procura os gradients pelo `id` no contexto do SVG em que está renderizando
+ * — defs externo = url(#qr-...) falha = fallback preto (todas as barras
+ * saíam pretas no primeiro deploy).
+ *
  * Dados REAIS: brapi incomeStatementHistoryQuarterly.
  * Brapi NÃO retorna estimates/sell-side consensus pra tickers BR.
  * Status heurístico: EPS caiu > 5% vs Q anterior = missed, subiu > 5% = beat.
- *
- * Nota: Brapi NÃO retorna estimates/sell-side consensus pra tickers BR.
- * O quarter projected vem de bundle.metrics.forwardEps quando disponível.
  */
 
 import { useMemo } from "react";
@@ -76,8 +79,8 @@ export type QuarterResult = {
 
 type Props = {
   results: QuarterResult[];
-  /** Lista de quarters completa (ordenada asc) — usada pro mini chart
-   *  de revenue trend. Se omitida, usa `results`. */
+  /** Lista de quarters completa (ordenada asc) — usada pra popular
+   *  o chart de revenue trend. Se omitida, usa `results`. */
   quarters?: Array<{
     endDate: string;
     epsBasic: number | null;
@@ -86,8 +89,6 @@ type Props = {
   currency: "BRL" | "USD";
   /** Quantos anos mostrar (default 4). */
   yearCount?: number;
-  /** EPS forward pra plotar Q projected no ano mais recente (opcional). */
-  forwardEps?: number | null;
   className?: string;
 };
 
@@ -102,34 +103,6 @@ function formatCompact(v: number, currency: "BRL" | "USD"): string {
   return `${symbol}${v.toFixed(0)}`;
 }
 
-/** Quebra label "Q1 2024" em 2 linhas: "Q1" e "25" (ano curto). */
-function splitQuarterLabel(label: string): { q: string; y: string } {
-  const m = label.match(/^(Q\d)\s+(\d{2,4})$/);
-  if (!m) return { q: label, y: "" };
-  const year = m[2];
-  return { q: m[1], y: year.length === 4 ? year.slice(2) : year };
-}
-
-/** Extrai quarter + ano curto do endDate pra usar como label. */
-function quarterFromEndDate(endDate: string): string {
-  if (/^Q\d \d{4}$/.test(endDate)) return endDate;
-  const d = new Date(endDate + "T00:00:00Z");
-  if (Number.isNaN(d.getTime())) return endDate;
-  const month = d.getUTCMonth() + 1;
-  const year = d.getUTCFullYear();
-  const q = Math.ceil(month / 3);
-  return `Q${q} ${year}`;
-}
-
-/** Extrai ano (YYYY) e número do quarter (1-4) do endDate. */
-function yearQuarterFromEndDate(endDate: string): { year: string; q: 1 | 2 | 3 | 4 } | null {
-  const m = /^(\d{4})-(\d{2})-/.exec(endDate);
-  if (!m) return null;
-  const month = parseInt(m[2], 10);
-  if (!Number.isFinite(month)) return null;
-  return { year: m[1], q: (Math.ceil(month / 3) as 1 | 2 | 3 | 4) };
-}
-
 /** Formata número em string curta pra eixo Y (ex: 200000000000 → "200B"). */
 function formatAxisValue(v: number, currency: "BRL" | "USD"): string {
   const symbol = currency === "USD" ? "$" : "R$";
@@ -141,13 +114,22 @@ function formatAxisValue(v: number, currency: "BRL" | "USD"): string {
   return `${symbol}${v.toFixed(0)}`;
 }
 
+/** Extrai ano (YYYY) e número do quarter (1-4) do endDate. */
+function yearQuarterFromEndDate(endDate: string): { year: string; q: 1 | 2 | 3 | 4 } | null {
+  const m = /^(\d{4})-(\d{2})-/.exec(endDate);
+  if (!m) return null;
+  const month = parseInt(m[2], 10);
+  if (!Number.isFinite(month)) return null;
+  return { year: m[1], q: (Math.ceil(month / 3) as 1 | 2 | 3 | 4) };
+}
+
 // Cor por quarter dentro do grupo (regra Arthur 2026-09-03):
 // Q1/Q3 = branco, Q2/Q4 = laranja (PACK.peer = amber).
 const QUARTER_COLORS: Record<1 | 2 | 3 | 4, string> = {
-  1: PACK.foreground, // branco off
-  2: PACK.peer, // amber #f5a623
-  3: PACK.foreground, // branco off
-  4: PACK.peer, // amber #f5a623
+  1: PACK.foreground,
+  2: PACK.peer,
+  3: PACK.foreground,
+  4: PACK.peer,
 };
 
 type YearData = {
@@ -173,7 +155,6 @@ export function QuarterResults({
   quarters,
   currency,
   yearCount = 4,
-  forwardEps,
   className,
 }: Props): JSX.Element {
   const data = useMemo(() => {
@@ -225,9 +206,13 @@ export function QuarterResults({
     const yearsData: YearData[] = sortedYears.map((y) => {
       const b = byYear.get(y)!;
       // Marca como projected qualquer Q que esteja em projectedByLabel
-      // (label tipo "Q2 2025").
-      const isProj = (q: 1 | 2 | 3 | 4) =>
-        projectedByLabel.has(quarterFromEndDate(`${y}-${String(q * 3).padStart(2, "0")}-30`));
+      // (label tipo "Q2 2025"). Compara com label normalizado.
+      const isProj = (q: 1 | 2 | 3 | 4) => {
+        const month = String(q * 3).padStart(2, "0");
+        const lastDay = q === 2 ? "30" : q === 4 ? "31" : "31";
+        const endDate = `${y}-${month}-${lastDay}`;
+        return projectedByLabel.has(quarterLabelFromEndDate(endDate));
+      };
       const total = (b.q1 ?? 0) + (b.q2 ?? 0) + (b.q3 ?? 0) + (b.q4 ?? 0);
       return {
         year: y,
@@ -240,31 +225,9 @@ export function QuarterResults({
         q3Projected: isProj(3),
         q4Projected: isProj(4),
         total,
-        yoyChangePct: null, // calculado abaixo
+        yoyChangePct: null,
       };
     });
-
-    // Se forwardEps foi passado e o último ano tem buraco no Q mais
-    // recente, preenche o Q com projected (assume que forwardEps é o
-    // próximo Q após o último real).
-    if (forwardEps != null && yearsData.length > 0) {
-      const last = yearsData[0];
-      // Acha o primeiro Q null no último ano e marca como projected com
-      // valor forwardEps. Heurística simples: preenche o primeiro Q
-      // faltando sequencial.
-      const quarters_order: Array<"q1" | "q2" | "q3" | "q4"> = ["q1", "q2", "q3", "q4"];
-      for (const qKey of quarters_order) {
-        if (last[qKey] == null && forwardEps != null) {
-          // Converte forwardEps anual em quarterly se necessário —
-          // brapi retorna forwardEps anualizado em R$/share, mas a
-          // scale aqui é de revenue (R$ totais). forwardEps != revenue.
-          // Heurística conservadora: deixa o projected com null e
-          // deixa pro próximo quarter. Não faz sentido sem revenue
-          // proxy. (Não temos forwardRevenue.)
-          break;
-        }
-      }
-    }
 
     // Calcula YoY %: variação do total vs ano anterior.
     for (let i = 0; i < yearsData.length; i++) {
@@ -276,7 +239,7 @@ export function QuarterResults({
     }
 
     return yearsData;
-  }, [quarters, results, yearCount, forwardEps]);
+  }, [quarters, results, yearCount]);
 
   if (data.length === 0) {
     return (
@@ -289,7 +252,6 @@ export function QuarterResults({
   }
 
   // Header valor: total do último ano fiscal completo (não projected).
-  // Estratégia: ano mais recente com Q4 não-null.
   const lastCompleteYear = data.find(
     (y) => y.q1 != null && y.q2 != null && y.q3 != null && y.q4 != null,
   );
@@ -308,24 +270,26 @@ export function QuarterResults({
   );
 }
 
+/** Formata endDate (YYYY-MM-DD) pra "Q1 2024" — usado pra match com projected labels. */
+function quarterLabelFromEndDate(endDate: string): string {
+  const yq = yearQuarterFromEndDate(endDate);
+  if (!yq) return endDate;
+  return `Q${yq.q} ${yq.year}`;
+}
+
 /**
  * Bar chart grouped: 4 barras (Q1-Q4) por ano (eixo X).
  *
+ * IMPORTANTE (fix 2026-09-03): <defs> com os <linearGradient> ficam
+ * DENTRO do <BarChart>. Recharts procura os gradients pelo `id` no
+ * contexto do SVG em que está renderizando — defs externo causava
+ * `url(#qr-...)` falhar e cair em fallback preto.
+ *
  * Packs aplicados:
- * - Pack 01 (gradient teal no topo): cada barra real tem gradient vertical
- *   (cor do quarter: branco Q1/Q3 ou laranja Q2/Q4) → transparente embaixo.
- *   id único por barra (grad-q1-2024 etc).
+ * - Pack 01 (gradient teal no topo): gradient vertical da cor do quarter
+ *   (branco Q1/Q3 ou laranja Q2/Q4) → transparente embaixo.
  * - Pack 02 (forecast vs reported): barra projected com fill="rgba(0,0,0,0)"
- *   + stroke PACK.muted tracejado (1.5px). Sinaliza "ainda não reportado".
- *
- * Eixo X mostra só o ano (2023, 2024, 2025, 2026). Q1-Q4 fica implícito
- * pela posição dentro do grupo.
- *
- * Cores por quarter (regra Arthur):
- *   Q1 = branco (PACK.foreground), Q2 = laranja (PACK.peer)
- *   Q3 = branco, Q4 = laranja
- *
- * Y axis à DIREITA com 4 ticks discretos em compact (Fey style).
+ *   + stroke PACK.muted tracejado (1.5px).
  */
 function RevenueBarChart({
   data,
@@ -363,9 +327,6 @@ function RevenueBarChart({
         </div>
       </div>
 
-      {/* Defs: gradientes pack 01 — 1 por quarter × ano */}
-      <YearBarDefs data={data} />
-
       {/* Bar chart grouped */}
       <div className="h-[240px] w-full">
         <ResponsiveContainer>
@@ -375,6 +336,33 @@ function RevenueBarChart({
             barCategoryGap="20%"
             barGap={2}
           >
+            {/* Defs DENTRO do BarChart (fix PETR4 print 2026-09-03) */}
+            <defs>
+              {data.flatMap((d) =>
+                ([1, 2, 3, 4] as const).map((q) => {
+                  const key = `q${q}` as "q1" | "q2" | "q3" | "q4";
+                  const projectedKey =
+                    `q${q}Projected` as "q1Projected" | "q2Projected" | "q3Projected" | "q4Projected";
+                  if (d[key] == null || d[projectedKey]) return null;
+                  const stopColor = QUARTER_COLORS[q];
+                  const gradientId = `qr-${key}-${d.year}`;
+                  return (
+                    <linearGradient
+                      key={gradientId}
+                      id={gradientId}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="0%" stopColor={stopColor} stopOpacity={0.95} />
+                      <stop offset="100%" stopColor={stopColor} stopOpacity={0.18} />
+                    </linearGradient>
+                  );
+                }),
+              )}
+            </defs>
+
             <CartesianGrid {...packGrid} />
             <XAxis
               dataKey="year"
@@ -468,7 +456,7 @@ function RevenueBarChart({
               isAnimationActive={true}
               animationDuration={800}
             >
-              {data.map((d, idx) => (
+              {data.map((d) => (
                 <BarCell
                   key={`q1-${d.year}`}
                   value={d.q1}
@@ -483,7 +471,7 @@ function RevenueBarChart({
               isAnimationActive={true}
               animationDuration={800}
             >
-              {data.map((d, idx) => (
+              {data.map((d) => (
                 <BarCell
                   key={`q2-${d.year}`}
                   value={d.q2}
@@ -498,7 +486,7 @@ function RevenueBarChart({
               isAnimationActive={true}
               animationDuration={800}
             >
-              {data.map((d, idx) => (
+              {data.map((d) => (
                 <BarCell
                   key={`q3-${d.year}`}
                   value={d.q3}
@@ -513,7 +501,7 @@ function RevenueBarChart({
               isAnimationActive={true}
               animationDuration={800}
             >
-              {data.map((d, idx) => (
+              {data.map((d) => (
                 <BarCell
                   key={`q4-${d.year}`}
                   value={d.q4}
@@ -591,43 +579,4 @@ function BarCell({
   }
   // Pack 01: gradient (cor do quarter → transparente)
   return <Cell fill={`url(#${gradientId})`} />;
-}
-
-/**
- * Defs: 1 gradient por quarter × ano (pack 01).
- * Cor do stop = QUARTER_COLORS[q] (branco Q1/Q3, laranja Q2/Q4).
- *
- * Renderizado fora do BarChart pra evitar problemas de reordenação do
- * Recharts quando defs fica dentro.
- */
-function YearBarDefs({ data }: { data: YearData[] }): JSX.Element {
-  return (
-    <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
-      <defs>
-        {data.flatMap((d) =>
-          ([1, 2, 3, 4] as const).map((q) => {
-            const key = `q${q}` as "q1" | "q2" | "q3" | "q4";
-            const projectedKey =
-              `q${q}Projected` as "q1Projected" | "q2Projected" | "q3Projected" | "q4Projected";
-            if (d[key] == null || d[projectedKey]) return null;
-            const stopColor = QUARTER_COLORS[q];
-            const gradientId = `qr-${key}-${d.year}`;
-            return (
-              <linearGradient
-                key={gradientId}
-                id={gradientId}
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop offset="0%" stopColor={stopColor} stopOpacity={0.95} />
-                <stop offset="100%" stopColor={stopColor} stopOpacity={0.18} />
-              </linearGradient>
-            );
-          }),
-        )}
-      </defs>
-    </svg>
-  );
 }
