@@ -33,12 +33,7 @@ import {
 } from "recharts";
 
 import { Skeleton } from "@/components/foundation/skeleton";
-import {
-  CHART_COLORS,
-  cartesianGridProps,
-  cursorProps,
-  tooltipWrapperStyle,
-} from "@/lib/chart-theme";
+import { PACK, packGrid, packTooltipStyle } from "@/lib/chart-pack";
 import { cn } from "@/lib/utils";
 
 export type RangeKey = "1D" | "1W" | "1M" | "3M" | "YTD" | "1Y" | "5Y" | "All";
@@ -151,7 +146,7 @@ function ChartInner({
       data={data}
       margin={{ top: 24, right: 16, left: 0, bottom: 0 }}
     >
-      <CartesianGrid {...cartesianGridProps} />
+      <CartesianGrid {...packGrid} />
 
       {/* Eixo X categórico — quebra visual entre candles (sem conectar
           pregões consecutivos) */}
@@ -165,11 +160,11 @@ function ChartInner({
         interval="preserveStartEnd"
         minTickGap={48}
         tick={{
-          fill: CHART_COLORS.axisTick,
+          fill: PACK.tick,
           fontSize: 10,
           fontFamily: "var(--font-manrope), system-ui, sans-serif",
         }}
-        axisLine={{ stroke: CHART_COLORS.axisLine, strokeWidth: 1 }}
+        axisLine={{ stroke: PACK.axisLine, strokeWidth: 1 }}
         tickLine={false}
         height={24}
       />
@@ -177,12 +172,12 @@ function ChartInner({
         yAxisId="price"
         orientation="right"
         tick={{
-          fill: CHART_COLORS.axisTick,
+          fill: PACK.tick,
           fontSize: 10,
           fontFamily: "var(--font-manrope), system-ui, sans-serif",
         }}
         tickFormatter={(v: number) => v.toFixed(0)}
-        axisLine={{ stroke: CHART_COLORS.axisLine, strokeWidth: 1 }}
+        axisLine={{ stroke: PACK.axisLine, strokeWidth: 1 }}
         tickLine={false}
         width={48}
         domain={["auto", "auto"]}
@@ -199,7 +194,7 @@ function ChartInner({
 
       <Tooltip
         content={<PriceTooltip />}
-        cursor={{ ...cursorProps }}
+        cursor={{ stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 }}
         wrapperStyle={{ outline: "none" }}
       />
 
@@ -207,7 +202,7 @@ function ChartInner({
         <ReferenceLine
           y={prevClose}
           yAxisId="price"
-          stroke={CHART_COLORS.gridLineStrong}
+          stroke="rgba(255,255,255,0.16)"
           strokeDasharray="3 3"
           strokeWidth={1}
         />
@@ -217,22 +212,22 @@ function ChartInner({
       <Bar
         yAxisId="volume"
         dataKey="volume"
-        fill={CHART_COLORS.seriesPrimary}
+        fill={PACK.foreground}
         fillOpacity={0.12}
         isAnimationActive={true}
         animationDuration={1500}
         animationEasing="ease-out"
       />
 
-      {/* Linha de preço — animação fluida da esquerda pra direita */}
+      {/* Linha de preço — branco off (PACK.foreground), animação fluida */}
       <Line
         yAxisId="price"
         type="monotone"
         dataKey="close"
-        stroke={CHART_COLORS.seriesPrimary}
+        stroke={PACK.foreground}
         strokeWidth={1.5}
         dot={false}
-        activeDot={{ r: 4, fill: CHART_COLORS.seriesPrimary }}
+        activeDot={{ r: 4, fill: PACK.foreground }}
         isAnimationActive={true}
         animationBegin={0}
         animationDuration={1800}
@@ -268,38 +263,19 @@ function PriceTooltip({
   const p = closeEntry.payload;
   const date = new Date(p.timestamp);
   return (
-    <div style={tooltipWrapperStyle}>
-      <p
-        style={{
-          color: CHART_COLORS.tooltipMuted,
-          fontSize: 10,
-          marginBottom: 4,
-        }}
-      >
+    <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
+      <p className="text-[10px] text-foreground/70 mb-1">
         {date.toLocaleDateString("pt-BR", {
           day: "2-digit",
           month: "short",
           year: "numeric",
         })}
       </p>
-      <p
-        style={{
-          color: CHART_COLORS.tooltipText,
-          fontSize: 13,
-          fontWeight: 600,
-          fontFamily: "var(--font-manrope), system-ui, sans-serif",
-        }}
-      >
+      <p className="text-[13px] font-semibold tabular-nums text-foreground">
         R$ {p.close.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
       </p>
       {p.volume > 0 && (
-        <p
-          style={{
-            color: CHART_COLORS.tooltipMuted,
-            fontSize: 10,
-            marginTop: 4,
-          }}
-        >
+        <p className="text-[10px] tabular-nums text-foreground/70 mt-1">
           Vol {p.volume.toLocaleString("pt-BR", { notation: "compact" })}
         </p>
       )}
