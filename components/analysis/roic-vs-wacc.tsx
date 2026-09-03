@@ -41,6 +41,13 @@ import {
   ChartPeriodTabs,
   useChartPeriod,
 } from "./analysis-utils";
+import {
+  PACK,
+  packLineProps,
+  packYAxisPercentProps,
+  packGrid,
+  packRefLineZero,
+} from "@/lib/chart-pack";
 import type { ROICWACCPoint, ROICWACCSummary } from "@/lib/analytics/roic-wacc";
 
 type Props = {
@@ -138,14 +145,14 @@ export function ROICVsWACC({
               </linearGradient>
             </defs>
             <CartesianGrid
-              stroke="rgba(255,255,255,0.05)"
+              stroke={PACK.gridLine}
               strokeWidth={1}
               vertical={false}
             />
             <TimeXAxis tickFontSize={9} />
             <YAxis
               tick={{
-                fill: "rgba(200, 210, 230, 0.55)",
+                fill: PACK.tick,
                 fontSize: 9,
                 fontFamily: "var(--font-manrope), system-ui, sans-serif",
               }}
@@ -199,21 +206,16 @@ export function ROICVsWACC({
                 );
               }}
             />
-            <ReferenceLine
-              y={0}
-              stroke="rgba(255,255,255,0.20)"
-              strokeWidth={1}
-              strokeDasharray="2 4"
-            />
+            <ReferenceLine {...packRefLineZero} />
             {/* WACC (azul, sólida) — primeiro pra ficar embaixo */}
             <Line
               type="monotone"
               dataKey="wacc"
-              stroke="#489ffa"
+              stroke={PACK.macro}
               strokeWidth={2}
               strokeOpacity={1}
               dot={false}
-              activeDot={{ r: 4, fill: "#489ffa" }}
+              activeDot={{ r: 4, fill: PACK.macro }}
               isAnimationActive={true}
               animationDuration={1200}
               connectNulls={false}

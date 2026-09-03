@@ -38,6 +38,12 @@ import {
   ChartPeriodTabs,
   useChartPeriod,
 } from "./analysis-utils";
+import {
+  PACK,
+  packLineProps,
+  packYAxisPercentProps,
+  packGrid,
+} from "@/lib/chart-pack";
 
 type MarginsRow = {
   endDate: string;
@@ -146,14 +152,14 @@ export function MarginTrend({
               </linearGradient>
             </defs>
             <CartesianGrid
-              stroke="rgba(255,255,255,0.05)"
+              stroke={PACK.gridLine}
               strokeWidth={1}
               vertical={false}
             />
             <TimeXAxis />
             <YAxis
               tick={{
-                fill: "rgba(200, 210, 230, 0.55)",
+                fill: PACK.tick,
                 fontSize: 9,
                 fontFamily: "var(--font-manrope), system-ui, sans-serif",
               }}
