@@ -16,12 +16,6 @@
  * ativos. Cache local em `allRows` (no /home) — prefetch sob demanda
  * ao scrollar/navegar.
  *
- * Identidade visual: <BrandLetter> ao invés de <TickerLogo>. Cada
- * <img src="icons.brapi.dev"> em uma tabela com 50 linhas disparava
- * ~50 requests lazy + `onError` em ticks BDR/ETF sem ícone (causava
- * re-render em cascata no Firefox/Zen, ver diagnóstico em
- * `fix(home): BrandLetter na tabela` commit message).
- *
  * Search cross-page: filtra em todas as páginas já cacheadas. Quando
  * não acha nada, dispara prefetch da próxima página em background
  * (até esgotar todas). Quando ainda não acha, mostra empty state
@@ -35,9 +29,9 @@ import { useEffect } from "react";
 import type { JSX } from "react";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
-import { BrandLetter } from "@/components/foundation/brand-letter";
 import { Delta } from "@/components/foundation/delta";
 import { Skeleton } from "@/components/foundation/skeleton";
+import { TickerLogo } from "@/components/foundation/ticker-logo";
 import { SegmentedControl } from "@/components/foundation/segmented-control";
 import { formatCompanyName } from "@/lib/company-name";
 import { cn } from "@/lib/utils";
@@ -321,7 +315,7 @@ function Row({ row }: { row: QuoteRow }): JSX.Element {
       )}
     >
       <div className="flex items-center gap-3 min-w-0">
-        <BrandLetter symbol={row.symbol} size="md" />
+        <TickerLogo symbol={row.symbol} size="md" />
         <div className="min-w-0">
           <div className="text-[15px] font-semibold text-foreground truncate">
             {row.symbol}
