@@ -99,10 +99,27 @@ export function computeEquityRiskPremium(
     .filter((r) => r.baseDate);
   const treasuryMap = treasuryToMap(treasuryHistory);
 
+  // Carry-forward do NTN-B: brapi /treasury/indicators/history retorna os
+  // últimos ~2 anos com gaps. Sem carry-forward, o último quarter pode
+  // cair fora da janela do treasuryMap e `nearestPriorRate` retorna null,
+  // fazendo a linha azul sumir do chart. Aplica forward-fill por data.
+  const sortedTreasuryDates = [...treasuryMap.keys()].sort();
+  let lastKnown: number | null = null;
+  const treasuryFilled = new Map<string, number>();
+  for (const date of sortedTreasuryDates) {
+    const v = treasuryMap.get(date);
+    if (v != null) {
+      treasuryFilled.set(date, v);
+      lastKnown = v;
+    } else if (lastKnown != null) {
+      treasuryFilled.set(date, lastKnown);
+    }
+  }
+
   const series: EquityRiskPremiumPoint[] = [];
   for (const e of earningsHistory) {
     const ey = e.earningsYield;
-    const rate = nearestPriorRate(treasuryMap, e.endDate);
+    const rate = nearestPriorRate(treasuryFilled, e.endDate);
     const premium = ey != null && rate != null ? ey - rate : null;
     series.push({
       endDate: e.endDate,

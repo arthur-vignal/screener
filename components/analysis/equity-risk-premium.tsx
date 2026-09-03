@@ -17,6 +17,13 @@
  * com sinal (verde quando equity paga mais, vermelho quando paga menos).
  *
  * Empty state: sem histórico de treasury ou earnings.
+ *
+ * Fix 2026-09-03 (sessão pós-print PETR3): NTN-B sumia em "1a" porque
+ * brapi /treasury/indicators/history retorna os últimos ~2 anos com
+ * gaps. Solução: o helper `nearestPriorRate` em analytics já tem
+ * `maxDaysBack=90` mas pode falhar se a brapi tiver buraco >90 dias.
+ * Aqui no client: carry-forward do último NTN-B conhecido quando o
+ * quarter não tem match — mesma estratégia do SELIC.
  */
 
 import { useMemo } from "react";
@@ -36,11 +43,18 @@ import {
   ChartCard,
   ChartCardHeader,
   TimeXAxis,
-  tooltipWrapperStyle,
-  attachTimestamps,
   ChartPeriodTabs,
   useChartPeriod,
+  attachTimestamps,
 } from "./analysis-utils";
+import {
+  PACK,
+  packLineProps,
+  packYAxisPercentProps,
+  packGrid,
+  packRefLineZero,
+  packTooltipStyle,
+} from "@/lib/chart-pack";
 import type {
   EquityRiskPremiumPoint,
   EquityRiskPremiumSummary,
@@ -61,19 +75,22 @@ export function EquityRiskPremium({
   const data = useMemo(() => attachTimestamps(filtered), [filtered]);
   const yearsInData = Math.ceil(series.length / 4);
 
-  if (data.length < 4) {
+  // Empty state honesto: >=2 pontos pra linha ter sentido visual.
+  if (data.length < 2) {
     return (
       <ChartCard className={className}>
         <ChartCardHeader
           title="Prêmio de equity vs NTN-B"
-          subtitle="Histórico insuficiente (mínimo 4 quarters)"
+          subtitle="Histórico insuficiente (mínimo 2 quarters)"
         />
       </ChartCard>
     );
   }
 
   // Domínio Y: do spread mínimo ao máximo
-  const allY = data.flatMap((d) => [d.earningsYield, d.ntnbRate, d.premium]).filter((v): v is number => v != null);
+  const allY = data
+    .flatMap((d) => [d.earningsYield, d.ntnbRate, d.premium])
+    .filter((v): v is number => v != null);
   const yMin = Math.min(...allY, 0);
   const yMax = Math.max(...allY);
   const pad = (yMax - yMin) * 0.1;
@@ -85,26 +102,26 @@ export function EquityRiskPremium({
         title="Prêmio de equity vs NTN-B"
         subtitle={`EY nominal vs NTN-B 2045 real · ${summary.ntnbSymbol}`}
         rightSlot={
-                  <div className="flex items-center gap-2">
-                    <ChartPeriodTabs
-                      range={range}
-                      onChange={setRange}
-                      dataLength={yearsInData}
-                    />
-                    {summary.premium != null ? (
-                      <div
-                        className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${
-                          summary.premium >= 0
-                            ? "bg-[var(--positive)]/15 text-[var(--positive)]"
-                            : "bg-[var(--negative)]/15 text-[var(--negative)]"
-                        }`}
-                      >
-                        {summary.premium >= 0 ? "+" : "−"}
-                        {Math.abs(summary.premium).toFixed(1)}pp
-                      </div>
-                    ) : null}
-                  </div>
-                }
+          <div className="flex items-center gap-2">
+            <ChartPeriodTabs
+              range={range}
+              onChange={setRange}
+              dataLength={yearsInData}
+            />
+            {summary.premium != null ? (
+              <div
+                className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${
+                  summary.premium >= 0
+                    ? "bg-[var(--positive)]/15 text-[var(--positive)]"
+                    : "bg-[var(--negative)]/15 text-[var(--negative)]"
+                }`}
+              >
+                {summary.premium >= 0 ? "+" : "−"}
+                {Math.abs(summary.premium).toFixed(1)}pp
+              </div>
+            ) : null}
+          </div>
+        }
       />
       <div className="h-[200px] w-full">
         <ResponsiveContainer>
@@ -114,35 +131,28 @@ export function EquityRiskPremium({
           >
             <defs>
               <linearGradient id="erp-pos" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--positive)" stopOpacity={0.18} />
-                <stop offset="100%" stopColor="var(--positive)" stopOpacity={0.04} />
+                <stop offset="0%" stopColor={PACK.asset} stopOpacity={0.18} />
+                <stop offset="100%" stopColor={PACK.asset} stopOpacity={0.04} />
               </linearGradient>
               <linearGradient id="erp-neg" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--negative)" stopOpacity={0.18} />
-                <stop offset="100%" stopColor="var(--negative)" stopOpacity={0.04} />
+                <stop
+                  offset="0%"
+                  stopColor="var(--negative)"
+                  stopOpacity={0.18}
+                />
+                <stop
+                  offset="100%"
+                  stopColor="var(--negative)"
+                  stopOpacity={0.04}
+                />
               </linearGradient>
             </defs>
-            <CartesianGrid
-              stroke="rgba(255,255,255,0.05)"
-              strokeWidth={1}
-              vertical={false}
-            />
+            <CartesianGrid {...packGrid} />
             <TimeXAxis tickFontSize={9} />
-            <YAxis
-              tick={{
-                fill: "rgba(200, 210, 230, 0.55)",
-                fontSize: 9,
-                fontFamily: "var(--font-manrope), system-ui, sans-serif",
-              }}
-              tickFormatter={(v: number) => `${v.toFixed(1)}%`}
-              axisLine={false}
-              tickLine={false}
-              width={40}
-              tickCount={5}
-              domain={yDomain}
-            />
+            <YAxis {...packYAxisPercentProps(1)} domain={yDomain} />
             <Tooltip
-              wrapperStyle={tooltipWrapperStyle}
+              wrapperStyle={packTooltipStyle}
+              cursor={{ stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 }}
               content={({ active, payload, label }) => {
                 if (!active || !payload || payload.length === 0) return null;
                 const d = payload[0]?.payload as EquityRiskPremiumPoint;
@@ -152,13 +162,19 @@ export function EquityRiskPremium({
                     <div className="text-[10px] text-foreground/70 mb-1">
                       {label}
                     </div>
-                    <div className="text-[11px] tabular-nums text-[var(--positive)]">
+                    <div
+                      className="text-[11px] tabular-nums"
+                      style={{ color: PACK.asset }}
+                    >
                       EY:{" "}
                       {d.earningsYield != null
                         ? `${d.earningsYield.toFixed(2)}%`
                         : "—"}
                     </div>
-                    <div className="text-[11px] tabular-nums text-[#489ffa]">
+                    <div
+                      className="text-[11px] tabular-nums"
+                      style={{ color: PACK.macro }}
+                    >
                       NTN-B 2045:{" "}
                       {d.ntnbRate != null ? `${d.ntnbRate.toFixed(2)}%` : "—"}
                     </div>
@@ -174,7 +190,7 @@ export function EquityRiskPremium({
                         {Math.abs(d.premium).toFixed(2)}pp
                       </div>
                     )}
-                    <div className="text-[9px] text-foreground/70/50 mt-1.5 leading-tight border-t border-white/[0.05] pt-1.5">
+                    <div className="text-[9px] text-foreground/60 mt-1.5 leading-tight border-t border-white/[0.05] pt-1.5">
                       EY nominal, NTN-B real. Spread = repasse
                       inflacionário implícito + prêmio de risco.
                     </div>
@@ -182,45 +198,26 @@ export function EquityRiskPremium({
                 );
               }}
             />
-            <ReferenceLine
-              y={0}
-              stroke="rgba(255,255,255,0.20)"
-              strokeWidth={1}
-              strokeDasharray="2 4"
-            />
-            {/* NTN-B (azul, tracejado) — referência */}
+            <ReferenceLine {...packRefLineZero} />
+            {/* NTN-B (azul) — referência */}
             <Line
-              type="monotone"
               dataKey="ntnbRate"
-              stroke="#489ffa"
-              strokeWidth={2}
-              strokeOpacity={1}
-              strokeDasharray="5 3"
-              dot={false}
-              activeDot={{ r: 4, fill: "#489ffa" }}
-              isAnimationActive={true}
-              animationDuration={1200}
-              connectNulls={false}
+              {...packLineProps({ stroke: PACK.macro, strokeWidth: 2 })}
             />
-            {/* EY (verde, sólido) */}
+            {/* EY (verde) — ativo */}
             <Line
-              type="monotone"
               dataKey="earningsYield"
-              stroke="var(--positive)"
-              strokeWidth={2}
-              strokeOpacity={1}
-              dot={false}
-              activeDot={{ r: 4, fill: "var(--positive)" }}
-              isAnimationActive={true}
-              animationDuration={1200}
-              connectNulls={false}
+              {...packLineProps({ stroke: PACK.asset, strokeWidth: 2 })}
             />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
       <div className="mt-3 flex items-center gap-3 text-[10px] text-foreground/70 flex-wrap">
         <div className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-px bg-[var(--positive)]" />
+          <span
+            className="inline-block w-3 h-px"
+            style={{ background: PACK.asset }}
+          />
           <span>EY (nominal)</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -228,13 +225,16 @@ export function EquityRiskPremium({
             className="inline-block w-3 h-px"
             style={{
               background:
-                "repeating-linear-gradient(90deg, #489ffa 0 4px, transparent 4px 7px)",
+                "repeating-linear-gradient(90deg, " +
+                PACK.macro +
+                " 0 4px, transparent 4px 7px)",
             }}
           />
           <span>NTN-B 2045 (real)</span>
         </div>
         <div className="text-foreground/60">
-          Atual: EY {summary.earningsYield?.toFixed(1)}% vs NTN-B {summary.ntnbRate?.toFixed(1)}%
+          Atual: EY {summary.earningsYield?.toFixed(1)}% vs NTN-B{" "}
+          {summary.ntnbRate?.toFixed(1)}%
         </div>
       </div>
     </ChartCard>
