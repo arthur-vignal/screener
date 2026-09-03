@@ -5,21 +5,22 @@ import { fetchB3ActionsNews } from "@/lib/news-aggregator";
 /**
  * GET /api/news/multi
  *
- * News feed de AÇÕES B3 (sem macro). Source: InfoMoney Ações + Brazil Journal
- * via `lib/news-aggregator.ts`.
+ * News feed de AÇÕES B3 com preço embutido (campo `price` + `changePercent`
+ * do brapi `/v2/stocks/quote` em batch).
+ *
+ * Each item agora tem shape:
+ *   { id, title, source, url, publishedAt, datetime, ticker?,
+ *     price?, changePercent? }
  *
  * Query params:
  *   - limit: number, default 20, max 50
  *   - cursor: optional datetime (unix seconds). Returns items older than this.
- *     Used by infinite scroll on the home page.
  *
- * Returns: { news: NewsItem[] }
- *
- * NOTA: macro tab usa /api/news/multi-macro (não este endpoint).
+ * Returns: { news: NewsItemWithPrice[] }
  */
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 10;
+export const maxDuration = 15; // brapi batch pode adicionar 1-2s
 
 export async function GET(request: Request) {
   const url = new URL(request.url);

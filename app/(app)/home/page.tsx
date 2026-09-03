@@ -67,12 +67,64 @@ export default function HomePage(): JSX.Element {
   });
 
   const [highlight, setHighlight] = useState<{
-    headline: string;
-    source: string;
-    url: string;
-    relatedCount: number;
-  } | null>(null);
-  const [highlightLoading, setHighlightLoading] = useState(true);
+      headline: string;
+      source: string;
+      url: string;
+      relatedCount: number;
+    } | null>(null);
+    const [highlightLoading, setHighlightLoading] = useState(true);
+
+    // Server-side ticker search: quando o user digita "csna3" e tá
+    // só na página 1, /api/assets/list?q=csna3 busca em TODAS as ações
+    // B3 (~700) e devolve match exato, sem precisar navegar páginas.
+    //
+    // O resultado é mesclado com cache local via prop `serverSearchRows`.
+    useEffect(() => {
+      const normalized = search.trim();
+      // só dispara se tiver algo pra buscar; resultado vazio limpa serverSearchRows
+      if (!normalized) {
+        setServerSearchRows([]);
+        return;
+      }
+      const t = setTimeout(async () => {
+        try {
+          const r = await fetch(
+            `/api/assets/list?exchange=b3&q=${encodeURIComponent(normalized)}&limit=50`,
+            { cache: "no-store" },
+          );
+          if (!r.ok) return;
+          const data = (await r.json()) as {
+            items?: Array<{
+              symbol: string;
+              name: string;
+              type: "stock" | "fii" | "etf" | "crypto";
+              sector: string;
+              market: "us" | "br" | "global";
+            }>;
+          };
+          if (!data.items) return;
+          // converte AssetListItem → QuoteRow pra QuotationsTable usar
+          const mapped: QuoteRow[] = data.items.map((it) => ({
+            symbol: it.symbol,
+            longName: it.name,
+            sector: it.sector,
+            price: null,
+            currency: "BRL",
+            changePercent: null,
+            changePercent7d: null,
+            changePercent30d: null,
+            volume: null,
+            marketCap: null,
+            type: it.type === "etf" ? "etf" : "stock",
+          }));
+          setServerSearchRows(mapped);
+        } catch {
+          // ignore
+        }
+      }, 250);
+      return () => clearTimeout(t);
+    }, [search]);
+    const [serverSearchRows, setServerSearchRows] = useState<QuoteRow[]>([]);
 
   // ── News (2026-09-02: sistema simplificado, Google News RSS único) ──
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -348,10 +400,10 @@ export default function HomePage(): JSX.Element {
           </StaggerOnMount>
 
           {/* Coluna direita */}
-          <StaggerOnMount
-            className="flex flex-col"
-            style={{ maxHeight: "calc(100dvh - 240px)" }}
-          >
+                    <StaggerOnMount
+                      className="flex-1 min-h-0 flex flex-col"
+                      style={{ maxHeight: "calc(100dvh - 240px)" }}
+                    >
             <NewsFeed
               items={news}
               loading={newsLoading}

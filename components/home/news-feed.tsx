@@ -36,6 +36,10 @@ export type NewsItem = {
   url: string;
   /** B3 ticker pattern extracted from title (PETR4, VALE3). */
   ticker?: string;
+  /** Preço atual do ticker (server-side brapi batch). */
+  price?: number;
+  /** Variação % desde abertura (server-side brapi batch, em FRAÇÃO: 0.024 = +2.4%). */
+  changePercent?: number;
 };
 
 export type PriceIndex = Map<string, { price: number; changePercent: number }>;
@@ -80,8 +84,8 @@ export function NewsFeed({
         </div>
       </div>
 
-      {/* Body */}
-      <div className="flex-1 p-2">
+      {/* Body — rola dentro do card */}
+            <div className="flex-1 p-2 overflow-y-auto">
         {loading ? (
           <LoadingList />
         ) : items.length === 0 ? (
@@ -123,9 +127,11 @@ function NewsCard({
   item, priceIndex,
 }: { item: NewsItem; priceIndex?: PriceIndex }): JSX.Element {
   const time = formatRelative(item.publishedAt);
-  const quote = item.ticker ? priceIndex?.get(item.ticker) : undefined;
-  const price = quote?.price;
-  const change = quote?.changePercent;
+  // Preço vem do servidor (brapi batch via lib/news-aggregator). Só cai pro
+  // priceIndex se o servidor não retornou (graceful fallback).
+  const indexed = item.ticker ? priceIndex?.get(item.ticker) : undefined;
+  const price = item.price ?? indexed?.price;
+  const change = item.changePercent ?? indexed?.changePercent;
 
   return (
     <a

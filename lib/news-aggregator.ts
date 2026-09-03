@@ -195,17 +195,79 @@ const MACRO_FEEDS = [
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /**
- * News de ações B3. 2 feeds diretos (InfoMoney Ações + Brazil Journal).
- * 281KB + 82KB. ~20 items unique.
+ * News de ações B3 com preços embutidos (BRAPI batch).
  *
- * Returns up to `limit` items (default 20), sorted newest-first.
+ * Fluxo:
+ *   1. Fetch RSS de fontes (InfoMoney Ações + Brazil Journal)
+ *   2. Para cada item, extract ticker via regex
+ *   3. Batch fetch brapi `/v2/stocks/quote?symbols=...` (1 request)
+ *   4. Merge {ticker: {price, changePercent}} em cada item
  *
- * Never throws — returns empty array if any upstream fails.
+ * Custo: 1 request brapi por 50 tickers (batch). Cache 1min pra
+ * evitar request em cada refresh do /home.
  */
-export async function fetchB3ActionsNews(limit = 20): Promise<NewsItem[]> {
+
+type TickerPrice = {
+  price: number;
+  changePercent: number;
+};
+
+async function fetchPricesForTickers(
+  tickers: string[],
+): Promise<Map<string, TickerPrice>> {
+  if (tickers.length === 0) return new Map();
+  try {
+    const symbols = tickers.join(",");
+    const url = `https://brapi.dev/api/v2/stocks/quote?symbols=${encodeURIComponent(symbols)}`;
+    const r = await fetch(url, {
+      headers: process.env.BRAPI_TOKEN
+        ? { Authorization: `Bearer ${process.env.BRAPI_TOKEN}` }
+        : {},
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!r.ok) return new Map();
+    const data = (await r.json()) as {
+      results?: Array<{
+        symbol: string;
+        regularMarketPrice?: number;
+        regularMarketChangePercent?: number;
+      }>;
+    };
+    const m = new Map<string, TickerPrice>();
+    for (const it of data.results ?? []) {
+      if (it.regularMarketPrice != null) {
+        m.set(it.symbol, {
+          price: it.regularMarketPrice,
+          // brapi retorna em % direto (ex: 2.4 = +2.4%). UI aplica /100
+          // se necessário via formato, mantendo valor em %.
+          changePercent: it.regularMarketChangePercent ?? 0,
+        });
+      }
+    }
+    return m;
+  } catch {
+    return new Map();
+  }
+}
+
+type NewsItemWithPrice = NewsItem & { price?: number; changePercent?: number };
+
+export async function fetchB3ActionsNews(limit = 20): Promise<NewsItemWithPrice[]> {
   try {
     const items = await mergeFeeds(ACTIONS_FEEDS);
-    return items.slice(0, limit);
+    const tickerSet = new Set<string>();
+    for (const n of items) {
+      if (n.ticker) tickerSet.add(n.ticker);
+    }
+    const prices = await fetchPricesForTickers([...tickerSet]);
+    const enriched = items.map((n) => {
+      if (!n.ticker) return n;
+      const p = prices.get(n.ticker);
+      return p
+        ? { ...n, price: p.price, changePercent: p.changePercent }
+        : n;
+    });
+    return enriched.slice(0, limit);
   } catch (err) {
     console.error(`[news-aggregator] actions: ${(err as Error).message}`);
     return [];

@@ -123,26 +123,30 @@ export function QuotationsTable({
     : rows;
 
   useEffect(() => {
-    if (
-      normalizedSearch &&
-      filteredRows.length === 0 &&
-      hasMorePages &&
-      onSearchMissNextPage &&
-      !loadingPageNav
-    ) {
-      onSearchMissNextPage();
-    }
-  }, [
-    normalizedSearch,
-    filteredRows.length,
-    hasMorePages,
-    onSearchMissNextPage,
-    loadingPageNav,
-  ]);
+      if (!normalizedSearch || !onSearchMissNextPage || loadingPageNav) return;
+      // Continua avançando página se filteredRows não tem match exato com a busca.
+      // Critério conservador: se não tem match exato no símbolo OU longName, prefetch.
+      const exactMatch = filteredRows.some(
+        (r) =>
+          r.symbol.toLowerCase() === normalizedSearch ||
+          (r.longName ?? "").toLowerCase().includes(normalizedSearch),
+      );
+      if (filteredRows.length === 0 || (!exactMatch && hasMorePages)) {
+        onSearchMissNextPage();
+      }
+    }, [
+      normalizedSearch,
+      filteredRows,
+      hasMorePages,
+      onSearchMissNextPage,
+      loadingPageNav,
+    ]);
 
   if (loading) return <LoadingTable className={className} />;
-  if (rows.length === 0)
-    return <EmptyTable onRetry={onRetry} className={className} />;
+    // EmptyTable só aparece quando NÃO está carregando próxima página
+    // (senão a /home mostra 'Sem cotações' entre cliques de paginação).
+    if (rows.length === 0 && !loadingPageNav)
+      return <EmptyTable onRetry={onRetry} className={className} />;
 
   const showPagination = totalPages > 1 && onPageChange !== undefined;
   const searchActive = normalizedSearch !== "";
