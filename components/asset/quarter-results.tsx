@@ -15,14 +15,16 @@
  *   │  Q1 25  Q2 25  Q3 25    Q1 26  Q2 26        │
  *   └──────────────────────────────────────────────┘
  *
- * Réplica visual Fey:
- * - Título "Quarterly revenue" em fonte maior (16px) bold
- * - Y axis à DIREITA com 4 ticks discretos (R$0, R$Xb, R$Yb, R$Zb)
- * - Barras finas com gap generoso (barSize=28, barCategoryGap=35%)
- * - Cor sólida: cinza/muted para quarters passados (Reported),
- *   verde/vermelho para o Q atual (QoQ change)
- * - SEM info embaixo das colunas — limpo, Fey style
- * - SEM cards duplicados — chart é o elemento principal
+ * Packs aplicados (sessão 2026-09-03):
+ * - Pack 01: gradient teal no topo das barras (PACK.asset → transparente).
+ *   Cada barra tem gradient vertical que reforça visualmente o "preenchimento
+ *   do valor" — Fey style.
+ * - Pack 02: barras projected (status="projected") com fill VAZIO + contorno
+ *   tracejado. Comunica "ainda não reportado" sem legenda cognitiva.
+ *
+ * Real (passado): PACK.asset verde sólido com gradient, OU PACK.negative
+ *   vermelho se QoQ < 0 (Fey convention).
+ * Projected (futuro): fill="none" + stroke PACK.muted tracejado.
  *
  * Dados REAIS: brapi incomeStatementHistoryQuarterly.
  * Status "missed/beat" é heurístico: EPS caiu > 5% vs Q anterior
@@ -31,8 +33,8 @@
  * Nota: Brapi NÃO retorna estimates/sell-side consensus pra tickers BR.
  * A referência Fey mostra Reported (passado, cinza) + Estimates (futuro,
  * amarelo/laranja). Como não temos estimates, usamos:
- * - Passado (todos os quarters menos o último): muted/cinza
- * - Q atual (último): cor cheia por QoQ (verde/vermelho)
+ * - Real quarters: PACK.asset (UP QoQ) ou PACK.negative (DOWN QoQ) com gradient
+ * - Projected quarters: contorno vazio com stroke PACK.muted tracejado
  */
 
 import { useMemo } from "react";
@@ -40,6 +42,7 @@ import type { JSX } from "react";
 import {
   Bar,
   BarChart,
+  CartesianGrid,
   Cell,
   ResponsiveContainer,
   Tooltip,
@@ -48,6 +51,7 @@ import {
 } from "recharts";
 
 import { cn } from "@/lib/utils";
+import { PACK, packGrid } from "@/lib/chart-pack";
 
 export type QuarterResult = {
   /** Quarter label "Q1 2024". */
@@ -188,6 +192,13 @@ export function QuarterResults({
             .find((q) => q.endDate < firstEnd && q.revenue > 0)
         : null;
 
+    // Map projected statuses por endDate (label) pra saber se uma barra é
+    // projected (não tem endDate consistente, mas tem label do results[]).
+    const projectedByLabel = new Set<string>();
+    for (const r of results) {
+      if (r.status === "projected") projectedByLabel.add(r.label);
+    }
+
     return last.map((q, i, arr) => {
       // QoQ vs quarter anterior do array plotado. Se for o primeiro e
       // temos um baseline de quarters positivos antes, usa o baseline.
@@ -204,6 +215,9 @@ export function QuarterResults({
         revenue: q.revenue,
         eps: q.epsBasic,
         changePct,
+        // pack 02: projected (do results[]) recebe tratamento visual
+        // diferente (contorno vazio, sem fill).
+        isProjected: projectedByLabel.has(label),
       };
     });
   }, [quarters, results]);
@@ -228,13 +242,18 @@ export function QuarterResults({
 /**
  * Bar chart vertical de revenue por quarter.
  *
+ * Packs aplicados:
+ * - Pack 01 (gradient teal no topo): cada barra real tem gradient vertical
+ *   da cor (PACK.asset verde UP, PACK.negative vermelho DOWN) → transparente
+ *   embaixo. <linearGradient> com id único por barra.
+ * - Pack 02 (forecast vs reported): barras projected renderizam com fill="none"
+ *   + stroke PACK.muted tracejado (1.5px) — visual "ainda não reportado".
+ *
  * Réplica Fey TSLA:
  * - Y axis à DIREITA com 4 ticks discretos em compact
  * - Barras finas (barSize=28) com gap generoso (barCategoryGap=35%)
- * - Cor: cinza/muted para quarters passados, cor cheia (verde/vermelho)
- *   para o Q atual baseado em QoQ
  * - SEM texto embaixo das colunas
- * - Grid horizontal tracejado sutil (estilo Fey)
+ * - Grid horizontal tracejado sutil
  */
 function RevenueBarChart({
   data,
@@ -246,6 +265,7 @@ function RevenueBarChart({
     revenue: number;
     eps: number | null;
     changePct: number | null;
+    isProjected: boolean;
   }>;
   currency: "BRL" | "USD";
 }): JSX.Element {
@@ -263,6 +283,11 @@ function RevenueBarChart({
         </div>
       </div>
 
+      {/* Defs: gradientes por cor (pack 01). Um gradient por barra — não
+          dá pra compartilhar porque o pack 01 pede cor específica por
+          barra (verde UP / vermelho DOWN). */}
+      <BarDefs data={data} />
+
       {/* Bar chart */}
       <div className="h-[220px] w-full">
         <ResponsiveContainer>
@@ -272,6 +297,7 @@ function RevenueBarChart({
             barCategoryGap="35%"
             barSize={28}
           >
+            <CartesianGrid {...packGrid} />
             <XAxis
               dataKey="label"
               tick={({ x, y, payload }) => {
@@ -285,7 +311,7 @@ function RevenueBarChart({
                       y={0}
                       dy={10}
                       textAnchor="middle"
-                      fill="rgba(200, 210, 230, 0.55)"
+                      fill={PACK.tick}
                       fontSize={10}
                       fontFamily="var(--font-manrope), system-ui, sans-serif"
                     >
@@ -297,7 +323,8 @@ function RevenueBarChart({
                         y={0}
                         dy={22}
                         textAnchor="middle"
-                        fill="rgba(200, 210, 230, 0.40)"
+                        fill={PACK.tick}
+                        fillOpacity={0.7}
                         fontSize={9}
                         fontFamily="var(--font-manrope), system-ui, sans-serif"
                       >
@@ -315,7 +342,7 @@ function RevenueBarChart({
             <YAxis
               orientation="right"
               tick={{
-                fill: "rgba(200, 210, 230, 0.45)",
+                fill: PACK.tick,
                 fontSize: 9,
                 fontFamily: "var(--font-manrope), system-ui, sans-serif",
               }}
@@ -340,19 +367,25 @@ function RevenueBarChart({
                       revenue: number;
                       eps: number | null;
                       changePct: number | null;
+                      isProjected: boolean;
                     }
                   | undefined;
                 if (!d) return null;
                 return (
                   <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                    <div className="text-[10px] text-muted-foreground/70">
+                    <div className="text-[10px] text-foreground/70">
                       {d.label}
+                      {d.isProjected && (
+                        <span className="ml-1.5 text-[var(--muted-foreground)]">
+                          (projetado)
+                        </span>
+                      )}
                     </div>
                     <div className="text-[12px] font-semibold tabular-nums text-foreground">
                       {formatCompact(d.revenue, currency)}
                     </div>
                     {d.eps != null && (
-                      <div className="text-[10px] tabular-nums text-muted-foreground/85 mt-0.5">
+                      <div className="text-[10px] tabular-nums text-foreground/70 mt-0.5">
                         EPS: {d.eps.toFixed(2)}
                       </div>
                     )}
@@ -380,21 +413,37 @@ function RevenueBarChart({
               animationDuration={800}
             >
               {data.map((d, idx) => {
-                // Cada barra segue cor por QoQ individual.
-                // Primeiro quarter (sem QoQ) = neutro muted.
-                if (d.changePct == null) {
+                // Pack 02: projected → contorno vazio tracejado (sem fill)
+                if (d.isProjected) {
                   return (
                     <Cell
                       key={`cell-${idx}`}
-                      fill="rgba(255, 255, 255, 0.30)"
+                      fill="rgba(0,0,0,0)"
+                      stroke={PACK.muted}
+                      strokeWidth={1.5}
+                      strokeDasharray="3 2"
                     />
                   );
                 }
-                const isUp = d.changePct >= 0;
+                // Pack 01: gradient teal no topo fade embaixo.
+                // Cor: PACK.asset verde (UP) ou PACK.negative vermelho (DOWN).
+                // Sem QoQ (primeira barra) = neutro (cinza).
+                const gradientId =
+                  d.changePct == null
+                    ? `qr-grad-neutral-${idx}`
+                    : d.changePct >= 0
+                      ? `qr-grad-up-${idx}`
+                      : `qr-grad-down-${idx}`;
+                const stopColor =
+                  d.changePct == null
+                    ? "rgba(255, 255, 255, 0.4)"
+                    : d.changePct >= 0
+                      ? PACK.asset
+                      : PACK.negative;
                 return (
                   <Cell
                     key={`cell-${idx}`}
-                    fill={isUp ? "var(--positive)" : "var(--negative)"}
+                    fill={`url(#${gradientId})`}
                   />
                 );
               })}
@@ -403,23 +452,82 @@ function RevenueBarChart({
         </ResponsiveContainer>
       </div>
 
-      {/* Legenda: regra de cor por QoQ */}
-      <div className="flex items-center gap-4 mt-3 text-[10px] text-muted-foreground/70">
+      {/* Legenda: regra de cor por QoQ + projected */}
+      <div className="flex items-center gap-4 mt-3 text-[10px] text-foreground/70 flex-wrap">
         <div className="flex items-center gap-1.5">
           <span
             className="inline-block w-2 h-2 rounded-sm"
-            style={{ backgroundColor: "var(--positive)" }}
+            style={{ background: PACK.asset }}
           />
           <span>Up QoQ</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span
             className="inline-block w-2 h-2 rounded-sm"
-            style={{ backgroundColor: "var(--negative)" }}
+            style={{ background: PACK.negative }}
           />
           <span>Down QoQ</span>
         </div>
+        <div className="flex items-center gap-1.5">
+          <span
+            className="inline-block w-2 h-2 rounded-sm"
+            style={{
+              background:
+                "repeating-linear-gradient(90deg, " +
+                PACK.muted +
+                " 0 2px, transparent 2px 4px)",
+              border: `1px solid ${PACK.muted}`,
+            }}
+          />
+          <span>Projetado</span>
+        </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Defs: gradientes pra pack 01 (1 gradient por barra real).
+ * Renderizado fora do BarChart pra evitar problemas de reordenação do
+ * Recharts quando defs fica dentro.
+ */
+function BarDefs({
+  data,
+}: {
+  data: Array<{ changePct: number | null; isProjected: boolean }>;
+}): JSX.Element {
+  return (
+    <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
+      <defs>
+        {data.map((d, idx) => {
+          if (d.isProjected) return null;
+          const stopColor =
+            d.changePct == null
+              ? "rgba(255, 255, 255, 0.4)"
+              : d.changePct >= 0
+                ? PACK.asset
+                : PACK.negative;
+          const gradientId =
+            d.changePct == null
+              ? `qr-grad-neutral-${idx}`
+              : d.changePct >= 0
+                ? `qr-grad-up-${idx}`
+                : `qr-grad-down-${idx}`;
+          return (
+            <linearGradient
+              key={gradientId}
+              id={gradientId}
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
+              <stop offset="0%" stopColor={stopColor} stopOpacity={0.95} />
+              <stop offset="100%" stopColor={stopColor} stopOpacity={0.18} />
+            </linearGradient>
+          );
+        })}
+      </defs>
+    </svg>
   );
 }
