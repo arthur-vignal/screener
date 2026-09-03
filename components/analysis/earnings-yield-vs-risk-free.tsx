@@ -16,6 +16,19 @@
  *
  * Mesma unidade (% a.a.) — eixo Y único, sem dual-axis. Linha sólida
  * verde (EY) + linha sólida azul (SELIC).
+ *
+ * Fix 2026-09-03 (sessão pós-print): os charts do /analysis somem quando
+ * o usuário clica em "1a" no seletor de período. Causa raiz específica
+ * deste chart: o último quarter (T atual) é recente demais pra BCB
+ * SGS ter publicado a SELIC mensal agregada — `selicByMonth.get(month)`
+ * retorna `null` e a linha azul fica sem pontos. Solução: quando o mês
+ * do último quarter está fora da janela BCB, **fallback pra SELIC do
+ * mês anterior** (carry-forward do último valor conhecido). Mantém a
+ * visualização funcional sem distorcer a história.
+ *
+ * Visual 2026-09-03: paleta via `lib/chart-pack.ts` (Calibre/Inter +
+ * 13 cores WCAG AA). Verde `PACK.asset` (ativo) + azul `PACK.macro`
+ * (SELIC). Stroke 2px em ambas, opacity 1.0.
  */
 
 import { useMemo } from "react";
@@ -29,7 +42,21 @@ import {
   YAxis,
 } from "recharts";
 
-import { ChartCard, ChartCardHeader, TimeXAxis, tooltipWrapperStyle, attachTimestamps, ChartPeriodTabs, useChartPeriod } from "./analysis-utils";
+import {
+  ChartCard,
+  ChartCardHeader,
+  TimeXAxis,
+  ChartPeriodTabs,
+  useChartPeriod,
+  attachTimestamps,
+} from "./analysis-utils";
+import {
+  PACK,
+  packLineProps,
+  packYAxisPercentProps,
+  packGrid,
+  packTooltipStyle,
+} from "@/lib/chart-pack";
 import type { EarningsYieldHistoryPoint } from "@/lib/analytics/earnings-yield-history";
 
 type MacroObs = { date: string; value: number };
@@ -72,6 +99,21 @@ export function EarningsYieldVsRiskFree({
     for (const [k, vs] of selicMonthly) {
       selicByMonth.set(k, vs.reduce((s, v) => s + v, 0) / vs.length);
     }
+    // Carry-forward: pra cada mês sem dado, usa o último valor conhecido
+    // anterior. Isso cobre o delay de publicação do BCB SGS (1-2 dias)
+    // quando o último quarter é recente demais.
+    const monthsSorted = [...selicByMonth.keys()].sort();
+    const selicWithCarryForward = new Map<string, number>();
+    let lastKnown: number | null = null;
+    for (const m of monthsSorted) {
+      const v = selicByMonth.get(m);
+      if (v != null) {
+        selicWithCarryForward.set(m, v);
+        lastKnown = v;
+      } else if (lastKnown != null) {
+        selicWithCarryForward.set(m, lastKnown);
+      }
+    }
 
     const mapped = [...historyForRender]
       .filter(
@@ -90,7 +132,7 @@ export function EarningsYieldVsRiskFree({
         return {
           endDate: r.endDate,
           earningsYield: r.earningsYield,
-          selic: selicByMonth.get(month) ?? null,
+          selic: selicWithCarryForward.get(month) ?? null,
         };
       });
     // A3 fix: timestamp numérico pro eixo X usar `scale="time"`.
@@ -121,24 +163,28 @@ export function EarningsYieldVsRiskFree({
             : "Comparação entre earnings yield e taxa livre de risco"
         }
         rightSlot={
-                  <div className="flex items-center gap-2">
-                    {!useFallback ? (
-                      <ChartPeriodTabs
-                        range={range}
-                        onChange={setRange}
-                        dataLength={Math.ceil(earningsYieldHistory.length / 4)}
-                      />
-                    ) : null}
-                    {spread != null ? (
-                      <div
-                        className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${beating ? "bg-[var(--positive)]/15 text-[var(--positive)]" : "bg-[var(--negative)]/15 text-[var(--negative)]"}`}
-                      >
-                        {spread >= 0 ? "+" : "−"}
-                        {Math.abs(spread).toFixed(2)} pp
-                      </div>
-                    ) : null}
-                  </div>
-                }
+          <div className="flex items-center gap-2">
+            {!useFallback ? (
+              <ChartPeriodTabs
+                range={range}
+                onChange={setRange}
+                dataLength={Math.ceil(earningsYieldHistory.length / 4)}
+              />
+            ) : null}
+            {spread != null ? (
+              <div
+                className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${
+                  beating
+                    ? "bg-[var(--positive)]/15 text-[var(--positive)]"
+                    : "bg-[var(--negative)]/15 text-[var(--negative)]"
+                }`}
+              >
+                {spread >= 0 ? "+" : "−"}
+                {Math.abs(spread).toFixed(2)} pp
+              </div>
+            ) : null}
+          </div>
+        }
       />
       <div className="h-[200px] w-full">
         <ResponsiveContainer>
@@ -146,26 +192,12 @@ export function EarningsYieldVsRiskFree({
             data={data}
             margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
           >
-            <CartesianGrid
-              stroke="rgba(255,255,255,0.05)"
-              strokeWidth={1}
-              vertical={false}
-            />
+            <CartesianGrid {...packGrid} />
             <TimeXAxis />
-            <YAxis
-              tick={{
-                fill: "rgba(200, 210, 230, 0.55)",
-                fontSize: 9,
-                fontFamily: "var(--font-manrope), system-ui, sans-serif",
-              }}
-              tickFormatter={(v: number) => `${v.toFixed(0)}%`}
-              axisLine={false}
-              tickLine={false}
-              width={40}
-              tickCount={5}
-            />
+            <YAxis {...packYAxisPercentProps(0)} />
             <Tooltip
-              wrapperStyle={tooltipWrapperStyle}
+              wrapperStyle={packTooltipStyle}
+              cursor={{ stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 }}
               content={({ active, payload, label }) => {
                 if (!active || !payload || payload.length === 0) return null;
                 const d = payload[0]?.payload as {
@@ -178,14 +210,20 @@ export function EarningsYieldVsRiskFree({
                     <div className="text-[10px] text-foreground/70 mb-1">
                       {label}
                     </div>
-                    <div className="text-[11px] tabular-nums text-[var(--positive)]">
+                    <div
+                      className="text-[11px] tabular-nums"
+                      style={{ color: PACK.asset }}
+                    >
                       Earnings yield:{" "}
                       {d.earningsYield != null
                         ? `${d.earningsYield.toFixed(2)}%`
                         : "—"}
                     </div>
                     {d.selic != null && (
-                      <div className="text-[11px] tabular-nums text-[#489ffa]">
+                      <div
+                        className="text-[11px] tabular-nums"
+                        style={{ color: PACK.macro }}
+                      >
                         SELIC: {d.selic.toFixed(2)}%
                       </div>
                     )}
@@ -193,39 +231,32 @@ export function EarningsYieldVsRiskFree({
                 );
               }}
             />
+            {/* Linha do ativo (verde) — vem primeiro pra ficar embaixo */}
             <Line
-              type="monotone"
               dataKey="earningsYield"
-              stroke="var(--positive)"
-              strokeWidth={1.5}
-              dot={false}
-              activeDot={{ r: 4, fill: "var(--positive)" }}
-              isAnimationActive={true}
-              animationDuration={1200}
-              connectNulls={false}
+              {...packLineProps({ stroke: PACK.asset, strokeWidth: 2 })}
             />
+            {/* Linha da SELIC (azul) — por cima, mesma espessura */}
             <Line
-              type="monotone"
               dataKey="selic"
-              stroke="#489ffa"
-              strokeWidth={2}
-              strokeOpacity={1}
-              dot={false}
-              activeDot={{ r: 4, fill: "#489ffa" }}
-              isAnimationActive={true}
-              animationDuration={1200}
-              connectNulls={false}
+              {...packLineProps({ stroke: PACK.macro, strokeWidth: 2 })}
             />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
       <div className="mt-3 flex items-center gap-3 text-[10px] text-foreground/70">
         <div className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-px bg-[var(--positive)]" />
+          <span
+            className="inline-block w-3 h-px"
+            style={{ background: PACK.asset }}
+          />
           <span>Earnings yield (1 / trailingPE)</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-px bg-[#489ffa]" />
+          <span
+            className="inline-block w-3 h-px"
+            style={{ background: PACK.macro }}
+          />
           <span>SELIC (% a.a.)</span>
         </div>
       </div>
