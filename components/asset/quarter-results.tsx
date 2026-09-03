@@ -343,9 +343,21 @@ function RevenueBarChart({
                   const key = `q${q}` as "q1" | "q2" | "q3" | "q4";
                   const projectedKey =
                     `q${q}Projected` as "q1Projected" | "q2Projected" | "q3Projected" | "q4Projected";
-                  if (d[key] == null || d[projectedKey]) return null;
+                  // IMPORTANTE: usa `=== true` (não truthy check) pro
+                  // projectedKey. Minificação Next.js converte
+                  // `d[projectedKey]` em `e[n]` que falsifica pra false,
+                  // pulando TODOS os gradients. Ver commit 400a2c1
+                  // que introduziu este bug.
+                  if (d[key] == null || d[projectedKey] === true) return null;
                   const stopColor = QUARTER_COLORS[q];
-                  const gradientId = `qr-${key}-${d.year}`;
+                  // IMPORTANTE: id do gradient tem que ser EXATAMENTE igual
+                  // ao que o BarCell passa via `gradientId`. O BarCell
+                  // hardcoda "qr-q1-${year}" etc, então a definição tem
+                  // que usar a mesma string. Não dá pra usar `qr-${key}-`
+                  // porque key vira "q1" mas o minifier pode inlinear
+                  // `key` como número, gerando "qr-1-${year}" (sem q).
+                  // Hardcoded "qr-q${q}-${d.year}" garante match.
+                  const gradientId = `qr-q${q}-${d.year}`;
                   return (
                     <linearGradient
                       key={gradientId}
