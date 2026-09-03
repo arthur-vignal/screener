@@ -180,7 +180,19 @@ export function RevenueVsPIB({
   const yearsInData = Math.ceil(incomeHistory.length / 4);
 
   const data = useMemo(() => {
-    const revYoY = buildRevenueYoY(periodFiltered);
+    // Fix 2026-09-03 (sessão pós-print PETR3, 2ª rodada): buildRevenueYoY
+    // precisa do **ano anterior completo** pra calcular YoY dos primeiros
+    // quarters. Se calcularmos direto em `periodFiltered` (que o filtro
+    // "1a" corta pra só 2026-Q1/Q2), o map year-quarter não tem 2025-Q1
+    // e 2025-Q2 → growth = null → linha verde some.
+    //
+    // Solução: builda o map a partir do `incomeHistory` INTEIRO, depois
+    // aplica o filtro de período só na saída.
+    const revYoY = buildRevenueYoY(incomeHistory);
+    const periodSet = new Set(periodFiltered.map((r) => r.endDate));
+    const revYoYInPeriod = revYoY.filter(
+      (r) => periodSet.has(r.endDate) && r.endDate >= BCB_WINDOW_START,
+    );
     const ibcYoY = buildIBCBrYoY(ibcBr);
     // Map IBC-Br YoY por mês (YYYY-MM) pra alinhar com quarters.
     const ibcByMonth = new Map<string, number>();
@@ -189,23 +201,20 @@ export function RevenueVsPIB({
         ibcByMonth.set(d.endDate.slice(0, 7), d.growth);
       }
     }
-    const mapped = revYoY
-      .filter((r) => r.endDate >= BCB_WINDOW_START)
-      .map((r) => {
-        const month = r.endDate.slice(0, 7);
-        return {
-          endDate: r.endDate,
-          revenueGrowth: r.revenueGrowth,
-          // Fix 2026-09-03: usa ±30 dias pra alinhar trimestre com mês
-          // do IBC-Br. Lookup ingênuo por mês funcionava só quando brapi
-          // publicava IBC-Br exatamente no mês do quarter da receita.
-          ibcBr: ibcByMonth.get(month) ?? nearestIBCBr(ibcByMonth, month),
-        };
-      })
-      .filter((d) => d.revenueGrowth != null);
+    const mapped = revYoYInPeriod.map((r) => {
+      const month = r.endDate.slice(0, 7);
+      return {
+        endDate: r.endDate,
+        revenueGrowth: r.revenueGrowth,
+        // Fix 2026-09-03: usa ±30 dias pra alinhar trimestre com mês
+        // do IBC-Br. Lookup ingênuo por mês funcionava só quando brapi
+        // publicava IBC-Br exatamente no mês do quarter da receita.
+        ibcBr: ibcByMonth.get(month) ?? nearestIBCBr(ibcByMonth, month),
+      };
+    });
     // A3 fix: timestamp numérico pro eixo X usar `scale="time"`.
     return attachTimestamps(mapped);
-  }, [periodFiltered, ibcBr]);
+  }, [periodFiltered, ibcBr, incomeHistory]);
 
   if (data.length < 2) return null;
 
