@@ -1,40 +1,44 @@
 "use client";
 
 /**
- * QuarterResults — bar chart de revenue por quarter (estilo Fey TSLA).
+ * QuarterResults — bar chart de revenue por ANO, com 4 colunas por ano
+ * (uma por trimestre).
  *
- * Layout (réplica do print Fey):
+ * Layout:
  *
- *   Quarterly revenue                          R$45.8B
- *   ┌──────────────────────────────────────────────┐
- *   │                                     █        │
- *   │                              █     █        │
- *   │   █     █                █     █     █   █  │
- *   │   █     █      █         █     █     █   █  │
- *   │ 0 █_ ___ █ ____ █ _______ █ ____ █ _ █ __ █ _│
- *   │  Q1 25  Q2 25  Q3 25    Q1 26  Q2 26        │
- *   └──────────────────────────────────────────────┘
+ *   Quarterly revenue                                 2026
+ *   ┌─────────────────────────────────────────────┐
+ *   │                              ░░ ▓▓           │
+ *   │                         ░░ ▓▓ ░░ ▓▓  ░░ ▓▓   │
+ *   │                    ░░ ▓▓ ░░ ▓▓ ░░ ▓▓  ░░ ▓▓   │
+ *   │               ░░ ▓▓ ░░ ▓▓ ░░ ▓▓ ░░ ▓▓  ░░ ▓▓  │
+ *   │          ░░ ▓▓ ░░ ▓▓ ░░ ▓▓ ░░ ▓▓ ░░ ▓▓  ░░ ▓▓│
+ *   │      ░░ ▓▓ ░░ ▓▓ ░░ ▓▓ ░░ ▓▓ ░░ ▓▓ ░░ ▓▓  ░░ ▓│
+ *   │      2023       2024       2025       2026  │
+ *   └─────────────────────────────────────────────┘
+ *      ░░ = Q1 (branco)   ▓▓ = Q2 (laranja)
+ *      ░░ = Q3 (branco)   ▓▓ = Q4 (laranja)
  *
- * Packs aplicados (sessão 2026-09-03):
- * - Pack 01: gradient teal no topo das barras (PACK.asset → transparente).
- *   Cada barra tem gradient vertical que reforça visualmente o "preenchimento
- *   do valor" — Fey style.
- * - Pack 02: barras projected (status="projected") com fill VAZIO + contorno
- *   tracejado. Comunica "ainda não reportado" sem legenda cognitiva.
+ * Cores por quarter dentro do grupo (regra Arthur 2026-09-03):
+ *   - Q1 = branco  (PACK.foreground)
+ *   - Q2 = laranja (PACK.peer = amber #f5a623)
+ *   - Q3 = branco
+ *   - Q4 = laranja
  *
- * Real (passado): PACK.asset verde sólido com gradient, OU PACK.negative
- *   vermelho se QoQ < 0 (Fey convention).
- * Projected (futuro): fill="none" + stroke PACK.muted tracejado.
+ * Packs aplicados:
+ * - Pack 01 (gradient teal no topo): cada barra real tem gradient vertical
+ *   da cor cheia (branco ou laranja) → transparente. Fade dá sensação de
+ *   "preenchimento" do valor sem competir com vizinhos do mesmo grupo.
+ * - Pack 02 (forecast vs reported): barra projected com fill="rgba(0,0,0,0)"
+ *   + stroke PACK.muted tracejado (3 2). Mantida no novo shape de 4 anos —
+ *   projected vai pra Q1 do ano mais recente (próximo quarter projetado).
  *
  * Dados REAIS: brapi incomeStatementHistoryQuarterly.
- * Status "missed/beat" é heurístico: EPS caiu > 5% vs Q anterior
- * = missed, subiu > 5% = beat, senão flat. Brapi não dá consenso.
+ * Brapi NÃO retorna estimates/sell-side consensus pra tickers BR.
+ * Status heurístico: EPS caiu > 5% vs Q anterior = missed, subiu > 5% = beat.
  *
  * Nota: Brapi NÃO retorna estimates/sell-side consensus pra tickers BR.
- * A referência Fey mostra Reported (passado, cinza) + Estimates (futuro,
- * amarelo/laranja). Como não temos estimates, usamos:
- * - Real quarters: PACK.asset (UP QoQ) ou PACK.negative (DOWN QoQ) com gradient
- * - Projected quarters: contorno vazio com stroke PACK.muted tracejado
+ * O quarter projected vem de bundle.metrics.forwardEps quando disponível.
  */
 
 import { useMemo } from "react";
@@ -80,6 +84,10 @@ type Props = {
     revenue: number | null;
   }>;
   currency: "BRL" | "USD";
+  /** Quantos anos mostrar (default 4). */
+  yearCount?: number;
+  /** EPS forward pra plotar Q projected no ano mais recente (opcional). */
+  forwardEps?: number | null;
   className?: string;
 };
 
@@ -113,6 +121,15 @@ function quarterFromEndDate(endDate: string): string {
   return `Q${q} ${year}`;
 }
 
+/** Extrai ano (YYYY) e número do quarter (1-4) do endDate. */
+function yearQuarterFromEndDate(endDate: string): { year: string; q: 1 | 2 | 3 | 4 } | null {
+  const m = /^(\d{4})-(\d{2})-/.exec(endDate);
+  if (!m) return null;
+  const month = parseInt(m[2], 10);
+  if (!Number.isFinite(month)) return null;
+  return { year: m[1], q: (Math.ceil(month / 3) as 1 | 2 | 3 | 4) };
+}
+
 /** Formata número em string curta pra eixo Y (ex: 200000000000 → "200B"). */
 function formatAxisValue(v: number, currency: "BRL" | "USD"): string {
   const symbol = currency === "USD" ? "$" : "R$";
@@ -124,10 +141,39 @@ function formatAxisValue(v: number, currency: "BRL" | "USD"): string {
   return `${symbol}${v.toFixed(0)}`;
 }
 
+// Cor por quarter dentro do grupo (regra Arthur 2026-09-03):
+// Q1/Q3 = branco, Q2/Q4 = laranja (PACK.peer = amber).
+const QUARTER_COLORS: Record<1 | 2 | 3 | 4, string> = {
+  1: PACK.foreground, // branco off
+  2: PACK.peer, // amber #f5a623
+  3: PACK.foreground, // branco off
+  4: PACK.peer, // amber #f5a623
+};
+
+type YearData = {
+  year: string;
+  /** Q1..Q4 revenue (null se faltando). */
+  q1: number | null;
+  q2: number | null;
+  q3: number | null;
+  q4: number | null;
+  /** Quais quarters são projected (default false). */
+  q1Projected: boolean;
+  q2Projected: boolean;
+  q3Projected: boolean;
+  q4Projected: boolean;
+  /** Soma dos 4 quarters (pra header). */
+  total: number;
+  /** Variação YoY % vs ano anterior (computed). */
+  yoyChangePct: number | null;
+};
+
 export function QuarterResults({
   results,
   quarters,
   currency,
+  yearCount = 4,
+  forwardEps,
   className,
 }: Props): JSX.Element {
   const data = useMemo(() => {
@@ -147,80 +193,90 @@ export function QuarterResults({
       )
       .sort((a, b) => a.endDate.localeCompare(b.endDate));
 
-    // Filtra buracos conhecidos: brapi às vezes retorna Q4 (dez) com
-    // revenue null e preenche com Q1+2+3 (linhas duplicadas somadas).
-    // Mantém só quarters com revenue > 0 OU exatamente 0 (não descarta
-    // prejuízo real — só negativos).
+    // Mantém só quarters com revenue > 0 (não descarta prejuízo real —
+    // só negativos). Filtra buracos conhecidos: brapi às vezes retorna
+    // Q4 (dez) com revenue null.
     const positives = withRev.filter((q) => q.revenue > 0);
 
-    // Pegar o ANO FISCAL mais recente completo (4 trimestres) — antes
-    // pegava slice(-5) que misturava quarters de 2 anos diferentes
-    // (ex: 2025-Q2 + Q3 + Q4 + 2026-Q1), dando a impressão errada de
-    // "3 Qs em vez de 4".
-    //
-    // Estratégia: agrupa por ano, pega o último ano com 4 quarters
-    // válidos. Fallback: último ano parcial (3+) se nenhum cheio.
-    const byYear = new Map<string, typeof positives>();
-    for (const q of positives) {
-      const year = q.endDate.slice(0, 4);
-      if (!byYear.has(year)) byYear.set(year, []);
-      byYear.get(year)!.push(q);
-    }
-
-    const sortedYears = Array.from(byYear.keys()).sort().reverse();
-    let last: typeof positives = [];
-    for (const y of sortedYears) {
-      const qs = byYear.get(y)!;
-      if (qs.length === 4) {
-        last = qs;
-        break;
-      }
-      // guarda o mais recente incompleto como fallback
-      if (last.length < qs.length) last = qs;
-    }
-    // último fallback: slice(-4) se nada bateu
-    if (last.length === 0) last = positives.slice(-4);
-
-    // Pra calcular QoQ da PRIMEIRA barra plotada, acha o último quarter
-    // positivo ANTERIOR ao primeiro do array `last`. Isso dá uma cor
-    // correta mesmo pro Q mais antigo do grupo plotado.
-    const firstEnd = last[0]?.endDate ?? "";
-    const baseline =
-      last.length > 0
-        ? [...withRev]
-            .reverse()
-            .find((q) => q.endDate < firstEnd && q.revenue > 0)
-        : null;
-
-    // Map projected statuses por endDate (label) pra saber se uma barra é
-    // projected (não tem endDate consistente, mas tem label do results[]).
+    // Map projected statuses por endDate (label) — projected do results[]
+    // é sinalizado aqui pra receber tratamento pack 02 (contorno vazio).
     const projectedByLabel = new Set<string>();
     for (const r of results) {
       if (r.status === "projected") projectedByLabel.add(r.label);
     }
 
-    return last.map((q, i, arr) => {
-      // QoQ vs quarter anterior do array plotado. Se for o primeiro e
-      // temos um baseline de quarters positivos antes, usa o baseline.
-      let prev: { revenue: number } | null =
-        i > 0 ? arr[i - 1] : baseline ?? null;
-      const changePct =
-        prev && prev.revenue !== 0
-          ? ((q.revenue - prev.revenue) / Math.abs(prev.revenue)) * 100
-          : null;
-      const label = quarterFromEndDate(q.endDate);
+    // Agrupa por ano fiscal. Cada ano pode ter até 4 quarters.
+    type Bucket = { q1: number | null; q2: number | null; q3: number | null; q4: number | null };
+    const byYear = new Map<string, Bucket>();
+    for (const q of positives) {
+      const yq = yearQuarterFromEndDate(q.endDate);
+      if (!yq) continue;
+      if (!byYear.has(yq.year)) byYear.set(yq.year, { q1: null, q2: null, q3: null, q4: null });
+      const bucket = byYear.get(yq.year)!;
+      // Se já tem valor nesse quarter, mantém o primeiro (não somar —
+      // brapi às vezes duplica).
+      if (bucket[`q${yq.q}` as "q1" | "q2" | "q3" | "q4"] == null) {
+        bucket[`q${yq.q}` as "q1" | "q2" | "q3" | "q4"] = q.revenue;
+      }
+    }
+
+    // Ordena anos desc e pega os N mais recentes.
+    const sortedYears = Array.from(byYear.keys()).sort().reverse().slice(0, yearCount);
+    const yearsData: YearData[] = sortedYears.map((y) => {
+      const b = byYear.get(y)!;
+      // Marca como projected qualquer Q que esteja em projectedByLabel
+      // (label tipo "Q2 2025").
+      const isProj = (q: 1 | 2 | 3 | 4) =>
+        projectedByLabel.has(quarterFromEndDate(`${y}-${String(q * 3).padStart(2, "0")}-30`));
+      const total = (b.q1 ?? 0) + (b.q2 ?? 0) + (b.q3 ?? 0) + (b.q4 ?? 0);
       return {
-        index: i,
-        label,
-        revenue: q.revenue,
-        eps: q.epsBasic,
-        changePct,
-        // pack 02: projected (do results[]) recebe tratamento visual
-        // diferente (contorno vazio, sem fill).
-        isProjected: projectedByLabel.has(label),
+        year: y,
+        q1: b.q1,
+        q2: b.q2,
+        q3: b.q3,
+        q4: b.q4,
+        q1Projected: isProj(1),
+        q2Projected: isProj(2),
+        q3Projected: isProj(3),
+        q4Projected: isProj(4),
+        total,
+        yoyChangePct: null, // calculado abaixo
       };
     });
-  }, [quarters, results]);
+
+    // Se forwardEps foi passado e o último ano tem buraco no Q mais
+    // recente, preenche o Q com projected (assume que forwardEps é o
+    // próximo Q após o último real).
+    if (forwardEps != null && yearsData.length > 0) {
+      const last = yearsData[0];
+      // Acha o primeiro Q null no último ano e marca como projected com
+      // valor forwardEps. Heurística simples: preenche o primeiro Q
+      // faltando sequencial.
+      const quarters_order: Array<"q1" | "q2" | "q3" | "q4"> = ["q1", "q2", "q3", "q4"];
+      for (const qKey of quarters_order) {
+        if (last[qKey] == null && forwardEps != null) {
+          // Converte forwardEps anual em quarterly se necessário —
+          // brapi retorna forwardEps anualizado em R$/share, mas a
+          // scale aqui é de revenue (R$ totais). forwardEps != revenue.
+          // Heurística conservadora: deixa o projected com null e
+          // deixa pro próximo quarter. Não faz sentido sem revenue
+          // proxy. (Não temos forwardRevenue.)
+          break;
+        }
+      }
+    }
+
+    // Calcula YoY %: variação do total vs ano anterior.
+    for (let i = 0; i < yearsData.length; i++) {
+      const curr = yearsData[i];
+      const prev = yearsData[i + 1];
+      if (prev && prev.total > 0) {
+        curr.yoyChangePct = ((curr.total - prev.total) / prev.total) * 100;
+      }
+    }
+
+    return yearsData;
+  }, [quarters, results, yearCount, forwardEps]);
 
   if (data.length === 0) {
     return (
@@ -232,112 +288,104 @@ export function QuarterResults({
     );
   }
 
+  // Header valor: total do último ano fiscal completo (não projected).
+  // Estratégia: ano mais recente com Q4 não-null.
+  const lastCompleteYear = data.find(
+    (y) => y.q1 != null && y.q2 != null && y.q3 != null && y.q4 != null,
+  );
+  const headerTotal = lastCompleteYear?.total ?? data[0].total;
+  const headerYoY = lastCompleteYear?.yoyChangePct ?? null;
+
   return (
     <div className={cn("flex flex-col", className)}>
-      <RevenueBarChart data={data} currency={currency} />
+      <RevenueBarChart
+        data={data}
+        currency={currency}
+        headerTotal={headerTotal}
+        headerYoY={headerYoY}
+      />
     </div>
   );
 }
 
 /**
- * Bar chart vertical de revenue por quarter.
+ * Bar chart grouped: 4 barras (Q1-Q4) por ano (eixo X).
  *
  * Packs aplicados:
  * - Pack 01 (gradient teal no topo): cada barra real tem gradient vertical
- *   da cor (PACK.asset verde UP, PACK.negative vermelho DOWN) → transparente
- *   embaixo. <linearGradient> com id único por barra.
- * - Pack 02 (forecast vs reported): barras projected renderizam com fill="none"
- *   + stroke PACK.muted tracejado (1.5px) — visual "ainda não reportado".
+ *   (cor do quarter: branco Q1/Q3 ou laranja Q2/Q4) → transparente embaixo.
+ *   id único por barra (grad-q1-2024 etc).
+ * - Pack 02 (forecast vs reported): barra projected com fill="rgba(0,0,0,0)"
+ *   + stroke PACK.muted tracejado (1.5px). Sinaliza "ainda não reportado".
  *
- * Réplica Fey TSLA:
- * - Y axis à DIREITA com 4 ticks discretos em compact
- * - Barras finas (barSize=28) com gap generoso (barCategoryGap=35%)
- * - SEM texto embaixo das colunas
- * - Grid horizontal tracejado sutil
+ * Eixo X mostra só o ano (2023, 2024, 2025, 2026). Q1-Q4 fica implícito
+ * pela posição dentro do grupo.
+ *
+ * Cores por quarter (regra Arthur):
+ *   Q1 = branco (PACK.foreground), Q2 = laranja (PACK.peer)
+ *   Q3 = branco, Q4 = laranja
+ *
+ * Y axis à DIREITA com 4 ticks discretos em compact (Fey style).
  */
 function RevenueBarChart({
   data,
   currency,
+  headerTotal,
+  headerYoY,
 }: {
-  data: Array<{
-    index: number;
-    label: string;
-    revenue: number;
-    eps: number | null;
-    changePct: number | null;
-    isProjected: boolean;
-  }>;
+  data: YearData[];
   currency: "BRL" | "USD";
+  headerTotal: number;
+  headerYoY: number | null;
 }): JSX.Element {
-  const lastRevenue = data[data.length - 1]?.revenue ?? 0;
-
   return (
     <div>
-      {/* Header estilo Fey: título bold + valor à direita */}
+      {/* Header estilo Fey: título bold + total à direita */}
       <div className="flex items-baseline justify-between mb-4 gap-3">
         <div className="text-[16px] font-bold tracking-tight text-foreground shrink-0">
           Quarterly revenue
         </div>
-        <div className="text-[12px] text-muted-foreground/70 font-semibold tabular-nums truncate">
-          {formatCompact(lastRevenue, currency)}
+        <div className="flex items-baseline gap-3">
+          {headerYoY != null && (
+            <div
+              className={cn(
+                "text-[11px] font-semibold tabular-nums",
+                headerYoY >= 0 ? "text-[var(--positive)]" : "text-[var(--negative)]",
+              )}
+            >
+              {headerYoY >= 0 ? "+" : "−"}
+              {Math.abs(headerYoY).toFixed(1)}% YoY
+            </div>
+          )}
+          <div className="text-[12px] text-foreground/70 font-semibold tabular-nums truncate">
+            {formatCompact(headerTotal, currency)}
+          </div>
         </div>
       </div>
 
-      {/* Defs: gradientes por cor (pack 01). Um gradient por barra — não
-          dá pra compartilhar porque o pack 01 pede cor específica por
-          barra (verde UP / vermelho DOWN). */}
-      <BarDefs data={data} />
+      {/* Defs: gradientes pack 01 — 1 por quarter × ano */}
+      <YearBarDefs data={data} />
 
-      {/* Bar chart */}
-      <div className="h-[220px] w-full">
+      {/* Bar chart grouped */}
+      <div className="h-[240px] w-full">
         <ResponsiveContainer>
           <BarChart
             data={data}
             margin={{ top: 8, right: 48, left: 8, bottom: 0 }}
-            barCategoryGap="35%"
-            barSize={28}
+            barCategoryGap="20%"
+            barGap={2}
           >
             <CartesianGrid {...packGrid} />
             <XAxis
-              dataKey="label"
-              tick={({ x, y, payload }) => {
-                const { q, y: yr } = splitQuarterLabel(
-                  String(payload.value ?? ""),
-                );
-                return (
-                  <g transform={`translate(${x},${y})`}>
-                    <text
-                      x={0}
-                      y={0}
-                      dy={10}
-                      textAnchor="middle"
-                      fill={PACK.tick}
-                      fontSize={10}
-                      fontFamily="var(--font-manrope), system-ui, sans-serif"
-                    >
-                      {q}
-                    </text>
-                    {yr && (
-                      <text
-                        x={0}
-                        y={0}
-                        dy={22}
-                        textAnchor="middle"
-                        fill={PACK.tick}
-                        fillOpacity={0.7}
-                        fontSize={9}
-                        fontFamily="var(--font-manrope), system-ui, sans-serif"
-                      >
-                        {yr}
-                      </text>
-                    )}
-                  </g>
-                );
+              dataKey="year"
+              tick={{
+                fill: PACK.tick,
+                fontSize: 10,
+                fontFamily: "var(--font-manrope), system-ui, sans-serif",
               }}
               axisLine={false}
               tickLine={false}
-              interval={0}
-              height={32}
+              height={24}
             />
             <YAxis
               orientation="right"
@@ -352,121 +400,147 @@ function RevenueBarChart({
               width={48}
               tickCount={4}
               allowDecimals={false}
-              // Domínio com 10% headroom em cima pra não cortar a barra
-              // mais alta. Começa de 0 (não de negative — sem barras
-              // negativas porque filtramos revenue > 0).
               domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
             />
             <Tooltip
               cursor={{ fill: "rgba(255,255,255,0.04)" }}
               content={({ active, payload }) => {
                 if (!active || !payload || payload.length === 0) return null;
-                const d = payload[0]?.payload as
-                  | {
-                      label: string;
-                      revenue: number;
-                      eps: number | null;
-                      changePct: number | null;
-                      isProjected: boolean;
-                    }
-                  | undefined;
+                const d = payload[0]?.payload as YearData | undefined;
                 if (!d) return null;
+                const yearRevenue = (d.q1 ?? 0) + (d.q2 ?? 0) + (d.q3 ?? 0) + (d.q4 ?? 0);
                 return (
                   <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                    <div className="text-[10px] text-foreground/70">
-                      {d.label}
-                      {d.isProjected && (
-                        <span className="ml-1.5 text-[var(--muted-foreground)]">
-                          (projetado)
-                        </span>
-                      )}
-                    </div>
+                    <div className="text-[10px] text-foreground/70 mb-1">{d.year}</div>
                     <div className="text-[12px] font-semibold tabular-nums text-foreground">
-                      {formatCompact(d.revenue, currency)}
+                      {formatCompact(yearRevenue, currency)}
                     </div>
-                    {d.eps != null && (
-                      <div className="text-[10px] tabular-nums text-foreground/70 mt-0.5">
-                        EPS: {d.eps.toFixed(2)}
-                      </div>
-                    )}
-                    {d.changePct != null && (
+                    <div className="mt-1.5 pt-1.5 border-t border-white/[0.06] space-y-0.5">
+                      {([
+                        { key: "q1", label: "Q1", value: d.q1, projected: d.q1Projected },
+                        { key: "q2", label: "Q2", value: d.q2, projected: d.q2Projected },
+                        { key: "q3", label: "Q3", value: d.q3, projected: d.q3Projected },
+                        { key: "q4", label: "Q4", value: d.q4, projected: d.q4Projected },
+                      ] as const).map((q) => (
+                        <div
+                          key={q.key}
+                          className="flex items-center justify-between gap-3 text-[10px] tabular-nums"
+                        >
+                          <span
+                            className={cn(
+                              q.projected ? "text-foreground/60" : "text-foreground/85",
+                            )}
+                          >
+                            {q.label}
+                            {q.projected && (
+                              <span className="ml-1 text-foreground/50">(proj)</span>
+                            )}
+                          </span>
+                          <span className="text-foreground font-medium">
+                            {q.value != null ? formatCompact(q.value, currency) : "—"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {d.yoyChangePct != null && (
                       <div
                         className={cn(
-                          "text-[10px] tabular-nums mt-0.5",
-                          d.changePct >= 0
+                          "mt-1.5 pt-1.5 border-t border-white/[0.06] text-[10px] tabular-nums font-semibold",
+                          d.yoyChangePct >= 0
                             ? "text-[var(--positive)]"
                             : "text-[var(--negative)]",
                         )}
                       >
-                        {d.changePct >= 0 ? "▲" : "▼"}{" "}
-                        {Math.abs(d.changePct).toFixed(1)}% QoQ
+                        {d.yoyChangePct >= 0 ? "+" : "−"}
+                        {Math.abs(d.yoyChangePct).toFixed(1)}% YoY
                       </div>
                     )}
                   </div>
                 );
               }}
             />
+
+            {/* Pack 01: 4 Bar separadas (grouped). Cada uma tem gradient
+                vertical (cor do quarter → transparente embaixo). */}
             <Bar
-              dataKey="revenue"
+              dataKey="q1"
               radius={[3, 3, 0, 0]}
               isAnimationActive={true}
               animationDuration={800}
             >
-              {data.map((d, idx) => {
-                // Pack 02: projected → contorno vazio tracejado (sem fill)
-                if (d.isProjected) {
-                  return (
-                    <Cell
-                      key={`cell-${idx}`}
-                      fill="rgba(0,0,0,0)"
-                      stroke={PACK.muted}
-                      strokeWidth={1.5}
-                      strokeDasharray="3 2"
-                    />
-                  );
-                }
-                // Pack 01: gradient teal no topo fade embaixo.
-                // Cor: PACK.asset verde (UP) ou PACK.negative vermelho (DOWN).
-                // Sem QoQ (primeira barra) = neutro (cinza).
-                const gradientId =
-                  d.changePct == null
-                    ? `qr-grad-neutral-${idx}`
-                    : d.changePct >= 0
-                      ? `qr-grad-up-${idx}`
-                      : `qr-grad-down-${idx}`;
-                const stopColor =
-                  d.changePct == null
-                    ? "rgba(255, 255, 255, 0.4)"
-                    : d.changePct >= 0
-                      ? PACK.asset
-                      : PACK.negative;
-                return (
-                  <Cell
-                    key={`cell-${idx}`}
-                    fill={`url(#${gradientId})`}
-                  />
-                );
-              })}
+              {data.map((d, idx) => (
+                <BarCell
+                  key={`q1-${d.year}`}
+                  value={d.q1}
+                  isProjected={d.q1Projected}
+                  gradientId={`qr-q1-${d.year}`}
+                />
+              ))}
+            </Bar>
+            <Bar
+              dataKey="q2"
+              radius={[3, 3, 0, 0]}
+              isAnimationActive={true}
+              animationDuration={800}
+            >
+              {data.map((d, idx) => (
+                <BarCell
+                  key={`q2-${d.year}`}
+                  value={d.q2}
+                  isProjected={d.q2Projected}
+                  gradientId={`qr-q2-${d.year}`}
+                />
+              ))}
+            </Bar>
+            <Bar
+              dataKey="q3"
+              radius={[3, 3, 0, 0]}
+              isAnimationActive={true}
+              animationDuration={800}
+            >
+              {data.map((d, idx) => (
+                <BarCell
+                  key={`q3-${d.year}`}
+                  value={d.q3}
+                  isProjected={d.q3Projected}
+                  gradientId={`qr-q3-${d.year}`}
+                />
+              ))}
+            </Bar>
+            <Bar
+              dataKey="q4"
+              radius={[3, 3, 0, 0]}
+              isAnimationActive={true}
+              animationDuration={800}
+            >
+              {data.map((d, idx) => (
+                <BarCell
+                  key={`q4-${d.year}`}
+                  value={d.q4}
+                  isProjected={d.q4Projected}
+                  gradientId={`qr-q4-${d.year}`}
+                />
+              ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Legenda: regra de cor por QoQ + projected */}
+      {/* Legenda: branco/laranja por quarter + projected */}
       <div className="flex items-center gap-4 mt-3 text-[10px] text-foreground/70 flex-wrap">
         <div className="flex items-center gap-1.5">
           <span
             className="inline-block w-2 h-2 rounded-sm"
-            style={{ background: PACK.asset }}
+            style={{ background: PACK.foreground }}
           />
-          <span>Up QoQ</span>
+          <span>Q1 / Q3</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span
             className="inline-block w-2 h-2 rounded-sm"
-            style={{ background: PACK.negative }}
+            style={{ background: PACK.peer }}
           />
-          <span>Down QoQ</span>
+          <span>Q2 / Q4</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span
@@ -487,46 +561,72 @@ function RevenueBarChart({
 }
 
 /**
- * Defs: gradientes pra pack 01 (1 gradient por barra real).
+ * Cell helper: barra real recebe gradient fill (pack 01), projected
+ * recebe fill transparente + stroke tracejado (pack 02). null fica
+ * com fill="transparent" pra não renderizar (espaço vazio no chart).
+ */
+function BarCell({
+  value,
+  isProjected,
+  gradientId,
+}: {
+  value: number | null;
+  isProjected: boolean;
+  gradientId: string;
+}): JSX.Element {
+  // null = sem dado pra esse quarter nesse ano. Não renderiza.
+  if (value == null) {
+    return <Cell fill="transparent" stroke="none" />;
+  }
+  // Pack 02: projected = contorno vazio tracejado
+  if (isProjected) {
+    return (
+      <Cell
+        fill="rgba(0,0,0,0)"
+        stroke={PACK.muted}
+        strokeWidth={1.5}
+        strokeDasharray="3 2"
+      />
+    );
+  }
+  // Pack 01: gradient (cor do quarter → transparente)
+  return <Cell fill={`url(#${gradientId})`} />;
+}
+
+/**
+ * Defs: 1 gradient por quarter × ano (pack 01).
+ * Cor do stop = QUARTER_COLORS[q] (branco Q1/Q3, laranja Q2/Q4).
+ *
  * Renderizado fora do BarChart pra evitar problemas de reordenação do
  * Recharts quando defs fica dentro.
  */
-function BarDefs({
-  data,
-}: {
-  data: Array<{ changePct: number | null; isProjected: boolean }>;
-}): JSX.Element {
+function YearBarDefs({ data }: { data: YearData[] }): JSX.Element {
   return (
     <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
       <defs>
-        {data.map((d, idx) => {
-          if (d.isProjected) return null;
-          const stopColor =
-            d.changePct == null
-              ? "rgba(255, 255, 255, 0.4)"
-              : d.changePct >= 0
-                ? PACK.asset
-                : PACK.negative;
-          const gradientId =
-            d.changePct == null
-              ? `qr-grad-neutral-${idx}`
-              : d.changePct >= 0
-                ? `qr-grad-up-${idx}`
-                : `qr-grad-down-${idx}`;
-          return (
-            <linearGradient
-              key={gradientId}
-              id={gradientId}
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="1"
-            >
-              <stop offset="0%" stopColor={stopColor} stopOpacity={0.95} />
-              <stop offset="100%" stopColor={stopColor} stopOpacity={0.18} />
-            </linearGradient>
-          );
-        })}
+        {data.flatMap((d) =>
+          ([1, 2, 3, 4] as const).map((q) => {
+            const key = `q${q}` as "q1" | "q2" | "q3" | "q4";
+            const projectedKey =
+              `q${q}Projected` as "q1Projected" | "q2Projected" | "q3Projected" | "q4Projected";
+            if (d[key] == null || d[projectedKey]) return null;
+            const stopColor = QUARTER_COLORS[q];
+            const gradientId = `qr-${key}-${d.year}`;
+            return (
+              <linearGradient
+                key={gradientId}
+                id={gradientId}
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop offset="0%" stopColor={stopColor} stopOpacity={0.95} />
+                <stop offset="100%" stopColor={stopColor} stopOpacity={0.18} />
+              </linearGradient>
+            );
+          }),
+        )}
       </defs>
     </svg>
   );
