@@ -49,13 +49,173 @@ const TICKER_BLACKLIST = new Set([
   "B3SA", "BRAS", "HTTP", "HTTPS",
 ]);
 
-function extractTicker(title: string): string | undefined {
+function extractTickerFromTitle(title: string): string | undefined {
   const m = TICKER_RE.exec(title);
   if (!m) return undefined;
   const t = m[1]!;
   if (TICKER_BLACKLIST.has(t)) return undefined;
   return t;
 }
+
+/**
+ * Tickers B3 conhecidos mapeados por apelidos / nome parcial.
+ *
+ * Cobre todos os 78 IBOVESPA com:
+ *   - ticker (o correto a passar pro brapi)
+ *   - list of keywords (apelidos / variações do nome / Razão Social)
+ *
+ * Usado pra extração de ticker quando o título da news NÃO tem o
+ * ticker literal mas menciona a empresa pelo nome (ex: "Ambev anuncia..." → ABEV3).
+ */
+type CompanyEntry = {
+  ticker: string;
+  keywords: string[];
+};
+
+const COMPANY_TICKERS: CompanyEntry[] = [
+  { ticker: "ABEV3",  keywords: ["ambev", "ambev s/a", "companhia de bebidas das américas"] },
+  { ticker: "ALOS3",  keywords: ["allos", "allpark"] },
+  { ticker: "ASAI3",  keywords: ["assai", "assái"] },
+  { ticker: "AURE3",  keywords: ["auren", "auren energia"] },
+  { ticker: "AXIA3",  keywords: ["axia", "axia energia"] },
+  { ticker: "AZZA3",  keywords: ["azza", "azzas", "azzas 2154"] },
+  { ticker: "B3SA3",  keywords: ["b3 s", "b3 brasil", "bolsa brasil"] },
+  { ticker: "BBAS3",  keywords: ["banco do brasil", "bbas"] },
+  { ticker: "BBDC3",  keywords: ["bradesco on", "bradesco"] },
+  { ticker: "BBDC4",  keywords: ["bradesco pn", "bradespar"] },
+  { ticker: "BBSE3",  keywords: ["bb seguridade", "bb seguridade"] },
+  { ticker: "BEEF3",  keywords: ["minerva", "minerva foods"] },
+  { ticker: "BPAC11", keywords: ["btg pactual", "btgp"] },
+  { ticker: "BRAP4",  keywords: ["bradespar"] },
+  { ticker: "BRAV3",  keywords: ["brava"] },
+  { ticker: "BRKM5",  keywords: ["braskem"] },
+  { ticker: "CEAB3",  keywords: ["c&a", "c&a modas"] },
+  { ticker: "CMIG4",  keywords: ["cemig"] },
+  { ticker: "CMIN3",  keywords: ["csn mineração", "csn mineracao"] },
+  { ticker: "COGN3",  keywords: ["cogna", "cogna educação"] },
+  { ticker: "CPFE3",  keywords: ["cpfl", "cpfl energia"] },
+  { ticker: "CPLE6",  keywords: ["copel"] },
+  { ticker: "CSAN3",  keywords: ["cosan", "cosan s"] },
+  { ticker: "CSNA3",  keywords: ["csn", "companhia siderúrgica nacional", "siderurgica"] },
+  { ticker: "CYRE3",  keywords: ["cyrela"] },
+  { ticker: "DXCO3",  keywords: ["dxc", "duratex"] },
+  { ticker: "EGIE3",  keywords: ["engie", "engie brasil"] },
+  { ticker: "ELET3",  keywords: ["eletrobras", "centrais elétricas"] },
+  { ticker: "ELET6",  keywords: ["eletrobras pnb"] },
+  { ticker: "EMBR3",  keywords: ["embraer", "embraer s"] },
+  { ticker: "ENEV3",  keywords: ["eneve", "eneva"] },
+  { ticker: "ENGI11", keywords: ["energi"] },
+  { ticker: "EQTL3",  keywords: ["equatorial"] },
+  { ticker: "FLRY3",  keywords: ["fleury"] },
+  { ticker: "GGBR4",  keywords: ["gerdau"] },
+  { ticker: "GOAU4",  keywords: ["gerdau met"] },
+  { ticker: "HAPV3",  keywords: ["hapvida"] },
+  { ticker: "HYPE3",  keywords: ["hypera", "hyper pharm"] },
+  { ticker: "IGTA11", keywords: ["iguatemi", "iguatemi s"] },
+  { ticker: "INTB3",  keywords: ["intelbras"] },
+  { ticker: "ITSA4",  keywords: ["itausa"] },
+  { ticker: "ITUB4",  keywords: ["itaú", "itau unibanco", "itaú unibanco", "itau"] },
+  { ticker: "JBSS3",  keywords: ["jbs", "jbs s"] },
+  { ticker: "KLBN11", keywords: ["klabin"] },
+  { ticker: "LREN3",  keywords: ["lojas renner", "renner"] },
+  { ticker: "LWSA3",  keywords: ["locaweb", "locaweb s"] },
+  { ticker: "MGLU3",  keywords: ["magalu", "magazine luiza"] },
+  { ticker: "MRFG3",  keywords: ["marfrig", "marfrig global"] },
+  { ticker: "BBDC4",  keywords: ["bradespar"] },
+  { ticker: "MULT3",  keywords: ["multiplan"] },
+  { ticker: "PCAR3",  keywords: ["pão de açúcar", "pao de acucar", "gpa"] },
+  { ticker: "PETR3",  keywords: ["petrobras on", "petrobras"] },
+  { ticker: "PETR4",  keywords: ["petrobras pn", "petrobras", "petrobrás"] },
+  { ticker: "PRIO3",  keywords: ["petrorio", "petrorio s"] },
+  { ticker: "PETZ3",  keywords: ["petz", "pet love"] },
+  { ticker: "RADL3",  keywords: ["raia drogasil", "raia", "drogasil"] },
+  { ticker: "RAIL3",  keywords: ["rumo", "rumo s"] },
+  { ticker: "RANI3",  keywords: ["irani", "irani papel"] },
+  { ticker: "RDOR3",  keywords: ["rede d'or", "rede dor"] },
+  { ticker: "RECV3",  keywords: ["petroreconcavo", "reconcavo"] },
+  { ticker: "RENT3",  keywords: ["localiza", "localiza rent"] },
+  { ticker: "ROXO40", keywords: ["ifix"] },
+  { ticker: "SANB11", keywords: ["santander", "santander br"] },
+  { ticker: "SBSP3",  keywords: ["sabesp", "sabesp s"] },
+  { ticker: "SMTO3",  keywords: ["são martinho", "sao martinho"] },
+  { ticker: "STBP3",  keywords: ["santos brasil", "santos"] },
+  { ticker: "SUZB3",  keywords: ["suzano", "suzano s"] },
+  { ticker: "TAEE11", keywords: ["taesa", "transmissora aliança"] },
+  { ticker: "TIMS3",  keywords: ["tim s", "tim s.a"] },
+  { ticker: "TOTS3",  keywords: ["totvs", "totvs s"] },
+  { ticker: "UGPA3",  keywords: ["ultrapar", "ultra"] },
+  { ticker: "USIM5",  keywords: ["usiminas"] },
+  { ticker: "VALE3",  keywords: ["vale s", "vale s.a", "vale mineração", "vale mineracao"] },
+  { ticker: "VBBR3",  keywords: ["vibra", "vibra energia"] },
+  { ticker: "VIIA3",  keywords: ["via", "viavarejo"] },
+  { ticker: "VIVT3",  keywords: ["telefônica brasil", "telefonica brasil", "vivo s"] },
+  { ticker: "WEGE3",  keywords: ["weg s", "weg s.a"] },
+  { ticker: "YDUQ3",  keywords: ["yduq", "yduqs"] },
+];
+
+/**
+ * Extrai ticker do título usando 2 estratégias:
+ *   1. Regex direto (PETR4, VALE3, etc) → mais confiável quando presente.
+ *   2. Match de nome/apelido da empresa no título → cobre casos onde o
+ *      texto diz "Ambev anuncia..." sem ticker literal.
+ *
+ * Estratégia 2 é mais cara (percorre 70+ empresas) mas tolerante.
+ */
+function extractTicker(title: string): string | undefined {
+  const direct = extractTickerFromTitle(title);
+  if (direct) return direct;
+
+  const lowerTitle = title.toLowerCase();
+  for (const entry of COMPANY_TICKERS) {
+    for (const keyword of entry.keywords) {
+      if (lowerTitle.includes(keyword)) {
+        return entry.ticker;
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Keywords que sinalizam notícia macro/geopolítica/etc — sem relação
+ * direta com empresa-listada. Servem pra QUEBRA, quando o título não
+ * menciona nenhum ticker e não menciona nenhuma empresa listada B3.
+ *
+ * Quando pelo menos uma keyword está presente sem ticker mapeado,
+ * a notícia vai pra /api/news/multi-macro (não /home).
+ */
+const MACRO_NEWS_KEYWORDS = [
+  "guerra",
+  "paz",
+  "russia",
+  "ucrania",
+  "conflito",
+  "trégua",
+  "tregua",
+  "armas",
+  "otan",
+  "faixa de gaza",
+  "hamas",
+  "irã",
+  "israel",
+  "coreia",
+  "tropas",
+  "presidente ",
+  "elei",
+  "congresso",
+  "stf",
+  "pt ",
+  "plano plurianual",
+  "orcamento",
+  "impost",
+  "receita federal",
+  "arcabouço",
+  "arcabouco",
+  "fgts",
+  "abono",
+  "salario minimo",
+  "governo federal",
+];
 
 // ─── RSS fetch ──────────────────────────────────────────────────────────────
 
@@ -252,9 +412,51 @@ async function fetchPricesForTickers(
 
 type NewsItemWithPrice = NewsItem & { price?: number; changePercent?: number };
 
+/**
+ * Classifica uma news item:
+ *   "actions" → tem ticker OU nome de empresa listada B3 (padrão contrato).
+ *   "macro"   → não tem empresa nem ticker; tem keyword macro/geopolítica.
+ *   "skip"    → não tem nada relevante nem financeiro nem geopolítico.
+ *
+ * Implementa o contrato de 3 camadas:
+ *   1. ticker B3 literal no título → actions
+ *   2. nome de empresa IBOVESPA no título (via COMPANY_TICKERS) → actions
+ *   3. nem ticker nem empresa. Se tiver macro keyword → macro. Senão skip.
+ */
+function classifyNews(title: string): "actions" | "macro" | "skip" {
+  const direct = extractTickerFromTitle(title);
+  if (direct) return "actions";
+  const lowerTitle = title.toLowerCase();
+  for (const entry of COMPANY_TICKERS) {
+    for (const keyword of entry.keywords) {
+      if (lowerTitle.includes(keyword)) {
+        return "actions";
+      }
+    }
+  }
+  for (const macroKeyword of MACRO_NEWS_KEYWORDS) {
+    if (lowerTitle.includes(macroKeyword)) {
+      return "macro";
+    }
+  }
+  return "skip";
+}
+
+/**
+ * News de ações B3 com preços embutidos (BRAPI batch).
+ *
+ * Filtro de 3 camadas (extractTicker + COMPANY_TICKERS + classifyNews):
+ * só retorna items do tipo "actions" (ticker conhecido ou empresa
+ * listada B3). Geopolítica/macro vai pra /api/news/multi-macro.
+ *
+ * Custo: 1 request brapi por carregamento (batch).
+ */
 export async function fetchB3ActionsNews(limit = 20): Promise<NewsItemWithPrice[]> {
   try {
-    const items = await mergeFeeds(ACTIONS_FEEDS);
+    const raw = await mergeFeeds(ACTIONS_FEEDS);
+    // Filtra só items que classificam como "actions". Geopolítica/macro
+    // continua no caminho do /api/news/multi-macro via MACRO_FEEDS.
+    const items = raw.filter((n) => classifyNews(n.title) === "actions");
     const tickerSet = new Set<string>();
     for (const n of items) {
       if (n.ticker) tickerSet.add(n.ticker);

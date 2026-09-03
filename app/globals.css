@@ -280,3 +280,23 @@ html {
   );
   border-color: color-mix(in oklch, var(--brand-color, #475569) 28%, transparent);
 }
+
+/* Scrollbar invisível em containers com scroll. Mantém usabilidade
+   (mouse wheel + trackpad + keyboard) mas esconde barra visual.
+   Aplicar via classe `.no-scrollbar` em qualquer container que role. */
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;            /* Firefox */
+    -ms-overflow-style: none;        /* Edge legacy */
+    scrollbar-color: transparent transparent;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;                   /* Chrome / Safari / Chromium-based */
+  }
+  .no-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .no-scrollbar::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+}

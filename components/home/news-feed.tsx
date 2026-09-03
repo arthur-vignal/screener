@@ -85,7 +85,10 @@ export function NewsFeed({
       </div>
 
       {/* Body — rola dentro do card */}
-            <div className="flex-1 p-2 overflow-y-auto">
+                  <div
+                    className="flex-1 p-2 overflow-y-auto no-scrollbar"
+                    style={{ scrollbarWidth: "none" }}
+                  >
         {loading ? (
           <LoadingList />
         ) : items.length === 0 ? (
