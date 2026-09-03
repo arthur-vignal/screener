@@ -38,6 +38,9 @@ const SERIES: Record<
   selic: { code: 432, freq: "daily", multiplier: 1 }, // já é % a.a.
   cdi: { code: 4389, freq: "daily", multiplier: 1 }, // já é % a.a.
   ibcbr: { code: 24363, freq: "monthly", multiplier: 1 }, // índice (precisa YoY)
+  // IPCA 12m (sgs 13522): IPCA acumulado 12 meses, % a.m. anualizado.
+  // O valor retornado já é % 12m direto, sem necessidade de cálculo.
+  ipca: { code: 13522, freq: "monthly", multiplier: 1 },
 };
 
 type Obs = { date: string; value: number };
