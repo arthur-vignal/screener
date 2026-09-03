@@ -92,18 +92,50 @@ const QUARTERS_LTM = 4;
  * `totalDebt` único — usa shortLongTermDebt + longTermDebt (debêntures,
  * financiamentos, leasing). Fallback progressivo quando campos faltam.
  *
- * Usado por fscore.ts, metrics-table.ts e qualquer analytics que
- * precise de dívida total consolidada.
+ * Estrutura do balanço BR (CVM via brapi):
+ *   - loansAndFinancing    → circulante: empréstimos + financiamentos CP
+ *   - leaseFinancing       → circulante: arrendamento IFRS-16 CP
+ *   - debentures           → circulante: debêntures CP (raro)
+ *   - longTermLoansAndFinancing → não circulante
+ *   - longTermLeaseFinancing    → não circulante: arrendamento IFRS-16 LP
+ *   - longTermDebentures   → não circulante: debêntures LP
+ *
+ * **Soma correta (com leasing)**: bate com o que Petrobras reporta e
+ * com o que analista usa (~1.1–1.4× dívida/EBITDA). Sem leasing, o
+ * número fica subestimado em empresas com muitos contratos de lease
+ * (varejo, aérea, Petrobras).
+ *
+ * **Por que `shortLongTermDebt` + `longTermDebt` não bastam**: brapi v2
+ * preenche esses campos só pra empresas US. Empresas BR que seguem o
+ * padrão CVM vêm com null — então a soma zera e o ROIC/WACC fica
+ * sem dívida no denominador. **Sempre somar a granular primeiro.**
+ *
+ * Usado por fscore.ts, metrics-table.ts, leverage.ts e qualquer
+ * analytics que precise de dívida total consolidada.
  */
 export function totalDebtOf(balance: Record<string, unknown>): number | null {
+  // Caminho 1: soma granular dos 6 campos que brapi v2 expõe (CVM BR).
+  const shortLoans = getNumber(balance, "loansAndFinancing") ?? 0;
+  const shortLeases = getNumber(balance, "leaseFinancing") ?? 0;
+  const shortDebentures = getNumber(balance, "debentures") ?? 0;
+  const longLoans = getNumber(balance, "longTermLoansAndFinancing") ?? 0;
+  const longLeases = getNumber(balance, "longTermLeaseFinancing") ?? 0;
+  const longDebentures = getNumber(balance, "longTermDebentures") ?? 0;
+  const granularSum =
+    shortLoans + shortLeases + shortDebentures +
+    longLoans + longLeases + longDebentures;
+  if (granularSum > 0) return granularSum;
+
+  // Caminho 2 (fallback US): shortLongTermDebt + longTermDebt (campos
+  // legados do Yahoo Finance que brapi só popula pra tickers US).
   const shortDebt = getNumber(balance, "shortLongTermDebt") ?? 0;
   const longDebt = getNumber(balance, "longTermDebt") ?? 0;
-  if (shortDebt === 0 && longDebt === 0) {
-    // Fallback: tenta `totalDebt` direto (algumas respostas brapi)
-    const direct = getNumber(balance, "totalDebt");
-    return direct;
-  }
-  return shortDebt + longDebt;
+  if (shortDebt > 0 || longDebt > 0) return shortDebt + longDebt;
+
+  // Caminho 3 (último recurso): `totalDebt` agregado direto, se brapi
+  // mandar. Risco: é snapshot anual, não quarterly — usar com cautela.
+  const direct = getNumber(balance, "totalDebt");
+  return direct;
 }
 
 function clamp(value: number, min: number, max: number): number {

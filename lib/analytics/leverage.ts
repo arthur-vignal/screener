@@ -2,27 +2,31 @@ import type {
   BrapiIncomeStatementPeriod,
   BrapiBalanceSheetPeriod,
 } from "@/lib/brapi";
+import { totalDebtOf } from "./roic-wacc";
 
 /**
- * Calcula alavancagem e cobertura de juros (B2 da spec 2026-08-29).
+ * Calcula alavavancagem e cobertura de juros (B2 da spec 2026-08-29).
  *
  * Com SELIC no nível atual, alavancagem é o que quebra empresa no Brasil.
  * A página atual não tinha uma linha sobre isso em nenhuma das 3 seções.
  *
  * Cálculo:
-   - dívida_bruta[t] = shortDebt + longDebt
-   - dívida_líquida[t] = dívida_bruta - cash - shortTermInvestments
-   - ebitda_ltm[t] = soma 4 EBITDAs terminando em t
-   - ebit_ltm[t] = soma 4 EBITs terminando em t
-   - despesa_financeira_ltm[t] = abs(soma 4 interestExpense) [brapi retorna negativo]
-   - alavancagem[t] = dívida_líquida / ebitda_ltm
-   - cobertura[t] = ebit_ltm / despesa_financeira_ltm
+ *   - dívida_bruta[t]  = totalDebtOf(balance) — soma granular CVM
+ *     (loansAndFinancing + longTermLoansAndFinancing + leaseFinancing +
+ *     longTermLeaseFinancing + debentures + longTermDebentures).
+ *     Ver `totalDebtOf()` em analytics/roic-wacc.ts.
+ *   - dívida_líquida[t] = dívida_bruta - cash - shortTermInvestments
+ *   - ebitda_ltm[t] = soma 4 EBITDAs terminando em t
+ *   - ebit_ltm[t] = soma 4 EBITs terminando em t
+ *   - despesa_financeira_ltm[t] = abs(soma 4 interestExpense) [brapi retorna negativo]
+ *   - alavancagem[t] = dívida_líquida / ebitda_ltm
+ *   - cobertura[t] = ebit_ltm / despesa_financeira_ltm
  *
  * Casos especiais:
-   - Caixa líquido (dívida < 0): plota alavancagem negativa (info valiosa)
-   - EBITDA ≤ 0: pula o ponto (não calcula Infinity)
-   - Setor financeiro (sectorDisp match): empty state (capital investido
-     não tem significado em bancos)
+ *   - Caixa líquido (dívida < 0): plota alavancagem negativa (info valiosa)
+ *   - EBITDA ≤ 0: pula o ponto (não calcula Infinity)
+ *   - Setor financeiro (sectorDisp match): empty state (capital investido
+ *     não tem significado em bancos)
  */
 
 export type LeveragePoint = {
@@ -112,13 +116,17 @@ export function computeLeverage(
     const bal = balanceByDate.get(row.endDate);
     if (!bal) continue;
 
-    const shortDebt = num(bal as Record<string, unknown>, "shortLongTermDebt") ?? 0;
-    const longDebt = num(bal as Record<string, unknown>, "longTermDebt") ?? 0;
+    // Fix 2026-09-03: dívida granular CVM (loansAndFinancing +
+    // longTermLoansAndFinancing + leaseFinancing + longTermLeaseFinancing
+    // + debentures + longTermDebentures). Antes somava só shortLongTermDebt
+    // + longTermDebt — campos que brapi v2 não popula pra empresas BR,
+    // zerando o cálculo de leverage e mostrando "negativo" pra empresa.
+    // Ver `totalDebtOf()` em analytics/roic-wacc.ts.
+    const grossDebt = totalDebtOf(bal as Record<string, unknown>) ?? 0;
     const cash = num(bal as Record<string, unknown>, "cash") ?? 0;
     const shortTermInvestments =
       num(bal as Record<string, unknown>, "shortTermInvestments") ?? 0;
 
-    const grossDebt = shortDebt + longDebt;
     const netDebt = grossDebt - cash - shortTermInvestments;
 
     // EBITDA LTM: usa cleanEbitda (populado) com fallback pra ebitda

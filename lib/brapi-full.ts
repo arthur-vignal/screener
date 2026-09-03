@@ -149,6 +149,15 @@ export type BrapiBalanceSheet = {
   /** Short-term portion. */
   loansAndFinancing: number | null;
   debentures: number | null;
+  /**
+   * IFRS-16 lease liabilities, split by current/non-current.
+   * brapi v2 expõe esses como campos separados de loansAndFinancing
+   * (que no padrão CVM é só empréstimo bancário + debênture + financiamentos).
+   * Petrobras tem ~R$233B em leases (53B CP + 180B LP em 2026-Q2).
+   * `totalDebtOf()` em analytics/roic-wacc.ts soma tudo.
+   */
+  leaseFinancing: number | null;
+  longTermLeaseFinancing: number | null;
   longTermDebt: number | null;
   shortLongTermDebt: number | null;
   cash: number | null;
@@ -569,8 +578,10 @@ function parseBalanceSheet(r: RawBrapiResult): BrapiBalanceSheet[] {
       // Sum these to get total debt for ROIC denominator.
       longTermLoansAndFinancing: num(row.longTermLoansAndFinancing),
       longTermDebentures: num(row.longTermDebentures),
+      longTermLeaseFinancing: num(row.longTermLeaseFinancing),
       loansAndFinancing: num(row.loansAndFinancing),
       debentures: num(row.debentures),
+      leaseFinancing: num(row.leaseFinancing),
       longTermDebt: num(row.longTermDebt),
       shortLongTermDebt: num(row.shortLongTermDebt),
       cash: num(row.cash),
