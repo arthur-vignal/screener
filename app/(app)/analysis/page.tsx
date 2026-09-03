@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 
+import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
+
 import { AnalysisTabs } from "./analysis-tabs";
 
 /**
@@ -10,6 +12,8 @@ import { AnalysisTabs } from "./analysis-tabs";
  * Estrutura:
  *   - SubHeader local: tabs Macro | Markets (no header sticky)
  *   - Cada tab renderiza seu próprio conjunto de cards
+ *   - AnimatedFloatingDock fixo (mesmo dock do /home, posição
+ *     consistente em todas as páginas autenticadas)
  *
  * Server component: delega o controle de state da tab para o cliente.
  *
@@ -33,6 +37,7 @@ export default function AnalysisPage() {
           <AnalysisTabs />
         </Suspense>
       </div>
+      <AnimatedFloatingDock />
     </div>
   );
 }

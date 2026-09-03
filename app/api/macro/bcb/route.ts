@@ -122,18 +122,23 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // Cache por série (1 entrada por slug) — evita race condition do BCB SGS
+  // quando 3 séries são pedidas de uma vez. Cache key estável por 24h.
   try {
-    // Cache por combinação de séries + janela (hoje).
-    // Chave estável por 24h; reseta quando brapi/BCB atualizarem.
-    const cacheKey = `bcb:macro:v1:${requested.sort().join(",")}`;
-    const data = await cached(cacheKey, 24 * 60 * 60, async () => {
-      const out: Record<string, Obs[]> = {};
-      for (const slug of requested) {
-        const meta = SERIES[slug];
-        out[slug] = await fetchBcbSeries(meta.code, meta.freq);
-      }
-      return out;
-    });
+    const data: Record<string, Obs[]> = {};
+    const settled = await Promise.all(
+      requested.map(async (slug) => {
+        const meta = SERIES[slug]!;
+        const cacheKey = `bcb:macro:v2:${slug}`; // v2 separa cache por série
+        const series = await cached(cacheKey, 24 * 60 * 60, () =>
+          fetchBcbSeries(meta.code, meta.freq),
+        );
+        return [slug, series] as const;
+      }),
+    );
+    for (const [slug, series] of settled) {
+      data[slug] = series;
+    }
 
     return NextResponse.json({ series: data, fetchedAt: new Date().toISOString() });
   } catch (err) {
