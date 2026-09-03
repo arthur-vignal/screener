@@ -176,6 +176,8 @@ export type PackLineOpts = {
   strokeWidth?: number;
   strokeOpacity?: number;
   dashed?: boolean;
+  /** Tipo da linha: "monotone" (suave), "linear" (reta), "step" (degraus). Default: monotone. */
+  lineType?: "monotone" | "linear" | "step";
 };
 
 export function packLineProps({
@@ -183,9 +185,10 @@ export function packLineProps({
   strokeWidth = PACK_STROKE.line,
   strokeOpacity = 1,
   dashed = false,
+  lineType = "monotone",
 }: PackLineOpts = {}) {
   return {
-    type: "monotone" as const,
+    type: lineType as "monotone" | "linear" | "step",
     stroke,
     strokeWidth,
     strokeOpacity,

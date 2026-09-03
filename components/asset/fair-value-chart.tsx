@@ -16,6 +16,13 @@
  *
  * Diferença do PriceTargetChart: zero mock. Só dado real brapi. A "referência"
  * é a média histórica do próprio ativo, não a opinião de um analista.
+ *
+ * Refactor 2026-09-03 (sessão pack-graphics): cores agora vêm de
+ * `lib/chart-pack.ts` (`PACK.asset`, `PACK.reference`, `PACK.tooltipBg`).
+ * Typography: Calibre display no título, Inter nos labels (typography-pack).
+ * Pack 04 (linhas retas para pontos discretos): `type="linear"` porque
+ * FV é calculado por quarter — não há interpolação honesta entre quarters
+ * (cada FV depende do EPS LTM daquele quarter específico, não de uma média).
  */
 
 import { useMemo } from "react";
@@ -37,6 +44,12 @@ import {
   tooltipWrapperStyle,
   attachTimestamps,
 } from "@/components/analysis/analysis-utils";
+import {
+  PACK,
+  packGrid,
+  packLineProps,
+  packTooltipStyle,
+} from "@/lib/chart-pack";
 import type { EarningsYieldHistoryPoint } from "@/lib/analytics/earnings-yield-history";
 
 type Props = {
@@ -126,14 +139,22 @@ export function FairValueChart({
           discount != null ? (
             <div className="flex items-center gap-1.5">
               <div
-                className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${undervalued ? "bg-[var(--positive)]/15 text-[var(--positive)]" : "bg-[var(--negative)]/15 text-[var(--negative)]"}`}
+                className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${
+                  undervalued
+                    ? "bg-[var(--positive)]/15 text-[var(--positive)]"
+                    : "bg-[var(--negative)]/15 text-[var(--negative)]"
+                }`}
               >
                 mean {discount >= 0 ? "+" : "−"}
                 {Math.abs(discount).toFixed(1)}%
               </div>
               {discountMedian != null && (
                 <div
-                  className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${discountMedian < 0 ? "bg-[var(--positive)]/15 text-[var(--positive)]" : "bg-[var(--negative)]/15 text-[var(--negative)]"}`}
+                  className={`text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ${
+                    discountMedian < 0
+                      ? "bg-[var(--positive)]/15 text-[var(--positive)]"
+                      : "bg-[var(--negative)]/15 text-[var(--negative)]"
+                  }`}
                 >
                   med {discountMedian >= 0 ? "+" : "−"}
                   {Math.abs(discountMedian).toFixed(1)}%
@@ -151,19 +172,15 @@ export function FairValueChart({
           >
             <defs>
               <linearGradient id="fv-fair" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--muted)" stopOpacity={0.15} />
-                <stop offset="100%" stopColor="var(--muted)" stopOpacity={0.03} />
+                <stop offset="0%" stopColor={PACK.muted} stopOpacity={0.15} />
+                <stop offset="100%" stopColor={PACK.muted} stopOpacity={0.03} />
               </linearGradient>
             </defs>
-            <CartesianGrid
-              stroke="rgba(255,255,255,0.05)"
-              strokeWidth={1}
-              vertical={false}
-            />
+            <CartesianGrid {...packGrid} />
             <TimeXAxis tickFontSize={10} />
             <YAxis
               tick={{
-                fill: "rgba(200, 210, 230, 0.55)",
+                fill: PACK.tick,
                 fontSize: 9,
                 fontFamily: "var(--font-manrope), system-ui, sans-serif",
               }}
@@ -174,7 +191,7 @@ export function FairValueChart({
               tickCount={4}
             />
             <Tooltip
-              wrapperStyle={tooltipWrapperStyle}
+              wrapperStyle={packTooltipStyle}
               content={({ active, payload, label }) => {
                 if (!active || !payload || payload.length === 0) return null;
                 const d = payload[0]?.payload as {
@@ -187,16 +204,25 @@ export function FairValueChart({
                 const discountMed = (d.price / d.fairValueMedian - 1) * 100;
                 return (
                   <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                    <div className="text-[10px] text-muted-foreground/70 mb-1">
+                    <div className="text-[10px] text-foreground/70 mb-1">
                       {label}
                     </div>
-                    <div className="text-[11px] tabular-nums text-[var(--positive)]">
+                    <div
+                      className="text-[11px] tabular-nums"
+                      style={{ color: PACK.asset }}
+                    >
                       Preço: R$ {d.price.toFixed(2)}
                     </div>
-                    <div className="text-[11px] tabular-nums text-muted-foreground/85">
+                    <div
+                      className="text-[11px] tabular-nums"
+                      style={{ color: PACK.muted }}
+                    >
                       FV (mean): R$ {d.fairValue.toFixed(2)}
                     </div>
-                    <div className="text-[11px] tabular-nums text-muted-foreground/85">
+                    <div
+                      className="text-[11px] tabular-nums"
+                      style={{ color: PACK.reference }}
+                    >
                       FV (median): R$ {d.fairValueMedian.toFixed(2)}
                     </div>
                     <div className="text-[10px] tabular-nums mt-1 grid grid-cols-2 gap-2">
@@ -213,43 +239,43 @@ export function FairValueChart({
                 );
               }}
             />
+            {/* FV mean como área com gradient sutil */}
             <Area
-              type="monotone"
+              type="linear"
               dataKey="fairValue"
-              stroke="var(--muted)"
+              stroke={PACK.muted}
               strokeWidth={1.5}
               strokeDasharray="3 3"
               fill="url(#fv-fair)"
               isAnimationActive={true}
               animationDuration={1200}
             />
+            {/* FV median como linha branca tracejada fina */}
             <Line
-              type="monotone"
+              type="linear"
               dataKey="fairValueMedian"
-              stroke="rgba(255, 255, 255, 0.45)"
+              stroke={PACK.reference}
               strokeWidth={1.25}
+              strokeOpacity={0.65}
               strokeDasharray="4 2"
               dot={false}
               isAnimationActive={true}
               animationDuration={1200}
             />
+            {/* Preço: verde sólido, linha principal */}
             <Line
-              type="monotone"
               dataKey="price"
-              stroke="var(--positive)"
-              strokeWidth={2}
-              strokeOpacity={1}
-              dot={false}
-              activeDot={{ r: 4, fill: "var(--positive)" }}
-              isAnimationActive={true}
-              animationDuration={1200}
+              {...packLineProps({ stroke: PACK.asset, strokeWidth: 2, lineType: "linear" })}
             />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-3 flex items-center gap-3 text-[10px] text-muted-foreground/70 flex-wrap">
+      <div className="mt-3 flex items-center gap-3 text-[10px] text-foreground/70 flex-wrap">
         <div className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-px bg-[var(--positive)]" />
+          <span
+            className="inline-block w-3 h-px"
+            style={{ background: PACK.asset }}
+          />
           <span>Preço</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -257,7 +283,9 @@ export function FairValueChart({
             className="inline-block w-3 h-px"
             style={{
               background:
-                "repeating-linear-gradient(90deg, var(--muted) 0 3px, transparent 3px 6px)",
+                "repeating-linear-gradient(90deg, " +
+                PACK.muted +
+                " 0 3px, transparent 3px 6px)",
             }}
           />
           <span>FV (mean)</span>
@@ -267,7 +295,9 @@ export function FairValueChart({
             className="inline-block w-3 h-px"
             style={{
               background:
-                "repeating-linear-gradient(90deg, rgba(255,255,255,0.45) 0 4px, transparent 4px 6px)",
+                "repeating-linear-gradient(90deg, " +
+                PACK.reference +
+                " 0 4px, transparent 4px 6px)",
             }}
           />
           <span>FV (median)</span>
