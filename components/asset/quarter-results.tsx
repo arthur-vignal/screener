@@ -251,10 +251,13 @@ export function QuarterResults({
     );
   }
 
-  // Header valor: total do último ano fiscal completo (não projected).
-  const lastCompleteYear = data.find(
-    (y) => y.q1 != null && y.q2 != null && y.q3 != null && y.q4 != null,
-  );
+  // Header valor: total do ÚLTIMO ANO FISCAL COMPLETO (com 4 quarters
+  // preenchidos), não o último ano do array (que pode estar parcial
+  // tipo 2026 com só Q1+Q2). Iteramos de trás pra frente no array
+  // ordenado desc pra achar o último completo.
+  const lastCompleteYear = [...data]
+    .reverse()
+    .find((y) => y.q1 != null && y.q2 != null && y.q3 != null && y.q4 != null);
   const headerTotal = lastCompleteYear?.total ?? data[0].total;
   const headerYoY = lastCompleteYear?.yoyChangePct ?? null;
 
@@ -367,8 +370,8 @@ function RevenueBarChart({
                       x2="0"
                       y2="1"
                     >
-                      <stop offset="0%" stopColor={stopColor} stopOpacity={0.95} />
-                      <stop offset="100%" stopColor={stopColor} stopOpacity={0.18} />
+                      <stop offset="0%" stopColor={stopColor} stopOpacity={1} />
+                      <stop offset="100%" stopColor={stopColor} stopOpacity={0.35} />
                     </linearGradient>
                   );
                 }),
