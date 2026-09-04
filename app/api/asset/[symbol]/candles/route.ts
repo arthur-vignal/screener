@@ -40,6 +40,13 @@ const VALID_RANGES = ["24h", "7d", "3m", "ytd", "1y", "5y", "max"] as const;
 type Range = (typeof VALID_RANGES)[number];
 
 const HOUR = 3600 * 1000;
+const BRT_OFFSET_HOURS = -3;
+
+/** "YYYY-MM-DD" da data BRT correspondente ao timestamp (ms). */
+function isoDateInBRT(timestamp: number): string {
+  const d = new Date(timestamp + BRT_OFFSET_HOURS * HOUR);
+  return d.toISOString().slice(0, 10);
+}
 
 export async function GET(
   req: NextRequest,
@@ -87,11 +94,24 @@ async function fetchCandlesForRange(
 }>> {
   switch (range) {
     case "24h": {
-      // Intraday 5m candles. Pull 5d so we get yesterday's session too,
-      // then slice the last 24h.
+      // Intraday 5m candles. Puxa 5d pra cobrir último pregão + o
+      // anterior. O "24h" aqui NÃO é literalmente now-24h — é
+      // "último pregão disponível" (último dia útil com candles
+      // intraday). Sexta 16h + segunda 10h tem gap de 65h que
+      // vazaria o filtro `cutoff = now - 24h` em finais de semana.
+      //
+      // Estratégia: filtra só candles dentro do horário de pregão
+      // (filterTradingHours) e agrupa por data BRT. Pega o último
+      // dia com candles e retorna só ele.
       const all = await brapiHistorical(symbol, { range: "5d", interval: "5m" });
-      const cutoff = Date.now() - 24 * HOUR;
-      return sliceAndFormat(filterTradingHours(all.filter((c) => c.timestamp >= cutoff)));
+      const valid = filterTradingHours(all);
+      if (valid.length === 0) return [];
+      // último dia BRT presente em valid
+      const lastDay = isoDateInBRT(valid[valid.length - 1]!.timestamp);
+      const sameDay = valid.filter(
+        (c) => isoDateInBRT(c.timestamp) === lastDay,
+      );
+      return sliceAndFormat(sameDay);
     }
 
     case "7d": {

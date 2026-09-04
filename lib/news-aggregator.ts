@@ -525,3 +525,6 @@ export async function fetchB3MacroNews(limit = 20): Promise<NewsItem[]> {
 // quebrar imports legados durante a transição. Remover após 2026-10-01.
 export { fetchB3ActionsNews as fetchB3News };
 export type GoogleNewsItem = NewsItem;
+export const TICKER_KEYWORDS: Record<string, string[]> = Object.fromEntries(
+  COMPANY_TICKERS.map((e) => [e.ticker, e.keywords]),
+);
