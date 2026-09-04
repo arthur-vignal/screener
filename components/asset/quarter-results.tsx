@@ -48,9 +48,10 @@ import { useMemo } from "react";
 import type { JSX } from "react";
 import {
   Bar,
-  BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -208,8 +209,8 @@ export function QuarterResults({
       }
     }
 
-    // Ordena anos desc e pega os N mais recentes.
-    const sortedYears = Array.from(byYear.keys()).sort().reverse().slice(0, yearCount);
+    // Ordena anos ASC (esquerda → direita: 2023, 2024, 2025, 2026).
+    const sortedYears = Array.from(byYear.keys()).sort().slice(0, yearCount);
     const yearsData: YearData[] = sortedYears.map((y) => {
       const b = byYear.get(y)!;
       // Marca como projected qualquer Q que esteja em projectedByLabel
@@ -259,9 +260,8 @@ export function QuarterResults({
   }
 
   // Header valor: total do ÚLTIMO ANO FISCAL COMPLETO (com 4 quarters
-  // preenchidos), não o último ano do array (que pode estar parcial
-  // tipo 2026 com só Q1+Q2). Iteramos de trás pra frente no array
-  // ordenado desc pra achar o último completo.
+  // preenchidos). Como data tá em ordem ASC (2023→2026), iteramos
+  // de trás pra frente pra achar o último ano com 4 quarters.
   const lastCompleteYear = [...data]
     .reverse()
     .find((y) => y.q1 != null && y.q2 != null && y.q3 != null && y.q4 != null);
@@ -337,26 +337,86 @@ function RevenueBarChart({
         </div>
       </div>
 
-      {/* Bar chart grouped */}
-      <div className="h-[240px] w-full">
+      {/* Bar chart grouped + linhas de trend por quarter */}
+      <div className="h-[260px] w-full">
         <ResponsiveContainer>
-          <BarChart
+          <ComposedChart
             data={data}
-            margin={{ top: 8, right: 48, left: 8, bottom: 0 }}
+            margin={{ top: 8, right: 48, left: 8, bottom: 28 }}
             barCategoryGap="20%"
             barGap={2}
           >
             <CartesianGrid {...packGrid} />
             <XAxis
               dataKey="year"
-              tick={{
-                fill: PACK.tick,
-                fontSize: 10,
-                fontFamily: "var(--font-manrope), system-ui, sans-serif",
+              tick={({ x, y, payload }) => {
+                const year = String(payload.value ?? "");
+                const yearData = data.find((d) => d.year === year);
+                // YoY = currentYear.total vs ANO ANTERIOR (data ASC).
+                // data[0]=2023 (mais antigo), data[3]=2026 (mais novo).
+                // Pra 2023, idx=0 → não tem anterior. Pra 2024, idx=1 → anterior=2023 (idx-1).
+                const idx = data.findIndex((d) => d.year === year);
+                const prevData = idx > 0 ? data[idx - 1] : null;
+                const yoy =
+                  yearData?.total != null && prevData?.total != null && prevData.total > 0
+                    ? ((yearData.total - prevData.total) / prevData.total) * 100
+                    : null;
+                return (
+                  <g transform={`translate(${x},${y})`}>
+                    {/* Ano */}
+                    <text
+                      x={0}
+                      y={0}
+                      dy={10}
+                      textAnchor="middle"
+                      fill="#9ba1a8"
+                      fontSize={10}
+                      fontFamily="var(--font-manrope), system-ui, sans-serif"
+                    >
+                      {year}
+                    </text>
+                    {/* Chip YoY — só pra anos com ano anterior (skip 2023) */}
+                    {yoy != null && idx > 0 && (
+                      <g transform="translate(0, 22)">
+                        <rect
+                          x={-22}
+                          y={0}
+                          width={44}
+                          height={14}
+                          rx={3}
+                          fill={
+                            yoy >= 0
+                              ? "rgba(77, 190, 149, 0.18)"
+                              : "rgba(216, 79, 104, 0.18)"
+                          }
+                          stroke={
+                            yoy >= 0
+                              ? "rgba(77, 190, 149, 0.4)"
+                              : "rgba(216, 79, 104, 0.4)"
+                          }
+                          strokeWidth={0.5}
+                        />
+                        <text
+                          x={0}
+                          y={0}
+                          dy={10}
+                          textAnchor="middle"
+                          fill={yoy >= 0 ? "#4dbe95" : "#d84f68"}
+                          fontSize={9}
+                          fontWeight={600}
+                          fontFamily="var(--font-manrope), system-ui, sans-serif"
+                        >
+                          {yoy >= 0 ? "+" : "−"}
+                          {Math.abs(yoy).toFixed(1)}%
+                        </text>
+                      </g>
+                    )}
+                  </g>
+                );
               }}
               axisLine={false}
               tickLine={false}
-              height={24}
+              height={44}
             />
             <YAxis
               orientation="right"
@@ -436,10 +496,12 @@ function RevenueBarChart({
             {/* Cor sólida por quarter (sem gradient — pack 01 não funcionou
                 em prod porque Turbopack splitou chart-pack em chunks
                 lazy e o S.YT.foreground ficava undefined). Regra Arthur:
-                Q1/Q3 branco (#eeeff1), Q2/Q4 laranja (#f5a623). */}
+                Q1/Q3 branco (#eeeff1), Q2/Q4 laranja (#f5a623).
+                fillOpacity 0.8 — Arthur pediu opacidade 80% (2026-09-04). */}
             <Bar
               dataKey="q1"
               fill="#eeeff1"
+              fillOpacity={0.8}
               radius={[3, 3, 0, 0]}
               isAnimationActive={true}
               animationDuration={800}
@@ -456,6 +518,7 @@ function RevenueBarChart({
             <Bar
               dataKey="q2"
               fill="#f5a623"
+              fillOpacity={0.8}
               radius={[3, 3, 0, 0]}
               isAnimationActive={true}
               animationDuration={800}
@@ -472,6 +535,7 @@ function RevenueBarChart({
             <Bar
               dataKey="q3"
               fill="#eeeff1"
+              fillOpacity={0.8}
               radius={[3, 3, 0, 0]}
               isAnimationActive={true}
               animationDuration={800}
@@ -488,6 +552,7 @@ function RevenueBarChart({
             <Bar
               dataKey="q4"
               fill="#f5a623"
+              fillOpacity={0.8}
               radius={[3, 3, 0, 0]}
               isAnimationActive={true}
               animationDuration={800}
@@ -501,7 +566,60 @@ function RevenueBarChart({
                 />
               ))}
             </Bar>
-          </BarChart>
+
+            {/* Linhas de trend por quarter: conectam os pontos do mesmo
+                quarter entre os 4 anos. Permitem ver a evolução de cada
+                Q ao longo do tempo (ex: Q1 2023 → Q1 2026). Cor igual à
+                da barra correspondente pra fácil leitura. */}
+            <Line
+              type="linear"
+              dataKey="q1"
+              stroke="#eeeff1"
+              strokeWidth={1.5}
+              strokeOpacity={0.85}
+              dot={{ r: 2.5, fill: "#eeeff1", stroke: "#0d0d11", strokeWidth: 1 }}
+              activeDot={{ r: 4, fill: "#eeeff1" }}
+              isAnimationActive={true}
+              animationDuration={1000}
+              connectNulls={false}
+            />
+            <Line
+              type="linear"
+              dataKey="q2"
+              stroke="#f5a623"
+              strokeWidth={1.5}
+              strokeOpacity={0.85}
+              dot={{ r: 2.5, fill: "#f5a623", stroke: "#0d0d11", strokeWidth: 1 }}
+              activeDot={{ r: 4, fill: "#f5a623" }}
+              isAnimationActive={true}
+              animationDuration={1000}
+              connectNulls={false}
+            />
+            <Line
+              type="linear"
+              dataKey="q3"
+              stroke="#eeeff1"
+              strokeWidth={1.5}
+              strokeOpacity={0.85}
+              dot={{ r: 2.5, fill: "#eeeff1", stroke: "#0d0d11", strokeWidth: 1 }}
+              activeDot={{ r: 4, fill: "#eeeff1" }}
+              isAnimationActive={true}
+              animationDuration={1000}
+              connectNulls={false}
+            />
+            <Line
+              type="linear"
+              dataKey="q4"
+              stroke="#f5a623"
+              strokeWidth={1.5}
+              strokeOpacity={0.85}
+              dot={{ r: 2.5, fill: "#f5a623", stroke: "#0d0d11", strokeWidth: 1 }}
+              activeDot={{ r: 4, fill: "#f5a623" }}
+              isAnimationActive={true}
+              animationDuration={1000}
+              connectNulls={false}
+            />
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
 
