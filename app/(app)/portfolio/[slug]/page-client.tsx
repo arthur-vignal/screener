@@ -33,7 +33,7 @@ import { motion } from "motion/react";
 import useSWR from "swr";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { JSX } from "react";
 import {
   ArrowDown,
@@ -143,52 +143,69 @@ export default function PortfolioDetailPage({
         animate="show"
         className="w-[90%] mx-auto py-6 pb-32"
       >
-        {/* Header */}
+        {/* Header — Fey style: logo + nome à esquerda, holdings + label à direita */}
         <StaggerOnMount>
-          <div className="flex items-center gap-2 text-[12px] text-muted-foreground/70 mb-3">
-            <Link
-              href="/portfolio"
-              className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
-              Voltar pros portfolios
-            </Link>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* "Portfolio" como h1 SEMPRE (não o nome do portfolio) —
+                  alinha com o print onde "Portfolio" é o título da rota
+                  e o nome do portfolio vai pro h2. Header mais limpo. */}
+              <h1 className="text-[32px] font-semibold tracking-tight text-foreground leading-[1.1]">
+                Portfolio
+              </h1>
+              {meta?.name && (
+                <>
+                  <span className="text-muted-foreground/30 text-[32px] font-light">/</span>
+                  <h2 className="text-[20px] font-semibold tracking-tight text-foreground leading-[1.1] truncate">
+                    {meta.name}
+                  </h2>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-3 text-[12px] text-muted-foreground/70 shrink-0">
+              {holdings.length > 0 && (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[#4dbe95]" />
+                  {holdings.length} Holdings
+                </span>
+              )}
+              {meta?.isPublic && (
+                <span className="px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.08] text-[10px] uppercase tracking-wide text-muted-foreground/85 font-medium">
+                  Watchlist
+                </span>
+              )}
+            </div>
           </div>
         </StaggerOnMount>
 
         {/* Saudação + valor total + delta (mesmo padrão do /home) */}
         <StaggerOnMount>
-          <div className="mb-6 flex items-end justify-between gap-4">
+          <div className="mb-5 flex items-end justify-between gap-4">
             <div>
-              <h1 className="text-[32px] font-semibold tracking-tight text-foreground leading-[1.1]">
-                {meta?.name ?? "—"}
-              </h1>
-              <div className="mt-2">
-                <ValueAndDelta
-                  totalValue={summary?.totalValue ?? null}
-                  change={summary?.changeToday ?? null}
-                  changePercent={summary?.changeTodayPercent ?? null}
-                  loading={isLoading && !bundle}
-                />
-              </div>
+              <ValueAndDelta
+                totalValue={summary?.totalValue ?? null}
+                change={summary?.changeToday ?? null}
+                changePercent={summary?.changeTodayPercent ?? null}
+                loading={isLoading && !bundle}
+              />
             </div>
             {meta?.description && (
-              <p className="text-[13px] text-muted-foreground/70 max-w-md text-right leading-relaxed">
+              <p className="text-[12px] text-muted-foreground/70 max-w-md text-right leading-relaxed">
                 {meta.description}
               </p>
             )}
           </div>
         </StaggerOnMount>
 
-        {/* Grid 2-col: chart + holdings+news */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5 items-stretch">
-          {/* Coluna esquerda: chart */}
+        {/* Grid 2-col: chart à esquerda, holdings + news empilhados à direita */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-5 items-stretch">
+          {/* Coluna esquerda: chart + botão "Add items" embutido */}
           <StaggerOnMount>
             <div className="rounded-2xl border border-white/10 bg-[#101116] p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
                   Variação do portfolio
-                </h2>
+                </h3>
                 <div className="text-[11px] text-muted-foreground/70">
                   {bundle?.performance.candles.length ?? 0} pontos
                 </div>
@@ -199,10 +216,21 @@ export default function PortfolioDetailPage({
                 onRangeChange={setRange}
                 loading={isLoading && !bundle}
               />
+              {/* Add items — embaixo do chart, estilo Fey */}
+              {meta?.isOwner && (
+                <button
+                  type="button"
+                  onClick={() => setAddOpen(true)}
+                  className="mt-4 inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-white/[0.04] border border-white/10 text-foreground text-[12px] font-medium hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+                  Add items to your portfolio
+                </button>
+              )}
             </div>
           </StaggerOnMount>
 
-          {/* Coluna direita: holdings + news */}
+          {/* Coluna direita: holdings + news empilhados */}
           <div className="flex flex-col gap-5 min-h-0">
             <StaggerOnMount>
               <HoldingsCard
@@ -302,33 +330,21 @@ function HoldingsCard({
   return (
     <div className="rounded-2xl border border-white/10 bg-[#101116] overflow-hidden">
       <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
-        <div>
-          <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
-            Holdings
-          </h2>
-          <p className="mt-0.5 text-[12px] text-muted-foreground/70">
-            {holdings.length} ativos
-          </p>
+        <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
+          Stocks
+        </h3>
+        <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60 font-semibold">
+          {holdings.length} ativos
         </div>
-        {canEdit && (
-          <button
-            type="button"
-            onClick={onAddClick}
-            className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-white/[0.04] border border-white/10 text-foreground text-[12px] font-medium hover:bg-white/[0.08] hover:border-white/20 transition-colors"
-          >
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-            Adicionar
-          </button>
-        )}
       </div>
       <div className="divide-y divide-white/[0.04]">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="px-5 py-3 flex items-center justify-between gap-3">
+              <Skeleton className="h-6 w-6 rounded-full" />
+              <Skeleton className="h-4 w-20 flex-1" />
               <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-5 w-16" />
-              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-4 w-16" />
             </div>
           ))
         ) : holdings.length === 0 ? (
@@ -348,93 +364,75 @@ function HoldingsCard({
             )}
           </div>
         ) : (
-          <>
-            {/* Header row */}
-            <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 px-5 py-2 border-b border-white/[0.04] text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60 font-semibold">
-              <span>Ativo</span>
-              <span className="text-right">Preço</span>
-              <span className="text-right w-20">Hoje</span>
-              <span className="text-right w-20">1m</span>
-            </div>
-            {holdings.map((h) => (
-              <HoldingRow key={h.symbol} holding={h} />
-            ))}
-          </>
+          <HoldingList holdings={holdings} canEdit={canEdit} onDelete={onAddClick} />
         )}
       </div>
     </div>
   );
 }
 
-function HoldingRow({ holding: h }: { holding: Bundle["holdings"][number] }): JSX.Element {
-  const dayPos = (h.changePercent ?? 0) >= 0;
+/** Lista de holdings no estilo Fey (logo + nome + preço + 3m return). */
+function HoldingList({
+  holdings, canEdit, onDelete,
+}: {
+  holdings: Bundle["holdings"];
+  canEdit?: boolean;
+  onDelete?: () => void;
+}): JSX.Element {
+  return (
+    <ul>
+      {holdings.map((h) => (
+        <HoldingRow key={h.symbol} holding={h} canEdit={canEdit} onDelete={onDelete} />
+      ))}
+    </ul>
+  );
+}
+
+function HoldingRow({
+  holding: h, canEdit, onDelete,
+}: {
+  holding: Bundle["holdings"][number];
+  canEdit?: boolean;
+  onDelete?: () => void;
+}): JSX.Element {
   const mPos = (h.change1mPercent ?? 0) >= 0;
   return (
-    <Link
-      href={`/asset/${h.symbol}`}
-      className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors"
-    >
-      <div className="min-w-0">
-        <div className="text-[13px] font-semibold text-foreground tracking-tight truncate">
-          {h.symbol}
+    <li>
+      <Link
+        href={`/asset/${h.symbol}`}
+        className="group flex items-center gap-3 px-5 py-2.5 hover:bg-white/[0.02] transition-colors"
+      >
+        <TickerLogo symbol={h.symbol} size="md" />
+        <div className="min-w-0 flex-1">
+          <div className="text-[12px] font-semibold text-foreground tracking-tight truncate">
+            {h.symbol}
+          </div>
+          <div className="text-[11px] text-muted-foreground/70 truncate">
+            {h.sector ?? `peso ${(h.weight * 100).toFixed(1)}%`}
+          </div>
         </div>
-        <div className="text-[11px] text-muted-foreground/70 tabular-nums">
-          {h.weight > 0 ? (h.weight * 100).toFixed(1) : "0.0"}%
-        </div>
-      </div>
-      <div className="text-right text-[13px] tabular-nums text-foreground">
-        {h.price != null
-          ? h.price.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-          : "—"}
-      </div>
-      <div className="text-right w-20">
-        {h.changePercent != null ? (
-          <span
-            className={cn(
-              "inline-flex items-center w-fit px-1.5 py-0.5 rounded-md text-[10px] font-semibold tabular-nums",
-              dayPos
-                ? "bg-[#4dbe95]/15 text-[#4dbe95]"
-                : "bg-[#d84f68]/15 text-[#d84f68]",
-            )}
-          >
-            {dayPos ? "+" : ""}
-            {h.changePercent.toFixed(2)}%
-          </span>
-        ) : (
-          "—"
-        )}
-      </div>
-      <div className="text-right w-20">
-        {h.change1m != null && h.change1mPercent != null ? (
-          <div className="flex flex-col items-end leading-tight">
-            <span
+        <div className="text-right">
+          <div className="text-[13px] tabular-nums text-foreground font-medium">
+            {h.price != null
+              ? h.price.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              : "—"}
+          </div>
+          {h.change1m != null && h.change1mPercent != null ? (
+            <div
               className={cn(
-                "text-[12px] tabular-nums font-medium",
+                "text-[11px] tabular-nums font-semibold",
                 mPos ? "text-[#4dbe95]" : "text-[#d84f68]",
-              )}
-            >
-              {h.change1m >= 0 ? "+" : "−"}
-              {Math.abs(h.change1m).toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-                maximumFractionDigits: 2,
-              })}
-            </span>
-            <span
-              className={cn(
-                "text-[10px] tabular-nums",
-                mPos ? "text-[#4dbe95]/80" : "text-[#d84f68]/80",
               )}
             >
               {mPos ? "+" : ""}
               {h.change1mPercent.toFixed(2)}%
-            </span>
-          </div>
-        ) : (
-          "—"
-        )}
-      </div>
-    </Link>
+            </div>
+          ) : (
+            <div className="text-[11px] text-muted-foreground/60">—</div>
+          )}
+        </div>
+      </Link>
+    </li>
   );
 }
 

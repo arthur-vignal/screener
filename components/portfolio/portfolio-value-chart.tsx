@@ -61,7 +61,7 @@ export function PortfolioValueChart({
 
   return (
     <div className={cn("relative", className)}>
-      <div className="h-[320px] w-full">
+      <div className="h-[280px] w-full">
         {data.length === 0 ? (
           <EmptyChart />
         ) : (
