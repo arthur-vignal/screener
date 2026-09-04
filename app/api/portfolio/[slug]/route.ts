@@ -190,10 +190,29 @@ export async function GET(
     totalValue > 0 ? (changeToday / totalValue) * 100 : 0;
 
   // ── Performance: valor do portfolio ao longo do tempo ──
-  // Pra cada timestamp presente em pelo menos 1 candle de qualquer
-  // holding, computa valor = soma (weight × initial × candle.close).
+  // Para cada holding, calculamos o preço de referência (close do
+  // primeiro candle do range) e usamos pra normalizar a variação
+  // percentual ao longo do tempo:
+  //   value(T) = Σ(weight × initial_value × close(T) / close_ref)
+  //
+  // Sem essa normalização pelo preço de referência, o gráfico
+  // mostra o valor como `weight × capital × preço_da_ação` (R$ 100k
+  // pra PETR3 a 36 com 100% de peso) em vez da fração do capital
+  // valorizada pela variação do ativo (R$ 2k → R$ 2.1k).
   const performanceCandles: Array<{ ts: number; value: number }> = [];
   if (histRange.size > 0) {
+    // Preço de referência = primeiro candle ASC de cada holding.
+    // (Mesmo que `close_ref` usado em "valor patrimonial = qty × preço".
+    // Como aqui o modelo é "weight" sem qty, usamos o preço inicial
+    // como base 1.0 da variação.)
+    const refClose = new Map<string, number>();
+    for (const h of holdings) {
+      const candles = histRange.get(h.symbol);
+      if (!candles || candles.length === 0) continue;
+      const firstClose = candles[0]!.close;
+      if (firstClose > 0) refClose.set(h.symbol, firstClose);
+    }
+
     // Coleta todos os timestamps únicos ordenados.
     const tsSet = new Set<number>();
     for (const candles of histRange.values()) {
@@ -211,16 +230,19 @@ export async function GET(
             return allTs.filter((t) => t >= yearStart.getTime());
           })()
         : allTs.filter((t) => t >= cutoff);
+
     for (const ts of windowTs) {
       let value = 0;
       let count = 0;
       for (const h of holdings) {
         const candles = histRange.get(h.symbol);
-        if (!candles) continue;
-        // candle mais próximo <= ts
+        const ref = refClose.get(h.symbol);
+        if (!candles || ref == null) continue;
         const idx = findCandleAt(candles, ts);
         if (idx === -1) continue;
-        value += h.weight * portfolio.initial_value * candles[idx]!.close;
+        // Variação percentual do ativo desde o início do range
+        // aplicada à fração do capital alocada.
+        value += h.weight * portfolio.initial_value * (candles[idx]!.close / ref);
         count += 1;
       }
       if (count > 0) {
