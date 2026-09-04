@@ -7,6 +7,10 @@
  * header, com fill cinza-8% quando ativo (vide typography pack 01).
  *
  * Estado fica em URL search param pra deep-link e SSR correto.
+ *
+ * Header: título "Análise" como display 32px semibold (Calibre/
+ * Manrope stack) no canto sup. esquerdo. Sem label prependida —
+ * segue §13.2 do sulfur-ui-rules (zero subtítulos em headers).
  */
 
 import { motion, type Variants } from "motion/react";
@@ -45,13 +49,11 @@ export function AnalysisTabs() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Sub-tabs (top-right pill bar inspired by Fey) */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-[12px] uppercase tracking-[0.18em] text-muted-foreground/70 font-semibold">
-            Análise
-          </span>
-        </div>
+      {/* Header: title + tabs no canto direito */}
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-[32px] font-semibold tracking-tight text-foreground leading-[1.1]">
+          Análise
+        </h1>
         <nav
           className="inline-flex items-center gap-1 p-1 rounded-full bg-white/[0.04] border border-white/[0.06]"
           aria-label="Seções da análise"

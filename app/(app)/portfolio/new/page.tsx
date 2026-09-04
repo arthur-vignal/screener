@@ -99,10 +99,7 @@ export default function NewPortfolioPage(): JSX.Element {
 
         <StaggerOnMount>
           <div className="max-w-xl">
-            <div className="text-[12px] uppercase tracking-[0.18em] text-muted-foreground/70 font-semibold">
-              Novo
-            </div>
-            <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-foreground">
+            <h1 className="text-[32px] font-semibold tracking-tight text-foreground leading-[1.1]">
               Criar portfolio
             </h1>
             <p className="mt-1.5 text-[13px] text-muted-foreground/85 leading-relaxed">

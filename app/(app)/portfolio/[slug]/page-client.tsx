@@ -41,6 +41,7 @@ import {
   ChevronLeft,
   ExternalLink,
   LineChart,
+  Plus,
 } from "lucide-react";
 
 import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
@@ -53,6 +54,7 @@ import {
   PortfolioValueChart,
   type RangeKey,
 } from "@/components/portfolio/portfolio-value-chart";
+import { AddHoldingDialog } from "@/components/portfolio/add-holding-dialog";
 import { TickerLogo } from "@/components/foundation/ticker-logo";
 import type { NewsItem } from "@/components/home/news-feed";
 import { cn } from "@/lib/utils";
@@ -107,11 +109,12 @@ export default function PortfolioDetailPage({
   const router = useRouter();
   const [range, setRange] = useState<RangeKey>("1M");
 
-  const { data: bundle, error, isLoading } = useSWR<Bundle>(
+  const { data: bundle, error, isLoading, mutate: mutateBundle } = useSWR<Bundle>(
     `/api/portfolio/${slug}?range=${range}`,
     fetchJson,
     { refreshInterval: 60_000, revalidateOnFocus: true },
   );
+  const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
     if (error && (error as Error & { status?: number }).status === 401) {
@@ -155,21 +158,22 @@ export default function PortfolioDetailPage({
 
         {/* Saudação + valor total + delta (mesmo padrão do /home) */}
         <StaggerOnMount>
-          <div className="mb-6">
-            <div className="text-[12px] uppercase tracking-[0.18em] text-muted-foreground/70 font-semibold">
-              Portfolio
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <h1 className="text-[32px] font-semibold tracking-tight text-foreground leading-[1.1]">
+                {meta?.name ?? "—"}
+              </h1>
+              <div className="mt-2">
+                <ValueAndDelta
+                  totalValue={summary?.totalValue ?? null}
+                  change={summary?.changeToday ?? null}
+                  changePercent={summary?.changeTodayPercent ?? null}
+                  loading={isLoading && !bundle}
+                />
+              </div>
             </div>
-            <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-foreground">
-              {meta?.name ?? "—"}
-            </h1>
-            <ValueAndDelta
-              totalValue={summary?.totalValue ?? null}
-              change={summary?.changeToday ?? null}
-              changePercent={summary?.changeTodayPercent ?? null}
-              loading={isLoading && !bundle}
-            />
             {meta?.description && (
-              <p className="mt-2 text-[13px] text-muted-foreground/70 max-w-2xl leading-relaxed">
+              <p className="text-[13px] text-muted-foreground/70 max-w-md text-right leading-relaxed">
                 {meta.description}
               </p>
             )}
@@ -204,6 +208,8 @@ export default function PortfolioDetailPage({
               <HoldingsCard
                 holdings={holdings}
                 loading={isLoading && !bundle}
+                onAddClick={() => setAddOpen(true)}
+                canEdit={meta?.isOwner ?? false}
               />
             </StaggerOnMount>
             <StaggerOnMount className="flex-1 min-h-0 flex">
@@ -212,6 +218,14 @@ export default function PortfolioDetailPage({
           </div>
         </div>
       </motion.main>
+
+      <AddHoldingDialog
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onAdded={() => mutateBundle()}
+        portfolioSlug={slug}
+        currentWeightSum={holdings.reduce((s, h) => s + h.weight, 0)}
+      />
 
       <AnimatedFloatingDock />
     </div>
@@ -278,10 +292,12 @@ function ValueAndDelta({
 // ─── Holdings ─────────────────────────────────────────────────────────────
 
 function HoldingsCard({
-  holdings, loading,
+  holdings, loading, onAddClick, canEdit,
 }: {
   holdings: Bundle["holdings"];
   loading: boolean;
+  onAddClick?: () => void;
+  canEdit?: boolean;
 }): JSX.Element {
   return (
     <div className="rounded-2xl border border-white/10 bg-[#101116] overflow-hidden">
@@ -294,6 +310,16 @@ function HoldingsCard({
             {holdings.length} ativos
           </p>
         </div>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={onAddClick}
+            className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-white/[0.04] border border-white/10 text-foreground text-[12px] font-medium hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+            Adicionar
+          </button>
+        )}
       </div>
       <div className="divide-y divide-white/[0.04]">
         {loading ? (
@@ -306,8 +332,20 @@ function HoldingsCard({
             </div>
           ))
         ) : holdings.length === 0 ? (
-          <div className="px-5 py-10 text-center text-[13px] text-muted-foreground/85">
-            Nenhum ativo adicionado ainda.
+          <div className="px-5 py-10 text-center">
+            <p className="text-[13px] text-muted-foreground/85">
+              Nenhum ativo adicionado ainda.
+            </p>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={onAddClick}
+                className="mt-3 inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-[var(--primary)] text-[#070709] text-[12px] font-semibold hover:opacity-90 transition-opacity"
+              >
+                <Plus className="h-3.5 w-3.5" strokeWidth={2.25} />
+                Adicionar primeiro ativo
+              </button>
+            )}
           </div>
         ) : (
           <>

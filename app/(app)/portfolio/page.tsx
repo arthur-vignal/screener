@@ -91,17 +91,9 @@ export default function PortfolioMenuPage(): JSX.Element {
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="text-[12px] uppercase tracking-[0.18em] text-muted-foreground/70 font-semibold">
-              Menu
-            </div>
-            <h1 className="mt-1 text-[28px] font-semibold tracking-tight text-foreground">
-              Portfolios
-            </h1>
-            <p className="mt-1 text-[13px] text-muted-foreground/85">
-              Acompanhe a valorização dos seus portfolios ao longo do tempo.
-            </p>
-          </div>
+          <h1 className="text-[32px] font-semibold tracking-tight text-foreground leading-[1.1]">
+            Portfolios
+          </h1>
           <Link
             href="/portfolio/new"
             className={cn(
