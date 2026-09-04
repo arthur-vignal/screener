@@ -257,7 +257,13 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
   const earningsData = useMemo(() => {
     const incomeQ = (incomeData?.income ?? []) as Array<Record<string, unknown>>;
 
-    // Mapeia rows brapi → QuarterPoint (filtra nulos, ordena asc)
+    // Mapeia rows brapi → QuarterPoint (filtra nulos, ordena asc).
+    // IMPORTANTE: filtra por `endDate` apenas (não por epsBasic) — o
+    // QuarterResults precisa de TODOS os quarters com revenue válida,
+    // mesmo quando brapi omite EPS (que é usado só no EPSQuarterlyChart).
+    // Antes: `.filter((q) => q.endDate && q.epsBasic != null)` descartava
+    // quarters com revenue boa mas EPS null (ex: 2025-Q4), fazendo Q4
+    // aparecer como "—" no chart de revenue.
     const quarters: QuarterPoint[] = incomeQ
       .map((r) => ({
         endDate: String(r.endDate ?? ""),
@@ -271,7 +277,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
                 : null,
         revenue: r.totalRevenue != null ? Number(r.totalRevenue) : null,
       }))
-      .filter((q) => q.endDate && q.epsBasic != null)
+      .filter((q) => q.endDate && q.revenue != null)
       .sort((a, b) => a.endDate.localeCompare(b.endDate));
 
     // Fallback: se a brapi não retornou incomeQuarterly, mas tem eps

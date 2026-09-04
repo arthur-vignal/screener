@@ -125,11 +125,18 @@ function yearQuarterFromEndDate(endDate: string): { year: string; q: 1 | 2 | 3 |
 
 // Cor por quarter dentro do grupo (regra Arthur 2026-09-03):
 // Q1/Q3 = branco, Q2/Q4 = laranja (PACK.peer = amber).
+// IMPORTANTE: hex strings HARDCODED aqui pra evitar o module loading
+// do chart-pack.ts em runtime. No print PETR4 (2026-09-04), os
+// gradients saíam pretos porque Turbopack/Next.js splitou chart-pack
+// em chunks lazy, e `S.YT.foreground` ficava undefined no momento
+// de render. Hardcoding garante cor mesmo se o módulo não estiver
+// carregado. Cores: branco #eeeff1 (era PACK.foreground), laranja
+// #f5a623 (era PACK.peer = amber).
 const QUARTER_COLORS: Record<1 | 2 | 3 | 4, string> = {
-  1: PACK.foreground,
-  2: PACK.peer,
-  3: PACK.foreground,
-  4: PACK.peer,
+  1: "#eeeff1",
+  2: "#f5a623",
+  3: "#eeeff1",
+  4: "#f5a623",
 };
 
 type YearData = {
@@ -534,14 +541,14 @@ function RevenueBarChart({
         <div className="flex items-center gap-1.5">
           <span
             className="inline-block w-2 h-2 rounded-sm"
-            style={{ background: PACK.foreground }}
+            style={{ background: "#eeeff1" }}
           />
           <span>Q1 / Q3</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span
             className="inline-block w-2 h-2 rounded-sm"
-            style={{ background: PACK.peer }}
+            style={{ background: "#f5a623" }}
           />
           <span>Q2 / Q4</span>
         </div>
@@ -551,9 +558,9 @@ function RevenueBarChart({
             style={{
               background:
                 "repeating-linear-gradient(90deg, " +
-                PACK.muted +
+                "#9ba1a8" +
                 " 0 2px, transparent 2px 4px)",
-              border: `1px solid ${PACK.muted}`,
+              border: `1px solid #9ba1a8`,
             }}
           />
           <span>Projetado</span>
