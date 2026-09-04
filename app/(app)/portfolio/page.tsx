@@ -31,7 +31,6 @@ import {
   Plus,
   RefreshCw,
   TrendingDown,
-  TrendingUp,
 } from "lucide-react";
 
 import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
@@ -304,5 +303,4 @@ function SkeletonGrid(): JSX.Element {
   );
 }
 
-// Helper icons (exported for code re-use in tests if needed)
-export { TrendingUp };
+// Helper icons (used internally; no exports — Next requires single default)
