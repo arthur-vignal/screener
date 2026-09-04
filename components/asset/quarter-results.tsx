@@ -48,10 +48,9 @@ import { useMemo } from "react";
 import type { JSX } from "react";
 import {
   Bar,
+  BarChart,
   CartesianGrid,
   Cell,
-  ComposedChart,
-  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -209,8 +208,14 @@ export function QuarterResults({
       }
     }
 
-    // Ordena anos ASC (esquerda → direita: 2023, 2024, 2025, 2026).
-    const sortedYears = Array.from(byYear.keys()).sort().slice(0, yearCount);
+    // Pega os N anos mais recentes (ordem DESC: mais recente primeiro).
+    // Depois invertemos pra ASC pro chart ficar esquerda→direita
+    // (2023, 2024, 2025, 2026) como Arthur pediu.
+    const sortedYearsDesc = Array.from(byYear.keys())
+      .sort()
+      .reverse()
+      .slice(0, yearCount);
+    const sortedYears = [...sortedYearsDesc].reverse();
     const yearsData: YearData[] = sortedYears.map((y) => {
       const b = byYear.get(y)!;
       // Marca como projected qualquer Q que esteja em projectedByLabel
@@ -340,7 +345,7 @@ function RevenueBarChart({
       {/* Bar chart grouped + linhas de trend por quarter */}
       <div className="h-[260px] w-full">
         <ResponsiveContainer>
-          <ComposedChart
+          <BarChart
             data={data}
             margin={{ top: 8, right: 48, left: 8, bottom: 28 }}
             barCategoryGap="20%"
@@ -567,59 +572,7 @@ function RevenueBarChart({
               ))}
             </Bar>
 
-            {/* Linhas de trend por quarter: conectam os pontos do mesmo
-                quarter entre os 4 anos. Permitem ver a evolução de cada
-                Q ao longo do tempo (ex: Q1 2023 → Q1 2026). Cor igual à
-                da barra correspondente pra fácil leitura. */}
-            <Line
-              type="linear"
-              dataKey="q1"
-              stroke="#eeeff1"
-              strokeWidth={1.5}
-              strokeOpacity={0.85}
-              dot={{ r: 2.5, fill: "#eeeff1", stroke: "#0d0d11", strokeWidth: 1 }}
-              activeDot={{ r: 4, fill: "#eeeff1" }}
-              isAnimationActive={true}
-              animationDuration={1000}
-              connectNulls={false}
-            />
-            <Line
-              type="linear"
-              dataKey="q2"
-              stroke="#f5a623"
-              strokeWidth={1.5}
-              strokeOpacity={0.85}
-              dot={{ r: 2.5, fill: "#f5a623", stroke: "#0d0d11", strokeWidth: 1 }}
-              activeDot={{ r: 4, fill: "#f5a623" }}
-              isAnimationActive={true}
-              animationDuration={1000}
-              connectNulls={false}
-            />
-            <Line
-              type="linear"
-              dataKey="q3"
-              stroke="#eeeff1"
-              strokeWidth={1.5}
-              strokeOpacity={0.85}
-              dot={{ r: 2.5, fill: "#eeeff1", stroke: "#0d0d11", strokeWidth: 1 }}
-              activeDot={{ r: 4, fill: "#eeeff1" }}
-              isAnimationActive={true}
-              animationDuration={1000}
-              connectNulls={false}
-            />
-            <Line
-              type="linear"
-              dataKey="q4"
-              stroke="#f5a623"
-              strokeWidth={1.5}
-              strokeOpacity={0.85}
-              dot={{ r: 2.5, fill: "#f5a623", stroke: "#0d0d11", strokeWidth: 1 }}
-              activeDot={{ r: 4, fill: "#f5a623" }}
-              isAnimationActive={true}
-              animationDuration={1000}
-              connectNulls={false}
-            />
-          </ComposedChart>
+          </BarChart>
         </ResponsiveContainer>
       </div>
 
