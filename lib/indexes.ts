@@ -59,41 +59,42 @@ export const INDEX_REGISTRY: IndexEntry[] = [
     brapi: "IFIX.SA",
     mock: { price: 0, changePercent: 0, ytdPercent: 0, peRatio: 0, divYield: 0, marketCap: 0, volume: 0 },
   },
-  // ── B3 (mock — brapi não tem) ──
+  // ── B3 (brapi v2 via ETF que segue o índice) ──
   {
     symbol: "IDIV",
     country: "Brazil",
     name: "IDIV",
-    brapi: null,
-    mock: { price: 7_241, changePercent: 0.21, ytdPercent: 6.74, peRatio: 11.4, divYield: 5.82, marketCap: 0, volume: 0 },
+    brapi: "DIVO11",       // Dividend 11 ETF (segue IDIV)
+    mock: { price: 0, changePercent: 0, ytdPercent: 0, peRatio: 0, divYield: 0, marketCap: 0, volume: 0 },
   },
+  {
+    symbol: "SMLL",
+    country: "Brazil",
+    name: "SMLL",
+    brapi: "SMAL11",       // Small Cap ETF (segue SMLL)
+    mock: { price: 0, changePercent: 0, ytdPercent: 0, peRatio: 0, divYield: 0, marketCap: 0, volume: 0 },
+  },
+  {
+    symbol: "IVBX-2",
+    country: "Brazil",
+    name: "IVBX-2",
+    brapi: "IVVB11",       // Ibovespa Privados ETF (segue IVBX-2)
+    mock: { price: 0, changePercent: 0, ytdPercent: 0, peRatio: 0, divYield: 0, marketCap: 0, volume: 0 },
+  },
+  {
+    symbol: "IEE",
+    country: "Brazil",
+    name: "IEE",
+    brapi: "^IEE",          // índice direto (pouco histórico)
+    mock: { price: 0, changePercent: 0, ytdPercent: 0, peRatio: 0, divYield: 0, marketCap: 0, volume: 0 },
+  },
+  // ── B3 (mock — brapi não tem equivalente) ──
   {
     symbol: "BDRX",
     country: "Brazil",
     name: "BDRX",
     brapi: null,
     mock: { price: 17_602, changePercent: 0.84, ytdPercent: 12.45, peRatio: 14.1, divYield: 2.18, marketCap: 0, volume: 0 },
-  },
-  {
-    symbol: "SMLL",
-    country: "Brazil",
-    name: "SMLL",
-    brapi: null,
-    mock: { price: 2_316, changePercent: -0.18, ytdPercent: -4.21, peRatio: 9.8, divYield: 3.04, marketCap: 0, volume: 0 },
-  },
-  {
-    symbol: "IVBX-2",
-    country: "Brazil",
-    name: "IVBX-2",
-    brapi: null,
-    mock: { price: 5_804, changePercent: 0.55, ytdPercent: 9.86, peRatio: 12.6, divYield: 4.12, marketCap: 0, volume: 0 },
-  },
-  {
-    symbol: "IEE",
-    country: "Brazil",
-    name: "IEE",
-    brapi: null,
-    mock: { price: 8_152, changePercent: -0.12, ytdPercent: 2.31, peRatio: 8.9, divYield: 6.41, marketCap: 0, volume: 0 },
   },
   {
     symbol: "IBXL-2",
