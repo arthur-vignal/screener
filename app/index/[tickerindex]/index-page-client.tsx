@@ -248,7 +248,7 @@ function IndexMetrics({
       { label: "Mkt cap", value: i.marketCap > 0 ? `${i.marketCap.toFixed(2)}B` : "—" },
       { label: "Volume", value: i.volume > 0 ? `${(i.volume / 1_000_000).toFixed(2)}M` : "—" },
       { label: "Country", value: i.country },
-      { label: "Source", value: i.source === "brapi" ? "brapi v2" : "mock" },
+      { label: "Source", value: i.sourceKind === "brapi" ? "brapi v2" : "mock" },
     ];
   }, [bundle]);
 

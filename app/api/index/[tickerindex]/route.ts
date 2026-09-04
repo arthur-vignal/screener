@@ -1,11 +1,14 @@
 /**
  * /api/index/[tickerindex] — bundle pra página de índice.
  *
- * Mesma estratégia do /api/indexes (brapi v2 com fallback mock),
- * mas só pro símbolo pedido. Inclui série histórica completa pra
- * alimentar o price chart.
+ * Estratégia por índice (definida em lib/indexes.ts):
+ *   1. Se `entry.brapi` existir → brapi v2 (5y de histórico)
+ *   2. Senão → mock (dados + candles sintéticos)
  *
- * Quote + historical 1y (5d) em paralelo. YTD recalculado local.
+ * Brapi v2 cobre ^BVSP (Ibovespa) e IFIX.SA (IFIX) como índice
+ * direto. Os outros 7 (SMLL, IDIV, BDRX, IEE, IVBX-2, IBXL-2, IBRA)
+ * não estão na brapi como índice. Proxy via ETF foi descontinuado
+ * em 2026-09-04 (preço do ETF diverge da pontuação do índice).
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -35,14 +38,14 @@ export async function GET(
     );
   }
 
-  return cached(`brapi:v2:index:${symbol}:v1`, 5 * 60, async () => {
-    // Mock fallback
+  return cached(`brapi:v2:index:${symbol}:v2`, 5 * 60, async () => {
+    // Mock fallback (brapi null)
     if (!entry.brapi) {
       const idx: IndexLive = {
         symbol: entry.symbol,
         name: entry.name,
         country: entry.country,
-        brapi: null,
+        source: null,
         price: entry.mock.price,
         change: entry.mock.changePercent * entry.mock.price / 100,
         changePercent: entry.mock.changePercent,
@@ -51,7 +54,7 @@ export async function GET(
         divYield: entry.mock.divYield,
         marketCap: entry.mock.marketCap,
         volume: entry.mock.volume,
-        source: "mock",
+        sourceKind: "mock",
       };
       return NextResponse.json({
         index: idx,
@@ -59,7 +62,7 @@ export async function GET(
       });
     }
 
-    // Brapi real
+    // Brapi real (5y)
     try {
       const [quoteMap, hist1y, hist5y] = await Promise.all([
         brapiQuote([entry.brapi]),
@@ -73,10 +76,16 @@ export async function GET(
           { status: 502 },
         );
       }
+      // Brapi v2 retorna candles em ordem decrescente (newest first).
+      // Normaliza pra ascendente (oldest first) antes de qualquer
+      // lookup ou retorno — senão YTD pega candle errado e o chart
+      // fica espelhado no eixo X.
+      const sorted1y = [...hist1y].sort((a, b) => a.timestamp - b.timestamp);
+      const sorted5y = [...hist5y].sort((a, b) => a.timestamp - b.timestamp);
       const yearStart = new Date();
       yearStart.setMonth(0, 1);
       yearStart.setHours(0, 0, 0, 0);
-      const firstOfYear = hist1y.find((c) => c.timestamp >= yearStart.getTime());
+      const firstOfYear = sorted1y.find((c) => c.timestamp >= yearStart.getTime());
       const ytdPercent = firstOfYear && firstOfYear.close > 0
         ? ((q.price - firstOfYear.close) / firstOfYear.close) * 100
         : 0;
@@ -84,7 +93,7 @@ export async function GET(
         symbol: entry.symbol,
         name: entry.name,
         country: entry.country,
-        brapi: entry.brapi,
+        source: entry.brapi,
         price: q.price,
         change: q.change ?? 0,
         changePercent: q.changePercent ?? 0,
@@ -93,10 +102,11 @@ export async function GET(
         divYield: 0,
         marketCap: 0,
         volume: q.volume ?? 0,
-        source: "brapi",
+        sourceKind: "brapi",
       };
-      // Usa 5y se tiver histórico suficiente, senão 1y
-      const candles = (hist5y.length >= 250 ? hist5y : hist1y).map((c) => ({
+      // Escolhe 5y se tiver histórico razoável (>= 250 candles ASC), senão 1y.
+      const source = sorted5y.length >= 250 ? sorted5y : sorted1y;
+      const candles = source.map((c) => ({
         date: c.date,
         timestamp: c.timestamp,
         open: c.open,
@@ -120,7 +130,7 @@ export async function GET(
 /** Mock: gera 252 candles (1 ano útil) com pequena variação em torno do preço. */
 function generateMockCandles(price: number, changePercent: number) {
   const out = [];
-  let value = price / (1 + changePercent / 100); // começa atrás
+  let value = price / (1 + changePercent / 100);
   const now = Date.now();
   const dayMs = 86_400_000;
   for (let i = 0; i < 252; i++) {
@@ -137,7 +147,6 @@ function generateMockCandles(price: number, changePercent: number) {
       volume: 0,
     });
   }
-  // garante que o último candle bata com o preço atual
   out[out.length - 1].close = price;
   out[out.length - 1].adjClose = price;
   return out;

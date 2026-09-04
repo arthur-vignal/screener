@@ -1,35 +1,26 @@
 /**
  * /api/indexes — bundle de índices B3 pro painel Macro.
  *
- * Estratégia por índice (definida em lib/indexes.ts):
- *   1. Se `entry.brapi` existir → brapi v2 quote + historical 1mo
- *   2. Senão → mock (sem request)
+ * Fonte primária: brapi v2. Brapi cobre ^BVSP (Ibovespa) e IFIX.SA
+ * (IFIX) como índice direto — verificado 2026-09-04 com token Pro.
+ * Os outros 7 índices (SMLL, IDIV, BDRX, IEE, IVBX-2, IBXL-2, IBRA)
+ * não estão na brapi como índice. Proxy via ETF foi descontinuado
+ * (preço do ETF diverge da pontuação do índice, Arthur pediu 2026-09-04).
  *
- * Brapi v2 só tem 2 índices B3: ^BVSP (IBOV) e IFIX.SA. Os outros
- * 7 que aparecem na UI hoje são mockados (mesmo critério do estado
- * anterior). Quando plugar yfinance, basta popular `entry.brapi` em
- * lib/indexes.ts e remover o fallback.
- *
- * YTD%: calculado client-side a partir de candles históricos anuais
- * (quando brapi tem) ou do mock (quando não tem).
+ * YTD: calculado a partir de candles anuais.
  */
 
 import { NextResponse } from "next/server";
 
 import { brapiHistorical, brapiQuote } from "@/lib/brapi";
-import { INDEX_REGISTRY, type IndexLive } from "@/lib/indexes";
 import { cached } from "@/lib/cache";
+import { INDEX_REGISTRY, type IndexLive } from "@/lib/indexes";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 25;
 
-const ONE_DAY_MS = 86_400_000;
-const ONE_YEAR_MS = 365 * ONE_DAY_MS;
-
 export async function GET(): Promise<NextResponse<{ indexes: IndexLive[] }>> {
-  // Cache 5min — alinha com o TTL de cotação.
-  return cached("brapi:v2:indexes:all:v3", 5 * 60, async () => {
-    const now = Date.now();
+  return cached("brapi:v2:indexes:all:v4", 5 * 60, async () => {
     const out: IndexLive[] = [];
 
     for (const entry of INDEX_REGISTRY) {
@@ -39,7 +30,7 @@ export async function GET(): Promise<NextResponse<{ indexes: IndexLive[] }>> {
           symbol: entry.symbol,
           name: entry.name,
           country: entry.country,
-          brapi: null,
+          source: null,
           price: entry.mock.price,
           change: entry.mock.changePercent * entry.mock.price / 100,
           changePercent: entry.mock.changePercent,
@@ -48,16 +39,15 @@ export async function GET(): Promise<NextResponse<{ indexes: IndexLive[] }>> {
           divYield: entry.mock.divYield,
           marketCap: entry.mock.marketCap,
           volume: entry.mock.volume,
-          source: "mock",
+          sourceKind: "mock",
         });
         continue;
       }
 
       // ── Brapi real ──
       try {
-        const [quoteMap, hist60d, hist1y] = await Promise.all([
+        const [quoteMap, hist1y] = await Promise.all([
           brapiQuote([entry.brapi]),
-          brapiHistorical(entry.brapi, { range: "1mo", interval: "1d" }),
           brapiHistorical(entry.brapi, { range: "1y", interval: "1d" }),
         ]);
         const q = quoteMap.get(entry.brapi);
@@ -65,36 +55,30 @@ export async function GET(): Promise<NextResponse<{ indexes: IndexLive[] }>> {
           out.push(fallbackToMock(entry));
           continue;
         }
-        const price = q.price;
-        const change = q.change ?? 0;
-        const changePercent = q.changePercent ?? 0;
-        // recent = últimos 2 dias pra sparkline
-        const recent = hist60d
-          .filter((c) => c.timestamp <= now)
-          .slice(-2)
-          .map((c) => ({ ts: c.timestamp, close: c.close }));
-        // ytd: primeiro candle do ano vs preço atual
+        // Brapi v2 retorna candles em ordem decrescente (newest first).
+        // Normaliza pra ascendente antes de qualquer lookup.
+        const sorted = [...hist1y].sort((a, b) => a.timestamp - b.timestamp);
         const yearStart = new Date();
         yearStart.setMonth(0, 1);
         yearStart.setHours(0, 0, 0, 0);
-        const firstOfYear = hist1y.find((c) => c.timestamp >= yearStart.getTime());
+        const firstOfYear = sorted.find((c) => c.timestamp >= yearStart.getTime());
         const ytdPercent = firstOfYear && firstOfYear.close > 0
-          ? ((price - firstOfYear.close) / firstOfYear.close) * 100
+          ? ((q.price - firstOfYear.close) / firstOfYear.close) * 100
           : 0;
         out.push({
           symbol: entry.symbol,
           name: entry.name,
           country: entry.country,
-          brapi: entry.brapi,
-          price,
-          change,
-          changePercent,
+          source: entry.brapi,
+          price: q.price,
+          change: q.change ?? 0,
+          changePercent: q.changePercent ?? 0,
           ytdPercent,
-          peRatio: 0,    // brapi não tem pra índice
-          divYield: 0,   // brapi não tem pra índice
-          marketCap: 0,  // brapi não tem pra índice
+          peRatio: 0,
+          divYield: 0,
+          marketCap: 0,
           volume: q.volume ?? 0,
-          source: "brapi",
+          sourceKind: "brapi",
         });
       } catch (err) {
         console.error(`[indexes] brapi failed for ${entry.brapi}:`, err);
@@ -111,7 +95,7 @@ function fallbackToMock(entry: typeof INDEX_REGISTRY[number]): IndexLive {
     symbol: entry.symbol,
     name: entry.name,
     country: entry.country,
-    brapi: null,
+    source: null,
     price: entry.mock.price,
     change: entry.mock.changePercent * entry.mock.price / 100,
     changePercent: entry.mock.changePercent,
@@ -120,6 +104,6 @@ function fallbackToMock(entry: typeof INDEX_REGISTRY[number]): IndexLive {
     divYield: entry.mock.divYield,
     marketCap: entry.mock.marketCap,
     volume: entry.mock.volume,
-    source: "mock",
+    sourceKind: "mock",
   };
 }

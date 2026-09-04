@@ -137,7 +137,7 @@ export function MacroIndicesList(): JSX.Element {
           </h2>
           <p className="mt-1 text-[12px] text-muted-foreground/70">
             Personalizável · {visibleRows.length} exibidos
-            {visibleRows.some((r) => r.source === "brapi") && (
+            {visibleRows.some((r) => r.sourceKind === "brapi") && (
               <span className="ml-2 text-[10px] text-[#4dbe95]">
                 ● brapi v2
               </span>
