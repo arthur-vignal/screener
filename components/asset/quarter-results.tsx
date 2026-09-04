@@ -346,45 +346,6 @@ function RevenueBarChart({
             barCategoryGap="20%"
             barGap={2}
           >
-            {/* Defs DENTRO do BarChart (fix PETR4 print 2026-09-03) */}
-            <defs>
-              {data.flatMap((d) =>
-                ([1, 2, 3, 4] as const).map((q) => {
-                  const key = `q${q}` as "q1" | "q2" | "q3" | "q4";
-                  const projectedKey =
-                    `q${q}Projected` as "q1Projected" | "q2Projected" | "q3Projected" | "q4Projected";
-                  // IMPORTANTE: usa `=== true` (não truthy check) pro
-                  // projectedKey. Minificação Next.js converte
-                  // `d[projectedKey]` em `e[n]` que falsifica pra false,
-                  // pulando TODOS os gradients. Ver commit 400a2c1
-                  // que introduziu este bug.
-                  if (d[key] == null || d[projectedKey] === true) return null;
-                  const stopColor = QUARTER_COLORS[q];
-                  // IMPORTANTE: id do gradient tem que ser EXATAMENTE igual
-                  // ao que o BarCell passa via `gradientId`. O BarCell
-                  // hardcoda "qr-q1-${year}" etc, então a definição tem
-                  // que usar a mesma string. Não dá pra usar `qr-${key}-`
-                  // porque key vira "q1" mas o minifier pode inlinear
-                  // `key` como número, gerando "qr-1-${year}" (sem q).
-                  // Hardcoded "qr-q${q}-${d.year}" garante match.
-                  const gradientId = `qr-q${q}-${d.year}`;
-                  return (
-                    <linearGradient
-                      key={gradientId}
-                      id={gradientId}
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop offset="0%" stopColor={stopColor} stopOpacity={1} />
-                      <stop offset="100%" stopColor={stopColor} stopOpacity={0.35} />
-                    </linearGradient>
-                  );
-                }),
-              )}
-            </defs>
-
             <CartesianGrid {...packGrid} />
             <XAxis
               dataKey="year"
@@ -472,8 +433,13 @@ function RevenueBarChart({
 
             {/* Pack 01: 4 Bar separadas (grouped). Cada uma tem gradient
                 vertical (cor do quarter → transparente embaixo). */}
+            {/* Cor sólida por quarter (sem gradient — pack 01 não funcionou
+                em prod porque Turbopack splitou chart-pack em chunks
+                lazy e o S.YT.foreground ficava undefined). Regra Arthur:
+                Q1/Q3 branco (#eeeff1), Q2/Q4 laranja (#f5a623). */}
             <Bar
               dataKey="q1"
+              fill="#eeeff1"
               radius={[3, 3, 0, 0]}
               isAnimationActive={true}
               animationDuration={800}
@@ -483,12 +449,13 @@ function RevenueBarChart({
                   key={`q1-${d.year}`}
                   value={d.q1}
                   isProjected={d.q1Projected}
-                  gradientId={`qr-q1-${d.year}`}
+                  quarterColor="#eeeff1"
                 />
               ))}
             </Bar>
             <Bar
               dataKey="q2"
+              fill="#f5a623"
               radius={[3, 3, 0, 0]}
               isAnimationActive={true}
               animationDuration={800}
@@ -498,12 +465,13 @@ function RevenueBarChart({
                   key={`q2-${d.year}`}
                   value={d.q2}
                   isProjected={d.q2Projected}
-                  gradientId={`qr-q2-${d.year}`}
+                  quarterColor="#f5a623"
                 />
               ))}
             </Bar>
             <Bar
               dataKey="q3"
+              fill="#eeeff1"
               radius={[3, 3, 0, 0]}
               isAnimationActive={true}
               animationDuration={800}
@@ -513,12 +481,13 @@ function RevenueBarChart({
                   key={`q3-${d.year}`}
                   value={d.q3}
                   isProjected={d.q3Projected}
-                  gradientId={`qr-q3-${d.year}`}
+                  quarterColor="#eeeff1"
                 />
               ))}
             </Bar>
             <Bar
               dataKey="q4"
+              fill="#f5a623"
               radius={[3, 3, 0, 0]}
               isAnimationActive={true}
               animationDuration={800}
@@ -528,7 +497,7 @@ function RevenueBarChart({
                   key={`q4-${d.year}`}
                   value={d.q4}
                   isProjected={d.q4Projected}
-                  gradientId={`qr-q4-${d.year}`}
+                  quarterColor="#f5a623"
                 />
               ))}
             </Bar>
@@ -578,27 +547,28 @@ function RevenueBarChart({
 function BarCell({
   value,
   isProjected,
-  gradientId,
+  quarterColor,
 }: {
   value: number | null;
   isProjected: boolean;
-  gradientId: string;
+  /** Cor sólida da barra (Q1/Q3 = branco #eeeff1, Q2/Q4 = laranja #f5a623). */
+  quarterColor: string;
 }): JSX.Element {
   // null = sem dado pra esse quarter nesse ano. Não renderiza.
   if (value == null) {
     return <Cell fill="transparent" stroke="none" />;
   }
-  // Pack 02: projected = contorno vazio tracejado
+  // Pack 02: projected = contorno pontilhado (fill vazio + stroke tracejado)
   if (isProjected) {
     return (
       <Cell
         fill="rgba(0,0,0,0)"
-        stroke={PACK.muted}
+        stroke="#9ba1a8"
         strokeWidth={1.5}
         strokeDasharray="3 2"
       />
     );
   }
-  // Pack 01: gradient (cor do quarter → transparente)
-  return <Cell fill={`url(#${gradientId})`} />;
+  // Cor sólida do quarter (sem gradient)
+  return <Cell fill={quarterColor} />;
 }
