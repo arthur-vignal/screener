@@ -216,17 +216,16 @@ export default function PortfolioDetailPage({
                 onRangeChange={setRange}
                 loading={isLoading && !bundle}
               />
-              {/* Add items — embaixo do chart, estilo Fey */}
-              {meta?.isOwner && (
-                <button
-                  type="button"
-                  onClick={() => setAddOpen(true)}
-                  className="mt-4 inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-white/[0.04] border border-white/10 text-foreground text-[12px] font-medium hover:bg-white/[0.08] hover:border-white/20 transition-colors"
-                >
-                  <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-                  Add items to your portfolio
-                </button>
-              )}
+              {/* Add items — embaixo do chart, estilo Fey. Mostrado
+                  sempre (UX); server-side valida ownership via POST 403. */}
+              <button
+                type="button"
+                onClick={() => setAddOpen(true)}
+                className="mt-4 inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-white/[0.04] border border-white/10 text-foreground text-[12px] font-medium hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+                Add items to your portfolio
+              </button>
             </div>
           </StaggerOnMount>
 
@@ -237,7 +236,7 @@ export default function PortfolioDetailPage({
                 holdings={holdings}
                 loading={isLoading && !bundle}
                 onAddClick={() => setAddOpen(true)}
-                canEdit={meta?.isOwner ?? false}
+                canEdit={true}
               />
             </StaggerOnMount>
             <StaggerOnMount className="flex-1 min-h-0 flex">
@@ -333,8 +332,20 @@ function HoldingsCard({
         <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
           Stocks
         </h3>
-        <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60 font-semibold">
-          {holdings.length} ativos
+        <div className="flex items-center gap-2">
+          <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60 font-semibold">
+            {holdings.length} ativos
+          </div>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={onAddClick}
+              aria-label="Adicionar ativo"
+              className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-white/[0.04] border border-white/10 text-muted-foreground/85 hover:bg-white/[0.08] hover:text-foreground transition-colors"
+            >
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+            </button>
+          )}
         </div>
       </div>
       <div className="divide-y divide-white/[0.04]">

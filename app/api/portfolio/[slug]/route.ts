@@ -69,12 +69,12 @@ export async function GET(
   }
 
   // Pega o portfolio (se for do user OU público).
-  const rows = await query<PortfolioRow>(
+  const rows = await query<PortfolioRow & { owner_id_text: string }>(
     `SELECT id, slug, name, description, initial_value, is_public,
-            created_at, updated_at, owner_id
+            created_at, updated_at, owner_id::text AS owner_id_text
      FROM portfolios
      WHERE slug = $1
-       AND (owner_id = $2 OR is_public = TRUE)
+       AND (owner_id::text = $2 OR is_public = TRUE)
      LIMIT 1`,
     [slug, user.userId],
   );
@@ -237,7 +237,14 @@ export async function GET(
       initialValue: portfolio.initial_value,
       createdAt: portfolio.created_at,
       isPublic: portfolio.is_public,
-      isOwner: portfolio.owner_id === user.userId,
+      isOwner: portfolio.owner_id_text === user.userId,
+      // debug: mostra ambos os IDs pra investigar bug do isOwner
+      _debug: {
+        portfolioOwnerId: portfolio.owner_id_text,
+        sessionUserId: user.userId,
+        ownerIdType: typeof portfolio.owner_id_text,
+        userIdType: typeof user.userId,
+      },
     },
     summary: {
       totalValue,
