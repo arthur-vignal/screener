@@ -40,11 +40,15 @@ import {
   ArrowUp,
   ChevronLeft,
   ExternalLink,
+  LayoutGrid,
   LineChart,
+  Maximize2,
   Plus,
+  SlidersHorizontal,
 } from "lucide-react";
 
-import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
+import { FeyDock } from "@/components/foundation/fey-dock";
+import { FeyFooter } from "@/components/foundation/fey-footer";
 import {
   StaggerOnMount,
   staggerParentVariants,
@@ -55,6 +59,7 @@ import {
   type RangeKey,
 } from "@/components/portfolio/portfolio-value-chart";
 import { AddHoldingDialog } from "@/components/portfolio/add-holding-dialog";
+import { RelevantEarnings } from "@/components/portfolio/relevant-earnings";
 import { TickerLogo } from "@/components/foundation/ticker-logo";
 import type { NewsItem } from "@/components/home/news-feed";
 import { cn } from "@/lib/utils";
@@ -141,15 +146,12 @@ export default function PortfolioDetailPage({
         variants={staggerParentVariants as any}
         initial="hidden"
         animate="show"
-        className="w-[90%] mx-auto py-6 pb-32"
+        className="w-[90%] mx-auto py-6"
       >
-        {/* Header — Fey style: logo + nome à esquerda, holdings + label à direita */}
+        {/* Header — Fey: Portfolio / {name} à esquerda, holdings à direita */}
         <StaggerOnMount>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3 min-w-0">
-              {/* "Portfolio" como h1 SEMPRE (não o nome do portfolio) —
-                  alinha com o print onde "Portfolio" é o título da rota
-                  e o nome do portfolio vai pro h2. Header mais limpo. */}
               <h1 className="text-[32px] font-semibold tracking-tight text-foreground leading-[1.1]">
                 Portfolio
               </h1>
@@ -169,43 +171,46 @@ export default function PortfolioDetailPage({
                   {holdings.length} Holdings
                 </span>
               )}
-              {meta?.isPublic && (
-                <span className="px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.08] text-[10px] uppercase tracking-wide text-muted-foreground/85 font-medium">
-                  Watchlist
-                </span>
-              )}
             </div>
           </div>
         </StaggerOnMount>
 
-        {/* Saudação + valor total + delta (mesmo padrão do /home) */}
+        {/* Valor total + delta (mesmo padrão do /home) */}
         <StaggerOnMount>
-          <div className="mb-5 flex items-end justify-between gap-4">
-            <div>
-              <ValueAndDelta
-                totalValue={summary?.totalValue ?? null}
-                change={summary?.changeToday ?? null}
-                changePercent={summary?.changeTodayPercent ?? null}
-                loading={isLoading && !bundle}
-              />
-            </div>
+          <div className="mb-6">
+            <ValueAndDelta
+              totalValue={summary?.totalValue ?? null}
+              change={summary?.changeToday ?? null}
+              changePercent={summary?.changeTodayPercent ?? null}
+              loading={isLoading && !bundle}
+            />
             {meta?.description && (
-              <p className="text-[12px] text-muted-foreground/70 max-w-md text-right leading-relaxed">
+              <p className="mt-2 text-[12px] text-muted-foreground/70 max-w-2xl leading-relaxed">
                 {meta.description}
               </p>
             )}
           </div>
         </StaggerOnMount>
 
-        {/* Grid 2-col: chart à esquerda, holdings + news empilhados à direita */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-5 items-stretch">
-          {/* Coluna esquerda: chart + botão "Add items" embutido */}
+        {/* Grid 2-col estilo Fey: chart à esquerda, watchlists à direita */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_440px] gap-5 items-start">
+          {/* Coluna esquerda: card do chart com "Watchlist vs markets" header */}
           <StaggerOnMount>
             <div className="rounded-2xl border border-white/10 bg-[#101116] p-5">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
-                  Variação do portfolio
-                </h3>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
+                    Watchlist vs markets
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setAddOpen(true)}
+                    className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-white/[0.04] border border-white/10 text-foreground text-[11px] font-medium hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                  >
+                    <Plus className="h-3 w-3" strokeWidth={2} />
+                    Add items
+                  </button>
+                </div>
                 <div className="text-[11px] text-muted-foreground/70">
                   {bundle?.performance.candles.length ?? 0} pontos
                 </div>
@@ -216,21 +221,44 @@ export default function PortfolioDetailPage({
                 onRangeChange={setRange}
                 loading={isLoading && !bundle}
               />
-              {/* Add items — embaixo do chart, estilo Fey. Mostrado
-                  sempre (UX); server-side valida ownership via POST 403. */}
-              <button
-                type="button"
-                onClick={() => setAddOpen(true)}
-                className="mt-4 inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-white/[0.04] border border-white/10 text-foreground text-[12px] font-medium hover:bg-white/[0.08] hover:border-white/20 transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-                Add items to your portfolio
-              </button>
             </div>
           </StaggerOnMount>
 
-          {/* Coluna direita: holdings + news empilhados */}
-          <div className="flex flex-col gap-5 min-h-0">
+          {/* Coluna direita: header "Your watchlists" + Stocks + Relevant earnings */}
+          <div className="flex flex-col gap-5">
+            <StaggerOnMount>
+              <div className="flex items-center justify-between">
+                <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
+                  Your watchlists
+                </h3>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    aria-label="Fullscreen"
+                    title="Fullscreen"
+                    className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground/70 hover:bg-white/[0.04] hover:text-foreground transition-colors"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Filtros"
+                    title="Filtros"
+                    className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground/70 hover:bg-white/[0.04] hover:text-foreground transition-colors"
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Layout"
+                    title="Layout"
+                    className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground/70 hover:bg-white/[0.04] hover:text-foreground transition-colors"
+                  >
+                    <LayoutGrid className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  </button>
+                </div>
+              </div>
+            </StaggerOnMount>
             <StaggerOnMount>
               <HoldingsCard
                 holdings={holdings}
@@ -238,6 +266,9 @@ export default function PortfolioDetailPage({
                 onAddClick={() => setAddOpen(true)}
                 canEdit={true}
               />
+            </StaggerOnMount>
+            <StaggerOnMount>
+              <RelevantEarnings symbols={holdings.map((h) => h.symbol)} />
             </StaggerOnMount>
             <StaggerOnMount className="flex-1 min-h-0 flex">
               <PortfolioNewsColumn slug={slug} />
@@ -254,7 +285,8 @@ export default function PortfolioDetailPage({
         currentWeightSum={holdings.reduce((s, h) => s + h.weight, 0)}
       />
 
-      <AnimatedFloatingDock />
+      <FeyDock />
+      <FeyFooter />
     </div>
   );
 }

@@ -45,17 +45,14 @@ type Holding = {
   weight: number;
 };
 
-type Range = "1D" | "1W" | "1M" | "3M" | "YTD" | "1Y" | "5Y" | "All";
+type Range = "1D" | "7D" | "1M" | "1Y" | "Max";
 
 const RANGE_TO_DAYS: Record<Range, number> = {
   "1D": 1,
-  "1W": 7,
+  "7D": 7,
   "1M": 30,
-  "3M": 90,
-  "YTD": 365,
   "1Y": 365,
-  "5Y": 1825,
-  All: 1825,
+  Max: 1825,
 };
 
 export async function GET(
@@ -221,15 +218,7 @@ export async function GET(
     const allTs = [...tsSet].sort((a, b) => a - b);
     // Filtra pela janela do range escolhido.
     const cutoff = Date.now() - days * 86_400_000;
-    const windowTs =
-      validRange === "YTD"
-        ? (() => {
-            const yearStart = new Date();
-            yearStart.setMonth(0, 1);
-            yearStart.setHours(0, 0, 0, 0);
-            return allTs.filter((t) => t >= yearStart.getTime());
-          })()
-        : allTs.filter((t) => t >= cutoff);
+    const windowTs = allTs.filter((t) => t >= cutoff);
 
     for (const ts of windowTs) {
       let value = 0;

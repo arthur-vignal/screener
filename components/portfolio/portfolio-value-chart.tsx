@@ -34,7 +34,7 @@ import { Skeleton } from "@/components/foundation/skeleton";
 import { CHART_COLORS, CHART_FONT, CHART_STROKE, axisProps, yAxisProps } from "@/lib/chart-theme";
 import { cn } from "@/lib/utils";
 
-export type RangeKey = "1D" | "1W" | "1M" | "3M" | "YTD" | "1Y" | "5Y" | "All";
+export type RangeKey = "1D" | "7D" | "1M" | "1Y" | "Max";
 
 type Point = { ts: number; value: number };
 
@@ -46,7 +46,7 @@ type Props = {
   className?: string;
 };
 
-const RANGES: RangeKey[] = ["1D", "1W", "1M", "3M", "YTD", "1Y", "5Y", "All"];
+const RANGES: RangeKey[] = ["1D", "7D", "1M", "1Y", "Max"];
 
 export function PortfolioValueChart({
   points, range, onRangeChange, loading, className,
