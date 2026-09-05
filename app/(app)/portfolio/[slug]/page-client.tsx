@@ -47,8 +47,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 
-import { FeyDock } from "@/components/foundation/fey-dock";
-import { FeyFooter } from "@/components/foundation/fey-footer";
+import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
 import {
   StaggerOnMount,
   staggerParentVariants,
@@ -285,8 +284,7 @@ export default function PortfolioDetailPage({
         currentWeightSum={holdings.reduce((s, h) => s + h.weight, 0)}
       />
 
-      <FeyDock />
-      <FeyFooter />
+      <AnimatedFloatingDock />
     </div>
   );
 }
