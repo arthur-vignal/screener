@@ -9,26 +9,79 @@
  *   - Se já existe posição pra esse symbol, **substitui** (não merge).
  *   - Validação: qty > 0, avg_price > 0, purchased_at válido (não futuro,
  *     não anterior a 2010).
+ *   - A coluna `weight` (NOT NULL legado) é recalculada como
+ *     `qty × avg_price / SUM(qty × avg_price over portfolio)` após cada
+ *     INSERT/UPDATE. Mantida pra retrocompat.
  *
  * DELETE `{ symbol }` → remove posição do portfolio.
  *
  * Auth: obrigatório, e o user tem que ser dono do portfolio.
- *
- * NOTA: campo `weight` foi descontinuado como input. Continua existindo
- * na tabela (calculado: qty × avg_price / SUM over portfolio) pra
- * retrocompat com qualquer leitura existente.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
-import { insert, query, remove } from "@/lib/db";
+import { query } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 type PortfolioRow = { id: number; owner_id: string };
 
 const EARLIEST_PURCHASE_SEC = 1262304000; // 2010-01-01 00:00:00 UTC
+
+/**
+ * Recalcula `weight` (fração 0-1) de todas as posições do portfolio.
+ * Necessário porque `weight = qty × avg_price / SUM(qty × avg_price)`
+ * muda quando uma posição é inserida/atualizada/removida.
+ *
+ * Estratégia: 1 query de SELECT pra somar tudo + N updates.
+ * Pra portfolios ≤50 holdings isso é barato (1 batch query).
+ */
+async function recalculateWeights(portfolioId: number): Promise<void> {
+  const sb = (await import("@/lib/supabase")).supabaseAdmin();
+
+  // Soma total de posição (qty × avg_price) — pode ser 0 se portfolio vazio.
+  const sumRows = await query<{ total: number | null }>(
+    `SELECT COALESCE(SUM(qty * avg_price), 0)::DOUBLE PRECISION AS total
+     FROM portfolio_holdings WHERE portfolio_id = $1`,
+    [portfolioId],
+  );
+  const total = sumRows[0]?.total ?? 0;
+
+  // Pega todas as posições do portfolio.
+  const positions = await query<{ symbol: string; qty: number; avg_price: number }>(
+    `SELECT symbol, qty, avg_price FROM portfolio_holdings
+     WHERE portfolio_id = $1`,
+    [portfolioId],
+  );
+
+  if (total <= 0) {
+    // Portfolio vazio ou todas as posições têm avg_price=0 (edge case):
+    // zera todos os weights pra ficar consistente.
+    const { error } = await sb
+      .from("portfolio_holdings")
+      .update({ weight: 0 })
+      .eq("portfolio_id", portfolioId);
+    if (error) {
+      console.error("[recalculateWeights] zero-out failed:", error.message);
+    }
+    return;
+  }
+
+  // Update em batch — Supabase REST aceita array de updates via
+  // upsert, mas é mais limpo fazer update um por um (≤50 holdings).
+  for (const p of positions) {
+    const weight = (p.qty * p.avg_price) / total;
+    const { error } = await sb
+      .from("portfolio_holdings")
+      .update({ weight })
+      .eq("portfolio_id", portfolioId)
+      .eq("symbol", p.symbol);
+    if (error) {
+      console.error(`[recalculateWeights] update ${p.symbol} failed:`, error.message);
+    }
+  }
+}
 
 export async function POST(
   req: NextRequest,
@@ -113,6 +166,8 @@ export async function POST(
         qty,
         avg_price: avgPrice,
         purchased_at: purchasedAt,
+        // weight temporário, recalculado abaixo pra todas as posições.
+        weight: 0,
       })
       .eq("portfolio_id", portfolioId)
       .eq("symbol", symbol);
@@ -122,6 +177,7 @@ export async function POST(
         { status: 500 },
       );
     }
+    await recalculateWeights(portfolioId);
     return NextResponse.json({
       symbol,
       qty,
@@ -131,13 +187,26 @@ export async function POST(
     });
   }
 
-  await insert("portfolio_holdings", {
-    portfolio_id: portfolioId,
-    symbol,
-    qty,
-    avg_price: avgPrice,
-    purchased_at: purchasedAt,
-  });
+  // INSERT: `weight` é NOT NULL legado — colocamos 0 e recalculamos depois
+  // pra todas as posições do portfolio de uma vez (incluindo essa nova).
+  const { error: insertError } = await sb
+    .from("portfolio_holdings")
+    .insert({
+      portfolio_id: portfolioId,
+      symbol,
+      qty,
+      avg_price: avgPrice,
+      purchased_at: purchasedAt,
+      weight: 0,
+    });
+  if (insertError) {
+    return NextResponse.json(
+      { error: `Falha ao adicionar: ${insertError.message}` },
+      { status: 500 },
+    );
+  }
+
+  await recalculateWeights(portfolioId);
 
   return NextResponse.json(
     {
@@ -177,9 +246,19 @@ export async function DELETE(
   }
   const portfolioId = portfolios[0]!.id;
 
-  const deleted = await remove("portfolio_holdings", {
-    portfolio_id: portfolioId,
-    symbol,
-  });
-  return NextResponse.json({ symbol, deleted });
+  const { error: deleteError, count } = await (await import("@/lib/supabase"))
+    .supabaseAdmin()
+    .from("portfolio_holdings")
+    .delete({ count: "exact" })
+    .eq("portfolio_id", portfolioId)
+    .eq("symbol", symbol);
+  if (deleteError) {
+    return NextResponse.json(
+      { error: `Falha ao remover: ${deleteError.message}` },
+      { status: 500 },
+    );
+  }
+  // Recalcula weights das posições restantes.
+  await recalculateWeights(portfolioId);
+  return NextResponse.json({ symbol, deleted: count ?? 0 });
 }
