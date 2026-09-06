@@ -31,28 +31,29 @@ ALTER TABLE public.portfolio_holdings
 -- usuário pode editar cada holding pela UI pra corrigir).
 DO $$
 DECLARE
-  p RECORD;
-  h RECORD;
+  pf RECORD;        -- portfolio (renomeado pra não conflitar com alias da tabela 'portfolios p')
+  hd RECORD;        -- holding
 BEGIN
-  FOR p IN
-    SELECT ph.portfolio_id, p.initial_value
+  FOR pf IN
+    SELECT ph.portfolio_id, pt.initial_value
     FROM public.portfolio_holdings ph
-    JOIN public.portfolios p ON p.id = ph.portfolio_id
+    JOIN public.portfolios pt ON pt.id = ph.portfolio_id
     WHERE ph.qty IS NULL
-    GROUP BY ph.portfolio_id, p.initial_value
+    GROUP BY ph.portfolio_id, pt.initial_value
   LOOP
-    FOR h IN
+    FOR hd IN
       SELECT symbol, weight FROM public.portfolio_holdings
-      WHERE portfolio_id = p.portfolio_id
+      WHERE portfolio_id = pf.portfolio_id
     LOOP
       UPDATE public.portfolio_holdings
-      SET qty = h.weight * p.initial_value,
+      SET qty = hd.weight * pf.initial_value,
           avg_price = 1.0,
           purchased_at = COALESCE(
-            (SELECT EXTRACT(EPOCH FROM p2.created_at)::BIGINT FROM public.portfolios p2 WHERE p2.id = p.portfolio_id),
+            -- p2.created_at já é bigint (unix seconds), não precisa de EXTRACT
+            (SELECT p2.created_at FROM public.portfolios p2 WHERE p2.id = pf.portfolio_id),
             EXTRACT(EPOCH FROM NOW())::BIGINT
           )
-      WHERE portfolio_id = p.portfolio_id AND symbol = h.symbol;
+      WHERE portfolio_id = pf.portfolio_id AND symbol = hd.symbol;
     END LOOP;
   END LOOP;
 END $$;
