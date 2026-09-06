@@ -5,6 +5,12 @@
  *   - name, slug, holdings count
  *   - totalValue = soma (weight × preço atual) via brapi batch
  *   - changeToday = soma (weight × variação% hoje × valor posição)
+ *   - preview: candles intraday do último pregão (5m), normalizado
+ *     pelo preço de referência (mesmo critério do
+ *     /api/portfolio/[slug]?range=1D — valor patrimonial sobre a
+ *     fração do capital alocada a cada holding).
+ *   - holdings: array com symbol/price/changePercent/weight/longName
+ *     pra popular a lista top-3 do card "Carteira" na /home.
  *
  * Se o user não tem portfolio, retorna `hasPortfolio: false` (a home
  * renderiza o empty state do PortfolioCard).
@@ -22,8 +28,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { getBrapiQuoteBatch } from "@/lib/brapi-quote-batch";
+import { brapiHistorical, type BrapiCandle } from "@/lib/brapi";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 type Holding = {
   symbol: string;
@@ -36,6 +44,32 @@ type PortfolioRow = {
   name: string;
   initial_value: number;
 };
+
+type SummaryHolding = {
+  symbol: string;
+  weight: number;
+  price: number | null;
+  changePercent: number | null;
+  longName: string | null;
+};
+
+type PreviewPoint = { ts: number; value: number };
+
+const HOUR = 3600 * 1000;
+const BRT_OFFSET_HOURS = -3;
+
+function isoDateInBRT(timestamp: number): string {
+  const d = new Date(timestamp + BRT_OFFSET_HOURS * HOUR);
+  return d.toISOString().slice(0, 10);
+}
+
+function isIntradayTime(ts: number): boolean {
+  const brt = new Date(ts + BRT_OFFSET_HOURS * HOUR);
+  const day = brt.getUTCDay();
+  if (day === 0 || day === 6) return false;
+  const t = brt.getUTCHours() * 60 + brt.getUTCMinutes();
+  return t >= 10 * 60 && t <= 17 * 60 + 45;
+}
 
 export async function GET(_req: NextRequest): Promise<NextResponse> {
   const user = await getCurrentUser();
@@ -65,6 +99,7 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
     [portfolio.id],
   );
 
+  // Sem holdings: devolve shell sem preview nem holdings.
   if (holdings.length === 0) {
     return NextResponse.json({
       hasPortfolio: true,
@@ -73,6 +108,9 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
       totalValue: portfolio.initial_value,
       changeToday: 0,
       changeTodayPercent: 0,
+      currency: "BRL",
+      holdings: [],
+      preview: [],
     });
   }
 
@@ -80,29 +118,46 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
   const symbols = holdings.map((h) => h.symbol);
   const quoteMap = await getBrapiQuoteBatch(symbols);
 
+  // ── Calcular valor + variação do dia ──
   let totalValue = 0;
   let changeToday = 0;
   for (const h of holdings) {
     const q = quoteMap.get(h.symbol);
     if (!q?.price) continue;
-    // weight é fração 0-1; posição = weight × initial_value
     const positionValue = h.weight * portfolio.initial_value;
     totalValue += positionValue;
     if (q.change != null) {
-      // Variação do dia em BRL = position × (change / price)
-      // (change é absoluto, price é unitário)
       const posChange = (q.change / q.price) * positionValue;
       changeToday += posChange;
     }
   }
 
-  // Se nenhum símbolo tinha cotação (todos falharam), usa initial.
   if (totalValue === 0) {
     totalValue = portfolio.initial_value;
   }
-
   const changeTodayPercent =
     totalValue > 0 ? (changeToday / totalValue) * 100 : 0;
+
+  // ── Holdings enriquecidos (pra top-3 do card) ──
+  const summaryHoldings: SummaryHolding[] = holdings.map((h) => {
+    const q = quoteMap.get(h.symbol);
+    return {
+      symbol: h.symbol,
+      weight: h.weight,
+      price: q?.price ?? null,
+      changePercent: q?.changePercent ?? null,
+      longName: q?.longName ?? null,
+    };
+  });
+
+  // ── Preview 1 pregão: candles intraday 5m + normalização ──
+  // Estratégia: pra cada holding, busca candles 5m dos últimos 5 dias,
+  // filtra pra horário de pregão, pega candles do último dia BRT com
+  // dados, e usa como série normalizada por close_ref (igual
+  // /api/portfolio/[slug]). Junta timestamps em intersecção de TODOS
+  // os holdings que tenham dados — assim a curva final tem 1 ponto por
+  // candle horário comum.
+  const preview = await buildPreview(holdings, portfolio.initial_value);
 
   return NextResponse.json({
     hasPortfolio: true,
@@ -111,5 +166,93 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
     totalValue,
     changeToday,
     changeTodayPercent,
+    currency: "BRL",
+    holdings: summaryHoldings,
+    preview,
   });
+}
+
+/**
+ * Constrói a série de preview do último pregão.
+ *
+ * Retorna array vazio se nenhum holding tem candles intraday
+ * disponíveis (ex: fim de semana antes do primeiro pregão útil, ou
+ * brapi retornando vazio).
+ */
+async function buildPreview(
+  holdings: Holding[],
+  initialValue: number,
+): Promise<PreviewPoint[]> {
+  // Batches de 5 (limit brapi /historical é menor, então保守).
+  const BATCH = 5;
+  const candlesBySymbol = new Map<string, BrapiCandle[]>();
+  for (let i = 0; i < holdings.length; i += BATCH) {
+    const batch = holdings.slice(i, i + BATCH);
+    const results = await Promise.allSettled(
+      batch.map(async (h) => {
+        const all = await brapiHistorical(h.symbol, {
+          range: "5d",
+          interval: "5m",
+        });
+        const valid = all.filter((c) => isIntradayTime(c.timestamp));
+        if (valid.length === 0) return { sym: h.symbol, candles: [] as BrapiCandle[] };
+        const lastDay = isoDateInBRT(valid[valid.length - 1]!.timestamp);
+        const sameDay = valid
+          .filter((c) => isoDateInBRT(c.timestamp) === lastDay)
+          .sort((a, b) => a.timestamp - b.timestamp);
+        return { sym: h.symbol, candles: sameDay };
+      }),
+    );
+    for (const r of results) {
+      if (r.status === "fulfilled") candlesBySymbol.set(r.value.sym, r.value.candles);
+    }
+  }
+
+  // Filtra holdings que têm candles.
+  const usable = holdings.filter(
+    (h) => (candlesBySymbol.get(h.symbol)?.length ?? 0) > 1,
+  );
+  if (usable.length === 0) return [];
+
+  // Ref close = primeiro candle (ASC) de cada holding.
+  const refClose = new Map<string, number>();
+  for (const h of usable) {
+    const c = candlesBySymbol.get(h.symbol)!;
+    const first = c[0]!;
+    if (first.close > 0) refClose.set(h.symbol, first.close);
+  }
+
+  // Intersecção de timestamps: usa o set do primeiro holding que tem
+  // candles. Cada ponto = soma (weight × initial × close(t)/ref) sobre
+  // todos os holdings que têm candle naquele timestamp.
+  const firstSym = usable[0]!.symbol;
+  const tsList = candlesBySymbol.get(firstSym)!.map((c) => c.timestamp);
+
+  // Pré-indexa candles por symbol/timestamp pra lookup O(1).
+  const index = new Map<string, Map<number, BrapiCandle>>();
+  for (const h of usable) {
+    const m = new Map<number, BrapiCandle>();
+    for (const c of candlesBySymbol.get(h.symbol)!) m.set(c.timestamp, c);
+    index.set(h.symbol, m);
+  }
+
+  const out: PreviewPoint[] = [];
+  for (const ts of tsList) {
+    let value = 0;
+    let count = 0;
+    for (const h of usable) {
+      const ref = refClose.get(h.symbol);
+      if (ref == null) continue;
+      const c = index.get(h.symbol)?.get(ts);
+      if (!c) continue;
+      value += h.weight * initialValue * (c.close / ref);
+      count += 1;
+    }
+    // Só inclui ponto onde pelo menos 50% dos holdings têm candle
+    // (evita gráfico distorcido quando brapi perdeu tickers no meio).
+    if (count >= Math.ceil(usable.length / 2)) {
+      out.push({ ts, value });
+    }
+  }
+  return out;
 }

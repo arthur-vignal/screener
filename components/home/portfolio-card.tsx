@@ -3,24 +3,33 @@
 /**
  * PortfolioCard — hero card da coluna esquerda da /home.
  *
- * Saudação personalizada + variação total do portfólio hoje + CTA
- * "Acessar portfólio". Skeleton quando carregando, empty quando
- * o usuário ainda não tem portfólio.
+ * Layout (commit 1 — 2026-09-06):
+ *   - Header: "Seu portfolio valorizou x%" + chip liquid glass
+ *     color coded da variação (verde/vermelho muted)
+ *   - Sparkline preview do último pregão (~120×48px)
+ *   - Lista top-3 holdings com dropdown "24h var" / "Alocação"
+ *   - CTA "Acessar portfólio"
  *
  * Estados:
- *  - loading: skeleton com forma do conteúdo
- *  - empty:   sem portfólio → CTA "Criar portfólio"
- *  - ready:   mostra saudação + variação + CTA "Acessar portfólio"
- *  - error:   mensagem + retry
+ *   - loading: skeleton com forma do conteúdo
+ *   - empty:   sem portfólio → CTA "Criar carteira"
+ *   - ready:   novo layout
+ *   - error:   mensagem + retry
  */
 
 import Link from "next/link";
-import { ArrowRight, Briefcase } from "lucide-react";
+import { ArrowRight, ArrowUp, ArrowDown, Briefcase } from "lucide-react";
 import type { JSX } from "react";
 
-import { Delta } from "@/components/foundation/delta";
+import { Sparkline } from "@/components/foundation/sparkline";
 import { Skeleton } from "@/components/foundation/skeleton";
+import {
+  PortfolioTopHoldings,
+  type TopHolding,
+} from "@/components/home/portfolio-top-holdings";
 import { cn } from "@/lib/utils";
+
+export type PreviewPoint = { ts: number; value: number };
 
 export type PortfolioCardState =
   | { kind: "loading" }
@@ -32,6 +41,8 @@ export type PortfolioCardState =
       changeToday: number;
       changeTodayPercent: number;
       currency: "BRL" | "USD";
+      holdings: TopHolding[];
+      preview: PreviewPoint[];
     }
   | { kind: "error" };
 
@@ -39,14 +50,6 @@ type Props = {
   state: PortfolioCardState;
   className?: string;
 };
-
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 6) return "Boa madrugada";
-  if (h < 12) return "Bom dia";
-  if (h < 18) return "Boa tarde";
-  return "Boa noite";
-}
 
 export function PortfolioCard({ state, className }: Props): JSX.Element {
   if (state.kind === "loading") return <LoadingCard className={className} />;
@@ -72,43 +75,78 @@ function ReadyCard({
     maximumFractionDigits: 2,
   });
 
+  const pct = state.changeTodayPercent;
+  const positive = pct >= 0;
+  const Icon = positive ? ArrowUp : ArrowDown;
+  // Liquid glass color coded: fundo muted da cor + texto na cor cheia
+  const chipBg = positive
+    ? "bg-[var(--positive-soft)] text-[var(--positive)]"
+    : "bg-[var(--negative-soft)] text-[var(--negative)]";
+
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-6",
+        "rounded-2xl border border-white/10 bg-[#101116] p-6 flex flex-col gap-5",
         className
       )}
     >
-      <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">
-        Carteira
-      </div>
-
-      <p className="text-[15px] text-foreground leading-snug">
-        {greeting()},{" "}
-        <span className="font-semibold">{state.name}</span>.
-      </p>
-
-      <div className="mt-5">
-        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85 mb-1.5">
-          Patrimônio
+      {/* Header: "Carteira" eyebrow + saudação nova */}
+      <div>
+        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">
+          Carteira
         </div>
-        <div className="text-[32px] font-semibold tabular-nums text-foreground leading-none">
+
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <h2 className="text-[16px] font-medium text-foreground leading-snug max-w-[200px]">
+            Seu portfolio valorizou{" "}
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 align-middle px-2 py-0.5 rounded-full text-[13px] font-semibold tabular-nums backdrop-blur-md",
+                chipBg
+              )}
+            >
+              <Icon className="h-3 w-3" strokeWidth={2.5} />
+              {positive ? "+" : "−"}
+              {Math.abs(pct).toFixed(2)}%
+            </span>{" "}
+            hoje
+          </h2>
+        </div>
+
+        <div className="mt-4 text-[28px] font-semibold tabular-nums text-foreground leading-none tracking-tight">
           {valueFormatted}
         </div>
-        <div className="mt-2.5 flex items-center gap-1.5 text-[13px]">
-          <Delta
-            value={state.changeTodayPercent}
-            unit="percent"
-            size="md"
-          />
-          <span className="text-muted-foreground">hoje</span>
-        </div>
       </div>
 
+      {/* Sparkline preview do último pregão */}
+      {state.preview.length >= 2 && (
+        <div
+          className={cn(
+            "rounded-lg px-3 py-2.5 border",
+            positive
+              ? "bg-[var(--positive-soft)] border-[var(--positive)]/15"
+              : "bg-[var(--negative-soft)] border-[var(--negative)]/15"
+          )}
+        >
+          <Sparkline
+            points={state.preview.map((p) => p.value)}
+            stroke={positive ? "var(--positive)" : "var(--negative)"}
+            fill={positive ? "var(--positive)" : "var(--negative)"}
+            height={48}
+            strokeWidth={1.5}
+            ariaLabel={`Variação do portfolio no último pregão: ${positive ? "+" : "−"}${Math.abs(pct).toFixed(2)}%`}
+          />
+        </div>
+      )}
+
+      {/* Top 3 holdings */}
+      <PortfolioTopHoldings holdings={state.holdings} />
+
+      {/* CTA */}
       <Link
         href="/portfolio"
         className={cn(
-          "mt-6 inline-flex items-center justify-center gap-1.5 w-full h-10",
+          "mt-auto inline-flex items-center justify-center gap-1.5 w-full h-10",
           "rounded-md border border-white/10 bg-white/[0.04]",
           "text-[13px] font-medium text-foreground",
           "hover:bg-white/[0.08] hover:border-white/20",
@@ -173,14 +211,15 @@ function LoadingCard({ className }: { className?: string }): JSX.Element {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-6",
+        "rounded-2xl border border-white/10 bg-[#101116] p-6 flex flex-col gap-5",
         className
       )}
     >
-      <Skeleton className="h-3 w-20 mb-4" />
-      <Skeleton className="h-4 w-48 mb-5" />
-      <Skeleton className="h-3 w-24 mb-2" />
-      <Skeleton className="h-8 w-40 mb-4" />
+      <Skeleton className="h-3 w-20" />
+      <Skeleton className="h-5 w-44" />
+      <Skeleton className="h-8 w-32" />
+      <Skeleton className="h-12 w-full" roundedMd />
+      <Skeleton className="h-3 w-24" />
       <Skeleton className="h-10 w-full" roundedMd />
     </div>
   );
@@ -219,4 +258,12 @@ function ErrorCard({ className }: { className?: string }): JSX.Element {
       </button>
     </div>
   );
+}
+
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 6) return "Boa madrugada";
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
 }
