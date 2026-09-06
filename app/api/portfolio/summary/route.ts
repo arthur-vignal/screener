@@ -35,7 +35,8 @@ export const maxDuration = 30;
 
 type Holding = {
   symbol: string;
-  weight: number;
+  qty: number;
+  avg_price: number;
 };
 
 type PortfolioRow = {
@@ -95,7 +96,7 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
 
   // Pega os holdings desse portfolio.
   const holdings = await query<Holding>(
-    `SELECT symbol, weight FROM portfolio_holdings WHERE portfolio_id = $1`,
+    `SELECT symbol, qty, avg_price FROM portfolio_holdings WHERE portfolio_id = $1`,
     [portfolio.id],
   );
 
@@ -120,12 +121,14 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
   const quoteMap = await getBrapiQuoteBatch(symbols);
 
   // ── Calcular valor + variação do dia ──
+  // Modelo novo: totalValue = Σ(qty × preço atual). investedValue =
+  // Σ(qty × avg_price) pra ter referência pro chart preview.
   let totalValue = 0;
   let changeToday = 0;
   for (const h of holdings) {
     const q = quoteMap.get(h.symbol);
     if (!q?.price) continue;
-    const positionValue = h.weight * portfolio.initial_value;
+    const positionValue = h.qty * q.price;
     totalValue += positionValue;
     if (q.change != null) {
       const posChange = (q.change / q.price) * positionValue;
@@ -142,23 +145,21 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
   // ── Holdings enriquecidos (pra top-3 do card) ──
   const summaryHoldings: SummaryHolding[] = holdings.map((h) => {
     const q = quoteMap.get(h.symbol);
+    const invested = h.qty * h.avg_price;
+    const current = q?.price != null ? h.qty * q.price : null;
+    const weight = totalValue > 0 && current != null ? current / totalValue : 0;
     return {
       symbol: h.symbol,
-      weight: h.weight,
+      weight,
       price: q?.price ?? null,
       changePercent: q?.changePercent ?? null,
       longName: q?.longName ?? null,
     };
   });
 
-  // ── Preview 1 pregão: candles intraday 5m + normalização ──
-  // Estratégia: pra cada holding, busca candles 5m dos últimos 5 dias,
-  // filtra pra horário de pregão, pega candles do último dia BRT com
-  // dados, e usa como série normalizada por close_ref (igual
-  // /api/portfolio/[slug]). Junta timestamps em intersecção de TODOS
-  // os holdings que tenham dados — assim a curva final tem 1 ponto por
-  // candle horário comum.
-  const preview = await buildPreview(holdings, portfolio.initial_value);
+  // ── Preview 1 pregão: candles intraday 5m + soma(qty × close) ──
+  // Sem normalização: valor patrimonial absoluto por timestamp.
+  const preview = await buildPreview(holdings);
 
   return NextResponse.json({
     hasPortfolio: true,
@@ -183,7 +184,6 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
  */
 async function buildPreview(
   holdings: Holding[],
-  initialValue: number,
 ): Promise<PreviewPoint[]> {
   // Batches de 5 (limit brapi /historical é menor, então保守).
   const BATCH = 5;
@@ -216,17 +216,9 @@ async function buildPreview(
   );
   if (usable.length === 0) return [];
 
-  // Ref close = primeiro candle (ASC) de cada holding.
-  const refClose = new Map<string, number>();
-  for (const h of usable) {
-    const c = candlesBySymbol.get(h.symbol)!;
-    const first = c[0]!;
-    if (first.close > 0) refClose.set(h.symbol, first.close);
-  }
-
   // Intersecção de timestamps: usa o set do primeiro holding que tem
-  // candles. Cada ponto = soma (weight × initial × close(t)/ref) sobre
-  // todos os holdings que têm candle naquele timestamp.
+  // candles. Cada ponto = Σ(qty × close(t)) sobre todos os holdings
+  // que têm candle naquele timestamp.
   const firstSym = usable[0]!.symbol;
   const tsList = candlesBySymbol.get(firstSym)!.map((c) => c.timestamp);
 
@@ -243,11 +235,9 @@ async function buildPreview(
     let value = 0;
     let count = 0;
     for (const h of usable) {
-      const ref = refClose.get(h.symbol);
-      if (ref == null) continue;
       const c = index.get(h.symbol)?.get(ts);
       if (!c) continue;
-      value += h.weight * initialValue * (c.close / ref);
+      value += h.qty * c.close;
       count += 1;
     }
     // Só inclui ponto onde pelo menos 50% dos holdings têm candle

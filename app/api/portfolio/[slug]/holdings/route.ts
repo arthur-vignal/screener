@@ -1,18 +1,22 @@
 /**
- * /api/portfolio/[slug]/holdings — gerencia holdings do portfolio.
+ * /api/portfolio/[slug]/holdings — gerencia posições do portfolio.
  *
- * POST { symbol, weight } → adiciona ou atualiza holding.
- *   - weight: fração 0-1 (ex: 0.20 = 20% do portfolio).
- *   - se holding já existe pra esse symbol, atualiza o weight.
- *   - valida que a soma dos weights não passa de 1.0 (100%).
+ * Modelo novo (migration 0006): cada holding é uma posição com
+ * `qty` (quantidade) + `avg_price` (preço médio de compra) +
+ * `purchased_at` (unix seconds UTC da compra).
  *
- * DELETE { symbol } → remove holding do portfolio.
+ * POST `{ symbol, qty, avg_price, purchased_at }` → adiciona posição
+ *   - Se já existe posição pra esse symbol, **substitui** (não merge).
+ *   - Validação: qty > 0, avg_price > 0, purchased_at válido (não futuro,
+ *     não anterior a 2010).
+ *
+ * DELETE `{ symbol }` → remove posição do portfolio.
  *
  * Auth: obrigatório, e o user tem que ser dono do portfolio.
  *
- * NOTA: holdings é uma modelo simples (symbol + weight). O schema
- * atual (`portfolio_holdings`) não tem qty/avg_price. Pra próxima
- * leva, adicionar tabela `positions` com qty/avg_price e migrar.
+ * NOTA: campo `weight` foi descontinuado como input. Continua existindo
+ * na tabela (calculado: qty × avg_price / SUM over portfolio) pra
+ * retrocompat com qualquer leitura existente.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -23,6 +27,8 @@ import { insert, query, remove } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 type PortfolioRow = { id: number; owner_id: string };
+
+const EARLIEST_PURCHASE_SEC = 1262304000; // 2010-01-01 00:00:00 UTC
 
 export async function POST(
   req: NextRequest,
@@ -36,10 +42,16 @@ export async function POST(
 
   const body = (await req.json().catch(() => ({}))) as {
     symbol?: string;
-    weight?: number;
+    qty?: number;
+    avg_price?: number;
+    purchased_at?: number;
   };
+
   const symbol = (body.symbol ?? "").toUpperCase().trim();
-  const weight = typeof body.weight === "number" ? body.weight : NaN;
+  const qty = typeof body.qty === "number" ? body.qty : NaN;
+  const avgPrice = typeof body.avg_price === "number" ? body.avg_price : NaN;
+  const purchasedAt =
+    typeof body.purchased_at === "number" ? body.purchased_at : NaN;
 
   if (!/^[A-Z0-9]{4,12}$/.test(symbol)) {
     return NextResponse.json(
@@ -47,9 +59,28 @@ export async function POST(
       { status: 400 },
     );
   }
-  if (!Number.isFinite(weight) || weight <= 0 || weight > 1) {
+  if (!Number.isFinite(qty) || qty <= 0) {
     return NextResponse.json(
-      { error: "Weight deve ser fração 0-1 (ex: 0.20 = 20%)" },
+      { error: "Quantidade deve ser maior que zero" },
+      { status: 400 },
+    );
+  }
+  if (!Number.isFinite(avgPrice) || avgPrice <= 0) {
+    return NextResponse.json(
+      { error: "Preço médio deve ser maior que zero" },
+      { status: 400 },
+    );
+  }
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (!Number.isFinite(purchasedAt) || purchasedAt < EARLIEST_PURCHASE_SEC) {
+    return NextResponse.json(
+      { error: "Data de compra inválida (use após 2010)" },
+      { status: 400 },
+    );
+  }
+  if (purchasedAt > nowSec) {
+    return NextResponse.json(
+      { error: "Data de compra não pode ser no futuro" },
       { status: 400 },
     );
   }
@@ -65,34 +96,24 @@ export async function POST(
   }
   const portfolioId = portfolios[0]!.id;
 
-  // Soma atual dos weights (excluindo o symbol se já existe).
-  const currentWeights = await query<{ weight: number }>(
-    `SELECT weight FROM portfolio_holdings
-     WHERE portfolio_id = $1 AND symbol != $2`,
-    [portfolioId, symbol],
-  );
-  const currentSum = currentWeights.reduce((s, w) => s + w.weight, 0);
-  if (currentSum + weight > 1.0001) {
-    return NextResponse.json(
-      {
-        error: `Soma dos pesos passaria de 100% (atual: ${(currentSum * 100).toFixed(1)}% + ${(weight * 100).toFixed(1)}% = ${((currentSum + weight) * 100).toFixed(1)}%)`,
-      },
-      { status: 400 },
-    );
-  }
+  // Upsert via REST do Supabase (mantém compat com RLS disabled).
+  // Se já existe posição pra esse symbol, atualiza in-place.
+  const sb = (await import("@/lib/supabase")).supabaseAdmin();
 
-  // Upsert: se já existe, atualiza; senão, insere.
   const existing = await query<{ symbol: string }>(
     `SELECT symbol FROM portfolio_holdings
      WHERE portfolio_id = $1 AND symbol = $2 LIMIT 1`,
     [portfolioId, symbol],
   );
+
   if (existing.length > 0) {
-    // Update direto via REST.
-    const sb = (await import("@/lib/supabase")).supabaseAdmin();
     const { error } = await sb
       .from("portfolio_holdings")
-      .update({ weight })
+      .update({
+        qty,
+        avg_price: avgPrice,
+        purchased_at: purchasedAt,
+      })
       .eq("portfolio_id", portfolioId)
       .eq("symbol", symbol);
     if (error) {
@@ -101,16 +122,33 @@ export async function POST(
         { status: 500 },
       );
     }
-    return NextResponse.json({ symbol, weight, action: "updated" });
+    return NextResponse.json({
+      symbol,
+      qty,
+      avg_price: avgPrice,
+      purchased_at: purchasedAt,
+      action: "updated",
+    });
   }
 
   await insert("portfolio_holdings", {
     portfolio_id: portfolioId,
     symbol,
-    weight,
+    qty,
+    avg_price: avgPrice,
+    purchased_at: purchasedAt,
   });
 
-  return NextResponse.json({ symbol, weight, action: "added" }, { status: 201 });
+  return NextResponse.json(
+    {
+      symbol,
+      qty,
+      avg_price: avgPrice,
+      purchased_at: purchasedAt,
+      action: "added",
+    },
+    { status: 201 },
+  );
 }
 
 export async function DELETE(

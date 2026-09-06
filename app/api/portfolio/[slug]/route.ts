@@ -43,6 +43,9 @@ type PortfolioRow = {
 type Holding = {
   symbol: string;
   weight: number;
+  qty: number;
+  avg_price: number;
+  purchased_at: number;
 };
 
 type Range = "1D" | "7D" | "1M" | "1Y" | "Max";
@@ -82,7 +85,7 @@ export async function GET(
 
   // Holdings.
   const holdings = await query<Holding>(
-    `SELECT symbol, weight FROM portfolio_holdings WHERE portfolio_id = $1`,
+    `SELECT symbol, weight, qty, avg_price, purchased_at FROM portfolio_holdings WHERE portfolio_id = $1`,
     [portfolio.id],
   );
 
@@ -131,6 +134,9 @@ export async function GET(
   const enrichedHoldings: Array<{
     symbol: string;
     weight: number;
+    qty: number;
+    avgPrice: number;
+    purchasedAt: number;
     sector: string | null;
     price: number | null;
     change: number | null;
@@ -140,6 +146,14 @@ export async function GET(
     positionValue: number;
     positionChangeToday: number;
   }> = [];
+
+  // Primeiro passo: calcular valor bruto de cada posição pra derivar weight.
+  const positionValues = new Map<string, number>();
+  for (const h of holdings) {
+    const positionValue = h.qty * h.avg_price;
+    positionValues.set(h.symbol, positionValue);
+    totalValue += positionValue;
+  }
 
   for (const h of holdings) {
     const q = quoteMap.get(h.symbol);
@@ -160,24 +174,28 @@ export async function GET(
       }
     }
 
-    const positionValue = h.weight * portfolio.initial_value;
+    const positionValue = h.qty * h.avg_price;
+    const currentPositionValue = price != null ? h.qty * price : positionValue;
     let positionChangeToday = 0;
-    if (price != null && change != null) {
-      positionChangeToday = positionValue * (changePercent ?? 0) / 100;
-      totalValue += positionValue;
+    if (price != null && change != null && h.avg_price > 0) {
+      positionChangeToday = currentPositionValue * (changePercent ?? 0) / 100;
       changeToday += positionChangeToday;
     }
 
     enrichedHoldings.push({
       symbol: h.symbol,
-      weight: h.weight,
+      // weight = fração do portfolio baseada em posição atual (preço de mercado)
+      weight: totalValue > 0 ? currentPositionValue / totalValue : 0,
+      qty: h.qty,
+      avgPrice: h.avg_price,
+      purchasedAt: h.purchased_at,
       sector,
       price,
       change,
       changePercent,
       change1m,
       change1mPercent,
-      positionValue,
+      positionValue: currentPositionValue,
       positionChangeToday,
     });
   }
@@ -187,29 +205,11 @@ export async function GET(
     totalValue > 0 ? (changeToday / totalValue) * 100 : 0;
 
   // ── Performance: valor do portfolio ao longo do tempo ──
-  // Para cada holding, calculamos o preço de referência (close do
-  // primeiro candle do range) e usamos pra normalizar a variação
-  // percentual ao longo do tempo:
-  //   value(T) = Σ(weight × initial_value × close(T) / close_ref)
-  //
-  // Sem essa normalização pelo preço de referência, o gráfico
-  // mostra o valor como `weight × capital × preço_da_ação` (R$ 100k
-  // pra PETR3 a 36 com 100% de peso) em vez da fração do capital
-  // valorizada pela variação do ativo (R$ 2k → R$ 2.1k).
+  // Para cada posição, calculamos o valor como `qty × close(t)` — sem
+  // normalização por preço de referência, porque agora o portfolio é
+  // definido por quantidade absoluta (não weight × capital).
   const performanceCandles: Array<{ ts: number; value: number }> = [];
   if (histRange.size > 0) {
-    // Preço de referência = primeiro candle ASC de cada holding.
-    // (Mesmo que `close_ref` usado em "valor patrimonial = qty × preço".
-    // Como aqui o modelo é "weight" sem qty, usamos o preço inicial
-    // como base 1.0 da variação.)
-    const refClose = new Map<string, number>();
-    for (const h of holdings) {
-      const candles = histRange.get(h.symbol);
-      if (!candles || candles.length === 0) continue;
-      const firstClose = candles[0]!.close;
-      if (firstClose > 0) refClose.set(h.symbol, firstClose);
-    }
-
     // Coleta todos os timestamps únicos ordenados.
     const tsSet = new Set<number>();
     for (const candles of histRange.values()) {
@@ -225,13 +225,10 @@ export async function GET(
       let count = 0;
       for (const h of holdings) {
         const candles = histRange.get(h.symbol);
-        const ref = refClose.get(h.symbol);
-        if (!candles || ref == null) continue;
+        if (!candles) continue;
         const idx = findCandleAt(candles, ts);
         if (idx === -1) continue;
-        // Variação percentual do ativo desde o início do range
-        // aplicada à fração do capital alocada.
-        value += h.weight * portfolio.initial_value * (candles[idx]!.close / ref);
+        value += h.qty * candles[idx]!.close;
         count += 1;
       }
       if (count > 0) {
