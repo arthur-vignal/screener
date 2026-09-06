@@ -237,6 +237,38 @@ export async function GET(
     }
   }
 
+  // ── Benchmark: Ibovespa (^BVSP) — variação % desde o início do range ──
+  // Mesmo range temporal da performance. Normalizado pra 100 no início
+  // pra ficar na mesma escala visual do portfolio value.
+  const benchmarkCandles: Array<{ ts: number; value: number }> = [];
+  try {
+    const ibovCandlesRaw = await brapiHistorical("^BVSP", {
+      range: days <= 90 ? "3mo" : days <= 365 ? "1y" : "5y",
+      interval: "1d",
+    });
+    const ibovCandles = [...ibovCandlesRaw].sort(
+      (a, b) => a.timestamp - b.timestamp,
+    );
+    if (ibovCandles.length > 1) {
+      // Pega o preço de referência = primeiro candle com ts >= cutoff.
+      const cutoffMs = Date.now() - days * 86_400_000;
+      const firstIdx = ibovCandles.findIndex((c) => c.timestamp >= cutoffMs);
+      if (firstIdx >= 0 && ibovCandles[firstIdx]!.close > 0) {
+        const ref = ibovCandles[firstIdx]!.close;
+        for (let i = firstIdx; i < ibovCandles.length; i++) {
+          const c = ibovCandles[i]!;
+          // Normalizado: 100 × close / ref → mesma escala visual.
+          benchmarkCandles.push({
+            ts: c.timestamp,
+            value: (c.close / ref) * 100,
+          });
+        }
+      }
+    }
+  } catch {
+    // Falha silenciosa — UI mostra só portfolio value se brapi não retornar.
+  }
+
   return NextResponse.json({
     meta: {
       name: portfolio.name,
@@ -256,6 +288,7 @@ export async function GET(
     performance: {
       candles: performanceCandles,
       range: validRange,
+      benchmark: benchmarkCandles,
     },
   });
 }

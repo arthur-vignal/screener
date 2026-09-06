@@ -1,29 +1,34 @@
 "use client";
 
 /**
- * PortfolioValueChart — linha única mostrando a variação do VALOR
- * total do portfolio ao longo do tempo.
+ * PortfolioValueChart — variação do portfolio ao longo do tempo.
  *
- * Recebe `points: [{ ts, value }]` (já calculado server-side: soma
- * de weight × initial_value × candle.close pra cada holding).
+ * Plota DUAS séries na MESMA ESCALA (índice base 100 no início do range):
+ *   1. Portfolio value (qty × close por timestamp, normalizado a 100)
+ *   2. Ibovespa (^BVSP) como benchmark (já vem normalizado a 100 do server)
  *
- * Visual (estilo Fey + chart-pack):
- *   - linha fina off-white
- *   - fill area embaixo com opacidade baixa
- *   - tabs 1D/1W/1M/3M/YTD/1Y/5Y/All
- *   - sem benchmark (decisão do user 2026-09-04: "Variação de valor
- *     do portfolio apenas")
+ * Toggle "Comparar com Ibovespa" liga/desliga o benchmark.
+ *
+ * Visual:
+ *   - Portfolio: linha off-white com fill gradient verde/vermelho (relativo
+ *     ao primeiro ponto, igual pack 05)
+ *   - IBOV: linha pontilhada fina em azul (`var(--primary)`) sem fill
+ *   - Tooltip mostra valor absoluto do portfolio (R$) + pct do IBOV
+ *
+ * Decisão 2026-09-04: "Variação de valor do portfolio apenas".
+ * Atualização 2026-09-06: benchmark Ibovespa opcional (toggle).
  *
  * Altura 320px pra caber no grid 2-col sem competir com o chart de
  * preço 560px do /asset/[symbol].
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { JSX } from "react";
 import {
   Area,
   AreaChart,
   CartesianGrid,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -31,7 +36,7 @@ import {
 } from "recharts";
 
 import { Skeleton } from "@/components/foundation/skeleton";
-import { CHART_COLORS, CHART_FONT, CHART_STROKE, axisProps, yAxisProps } from "@/lib/chart-theme";
+import { CHART_COLORS, CHART_FONT, CHART_STROKE, yAxisProps } from "@/lib/chart-theme";
 import { cn } from "@/lib/utils";
 
 export type RangeKey = "1D" | "7D" | "1M" | "1Y" | "Max";
@@ -40,6 +45,8 @@ type Point = { ts: number; value: number };
 
 type Props = {
   points: Point[];
+  /** Benchmark IBOV normalizado a 100 no início. Vazio = sem benchmark. */
+  benchmark?: Point[];
   range: RangeKey;
   onRangeChange: (r: RangeKey) => void;
   loading?: boolean;
@@ -49,44 +56,91 @@ type Props = {
 const RANGES: RangeKey[] = ["1D", "7D", "1M", "1Y", "Max"];
 
 export function PortfolioValueChart({
-  points, range, onRangeChange, loading, className,
+  points,
+  benchmark = [],
+  range,
+  onRangeChange,
+  loading,
+  className,
 }: Props): JSX.Element {
+  const [showBenchmark, setShowBenchmark] = useState(true);
+
   if (loading) return <LoadingChart className={className} />;
 
-  // Adiciona índice discreto (0,1,2,...) pra escala X categórica.
-  const data = useMemo(
-    () => points.map((p, i) => ({ index: i, ts: p.ts, value: p.value })),
-    [points],
-  );
+  // Junta portfolio + benchmark num único array indexado pelo tempo.
+  // Cada série vira uma coluna (`portfolio`, `ibov`). Pontos sem
+  // uma das séries ficam null (Recharts trata como gap).
+  const data = useMemo(() => {
+    const map = new Map<number, { ts: number; portfolio: number; ibov: number | null }>();
+    for (const p of points) {
+      map.set(p.ts, { ts: p.ts, portfolio: p.value, ibov: null });
+    }
+    for (const b of benchmark) {
+      const existing = map.get(b.ts);
+      if (existing) existing.ibov = b.value;
+      else map.set(b.ts, { ts: b.ts, portfolio: null as unknown as number, ibov: b.value });
+    }
+    return [...map.values()].sort((a, b) => a.ts - b.ts);
+  }, [points, benchmark]);
+
+  // Normaliza portfolio pra índice 100 no primeiro ponto.
+  const firstPortfolio = data.find((d) => d.portfolio != null)?.portfolio ?? 0;
+  const dataNormalized = useMemo(() => {
+    if (firstPortfolio <= 0) return data;
+    return data.map((d) => ({
+      ...d,
+      portfolio: d.portfolio != null ? (d.portfolio / firstPortfolio) * 100 : null,
+    })) as typeof data;
+  }, [data, firstPortfolio]);
 
   return (
     <div className={cn("relative", className)}>
       <div className="h-[280px] w-full">
-        {data.length === 0 ? (
+        {dataNormalized.length === 0 ? (
           <EmptyChart />
         ) : (
           <ResponsiveContainer>
-            <ChartInner data={data} />
+            <ChartInner data={dataNormalized} showBenchmark={showBenchmark && benchmark.length > 0} />
           </ResponsiveContainer>
         )}
       </div>
 
-      <div className="mt-4 flex items-center gap-1">
-        {RANGES.map((r) => (
+      <div className="mt-4 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1">
+          {RANGES.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => onRangeChange(r)}
+              className={cn(
+                "px-3 py-1.5 rounded-md text-[12px] font-medium cursor-pointer transition-colors",
+                range === r
+                  ? "bg-white/[0.04] text-foreground border border-white/10"
+                  : "text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.02]",
+              )}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+        {benchmark.length > 0 && (
           <button
-            key={r}
             type="button"
-            onClick={() => onRangeChange(r)}
+            onClick={() => setShowBenchmark((v) => !v)}
             className={cn(
-              "px-3 py-1.5 rounded-md text-[12px] font-medium cursor-pointer transition-colors",
-              range === r
-                ? "bg-white/[0.04] text-foreground border border-white/10"
-                : "text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.02]",
+              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] font-medium cursor-pointer transition-colors",
+              showBenchmark
+                ? "bg-white/[0.04] border border-white/10 text-foreground"
+                : "text-muted-foreground/70 border border-transparent hover:text-foreground",
             )}
           >
-            {r}
+            <span
+              className="inline-block h-2 w-2 rounded-full"
+              style={{ background: "var(--primary)" }}
+            />
+            Comparar com Ibovespa
           </button>
-        ))}
+        )}
       </div>
     </div>
   );
@@ -96,16 +150,21 @@ export function PortfolioValueChart({
 
 function ChartInner({
   data,
-}: { data: Array<{ index: number; ts: number; value: number }> }) {
-  const first = data[0]?.value ?? 0;
-  const last = data[data.length - 1]?.value ?? 0;
+  showBenchmark,
+}: {
+  data: Array<{ ts: number; portfolio: number | null; ibov: number | null }>;
+  showBenchmark: boolean;
+}) {
+  // Cor do portfolio baseada no primeiro/último valor normalizado.
+  const first = data.find((d) => d.portfolio != null)?.portfolio ?? 100;
+  const last = [...data].reverse().find((d) => d.portfolio != null)?.portfolio ?? 100;
   const isPositive = last >= first;
   const lineColor = isPositive ? CHART_COLORS.seriesPositive : CHART_COLORS.seriesNegative;
-  const fillId = `portfolio-value-fill-${isPositive ? "up" : "down"}`;
   const fillColor = isPositive ? CHART_COLORS.seriesPositive : CHART_COLORS.seriesNegative;
+  const fillId = `portfolio-value-fill-${isPositive ? "up" : "down"}`;
 
   return (
-    <AreaChart data={data} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
+    <AreaChart data={data as Record<string, unknown>[]} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
       <defs>
         <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={fillColor} stopOpacity={0.18} />
@@ -118,10 +177,11 @@ function ChartInner({
         strokeDasharray="0"
       />
       <XAxis
-        dataKey="index"
+        dataKey="ts"
         type="number"
+        scale="time"
         domain={["dataMin", "dataMax"]}
-        tickFormatter={(idx: number) => formatXByIdx(data, idx)}
+        tickFormatter={(ts: number) => formatXByTs(ts)}
         interval="preserveStartEnd"
         minTickGap={48}
         tick={{
@@ -135,7 +195,7 @@ function ChartInner({
       />
       <YAxis
         {...yAxisProps}
-        tickFormatter={(v: number) => formatCompactBRL(v)}
+        tickFormatter={(v: number) => `${v.toFixed(1)}%`}
         width={56}
         domain={["auto", "auto"]}
       />
@@ -146,7 +206,7 @@ function ChartInner({
       />
       <Area
         type="monotone"
-        dataKey="value"
+        dataKey="portfolio"
         stroke={lineColor}
         strokeWidth={CHART_STROKE.seriesLine}
         fill={`url(#${fillId})`}
@@ -157,6 +217,20 @@ function ChartInner({
         animationEasing="ease-out"
         connectNulls={false}
       />
+      {showBenchmark && (
+        <Line
+          type="monotone"
+          dataKey="ibov"
+          stroke="var(--primary)"
+          strokeWidth={1.25}
+          strokeDasharray="4 4"
+          dot={false}
+          activeDot={{ r: 3, fill: "var(--primary)" }}
+          isAnimationActive={true}
+          animationDuration={1500}
+          connectNulls={true}
+        />
+      )}
     </AreaChart>
   );
 }
@@ -164,20 +238,42 @@ function ChartInner({
 // ─── Tooltip ──────────────────────────────────────────────────────────────
 
 function ValueTooltip({
-  active, payload,
-}: { active?: boolean; payload?: Array<{ payload?: { ts: number; value: number } }> }): JSX.Element | null {
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload?: { ts: number; portfolio: number | null; ibov: number | null } }>;
+}): JSX.Element | null {
   if (!active || !payload || payload.length === 0) return null;
   const p = payload[0]?.payload;
   if (!p) return null;
   const date = new Date(p.ts);
   return (
     <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-      <p className="text-[10px] text-foreground/70 mb-1">
+      <p className="text-[10px] text-foreground/70 mb-1.5">
         {date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
       </p>
-      <p className="text-[13px] font-semibold tabular-nums text-foreground">
-        {p.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-      </p>
+      {p.portfolio != null && (
+        <div className="flex items-center gap-2 text-[12px] tabular-nums">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-foreground/70" />
+          <span className="text-muted-foreground/70">Portfolio</span>
+          <span className="ml-auto font-semibold text-foreground">
+            {p.portfolio.toFixed(2)}
+          </span>
+        </div>
+      )}
+      {p.ibov != null && (
+        <div className="flex items-center gap-2 text-[12px] tabular-nums mt-0.5">
+          <span
+            className="inline-block h-1.5 w-1.5 rounded-full"
+            style={{ background: "var(--primary)" }}
+          />
+          <span className="text-muted-foreground/70">Ibovespa</span>
+          <span className="ml-auto font-semibold text-foreground">
+            {p.ibov.toFixed(2)}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -212,25 +308,11 @@ function EmptyChart(): JSX.Element {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
-type DataRow = { index: number; ts: number; value: number };
-
-function formatXByIdx(data: DataRow[], idx: number): string {
-  const row = data[idx];
-  if (!row) return "";
-  const d = new Date(row.ts);
+function formatXByTs(ts: number): string {
+  const d = new Date(ts);
   // Intraday (1D, 1W): hora
-  if (row.ts > Date.now() - 7 * 24 * 3600 * 1000) {
+  if (ts > Date.now() - 7 * 24 * 3600 * 1000) {
     return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   }
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
-}
-
-function formatCompactBRL(v: number): string {
-  if (v >= 1_000_000) {
-    return `R$${(v / 1_000_000).toFixed(1)}M`;
-  }
-  if (v >= 1_000) {
-    return `R$${(v / 1_000).toFixed(0)}k`;
-  }
-  return `R$${v.toFixed(0)}`;
 }

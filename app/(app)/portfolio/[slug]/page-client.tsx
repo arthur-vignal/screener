@@ -95,6 +95,7 @@ type Bundle = {
   }>;
   performance: {
     candles: Array<{ ts: number; value: number }>;
+    benchmark: Array<{ ts: number; value: number }>;
     range: RangeKey;
   };
 };
@@ -246,6 +247,7 @@ export default function PortfolioDetailPage({
               </div>
               <PortfolioValueChart
                 points={bundle?.performance.candles ?? []}
+                benchmark={bundle?.performance.benchmark ?? []}
                 range={range}
                 onRangeChange={setRange}
                 loading={isLoading && !bundle}
