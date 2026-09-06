@@ -27,50 +27,22 @@ import { getBrapiQuoteBatchLight } from "@/lib/brapi-quote-batch";
 export const dynamic = "force-dynamic";
 export const maxDuration = 20;
 
-const HOUR = 3600 * 1000;
-const BRT_OFFSET_HOURS = -3;
-
-/** Timestamp (ms) da meia-noite BRT de hoje. */
-function brtMidnightToday(): number {
-  const now = new Date();
-  // Pega o "hoje" em BRT
-  const brt = new Date(now.getTime() + BRT_OFFSET_HOURS * HOUR);
-  const yyyy = brt.getUTCFullYear();
-  const mm = String(brt.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(brt.getUTCDay() === 0 ? brt.getUTCDate() : brt.getUTCDate())
-    .padStart(2, "0");
-  // Monta 00:00 BRT do dia atual = 03:00 UTC
-  return Date.UTC(
-    Number(yyyy),
-    Number(mm) - 1,
-    Number(dd),
-    3,
-    0,
-    0,
-    0,
-  );
-}
-
 export async function GET(): Promise<NextResponse> {
-  // 1) Notícias de hoje (com fallback 36h pra fims de semana).
+  // 1) Notícias: usa TODAS do feed (sem filtro de janela). O card "Notícia
+  //    do dia" aceita manchete de "ontem" / "sexta" em fim de semana
+  //    quando o feed parou — usuário prefere ver UM destaque do que
+  //    um card vazio. Volume negociado é sempre do dia corrente,
+  //    então se a manchete é de sexta, o "top volume" continua sendo
+  //    o ticker de hoje (que pode não bater com a manchete).
   const newsRaw = await fetchB3ActionsNews(40);
-  const nowMs = Date.now();
-  const todayStart = brtMidnightToday();
-  const recentCutoff = nowMs - 36 * HOUR;
 
-  const todays = newsRaw.filter((n) => {
-    const ts = new Date(n.publishedAt).getTime();
-    if (!Number.isFinite(ts)) return false;
-    return ts >= Math.min(todayStart, recentCutoff);
-  });
-
-  if (todays.length === 0) {
+  if (newsRaw.length === 0) {
     return NextResponse.json({ highlight: null });
   }
 
   // 2) Tickers únicos mencionados nas notícias.
   const mentioned = new Set<string>();
-  for (const n of todays) {
+  for (const n of newsRaw) {
     if (n.ticker) mentioned.add(n.ticker.toUpperCase());
   }
 
@@ -86,7 +58,7 @@ export async function GET(): Promise<NextResponse> {
 
   if (candidates.length === 0) {
     // Sem candidato na lista IBOV — pega a notícia mais recente mesmo.
-    const top = todays[0]!;
+    const top = newsRaw[0]!;
     return NextResponse.json({
       highlight: {
         ticker: top.ticker ?? null,
@@ -117,7 +89,7 @@ export async function GET(): Promise<NextResponse> {
   //    específica não estiver em `todays` (ex: ticker veio de keyword
   //    matching mas a notícia usada outro nome), pega a próxima.
   for (const r of ranked) {
-    const match = todays.find(
+    const match = newsRaw.find(
       (n) => n.ticker?.toUpperCase() === r.symbol,
     );
     if (match) {
@@ -135,8 +107,8 @@ export async function GET(): Promise<NextResponse> {
     }
   }
 
-  // Nenhuma match exata → primeira notícia do dia mesmo.
-  const top = todays[0]!;
+  // Nenhuma match exata → primeira notícia do feed mesmo.
+  const top = newsRaw[0]!;
   return NextResponse.json({
     highlight: {
       ticker: top.ticker ?? null,
