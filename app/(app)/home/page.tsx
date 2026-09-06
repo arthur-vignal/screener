@@ -69,10 +69,12 @@ export default function HomePage(): JSX.Element {
   });
 
   const [highlight, setHighlight] = useState<{
+      ticker: string | null;
+      longName: string | null;
+      volume: number | null;
       headline: string;
       source: string;
       url: string;
-      relatedCount: number;
     } | null>(null);
     const [highlightLoading, setHighlightLoading] = useState(true);
 
@@ -336,8 +338,46 @@ export default function HomePage(): JSX.Element {
   }, [fetchNews, newsCursor, newsHasMore, newsLoadingMore]);
 
   useEffect(() => {
-    setHighlightLoading(false);
-  }, []);
+      let cancelled = false;
+      async function load() {
+        try {
+          const r = await fetch("/api/news/highlight", { cache: "no-store" });
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          const data = (await r.json()) as {
+            highlight: {
+              ticker: string | null;
+              longName: string | null;
+              volume: number | null;
+              headline: string;
+              source: string;
+              url: string;
+              publishedAt: string;
+            } | null;
+          };
+          if (cancelled) return;
+          if (!data.highlight) {
+            setHighlight(null);
+            return;
+          }
+          setHighlight({
+            ticker: data.highlight.ticker,
+            longName: data.highlight.longName,
+            volume: data.highlight.volume,
+            headline: data.highlight.headline,
+            source: data.highlight.source,
+            url: data.highlight.url,
+          });
+        } catch {
+          if (!cancelled) setHighlight(null);
+        } finally {
+          if (!cancelled) setHighlightLoading(false);
+        }
+      }
+      load();
+      return () => {
+        cancelled = true;
+      };
+    }, []);
 
   const todayText = new Date().toLocaleDateString("pt-BR", {
     day: "2-digit",
@@ -371,16 +411,18 @@ export default function HomePage(): JSX.Element {
               <PortfolioCard state={portfolio} className="h-full w-full" />
             </StaggerOnMount>
             <StaggerOnMount>
-              <DayHighlightCard
-                className="h-full"
-                headline={highlight?.headline ?? null}
-                source={highlight?.source ?? null}
-                url={highlight?.url ?? null}
-                relatedCount={highlight?.relatedCount}
-                dateText={todayText}
-                loading={highlightLoading}
-              />
-            </StaggerOnMount>
+                          <DayHighlightCard
+                            className="h-full"
+                            ticker={highlight?.ticker ?? null}
+                            longName={highlight?.longName ?? null}
+                            volume={highlight?.volume ?? null}
+                            headline={highlight?.headline ?? null}
+                            source={highlight?.source ?? null}
+                            url={highlight?.url ?? null}
+                            dateText={todayText}
+                            loading={highlightLoading}
+                          />
+                        </StaggerOnMount>
           </div>
 
           {/* Coluna central */}
