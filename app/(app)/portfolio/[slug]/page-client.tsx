@@ -188,6 +188,12 @@ export default function PortfolioDetailPage({
               )}
             </div>
             <div className="flex items-center gap-3 text-[12px] text-muted-foreground/70 shrink-0">
+              <Link
+                href={`/portfolio/${slug}/statistics`}
+                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-white/[0.04] border border-white/10 text-muted-foreground/85 hover:bg-white/[0.08] hover:text-foreground transition-colors"
+              >
+                Statistics
+              </Link>
               {holdings.length > 0 && (
                 <span className="inline-flex items-center gap-1.5">
                   <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[#4dbe95]" />

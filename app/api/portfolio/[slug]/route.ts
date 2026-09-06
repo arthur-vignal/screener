@@ -246,13 +246,6 @@ export async function GET(
       createdAt: portfolio.created_at,
       isPublic: portfolio.is_public,
       isOwner: portfolio.owner_id_text === user.userId,
-      // debug: mostra ambos os IDs pra investigar bug do isOwner
-      _debug: {
-        portfolioOwnerId: portfolio.owner_id_text,
-        sessionUserId: user.userId,
-        ownerIdType: typeof portfolio.owner_id_text,
-        userIdType: typeof user.userId,
-      },
     },
     summary: {
       totalValue,
