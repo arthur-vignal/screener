@@ -147,10 +147,18 @@ export default function PortfolioDetailPage({
         animate="show"
         className="w-[90%] mx-auto py-6"
       >
-        {/* Header — Fey: Portfolio / {name} à esquerda, holdings à direita */}
+        {/* Header — seta de voltar à esquerda, Portfolio / {name} no centro, holdings à direita */}
         <StaggerOnMount>
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between gap-3 mb-5">
             <div className="flex items-center gap-3 min-w-0">
+              <Link
+                href="/portfolio"
+                aria-label="Voltar para Portfolios"
+                title="Voltar para Portfolios"
+                className="inline-flex items-center justify-center h-8 w-8 shrink-0 rounded-md bg-white/[0.04] border border-white/10 text-muted-foreground/85 hover:bg-white/[0.08] hover:text-foreground transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+              </Link>
               <h1 className="text-[32px] font-semibold tracking-tight text-foreground leading-[1.1]">
                 Portfolio
               </h1>
