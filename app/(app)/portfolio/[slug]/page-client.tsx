@@ -32,7 +32,7 @@
 import { motion } from "motion/react";
 import useSWR from "swr";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { JSX } from "react";
 import {
@@ -81,6 +81,9 @@ type Bundle = {
   holdings: Array<{
     symbol: string;
     weight: number;
+    qty: number;
+    avgPrice: number;
+    purchasedAt: number;
     sector: string | null;
     price: number | null;
     change: number | null;
@@ -111,6 +114,7 @@ export default function PortfolioDetailPage({
   slug,
 }: { slug: string }): JSX.Element {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [range, setRange] = useState<RangeKey>("1M");
 
   const { data: bundle, error, isLoading, mutate: mutateBundle } = useSWR<Bundle>(
@@ -119,6 +123,18 @@ export default function PortfolioDetailPage({
     { refreshInterval: 60_000, revalidateOnFocus: true },
   );
   const [addOpen, setAddOpen] = useState(false);
+
+  // Deep link ?add=1 (vem do /portfolio/new após criar): abre modal
+  // automaticamente quando portfolio está vazio.
+  useEffect(() => {
+    if (searchParams.get("add") === "1") {
+      setAddOpen(true);
+      // Limpa o param pra não reabrir no refresh.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("add");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (error && (error as Error & { status?: number }).status === 401) {
@@ -289,7 +305,7 @@ export default function PortfolioDetailPage({
         onClose={() => setAddOpen(false)}
         onAdded={() => mutateBundle()}
         portfolioSlug={slug}
-        currentWeightSum={holdings.reduce((s, h) => s + h.weight, 0)}
+        isFirstHolding={holdings.length === 0}
       />
 
       <AnimatedFloatingDock />
@@ -445,6 +461,13 @@ function HoldingRow({
   onDelete?: () => void;
 }): JSX.Element {
   const mPos = (h.change1mPercent ?? 0) >= 0;
+  // Modelo novo: mostrar qty × avg_price (posição de custo) e variação
+  // 1m (ou peso se preferir). Default: mostra posição + 1m.
+  const investedValue = h.qty * h.avgPrice;
+  const qtyLabel =
+    h.qty >= 1 && Number.isInteger(h.qty)
+      ? h.qty.toLocaleString("pt-BR")
+      : h.qty.toLocaleString("pt-BR", { maximumFractionDigits: 4 });
   return (
     <li>
       <Link
@@ -457,7 +480,15 @@ function HoldingRow({
             {h.symbol}
           </div>
           <div className="text-[11px] text-muted-foreground/70 truncate">
-            {h.sector ?? `peso ${(h.weight * 100).toFixed(1)}%`}
+            {qtyLabel} × R$ {h.avgPrice.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {" · "}
+            <span className="tabular-nums">
+              {investedValue.toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+                maximumFractionDigits: 0,
+              })}
+            </span>
           </div>
         </div>
         <div className="text-right">

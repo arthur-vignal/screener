@@ -66,7 +66,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const body = (await req.json().catch(() => ({}))) as {
     name?: string;
     description?: string;
-    initialValue?: number;
     isPublic?: boolean;
   };
 
@@ -79,10 +78,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   const description = (body.description ?? "").trim().slice(0, 280);
-  const initialValue =
-    typeof body.initialValue === "number" && body.initialValue > 0
-      ? body.initialValue
-      : 10_000;
   const isPublic = body.isPublic === true;
 
   // Gera slug único a partir do nome (kebab-case, sem acentos).
@@ -118,7 +113,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     slug,
     name,
     description,
-    initial_value: initialValue,
+    initial_value: 0, // legado: schema exige a coluna, mas modelo novo é por posições
     is_public: isPublic,
   });
   if (!inserted[0]) {

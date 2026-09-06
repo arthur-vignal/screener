@@ -6,13 +6,17 @@
  * Campos:
  *   - name (obrigatório, 2-60 chars)
  *   - description (opcional, max 280)
- *   - initialValue (opcional, default 10000)
  *   - isPublic (checkbox, default false)
+ *
+ * SEM campo "Capital inicial" — modelo novo (migration 0006): portfolio é
+ * definido pelas posições (qty + avg_price). Capital emerge da soma
+ * qty × preço.
  *
  * Fluxo:
  *   1. User preenche e clica "Criar"
  *   2. POST /api/portfolio
- *   3. Sucesso → router.push pra /portfolio/[slug] (futuro) ou /portfolio
+ *   3. Sucesso → router.push pra /portfolio/[slug]?add=1 (deep link que abre
+ *      modal de "Adicionar primeiro ativo" automaticamente)
  *   4. Erro → mensagem inline
  */
 
@@ -34,7 +38,6 @@ export default function NewPortfolioPage(): JSX.Element {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [initialValue, setInitialValue] = useState("10000");
   const [isPublic, setIsPublic] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +57,6 @@ export default function NewPortfolioPage(): JSX.Element {
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim() || undefined,
-          initialValue: Number(initialValue) || 10_000,
           isPublic,
         }),
       });
@@ -68,7 +70,8 @@ export default function NewPortfolioPage(): JSX.Element {
         return;
       }
       const { portfolio } = (await r.json()) as { portfolio: { slug: string } };
-      router.push(`/portfolio/${portfolio.slug}`);
+      // Deep link: ?add=1 abre o modal de "Adicionar primeiro ativo" automaticamente.
+      router.push(`/portfolio/${portfolio.slug}?add=1`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro inesperado");
     } finally {
@@ -103,8 +106,8 @@ export default function NewPortfolioPage(): JSX.Element {
               Criar portfolio
             </h1>
             <p className="mt-1.5 text-[13px] text-muted-foreground/85 leading-relaxed">
-              Defina nome, descrição e capital inicial. Você poderá
-              adicionar ativos depois.
+              Defina nome e descrição. Você adiciona ativos (com preço e
+              quantidade de cada compra) na próxima tela.
             </p>
           </div>
         </StaggerOnMount>
@@ -147,25 +150,6 @@ export default function NewPortfolioPage(): JSX.Element {
               />
               <div className="text-[11px] text-muted-foreground/60 mt-1 text-right">
                 {description.length}/280
-              </div>
-            </Field>
-
-            <Field
-              label="Capital inicial"
-              hint="Valor em BRL. Usado como base pro cálculo de retorno e distribuição de pesos entre os ativos."
-            >
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-muted-foreground/70">
-                  R$
-                </span>
-                <input
-                  type="number"
-                  value={initialValue}
-                  onChange={(e) => setInitialValue(e.target.value)}
-                  min="0"
-                  step="100"
-                  className={cn(inputClass, "pl-10 tabular-nums")}
-                />
               </div>
             </Field>
 
