@@ -241,31 +241,33 @@ export default function HomePage(): JSX.Element {
           const r = await fetch("/api/portfolio/summary", { cache: "no-store" });
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           const data = (await r.json()) as {
-            hasPortfolio: boolean;
-            name?: string;
-            totalValue?: number;
-            changeToday?: number;
-            changeTodayPercent?: number;
-            currency?: "BRL" | "USD";
-            holdings?: TopHolding[];
-            preview?: PreviewPoint[];
-          };
-          if (cancelled) return;
+                    hasPortfolio: boolean;
+                    name?: string;
+                    initialValue?: number;
+                    totalValue?: number;
+                    changeToday?: number;
+                    changeTodayPercent?: number;
+                    currency?: "BRL" | "USD";
+                    holdings?: TopHolding[];
+                    preview?: PreviewPoint[];
+                  };
+                  if (cancelled) return;
 
-          if (!data.hasPortfolio) {
-            setPortfolio({ kind: "empty", name: data.name ?? null });
-            return;
-          }
-          setPortfolio({
-            kind: "ready",
-            name: data.name ?? "Arthur",
-            totalValue: data.totalValue ?? 0,
-            changeToday: data.changeToday ?? 0,
-            changeTodayPercent: data.changeTodayPercent ?? 0,
-            currency: data.currency ?? "BRL",
-            holdings: data.holdings ?? [],
-            preview: data.preview ?? [],
-          });
+                  if (!data.hasPortfolio) {
+                    setPortfolio({ kind: "empty", name: data.name ?? null });
+                    return;
+                  }
+                  setPortfolio({
+                    kind: "ready",
+                    name: data.name ?? "Arthur",
+                    initialValue: data.initialValue ?? data.totalValue ?? 0,
+                    totalValue: data.totalValue ?? 0,
+                    changeToday: data.changeToday ?? 0,
+                    changeTodayPercent: data.changeTodayPercent ?? 0,
+                    currency: data.currency ?? "BRL",
+                    holdings: data.holdings ?? [],
+                    preview: data.preview ?? [],
+                  });
         } catch {
           if (!cancelled) setPortfolio({ kind: "error" });
         }

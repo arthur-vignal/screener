@@ -6,7 +6,8 @@
  * Layout (commit 1 — 2026-09-06):
  *   - Header: "Seu portfolio valorizou x%" + chip liquid glass
  *     color coded da variação (verde/vermelho muted)
- *   - Sparkline preview do último pregão (~120×48px)
+ *   - Chart preview do último pregão (pack 05 — linha branca +
+ *     gradient verde/vermelho relativo ao valor inicial)
  *   - Lista top-3 holdings com dropdown "24h var" / "Alocação"
  *   - CTA "Acessar portfólio"
  *
@@ -21,7 +22,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUp, ArrowDown, Briefcase } from "lucide-react";
 import type { JSX } from "react";
 
-import { Sparkline } from "@/components/foundation/sparkline";
+import { PortfolioPreviewChart } from "@/components/home/portfolio-preview-chart";
 import { Skeleton } from "@/components/foundation/skeleton";
 import {
   PortfolioTopHoldings,
@@ -37,6 +38,7 @@ export type PortfolioCardState =
   | {
       kind: "ready";
       name: string;
+      initialValue: number;
       totalValue: number;
       changeToday: number;
       changeTodayPercent: number;
@@ -118,26 +120,23 @@ function ReadyCard({
         </div>
       </div>
 
-      {/* Sparkline preview do último pregão */}
-      {state.preview.length >= 2 && (
-        <div
-          className={cn(
-            "rounded-lg px-3 py-2.5 border",
-            positive
-              ? "bg-[var(--positive-soft)] border-[var(--positive)]/15"
-              : "bg-[var(--negative-soft)] border-[var(--negative)]/15"
-          )}
-        >
-          <Sparkline
-            points={state.preview.map((p) => p.value)}
-            stroke={positive ? "var(--positive)" : "var(--negative)"}
-            fill={positive ? "var(--positive)" : "var(--negative)"}
-            height={48}
-            strokeWidth={1.5}
-            ariaLabel={`Variação do portfolio no último pregão: ${positive ? "+" : "−"}${Math.abs(pct).toFixed(2)}%`}
-          />
-        </div>
-      )}
+      {/* Chart preview do último pregão (pack 05 — gradient relativo ao initialValue) */}
+            {state.preview.length >= 2 && (
+              <div
+                className={cn(
+                  "rounded-lg px-3 py-2.5 border",
+                  positive
+                    ? "bg-[var(--positive-soft)] border-[var(--positive)]/15"
+                    : "bg-[var(--negative-soft)] border-[var(--negative)]/15"
+                )}
+              >
+                <PortfolioPreviewChart
+                                  points={state.preview}
+                                  initialValue={state.initialValue}
+                                  height={56}
+                                />
+              </div>
+            )}
 
       {/* Top 3 holdings */}
       <PortfolioTopHoldings holdings={state.holdings} />
