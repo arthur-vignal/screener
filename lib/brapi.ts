@@ -538,17 +538,18 @@ export async function brapiProfile(symbol: string): Promise<BrapiProfile | null>
   });
 }
 
+type HistoricalRange = "1d" | "2d" | "5d" | "7d" | "1mo" | "3mo" | "6mo" | "1y" | "2y" | "5y" | "10y" | "ytd" | "max";
+type HistoricalInterval = "1m" | "2m" | "5m" | "15m" | "30m" | "60m" | "90m" | "1h" | "1d" | "5d" | "1wk" | "1mo" | "3mo";
+
 /**
  * Histórico de preço (OHLC). 5min cache.
- * Range: 5d | 1mo | 3mo | 6mo | 1y | 2y | 5y. Interval: 5m | 15m | 30m | 1h | 1d | 1wk | 1mo.
- *
- * `5d` é intraday-friendly (5min candles do pregão anterior + atual).
+ * Range e interval seguem o contrato v2 da Brapi.
  */
 export async function brapiHistorical(
   symbol: string,
   opts: {
-    range?: "5d" | "1mo" | "3mo" | "6mo" | "1y" | "2y" | "5y";
-    interval?: "5m" | "15m" | "30m" | "1h" | "1d" | "1wk" | "1mo";
+    range?: HistoricalRange;
+    interval?: HistoricalInterval;
     startDate?: string;
     endDate?: string;
   } = {},

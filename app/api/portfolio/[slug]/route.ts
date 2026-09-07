@@ -49,6 +49,8 @@ type Holding = {
 };
 
 type Range = "1D" | "7D" | "1M" | "1Y" | "Max";
+type HistoricalRange = "5d" | "7d" | "1mo" | "1y" | "5y";
+type HistoricalInterval = "1m" | "1d";
 
 const RANGE_TO_DAYS: Record<Range, number> = {
   "1D": 1,
@@ -112,20 +114,20 @@ export async function GET(
   const range = (req.nextUrl.searchParams.get("range") as Range | null) ?? "1M";
   const validRange = (RANGE_TO_DAYS[range] ? range : "1M") as Range;
   const days = RANGE_TO_DAYS[validRange];
+  // Interval menor disponível para os períodos curtos; candles diários
+  // permanecem nos ranges longos para evitar payload intraday gigante.
+  const historyRange: HistoricalRange =
+    validRange === "1D" ? "5d" : validRange === "7D" ? "7d" : validRange === "1M" ? "1mo" : validRange === "1Y" ? "1y" : "5y";
+  const historyInterval: HistoricalInterval =
+    validRange === "1D" || validRange === "7D" || validRange === "1M" ? "1m" : "1d";
 
-  // Fetch em paralelo: quotes + candles 1mo (pra 1m return) + candles
-  // por range (pra performance chart).
   const symbols = holdings.map((h) => h.symbol);
   const [quoteMap, hist1mo, histRange] = await Promise.all([
     getBrapiQuoteBatch(symbols),
     // 1m return: precisa de candles dos últimos 30 dias
     fetchCandlesBatch(symbols, "1mo", "1d"),
-    // performance: candles por range
-    fetchCandlesBatch(
-      symbols,
-      days <= 90 ? "3mo" : days <= 365 ? "1y" : "5y",
-      "1d",
-    ),
+    // performance: menor candle disponível nos ranges curtos.
+    fetchCandlesBatch(symbols, historyRange, historyInterval),
   ]);
 
   // ── Holdings enriquecidos ──
@@ -225,7 +227,14 @@ export async function GET(
     const rangeCutoffMs = Date.now() - days * 86_400_000;
     const purchaseCutoffMs = firstPurchaseSec * 1000;
     const cutoff = Math.max(rangeCutoffMs, purchaseCutoffMs);
-    const windowTs = allTs.filter((t) => t >= cutoff);
+    // `1D` significa último pregão disponível. Em sábado/domingo,
+    // `Date.now() - 1d` cairia depois do fechamento de sexta e zeraria a
+    // série; por isso selecionamos o dia do candle mais recente retornado.
+    const latestTs = allTs[allTs.length - 1]!;
+    const latestTradingDay = new Date(latestTs).toISOString().slice(0, 10);
+    const windowTs = validRange === "1D"
+      ? allTs.filter((ts) => new Date(ts).toISOString().slice(0, 10) === latestTradingDay && ts >= purchaseCutoffMs)
+      : allTs.filter((t) => t >= cutoff);
 
     for (const ts of windowTs) {
       let value = 0;
@@ -319,8 +328,8 @@ type Candle = {
 /** Busca candles diários pra todos os symbols, retorna Map<symbol, candles ASC>. */
 async function fetchCandlesBatch(
   symbols: string[],
-  range: "1mo" | "3mo" | "1y" | "5y",
-  interval: "1d",
+  range: HistoricalRange,
+  interval: HistoricalInterval,
 ): Promise<Map<string, Candle[]>> {
   const out = new Map<string, Candle[]>();
   // Batches de 5 (limit brapi é 20 mas pra /historical é 20 — vamos
