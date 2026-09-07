@@ -59,13 +59,12 @@ export function PortfolioValueChart({
   loading,
   className,
 }: Props): JSX.Element {
-  if (loading) return <LoadingChart className={className} />;
-
-  // Adiciona índice discreto (0,1,2,...) pra escala X categórica.
   const data = useMemo(
     () => points.map((p, i) => ({ index: i, ts: p.ts, value: p.value })),
     [points],
   );
+
+  if (loading) return <LoadingChart className={className} />;
 
   return (
     <div className={cn("relative", className)}>

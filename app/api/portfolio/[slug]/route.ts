@@ -137,6 +137,7 @@ export async function GET(
     qty: number;
     avgPrice: number;
     purchasedAt: number;
+    longName: string | null;
     sector: string | null;
     price: number | null;
     change: number | null;
@@ -189,6 +190,7 @@ export async function GET(
       qty: h.qty,
       avgPrice: h.avg_price,
       purchasedAt: h.purchased_at,
+      longName: q?.longName ?? null,
       sector,
       price,
       change,

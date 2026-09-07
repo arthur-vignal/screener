@@ -40,11 +40,8 @@ import {
   ArrowUp,
   ChevronLeft,
   ExternalLink,
-  LayoutGrid,
   LineChart,
-  Maximize2,
   Plus,
-  SlidersHorizontal,
 } from "lucide-react";
 
 import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
@@ -59,6 +56,7 @@ import {
 } from "@/components/portfolio/portfolio-value-chart";
 import { AddHoldingDialog } from "@/components/portfolio/add-holding-dialog";
 import { RelevantEarnings } from "@/components/portfolio/relevant-earnings";
+import { PortfolioAllocationChart } from "@/components/portfolio/portfolio-allocation-chart";
 import { TickerLogo } from "@/components/foundation/ticker-logo";
 import type { NewsItem } from "@/components/home/news-feed";
 import { cn } from "@/lib/utils";
@@ -85,6 +83,7 @@ type Bundle = {
     avgPrice: number;
     purchasedAt: number;
     sector: string | null;
+    longName: string | null;
     price: number | null;
     change: number | null;
     changePercent: number | null;
@@ -139,13 +138,15 @@ export default function PortfolioDetailPage({
     }
   }, []);
 
+  const errorStatus = (error as Error & { status?: number })?.status;
+
   useEffect(() => {
-    if (error && (error as Error & { status?: number }).status === 401) {
+    if (error && errorStatus === 401) {
       router.push("/login");
     }
-  }, [error, router]);
+  }, [error, errorStatus, router]);
 
-  if (error && (error as Error & { status?: number }).status !== 401) {
+  if (error && errorStatus !== 401) {
     return (
       <ErrorShell>
         <p>Erro ao carregar o portfolio.</p>
@@ -224,28 +225,13 @@ export default function PortfolioDetailPage({
           </div>
         </StaggerOnMount>
 
-        {/* Grid 2-col estilo Fey: chart à esquerda, watchlists à direita */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_440px] gap-5 items-start">
-          {/* Coluna esquerda: card do chart com "Watchlist vs markets" header */}
+        {/* Workspace em quatro quadrantes, inspirado no print de referência. */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)] lg:grid-rows-[minmax(420px,1fr)_minmax(320px,0.78fr)]">
           <StaggerOnMount>
-            <div className="rounded-2xl border border-white/10 bg-[#101116] p-5">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
-                    Watchlist vs markets
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setAddOpen(true)}
-                    className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-white/[0.04] border border-white/10 text-foreground text-[11px] font-medium hover:bg-white/[0.08] hover:border-white/20 transition-colors"
-                  >
-                    <Plus className="h-3 w-3" strokeWidth={2} />
-                    Add items
-                  </button>
-                </div>
-                <div className="text-[11px] text-muted-foreground/70">
-                  {bundle?.performance.candles.length ?? 0} pontos
-                </div>
+            <div className="h-full rounded-2xl border border-white/10 bg-[#101116] p-5">
+              <div className="mb-1 flex items-center justify-between gap-3">
+                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Portfolio performance</h2>
+                <span className="text-[11px] tabular-nums text-muted-foreground/70">{bundle?.performance.candles.length ?? 0} pontos</span>
               </div>
               <PortfolioValueChart
                 points={bundle?.performance.candles ?? []}
@@ -257,56 +243,26 @@ export default function PortfolioDetailPage({
             </div>
           </StaggerOnMount>
 
-          {/* Coluna direita: header "Your watchlists" + Stocks + Relevant earnings */}
-          <div className="flex flex-col gap-5">
-            <StaggerOnMount>
-              <div className="flex items-center justify-between">
-                <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
-                  Your watchlists
-                </h3>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    aria-label="Fullscreen"
-                    title="Fullscreen"
-                    className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground/70 hover:bg-white/[0.04] hover:text-foreground transition-colors"
-                  >
-                    <Maximize2 className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Filtros"
-                    title="Filtros"
-                    className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground/70 hover:bg-white/[0.04] hover:text-foreground transition-colors"
-                  >
-                    <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Layout"
-                    title="Layout"
-                    className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground/70 hover:bg-white/[0.04] hover:text-foreground transition-colors"
-                  >
-                    <LayoutGrid className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  </button>
-                </div>
-              </div>
-            </StaggerOnMount>
-            <StaggerOnMount>
-              <HoldingsCard
-                holdings={holdings}
-                loading={isLoading && !bundle}
-                onAddClick={() => setAddOpen(true)}
-                canEdit={true}
-              />
-            </StaggerOnMount>
-            <StaggerOnMount>
-              <RelevantEarnings symbols={holdings.map((h) => h.symbol)} />
-            </StaggerOnMount>
-            <StaggerOnMount className="flex-1 min-h-0 flex">
-              <PortfolioNewsColumn slug={slug} />
-            </StaggerOnMount>
-          </div>
+          <StaggerOnMount>
+            <HoldingsCard
+              holdings={holdings}
+              loading={isLoading && !bundle}
+              onAddClick={() => setAddOpen(true)}
+              canEdit={true}
+              expanded
+            />
+          </StaggerOnMount>
+
+          <StaggerOnMount>
+            <PortfolioAllocationChart
+              holdings={holdings}
+              loading={isLoading && !bundle}
+            />
+          </StaggerOnMount>
+
+          <StaggerOnMount>
+            <RelevantEarnings symbols={holdings.map((h) => h.symbol)} />
+          </StaggerOnMount>
         </div>
       </motion.main>
 
@@ -383,18 +339,19 @@ function ValueAndDelta({
 // ─── Holdings ─────────────────────────────────────────────────────────────
 
 function HoldingsCard({
-  holdings, loading, onAddClick, canEdit,
+  holdings, loading, onAddClick, canEdit, expanded,
 }: {
   holdings: Bundle["holdings"];
   loading: boolean;
   onAddClick?: () => void;
   canEdit?: boolean;
+  expanded?: boolean;
 }): JSX.Element {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] overflow-hidden">
+    <div className={cn("rounded-2xl border border-white/10 bg-[#101116] overflow-hidden", expanded && "h-full flex flex-col")}>
       <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
         <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
-          Stocks
+          Holdings
         </h3>
         <div className="flex items-center gap-2">
           <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60 font-semibold">
@@ -412,11 +369,11 @@ function HoldingsCard({
           )}
         </div>
       </div>
-      <div className="divide-y divide-white/[0.04]">
+      <div className={cn("divide-y divide-white/[0.04]", expanded && "flex-1 overflow-y-auto")}>
         {loading ? (
-          Array.from({ length: 4 }).map((_, i) => (
+          Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="px-5 py-3 flex items-center justify-between gap-3">
-              <Skeleton className="h-6 w-6 rounded-full" />
+              <Skeleton className="h-7 w-7 rounded-full" />
               <Skeleton className="h-4 w-20 flex-1" />
               <Skeleton className="h-4 w-16" />
               <Skeleton className="h-4 w-16" />
@@ -424,9 +381,7 @@ function HoldingsCard({
           ))
         ) : holdings.length === 0 ? (
           <div className="px-5 py-10 text-center">
-            <p className="text-[13px] text-muted-foreground/85">
-              Nenhum ativo adicionado ainda.
-            </p>
+            <p className="text-[13px] text-muted-foreground/85">Nenhum ativo adicionado ainda.</p>
             {canEdit && (
               <button
                 type="button"
@@ -473,7 +428,6 @@ function HoldingRow({
   const mPos = (h.change1mPercent ?? 0) >= 0;
   // Modelo novo: mostrar qty × avg_price (posição de custo) e variação
   // 1m (ou peso se preferir). Default: mostra posição + 1m.
-  const investedValue = h.qty * h.avgPrice;
   const qtyLabel =
     h.qty >= 1 && Number.isInteger(h.qty)
       ? h.qty.toLocaleString("pt-BR")
@@ -492,12 +446,8 @@ function HoldingRow({
           <div className="text-[11px] text-muted-foreground/70 truncate">
             {qtyLabel} × R$ {h.avgPrice.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             {" · "}
-            <span className="tabular-nums">
-              {investedValue.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-                maximumFractionDigits: 0,
-              })}
+            <span className="truncate" title={h.longName ?? h.symbol}>
+              {h.longName ?? h.sector ?? "Ativo"}
             </span>
           </div>
         </div>

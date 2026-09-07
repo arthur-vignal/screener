@@ -1,127 +1,94 @@
-/**
- * RelevantEarnings — tabela compacta de earnings reports próximos
- * ou recentes para os tickers do portfolio.
- *
- * Estilo Fey: 4 colunas (ticker / empresa / data / EPS / chip Beat|Miss|Est).
- * Dados: mock simples baseado em holdings. Para a próxima leva, plugar
- * `brapiQuote(symbol, {modules: ['earnings']})` ou similar que traga
- * data de release + EPS estimado.
- */
+"use client";
 
+import { useMemo, useState } from "react";
 import type { JSX } from "react";
+import { CalendarDays, ChevronDown, Clock3 } from "lucide-react";
+import useSWR from "swr";
 
-type EarningsEntry = {
+import { Skeleton } from "@/components/foundation/skeleton";
+import { TickerLogo } from "@/components/foundation/ticker-logo";
+
+type Dividend = {
+  paymentDate: string;
+  rate: number | null;
+  label: string | null;
+};
+
+type Event = {
   symbol: string;
-  company: string;
-  when: string;       // ex: "Today at 5:00 AM", "Mar 13 at 4:00 AM"
-  eps: number;
-  status: "Beat" | "Miss" | "Est";
+  type: "dividend";
+  label: string;
+  date: string;
 };
 
-type Props = {
-  symbols: string[];
-};
+type Props = { symbols: string[] };
 
-const COMPANY_NAMES: Record<string, string> = {
-  PETR3: "Petrobras ON",
-  PETR4: "Petrobras PN",
-  VALE3: "Vale S.A.",
-  ITUB4: "Itaú Unibanco",
-  BBAS3: "Banco do Brasil",
-  BBDC4: "Bradesco PN",
-  ABEV3: "Ambev S/A",
-  WEGE3: "WEG S.A.",
-  MGLU3: "Magazine Luiza",
-  RENT3: "Localiza",
-};
-
-function mockEarnings(symbol: string, idx: number): EarningsEntry {
-  const company = COMPANY_NAMES[symbol] ?? symbol;
-  // Datas mock alternando: alguns hoje, outros próximos dias
-  const whenOptions = [
-    "Today at 5:00 AM",
-    "Mar 13 at 4:00 AM",
-    "Mar 21 at 4:00 AM",
-    "Mar 27 at 5:00 AM",
-    "Apr 04 at 4:00 AM",
-  ];
-  const statusOptions: EarningsEntry["status"][] = ["Beat", "Est", "Miss"];
-  return {
-    symbol,
-    company,
-    when: whenOptions[idx % whenOptions.length]!,
-    eps: Number((Math.random() * 3 + 0.1).toFixed(2)),
-    status: statusOptions[idx % statusOptions.length]!,
-  };
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return (await response.json()) as T;
 }
 
 export function RelevantEarnings({ symbols }: Props): JSX.Element {
-  if (symbols.length === 0) return <></>;
-  const entries = symbols.slice(0, 6).map((s, i) => mockEarnings(s, i));
+  const [window, setWindow] = useState<"upcoming" | "recent">("upcoming");
+  const uniqueSymbols = useMemo(() => [...new Set(symbols)], [symbols]);
+  const key = uniqueSymbols.length > 0 ? uniqueSymbols.map((symbol) => `/api/asset/${symbol}/dividends`).join("|") : null;
+  const { data, error, isLoading } = useSWR<Record<string, { dividends?: Dividend[] }>>(key, async () => {
+    const entries = await Promise.all(uniqueSymbols.map(async (symbol) => {
+      try { return [symbol, await fetchJson<{ dividends?: Dividend[] }>(`/api/asset/${symbol}/dividends`)] as const; }
+      catch { return [symbol, { dividends: [] }] as const; }
+    }));
+    return Object.fromEntries(entries);
+  }, { revalidateOnFocus: false, refreshInterval: 6 * 60 * 60 * 1000 });
+
+  const events = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const all: Event[] = [];
+    for (const symbol of uniqueSymbols) {
+      for (const dividend of data?.[symbol]?.dividends ?? []) {
+        const date = new Date(`${dividend.paymentDate}T00:00:00`);
+        if (Number.isNaN(date.getTime())) continue;
+        all.push({ symbol, type: "dividend", label: dividend.label || "Dividendo", date: dividend.paymentDate });
+      }
+    }
+    return all.filter((event) => {
+      const time = new Date(`${event.date}T00:00:00`).getTime();
+      return window === "upcoming" ? time >= today.getTime() : time < today.getTime();
+    }).sort((a, b) => window === "upcoming" ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)).slice(0, 6);
+  }, [data, uniqueSymbols, window]);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] overflow-hidden">
-      <div className="px-5 py-3 border-b border-white/[0.06] flex items-center justify-between">
-        <h3 className="text-[13px] font-semibold tracking-tight text-foreground">
-          Relevant earnings
-        </h3>
-        <button
-          type="button"
-          aria-label="Expandir"
-          className="inline-flex items-center justify-center h-5 w-5 rounded text-muted-foreground/70 hover:text-foreground transition-colors"
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="15 3 21 3 21 9" />
-            <polyline points="9 21 3 21 3 15" />
-            <line x1="21" y1="3" x2="14" y2="10" />
-            <line x1="3" y1="21" x2="10" y2="14" />
-          </svg>
-        </button>
+    <section className="h-full rounded-2xl border border-white/10 bg-[#101116] p-5" aria-labelledby="portfolio-calendar-title">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <h2 id="portfolio-calendar-title" className="text-[15px] font-semibold tracking-tight text-foreground">Economic calendar</h2>
+          <CalendarDays className="h-4 w-4 text-muted-foreground/70" strokeWidth={1.75} />
+        </div>
+        <div className="relative">
+          <select aria-label="Janela do calendário" value={window} onChange={(event) => setWindow(event.target.value as typeof window)} className="h-8 appearance-none rounded-md border border-white/10 bg-white/[0.04] py-0 pl-3 pr-8 text-[12px] font-medium text-foreground outline-none hover:bg-white/[0.08]">
+            <option value="upcoming">Upcoming</option>
+            <option value="recent">Recent</option>
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-2 h-3.5 w-3.5 text-muted-foreground/70" strokeWidth={2} />
+        </div>
       </div>
-      <ul>
-        {entries.map((e, i) => (
-          <li
-            key={e.symbol + i}
-            className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 px-5 py-2 hover:bg-white/[0.02] transition-colors text-[12px] border-b border-white/[0.04] last:border-b-0"
-          >
-            <span className="font-semibold tracking-tight text-foreground w-14">
-              {e.symbol}
-            </span>
-            <span className="text-muted-foreground/85 truncate">
-              {e.company}
-            </span>
-            <span className="text-muted-foreground/70 tabular-nums">
-              {e.when}
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-foreground tabular-nums">
-                {e.eps.toFixed(2)}
-              </span>
-              <span
-                className={
-                  "px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-tight " +
-                  (e.status === "Beat"
-                    ? "bg-[#4dbe95]/15 text-[#4dbe95]"
-                    : e.status === "Miss"
-                    ? "bg-[#d84f68]/15 text-[#d84f68]"
-                    : "bg-white/[0.04] text-muted-foreground/85")
-                }
-              >
-                {e.status}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
+      <div className="mt-4">
+        {isLoading ? <CalendarSkeleton /> : error ? <CalendarError /> : events.length === 0 ? <CalendarEmpty window={window} /> : (
+          <ul className="divide-y divide-white/[0.06]">
+            {events.map((event) => <CalendarRow key={`${event.symbol}-${event.date}`} event={event} />)}
+          </ul>
+        )}
+      </div>
+    </section>
   );
 }
+
+function CalendarRow({ event }: { event: Event }): JSX.Element {
+  return <li className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"><TickerLogo symbol={event.symbol} size="sm" /><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><span className="text-[12px] font-semibold text-foreground">{event.symbol}</span><span className="rounded-md bg-white/[0.05] px-1.5 py-0.5 text-[10px] font-medium text-foreground">{event.label}</span></div><div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground/70"><Clock3 className="h-3 w-3" strokeWidth={1.75} />{formatDate(event.date)}</div></div><div className="text-right text-[12px] tabular-nums text-foreground">{event.label}</div></li>;
+}
+
+function CalendarSkeleton(): JSX.Element { return <div className="space-y-4">{[0, 1, 2, 3].map((item) => <div key={item} className="flex items-center gap-3"><Skeleton className="h-7 w-7 rounded-full" /><div className="flex-1 space-y-2"><Skeleton className="h-3 w-32" /><Skeleton className="h-3 w-20" /></div><Skeleton className="h-3 w-12" /></div>)}</div>; }
+function CalendarEmpty({ window }: { window: "upcoming" | "recent" }): JSX.Element { return <div className="flex min-h-40 flex-col items-center justify-center gap-2 text-center"><CalendarDays className="h-6 w-6 text-muted-foreground/60" strokeWidth={1.5} /><p className="text-[14px] text-foreground">Nenhum evento {window === "upcoming" ? "próximo" : "recente"}.</p><p className="text-[12px] text-muted-foreground/70">O calendário usa as datas de proventos disponíveis para os ativos.</p></div>; }
+function CalendarError(): JSX.Element { return <div className="flex min-h-40 flex-col items-center justify-center gap-2 text-center"><p className="text-[14px] text-foreground">Falha ao carregar o calendário.</p><p className="text-[12px] text-muted-foreground/70">Tente recarregar a página.</p></div>; }
+function formatDate(date: string): string { return new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }); }

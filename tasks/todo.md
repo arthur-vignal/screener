@@ -1,0 +1,6 @@
+- [ ] Inspecionar a rota atual /portfolio/[slug], APIs e gráfico de /asset/[ticker]
+- [ ] Implementar layout workspace em quatro quadrantes
+- [ ] Implementar composição em pizza por setor/ticker
+- [ ] Implementar calendário econômico com dados reais
+- [ ] Conectar dados e estados loading/empty/error
+- [ ] Rodar lint/build e validar no browser
