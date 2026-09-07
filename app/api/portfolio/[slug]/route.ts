@@ -218,14 +218,22 @@ export async function GET(
       for (const c of candles) tsSet.add(c.timestamp);
     }
     const allTs = [...tsSet].sort((a, b) => a - b);
-    // Filtra pela janela do range escolhido.
-    const cutoff = Date.now() - days * 86_400_000;
+    // Filtra pela janela do range e pela primeira compra do portfolio.
+    // Um range maior não pode exibir candles anteriores à existência da
+    // posição: para um ativo comprado há 7 dias, o range de 1M começa há 7d.
+    const firstPurchaseSec = Math.min(...holdings.map((h) => h.purchased_at));
+    const rangeCutoffMs = Date.now() - days * 86_400_000;
+    const purchaseCutoffMs = firstPurchaseSec * 1000;
+    const cutoff = Math.max(rangeCutoffMs, purchaseCutoffMs);
     const windowTs = allTs.filter((t) => t >= cutoff);
 
     for (const ts of windowTs) {
       let value = 0;
       let count = 0;
       for (const h of holdings) {
+        // A posição só existe no gráfico a partir da data em que foi
+        // comprada; antes disso ela não contribui para o valor da carteira.
+        if (ts < h.purchased_at * 1000) continue;
         const candles = histRange.get(h.symbol);
         if (!candles) continue;
         const idx = findCandleAt(candles, ts);
