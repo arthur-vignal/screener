@@ -225,44 +225,49 @@ export default function PortfolioDetailPage({
           </div>
         </StaggerOnMount>
 
-        {/* Workspace em quatro quadrantes, inspirado no print de referência. */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)] lg:grid-rows-[minmax(420px,1fr)_minmax(320px,0.78fr)]">
-          <StaggerOnMount>
-            <div className="h-full rounded-2xl border border-white/10 bg-[#101116] p-5">
-              <div className="mb-1 flex items-center justify-between gap-3">
-                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Portfolio performance</h2>
-                <span className="text-[11px] tabular-nums text-muted-foreground/70">{bundle?.performance.candles.length ?? 0} pontos</span>
+        <div className="grid grid-cols-1 gap-5 overflow-hidden rounded-2xl border border-white/10 bg-[#101116] lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)] lg:grid-rows-[minmax(420px,1fr)_minmax(320px,0.78fr)]">
+          <div className="min-h-0 border-b border-white/[0.08] p-5 lg:border-b-0 lg:border-r">
+            <StaggerOnMount>
+              <div className="h-full">
+                <div className="mb-1 flex items-center justify-between gap-3">
+                  <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Portfolio performance</h2>
+                  <span className="text-[11px] tabular-nums text-muted-foreground/70">{bundle?.performance.candles.length ?? 0} pontos</span>
+                </div>
+                <PortfolioValueChart
+                  points={bundle?.performance.candles ?? []}
+                  benchmark={bundle?.performance.benchmark ?? []}
+                  range={range}
+                  onRangeChange={setRange}
+                  loading={isLoading && !bundle}
+                />
               </div>
-              <PortfolioValueChart
-                points={bundle?.performance.candles ?? []}
-                benchmark={bundle?.performance.benchmark ?? []}
-                range={range}
-                onRangeChange={setRange}
+            </StaggerOnMount>
+          </div>
+
+          <div className="min-h-0 border-b border-white/[0.08] p-5 lg:border-b-0">
+            <StaggerOnMount>
+              <HoldingsCard
+                holdings={holdings}
                 loading={isLoading && !bundle}
+                onAddClick={() => setAddOpen(true)}
+                canEdit={true}
+                expanded
+                flush
               />
-            </div>
-          </StaggerOnMount>
+            </StaggerOnMount>
+          </div>
 
-          <StaggerOnMount>
-            <HoldingsCard
-              holdings={holdings}
-              loading={isLoading && !bundle}
-              onAddClick={() => setAddOpen(true)}
-              canEdit={true}
-              expanded
-            />
-          </StaggerOnMount>
+          <div className="min-h-0 border-t-0 p-5 lg:border-r lg:border-white/[0.08]">
+            <StaggerOnMount>
+              <PortfolioAllocationChart holdings={holdings} loading={isLoading && !bundle} flush />
+            </StaggerOnMount>
+          </div>
 
-          <StaggerOnMount>
-            <PortfolioAllocationChart
-              holdings={holdings}
-              loading={isLoading && !bundle}
-            />
-          </StaggerOnMount>
-
-          <StaggerOnMount>
-            <RelevantEarnings symbols={holdings.map((h) => h.symbol)} />
-          </StaggerOnMount>
+          <div className="min-h-0 p-5">
+            <StaggerOnMount>
+              <RelevantEarnings symbols={holdings.map((h) => h.symbol)} flush />
+            </StaggerOnMount>
+          </div>
         </div>
       </motion.main>
 
@@ -339,16 +344,17 @@ function ValueAndDelta({
 // ─── Holdings ─────────────────────────────────────────────────────────────
 
 function HoldingsCard({
-  holdings, loading, onAddClick, canEdit, expanded,
+  holdings, loading, onAddClick, canEdit, expanded, flush,
 }: {
   holdings: Bundle["holdings"];
   loading: boolean;
   onAddClick?: () => void;
   canEdit?: boolean;
   expanded?: boolean;
+  flush?: boolean;
 }): JSX.Element {
   return (
-    <div className={cn("rounded-2xl border border-white/10 bg-[#101116] overflow-hidden", expanded && "h-full flex flex-col")}>
+    <div className={cn("rounded-2xl border border-white/10 bg-[#101116] overflow-hidden", expanded && "h-full flex flex-col", flush && "rounded-none border-0 bg-transparent")}>
       <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
         <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
           Holdings

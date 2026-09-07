@@ -7,6 +7,7 @@ import useSWR from "swr";
 
 import { Skeleton } from "@/components/foundation/skeleton";
 import { TickerLogo } from "@/components/foundation/ticker-logo";
+import { cn } from "@/lib/utils";
 
 type Dividend = {
   paymentDate: string;
@@ -21,7 +22,10 @@ type Event = {
   date: string;
 };
 
-type Props = { symbols: string[] };
+type Props = {
+  symbols: string[];
+  flush?: boolean;
+};
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { cache: "no-store" });
@@ -29,7 +33,7 @@ async function fetchJson<T>(url: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-export function RelevantEarnings({ symbols }: Props): JSX.Element {
+export function RelevantEarnings({ symbols, flush }: Props): JSX.Element {
   const [window, setWindow] = useState<"upcoming" | "recent">("upcoming");
   const uniqueSymbols = useMemo(() => [...new Set(symbols)], [symbols]);
   const key = uniqueSymbols.length > 0 ? uniqueSymbols.map((symbol) => `/api/asset/${symbol}/dividends`).join("|") : null;
@@ -59,7 +63,7 @@ export function RelevantEarnings({ symbols }: Props): JSX.Element {
   }, [data, uniqueSymbols, window]);
 
   return (
-    <section className="h-full rounded-2xl border border-white/10 bg-[#101116] p-5" aria-labelledby="portfolio-calendar-title">
+    <section className={cn("h-full rounded-2xl border border-white/10 bg-[#101116] p-5", flush && "rounded-none border-0 bg-transparent p-0")} aria-labelledby="portfolio-calendar-title">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h2 id="portfolio-calendar-title" className="text-[15px] font-semibold tracking-tight text-foreground">Economic calendar</h2>
