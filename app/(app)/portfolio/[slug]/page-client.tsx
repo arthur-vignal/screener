@@ -32,7 +32,7 @@
 import { motion } from "motion/react";
 import useSWR from "swr";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { JSX } from "react";
 import {
@@ -115,7 +115,6 @@ export default function PortfolioDetailPage({
   slug,
 }: { slug: string }): JSX.Element {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [range, setRange] = useState<RangeKey>("1M");
 
   const { data: bundle, error, isLoading, mutate: mutateBundle } = useSWR<Bundle>(
@@ -127,15 +126,18 @@ export default function PortfolioDetailPage({
 
   // Deep link ?add=1 (vem do /portfolio/new após criar): abre modal
   // automaticamente quando portfolio está vazio.
+  // Lê searchParams direto do window (não useSearchParams) pra evitar
+  // hydration mismatch no Next 16 — useSearchParams precisa de Suspense.
   useEffect(() => {
-    if (searchParams.get("add") === "1") {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("add") === "1") {
       setAddOpen(true);
-      // Limpa o param pra não reabrir no refresh.
       const url = new URL(window.location.href);
       url.searchParams.delete("add");
       window.history.replaceState({}, "", url.toString());
     }
-  }, [searchParams]);
+  }, []);
 
   useEffect(() => {
     if (error && (error as Error & { status?: number }).status === 401) {
