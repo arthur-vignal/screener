@@ -39,6 +39,7 @@ import { MetricStrip, type MetricCell } from "@/components/asset/metric-strip";
 import { PEHistoryChart, type PEHistoryRow, type PESectorStats } from "@/components/asset/pe-history-chart";
 import { PERatioComparison, type PeerRow } from "@/components/asset/pe-ratio-comparison";
 import { PriceChart, type RangeKey } from "@/components/asset/price-chart";
+import { PriceForecastSummary } from "@/components/asset/price-forecast-summary";
 import { PriceHero } from "@/components/asset/price-hero";
 import { ValueAddedCard } from "@/components/asset/value-added-card";
 import {
@@ -163,9 +164,36 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     fetchJson,
     { revalidateOnFocus: false },
   );
-  // ── Forecast 6m foi MOVIDO pra /asset/[symbol]/analysis (seção 5). ───────────
-  // O endpoint /api/forecast/[symbol] e o componente PriceForecastChart agora
-  // vivem em /analysis. A raiz do ticker foca em PE / earnings / EPS / snapshot.
+
+  // ── Forecast 6m ──────────────────────────────────────────────────────────
+  // Resumo LEVE na raiz (PriceForecastSummary) com 3 métricas:
+  // preço previsto, P(up), banda P10-P90. Sem chart.
+  // Versão completa (fan chart geométrico + density plot com paths MC)
+  // fica em /asset/[symbol]/analysis seção 5.
+  // Erro 404 do endpoint = ticker fora do painel v8 → mostra empty state.
+  const { data: forecastResponse, isLoading: forecastLoading, error: forecastError } = useSWR<{
+    symbol: string;
+    current_price: number;
+    predicted_price_6m: number;
+    predicted_pct_return: number;
+    direction: "up" | "down";
+    monte_carlo: {
+      prob_up: number;
+      p10_price: number;
+      p90_price: number;
+    };
+    disclaimer: string;
+  }>(
+    `/api/forecast/${symbol}`,
+    fetchJson,
+    { revalidateOnFocus: false, dedupingInterval: 60 * 60 * 1000 },
+  );
+
+  const forecast = forecastResponse ?? null;
+  const forecastUnavailable =
+    !!forecastError &&
+    typeof (forecastError as { status?: number })?.status === "number" &&
+    (forecastError as { status: number }).status === 404;
 
   const peerSymbols = useMemo(
     () =>
@@ -477,38 +505,46 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
           <MetricStrip cells={metricCells} />
         </StaggerOnMount>
 
+        {/* Grid 2-col: Forecast summary (raiz, leve) + Analyst estimates.
+            Forecast detalhado (fan chart geométrico + density plot com paths
+            MC) fica em /asset/[symbol]/analysis seção 5 — aqui é só o resumo. */}
         <StaggerOnMount className="mt-6">
-          {/* Card container estilo Fey: Analyst estimates */}
-          <div className="rounded-2xl fey-card p-6">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">
-                <h2 className="text-[16px] font-semibold tracking-tight text-foreground">
-                  Analyst estimates
-                </h2>
-                <span className="inline-flex items-center justify-center h-5 w-5 rounded bg-white/[0.04] border border-white/10 text-[10px] font-semibold text-muted-foreground/70">
-                  A
-                </span>
-              </div>
-              <a
-                href={`/asset/${symbol}/analysis`}
-                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md cursor-pointer bg-white/[0.04] border border-white/10 text-foreground text-[12px] font-medium hover:bg-white/[0.08] hover:border-white/20 transition-colors"
-              >
-                Full analysis
-              </a>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <PriceForecastSummary
+              forecast={forecast}
+              loading={forecastLoading}
+              unavailable={forecastUnavailable}
+            />
 
-            <div>
-              {/* Analyst ratings breakdown — radar pentagonal (sell-side
-                  consensus). O PriceForecastChart foi MOVIDO pra /analysis. */}
-              <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
-                <AnalystRatingsRadar
-                  ratings={deriveRatings(
-                    bundle?.metrics.recommendationMean ?? null,
-                    bundle?.metrics.numberOfAnalystOpinions ?? null
-                  )}
-                  mean={bundle?.metrics.recommendationMean ?? null}
-                  total={bundle?.metrics.numberOfAnalystOpinions ?? null}
-                />
+            <div className="rounded-2xl fey-card p-6">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-[16px] font-semibold tracking-tight text-foreground">
+                    Analyst estimates
+                  </h2>
+                  <span className="inline-flex items-center justify-center h-5 w-5 rounded bg-white/[0.04] border border-white/10 text-[10px] font-semibold text-muted-foreground/70">
+                    A
+                  </span>
+                </div>
+                <a
+                  href={`/asset/${symbol}/analysis`}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md cursor-pointer bg-white/[0.04] border border-white/10 text-foreground text-[12px] font-medium hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                >
+                  Full analysis
+                </a>
+              </div>
+
+              <div>
+                <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
+                  <AnalystRatingsRadar
+                    ratings={deriveRatings(
+                      bundle?.metrics.recommendationMean ?? null,
+                      bundle?.metrics.numberOfAnalystOpinions ?? null
+                    )}
+                    mean={bundle?.metrics.recommendationMean ?? null}
+                    total={bundle?.metrics.numberOfAnalystOpinions ?? null}
+                  />
+                </div>
               </div>
             </div>
           </div>
