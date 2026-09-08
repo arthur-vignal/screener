@@ -185,12 +185,12 @@ export function PortfolioCalendar({ symbols, flush }: Props): JSX.Element {
   return (
     <section
       className={cn(
-        "h-full rounded-2xl border border-white/10 bg-[#101116] p-5",
+        "h-full min-h-0 flex flex-col rounded-2xl border border-white/10 bg-[#101116] p-5",
         flush && "rounded-none border-0 bg-transparent p-0",
       )}
       aria-labelledby="portfolio-calendar-title"
     >
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2">
           <h2
             id="portfolio-calendar-title"
@@ -217,7 +217,7 @@ export function PortfolioCalendar({ symbols, flush }: Props): JSX.Element {
         </div>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 -mr-1">
         {loading ? (
           <CalendarSkeleton />
         ) : error ? (

@@ -165,11 +165,12 @@ export default function PortfolioDetailPage({
         variants={staggerParentVariants as any}
         initial="hidden"
         animate="show"
-        className="w-[90%] mx-auto py-6"
+        className="w-[90%] mx-auto py-4 flex flex-col"
+        style={{ height: "100vh" }}
       >
         {/* Header — seta de voltar à esquerda, Portfolio / {name} no centro, holdings à direita */}
         <StaggerOnMount>
-          <div className="flex items-center justify-between gap-3 mb-5">
+          <div className="flex items-center justify-between gap-3 mb-3">
             <div className="flex items-center gap-3 min-w-0">
               <Link
                 href="/portfolio"
@@ -210,7 +211,7 @@ export default function PortfolioDetailPage({
 
         {/* Valor total + delta (mesmo padrão do /home) */}
         <StaggerOnMount>
-          <div className="mb-6">
+          <div className="mb-3">
             <ValueAndDelta
               totalValue={summary?.totalValue ?? null}
               change={summary?.changeToday ?? null}
@@ -225,26 +226,28 @@ export default function PortfolioDetailPage({
           </div>
         </StaggerOnMount>
 
-        <div className="grid grid-cols-1 gap-5 overflow-hidden rounded-2xl border border-white/10 bg-[#101116] lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)] lg:grid-rows-[minmax(420px,1fr)_minmax(320px,0.78fr)]">
-          <div className="min-h-0 border-b border-white/[0.08] p-5 lg:border-b-0 lg:border-r">
+        <div className="grid flex-1 min-h-0 grid-cols-1 gap-5 overflow-hidden rounded-2xl border border-white/10 bg-[#101116] lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)] lg:grid-rows-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+          <div className="min-h-0 overflow-hidden border-b border-white/[0.08] p-5 lg:border-b-0 lg:border-r">
             <StaggerOnMount>
-              <div className="h-full">
-                <div className="mb-1 flex items-center justify-between gap-3">
+              <div className="flex h-full min-h-0 flex-col">
+                <div className="mb-1 flex items-center justify-between gap-3 shrink-0">
                   <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Portfolio performance</h2>
                   <span className="text-[11px] tabular-nums text-muted-foreground/70">{bundle?.performance.candles.length ?? 0} pontos</span>
                 </div>
-                <PortfolioValueChart
-                  points={bundle?.performance.candles ?? []}
-                  benchmark={bundle?.performance.benchmark ?? []}
-                  range={range}
-                  onRangeChange={setRange}
-                  loading={isLoading && !bundle}
-                />
+                <div className="min-h-0 flex-1">
+                  <PortfolioValueChart
+                    points={bundle?.performance.candles ?? []}
+                    benchmark={bundle?.performance.benchmark ?? []}
+                    range={range}
+                    onRangeChange={setRange}
+                    loading={isLoading && !bundle}
+                  />
+                </div>
               </div>
             </StaggerOnMount>
           </div>
 
-          <div className="min-h-0 border-b border-white/[0.08] p-5 lg:border-b-0">
+          <div className="flex min-h-0 flex-col overflow-hidden border-b border-white/[0.08] p-5 lg:border-b-0">
             <StaggerOnMount>
               <HoldingsCard
                 holdings={holdings}
@@ -257,13 +260,13 @@ export default function PortfolioDetailPage({
             </StaggerOnMount>
           </div>
 
-          <div className="min-h-0 border-t-0 p-5 lg:border-r lg:border-white/[0.08]">
+          <div className="flex min-h-0 flex-col overflow-hidden border-t-0 p-5 lg:border-r lg:border-white/[0.08]">
             <StaggerOnMount>
               <PortfolioAllocationChart holdings={holdings} loading={isLoading && !bundle} flush />
             </StaggerOnMount>
           </div>
 
-          <div className="min-h-0 p-5">
+          <div className="flex min-h-0 flex-col overflow-hidden p-5">
             <StaggerOnMount>
               <PortfolioCalendar symbols={holdings.map((h) => h.symbol)} flush />
             </StaggerOnMount>

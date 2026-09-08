@@ -67,8 +67,8 @@ export function PortfolioValueChart({
   if (loading) return <LoadingChart className={className} />;
 
   return (
-    <div className={cn("relative", className)}>
-      <div className="h-[280px] w-full">
+    <div className={cn("relative h-full flex flex-col", className)}>
+      <div className="min-h-0 flex-1 w-full">
         {data.length === 0 ? (
           <EmptyChart />
         ) : (
@@ -78,7 +78,7 @@ export function PortfolioValueChart({
         )}
       </div>
 
-      <div className="mt-4 flex items-center gap-1">
+      <div className="mt-3 flex items-center gap-1 shrink-0">
         {RANGES.map((r) => (
           <button
             key={r}
@@ -193,9 +193,9 @@ function ValueTooltip({
 
 function LoadingChart({ className }: { className?: string }): JSX.Element {
   return (
-    <div className={className}>
-      <Skeleton className="h-[320px] w-full" roundedMd />
-      <div className="mt-4 flex gap-1">
+    <div className={cn("relative h-full flex flex-col", className)}>
+      <Skeleton className="min-h-0 flex-1 w-full" roundedMd />
+      <div className="mt-3 flex gap-1 shrink-0">
         {Array.from({ length: 8 }).map((_, i) => (
           <Skeleton key={i} className="h-7 w-12" />
         ))}
@@ -206,7 +206,7 @@ function LoadingChart({ className }: { className?: string }): JSX.Element {
 
 function EmptyChart(): JSX.Element {
   return (
-    <div className="h-[320px] flex items-center justify-center">
+    <div className="h-full min-h-0 flex items-center justify-center">
       <div className="text-center">
         <p className="text-[14px] text-foreground">Sem dados de variação.</p>
         <p className="mt-1.5 text-[12px] text-muted-foreground/70">
