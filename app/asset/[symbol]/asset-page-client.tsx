@@ -40,7 +40,7 @@ import { PEHistoryChart, type PEHistoryRow, type PESectorStats } from "@/compone
 import { PERatioComparison, type PeerRow } from "@/components/asset/pe-ratio-comparison";
 import { PriceChart, type RangeKey } from "@/components/asset/price-chart";
 import { PriceHero } from "@/components/asset/price-hero";
-import { FairValueChart } from "@/components/asset/fair-value-chart";
+import { PriceForecastChart } from "@/components/asset/price-forecast-chart";
 import { ValueAddedCard } from "@/components/asset/value-added-card";
 import {
   QuarterResults,
@@ -164,6 +164,40 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     fetchJson,
     { revalidateOnFocus: false },
   );
+  // ── Forecast 6m (sulfur-ml v8 ensemble_ridge_hgb) ────────────────────
+  type ForecastRow = {
+    date: string;
+    close: number;
+  };
+  type ForecastPayload = {
+    symbol: string;
+    current_price: number;
+    as_of: string;
+    horizon: "6m";
+    predicted_price_6m: number;
+    predicted_pct_return: number;
+    direction: "up" | "down";
+    confidence: number;
+    band: {
+      p10_price: number;
+      p90_price: number;
+      low_6m_price: number;
+      base_6m_price: number;
+      high_6m_price: number;
+    };
+  };
+  const { data: forecast, error: forecastError } = useSWR<ForecastPayload>(
+    `/api/forecast/${symbol}`,
+    fetchJson,
+    { revalidateOnFocus: false, shouldRetryOnError: false },
+  );
+  const { data: forecastHistoryData } = useSWR<{
+    symbol: string;
+    history: ForecastRow[];
+  }>(`/api/forecast/${symbol}/history`, fetchJson, {
+    revalidateOnFocus: false,
+  });
+
   const peerSymbols = useMemo(
     () =>
       (peerData?.peers ?? [])
@@ -511,9 +545,13 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
                   mockava target sell-side — brapi não tem pra BR) por
                   FairValueChart que plota preço vs fair value implícito
                   (= EPS LTM × P/L médio 5a). Só dado real. */}
-              <FairValueChart
-                earningsYieldHistory={bundle?.earningsYieldHistory ?? []}
-              />
+              <PriceForecastChart
+                              symbol={symbol}
+                              historicalPrices={forecastHistoryData?.history ?? []}
+                              forecast={forecast ?? null}
+                              loading={!forecast && !forecastError}
+                              unavailable={!!forecastError && forecast == null}
+                            />
             </div>
           </div>
         </StaggerOnMount>
