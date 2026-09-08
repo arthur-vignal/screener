@@ -55,7 +55,7 @@ import {
   type RangeKey,
 } from "@/components/portfolio/portfolio-value-chart";
 import { AddHoldingDialog } from "@/components/portfolio/add-holding-dialog";
-import { RelevantEarnings } from "@/components/portfolio/relevant-earnings";
+import { PortfolioCalendar } from "@/components/portfolio/portfolio-calendar";
 import { PortfolioAllocationChart } from "@/components/portfolio/portfolio-allocation-chart";
 import { TickerLogo } from "@/components/foundation/ticker-logo";
 import type { NewsItem } from "@/components/home/news-feed";
@@ -265,7 +265,7 @@ export default function PortfolioDetailPage({
 
           <div className="min-h-0 p-5">
             <StaggerOnMount>
-              <RelevantEarnings symbols={holdings.map((h) => h.symbol)} flush />
+              <PortfolioCalendar symbols={holdings.map((h) => h.symbol)} flush />
             </StaggerOnMount>
           </div>
         </div>
