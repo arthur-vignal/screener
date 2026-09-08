@@ -44,6 +44,7 @@ import {
   ExternalLink,
   LineChart,
   Plus,
+  Trash2,
 } from "lucide-react";
 
 import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
@@ -57,6 +58,7 @@ import {
   type RangeKey,
 } from "@/components/portfolio/portfolio-value-chart";
 import { AddHoldingDialog } from "@/components/portfolio/add-holding-dialog";
+import { DeletePortfolioDialog } from "@/components/portfolio/delete-portfolio-dialog";
 import { HoldingDetailPopover } from "@/components/portfolio/holding-detail-popover";
 import { PortfolioCalendar } from "@/components/portfolio/portfolio-calendar";
 import { PortfolioAllocationChart } from "@/components/portfolio/portfolio-allocation-chart";
@@ -121,13 +123,14 @@ export default function PortfolioDetailPage({
 }: { slug: string }): JSX.Element {
   const router = useRouter();
   const [range, setRange] = useState<RangeKey>("1M");
+  const [addOpen, setAddOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const { data: bundle, error, isLoading, mutate: mutateBundle } = useSWR<Bundle>(
     `/api/portfolio/${slug}?range=${range}`,
     fetchJson,
     { refreshInterval: 60_000, revalidateOnFocus: true },
   );
-  const [addOpen, setAddOpen] = useState(false);
 
   // Deep link ?add=1 (vem do /portfolio/new após criar): abre modal
   // automaticamente quando portfolio está vazio.
@@ -205,6 +208,29 @@ export default function PortfolioDetailPage({
               >
                 Statistics
               </Link>
+              {meta?.isOwner && (
+                <button
+                  type="button"
+                  onClick={() => setDeleteOpen(true)}
+                  aria-label="Deletar portfolio"
+                  className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border text-muted-foreground/85 transition-colors"
+                  style={{
+                    backgroundColor: "rgba(216,79,104,0.06)",
+                    borderColor: "rgba(216,79,104,0.25)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "rgba(216,79,104,0.14)";
+                    e.currentTarget.style.color = "#d84f68";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "rgba(216,79,104,0.06)";
+                    e.currentTarget.style.color = "";
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+                  Delete
+                </button>
+              )}
               {holdings.length > 0 && (
                 <span className="inline-flex items-center gap-1.5">
                   <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[#4dbe95]" />
@@ -284,6 +310,24 @@ export default function PortfolioDetailPage({
         onAdded={() => mutateBundle()}
         portfolioSlug={slug}
         isFirstHolding={holdings.length === 0}
+      />
+
+      <DeletePortfolioDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        portfolioName={meta?.name ?? ""}
+        holdingsCount={holdings.length}
+        onConfirm={async () => {
+          const res = await fetch(`/api/portfolio/${slug}`, {
+            method: "DELETE",
+            cache: "no-store",
+          });
+          if (!res.ok && res.status !== 204) {
+            const err = (await res.json().catch(() => ({}))) as { error?: string };
+            throw new Error(err.error ?? `HTTP ${res.status}`);
+          }
+          router.push("/portfolio");
+        }}
       />
 
       <AnimatedFloatingDock />

@@ -401,3 +401,49 @@ function findCandleAt(candles: Candle[], ts: number): number {
   }
   return best;
 }
+
+// ─── DELETE: remove portfolio inteiro ────────────────────────────────────
+
+/**
+ * DELETE /api/portfolio/[slug] — hard delete do portfolio.
+ *
+ * Auth: obrigatório. Apenas o dono (owner_id === user.userId) pode
+ * deletar. Holdings e portfolio_history vão via ON DELETE CASCADE
+ * definido na migration 0001.
+ *
+ * Retorna 204 No Content em sucesso. 403 se não for dono.
+ */
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> },
+): Promise<NextResponse> {
+  const { slug } = await params;
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  // Confirma que o portfolio existe E que o user é dono.
+  const rows = await query<{ id: number; owner_id_text: string }>(
+    `SELECT id, owner_id::text AS owner_id_text
+     FROM portfolios
+     WHERE slug = $1
+     LIMIT 1`,
+    [slug],
+  );
+  if (rows.length === 0) {
+    return NextResponse.json({ error: "não encontrado" }, { status: 404 });
+  }
+  const portfolio = rows[0]!;
+  if (portfolio.owner_id_text !== user.userId) {
+    return NextResponse.json(
+      { error: "apenas o dono pode deletar o portfolio" },
+      { status: 403 },
+    );
+  }
+
+  // Hard delete. Cascade cuida das tabelas dependentes.
+  await query(`DELETE FROM portfolios WHERE id = $1`, [portfolio.id]);
+
+  return new NextResponse(null, { status: 204 });
+}
