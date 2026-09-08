@@ -229,20 +229,18 @@ export default function PortfolioDetailPage({
         <div className="grid flex-1 min-h-0 grid-cols-1 gap-5 overflow-hidden rounded-2xl border border-white/10 bg-[#101116] lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)] lg:grid-rows-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
           <div className="min-h-0 overflow-hidden border-b border-white/[0.08] p-5 lg:border-b-0 lg:border-r">
             <StaggerOnMount>
-              <div className="flex h-full min-h-0 flex-col">
+              <div className="flex flex-col">
                 <div className="mb-1 flex items-center justify-between gap-3 shrink-0">
                   <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Portfolio performance</h2>
                   <span className="text-[11px] tabular-nums text-muted-foreground/70">{bundle?.performance.candles.length ?? 0} pontos</span>
                 </div>
-                <div className="min-h-0 flex-1">
-                  <PortfolioValueChart
-                    points={bundle?.performance.candles ?? []}
-                    benchmark={bundle?.performance.benchmark ?? []}
-                    range={range}
-                    onRangeChange={setRange}
-                    loading={isLoading && !bundle}
-                  />
-                </div>
+                <PortfolioValueChart
+                  points={bundle?.performance.candles ?? []}
+                  benchmark={bundle?.performance.benchmark ?? []}
+                  range={range}
+                  onRangeChange={setRange}
+                  loading={isLoading && !bundle}
+                />
               </div>
             </StaggerOnMount>
           </div>

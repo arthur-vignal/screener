@@ -67,8 +67,8 @@ export function PortfolioValueChart({
   if (loading) return <LoadingChart className={className} />;
 
   return (
-    <div className={cn("relative h-full flex flex-col", className)}>
-      <div className="min-h-[220px] flex-1 w-full">
+    <div className={cn("relative flex flex-col", className)}>
+      <div className="h-[320px] w-full">
         {data.length === 0 ? (
           <EmptyChart />
         ) : (
@@ -78,7 +78,7 @@ export function PortfolioValueChart({
         )}
       </div>
 
-      <div className="mt-3 flex items-center gap-1 shrink-0">
+      <div className="mt-3 flex items-center gap-1">
         {RANGES.map((r) => (
           <button
             key={r}
@@ -159,9 +159,7 @@ function ChartInner({
         fill={`url(#${fillId})`}
         dot={false}
         activeDot={{ r: 4, fill: lineColor }}
-        isAnimationActive={true}
-        animationDuration={1500}
-        animationEasing="ease-out"
+        isAnimationActive={false}
         connectNulls={false}
       />
     </AreaChart>
@@ -193,9 +191,9 @@ function ValueTooltip({
 
 function LoadingChart({ className }: { className?: string }): JSX.Element {
   return (
-    <div className={cn("relative h-full flex flex-col", className)}>
-      <Skeleton className="min-h-[220px] flex-1 w-full" roundedMd />
-      <div className="mt-3 flex gap-1 shrink-0">
+    <div className={cn("relative flex flex-col", className)}>
+      <Skeleton className="h-[400px] w-full" roundedMd />
+      <div className="mt-3 flex gap-1">
         {Array.from({ length: 8 }).map((_, i) => (
           <Skeleton key={i} className="h-7 w-12" />
         ))}
@@ -206,7 +204,7 @@ function LoadingChart({ className }: { className?: string }): JSX.Element {
 
 function EmptyChart(): JSX.Element {
   return (
-    <div className="min-h-[220px] h-full flex items-center justify-center">
+    <div className="h-[400px] flex items-center justify-center">
       <div className="text-center">
         <p className="text-[14px] text-foreground">Sem dados de variação.</p>
         <p className="mt-1.5 text-[12px] text-muted-foreground/70">
