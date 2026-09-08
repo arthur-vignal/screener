@@ -146,14 +146,14 @@
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
     color-scheme: dark;
-    --background: #070709;
+    --background: #08090b;
     --foreground: #eeeff1;
     --card: #101116;
     --card-foreground: #eeeff1;
     --popover: #131419;
     --popover-foreground: #eeeff1;
     --primary: #489ffa;
-    --primary-foreground: #070709;
+    --primary-foreground: #08090b;
     --secondary: #1a1b20;
     --secondary-foreground: #eeeff1;
     --muted: #16181c;
@@ -242,9 +242,11 @@ html {
  * Não troca paleta nem fontes — só adiciona camadas de profundidade.
  * ───────────────────────────────────────────────────────────────────── */
 
-/* Background global: gradiente metálico fixo (não rola junto com a página) */
+/* Background global: gradiente metálico fixo (não rola junto com a página).
+   Cor base: #08090b (do Google Stitch — levemente mais escuro que #070709
+   anterior). */
 body {
-  background-color: #070709;
+  background-color: #08090b;
   background-image:
     radial-gradient(circle at 50% -20%, rgba(255, 255, 255, 0.06) 0%, transparent 60%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.025) 0%, rgba(255, 255, 255, 0.005) 40%, rgba(0, 0, 0, 0.45) 100%);
@@ -252,14 +254,17 @@ body {
 }
 
 /* .fey-card — substitui cards antigos com bg-[#101116] border-white/10.
-   Gradient vertical próprio (topo levemente mais claro) + 2-layer
-   box-shadow pra criar profundidade. SEM borda visível.
+   Cores do Google Stitch:
+     - Topo: rgb(14, 16, 20) = #0e1014
+     - Base: rgb(9, 10, 13)   = #090a0d
+   Card é MAIS ESCURO que o body (#08090b) → efeito layer/recesso.
+   Gradient vertical + 2-layer box-shadow pra profundidade. SEM borda.
 
    Override `.fey-card--flat` zera o box-shadow (cards internos a um
    container pai que já tem sombra; ou quando `flush` remove o fundo
    próprio). */
 .fey-card {
-  background: linear-gradient(180deg, #131418 0%, #0b0c0f 100%);
+  background: linear-gradient(180deg, #0e1014 0%, #090a0d 100%);
   box-shadow:
     rgba(0, 0, 0, 0.45) 0px 6px 16px,
     rgba(0, 0, 0, 0.25) 0px 1px 3px;
@@ -269,9 +274,9 @@ body {
 }
 
 /* .fey-card-sm — variante pra sub-cards (lista de holdings, news items).
-   Mesma profundidade mas sombras mais suaves. */
+   Mesmas cores do card principal, sombras mais suaves. */
 .fey-card-sm {
-  background: linear-gradient(180deg, #121318 0%, #0a0b0e 100%);
+  background: linear-gradient(180deg, #0e1014 0%, #090a0d 100%);
   box-shadow:
     rgba(0, 0, 0, 0.35) 0px 2px 6px,
     rgba(0, 0, 0, 0.2) 0px 1px 2px;
@@ -309,7 +314,7 @@ body {
 .asset-bg {
   position: relative;
   isolation: isolate;
-  background-color: #070709;
+  background-color: #08090b;
 }
 
 /* Pseudo-elemento carrega o glow com opacidade calibrada. Ellipse

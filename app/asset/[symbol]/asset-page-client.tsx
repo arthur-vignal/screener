@@ -428,7 +428,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
         "min-h-screen text-foreground asset-bg",
         assetClassName
       )}
-      style={{ background: "#070709", ...assetStyle }}
+      style={{ background: "#08090b", ...assetStyle }}
     >
       <motion.main
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
