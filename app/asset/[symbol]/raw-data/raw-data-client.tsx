@@ -28,6 +28,7 @@ import type { JSX } from "react";
 import { AssetHeader } from "@/components/asset/asset-header";
 import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
 import { StaggerOnMount } from "@/components/foundation/stagger";
+import { useAssetBackground } from "@/lib/use-asset-background";
 
 type RawRow = {
   endDate: string;
@@ -82,10 +83,16 @@ export function RawDataPageClient({ symbol }: Props): JSX.Element {
     document.title = `Raw data · ${symbol} · Sulfur`;
   }, [symbol]);
 
+  // Glow da cor da marca (mesmo sistema do /asset/[symbol] raiz e dos
+  // chips de ticker em /home/news-feed). Hook aplica variáveis CSS que
+  // a classe `.asset-bg` (globals.css) consome.
+  const { style: assetStyle, className: assetClassName } =
+    useAssetBackground(symbol);
+
   return (
     <div
-      className="min-h-screen text-foreground asset-bg"
-      style={{ "--asset-glow-color": "#475569", "--asset-glow-opacity": "0.21" } as React.CSSProperties}
+      className={`min-h-screen text-foreground ${assetClassName}`}
+      style={assetStyle}
     >
       <main className="w-[90%] mx-auto py-6 pb-32">
         <StaggerOnMount>

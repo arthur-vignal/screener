@@ -83,6 +83,7 @@ import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
 import { StaggerOnMount } from "@/components/foundation/stagger";
 
 import { cn } from "@/lib/utils";
+import { useAssetBackground } from "@/lib/use-asset-background";
 
 type AnalysisResponse = {
   symbol: string;
@@ -240,10 +241,15 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
     );
   }, [statsHistory]);
 
+  // Glow da cor da marca (mesmo sistema do /asset/[symbol] raiz e dos
+  // chips de ticker em /home/news-feed).
+  const { style: assetStyle, className: assetClassName } =
+    useAssetBackground(symbol);
+
   return (
     <div
-      className="min-h-screen text-foreground asset-bg"
-      style={{ "--asset-glow-color": "#475569", "--asset-glow-opacity": "0.21" } as React.CSSProperties}
+      className={`min-h-screen text-foreground ${assetClassName}`}
+      style={assetStyle}
     >
       <main className="w-[90%] mx-auto py-6 pb-32">
         {/* Header padrão da página de asset */}
