@@ -149,7 +149,7 @@ function KeyStat({
   sub?: string | null;
 }): JSX.Element {
   return (
-    <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] px-4 py-3">
+    <div className="rounded-lg fey-card-sm px-4 py-3">
       <div className="text-[10px] uppercase tracking-[0.14em] text-foreground/70 font-semibold mb-1">
         {label}
       </div>

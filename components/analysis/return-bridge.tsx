@@ -116,7 +116,7 @@ export function ReturnBridge({ series }: Props) {
   // ── Empty state ──────────────────────────────────────────────────────
   if (result.insufficient || data.length === 0) {
     return (
-      <Card className="bg-[var(--surface)] border-[var(--border)] p-5">
+      <Card className="fey-card p-5">
         <div className="text-sm text-foreground/70">
           Sem dados suficientes pra decompor o retorno em {windowYearsY(windowYears)}.
           <br />
@@ -134,7 +134,7 @@ export function ReturnBridge({ series }: Props) {
   const total = result.totalReturn;
 
   return (
-    <Card className="bg-[var(--surface)] border-[var(--border)] p-5">
+    <Card className="fey-card p-5">
       <header className="flex items-start justify-between gap-3 mb-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 text-foreground/60 text-[13px] font-semibold tracking-tight mb-1">
@@ -192,7 +192,7 @@ export function ReturnBridge({ series }: Props) {
                   const sign = d.kind === "negative" ? "−" : "+";
                   const value = d.value * (d.kind === "negative" ? -1 : 1);
                   return (
-                    <div className="rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-xs shadow-md max-w-[260px]">
+                    <div className="rounded-md bg-[#0d0d11] border border-white/15 px-3 py-2 text-xs shadow-md max-w-[260px]">
                       <div className="font-semibold text-foreground mb-1">
                         {d.label}
                       </div>
@@ -253,7 +253,7 @@ function WindowSelector({
   onChange: (v: ReturnBridgeWindow) => void;
 }) {
   return (
-    <div className="inline-flex rounded-md border border-[var(--border)] bg-[var(--surface-2)]">
+    <div className="inline-flex rounded-md bg-[#0d0d11] border border-white/15">
       {RETURN_BRIDGE_WINDOWS.map((y) => (
         <button
           key={y}

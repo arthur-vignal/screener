@@ -157,7 +157,7 @@ export function ChartCard({
   return (
     <div
       className={cn(
-        "rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5",
+        "rounded-xl fey-card p-5",
         className,
       )}
     >
