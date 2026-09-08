@@ -299,42 +299,39 @@ body {
 }
 /*
  * Aplicado no container raiz de /asset/[symbol]/* via
- * useAssetBackground(symbol), que injeta:
- *   --asset-glow-color    hex da cor da marca (PETR4=#008542, etc.)
- *   --asset-glow-opacity  calibrada pela luminância (0.16 claro → 0.26 escuro)
+ * useAssetBackground(symbol), que injeta via style inline:
+ *   background-color: #151619 (cor sólida base)
+ *   background-image: radial-gradient(... cor da marca com alpha ...)
  *
- * ARQUITETURA:
- *   .asset-bg           → carrega TUDO num único background-image multi-layer:
- *                         1) camada base sólida #151619 (fundo preto)
- *                         2) camada do glow radial da cor da marca, com
- *                            opacidade calibrada via color-mix na CSS var
- *                            --asset-glow-opacity
- *                         Sem pseudo-elemento ::before pra evitar conflito
- *                         de stacking context (v3 bug: ::before com
- *                         z-index:-1 sumia atrás do background-color do
- *                         próprio pai — confirmado empiricamente em 2026-09-08).
+ * Por que inline e não classe? Histórico:
+ *   - v1 (daf127d, 2026-08-27): classe .asset-bg tinha background-image
+ *     radial — funcionava mas opacidade ficava 1.0 (saturada).
+ *   - v2 (c4781c4): moveram glow pra ::before com z-index:-1 pra aplicar
+ *     opacidade calibrada via opacity. BUG: ::before com z-index:-1 +
+ *     isolation:isolate no pai fica atrás do background-color do
+ *     próprio pai (CSS spec Appendix E) — glow SUMIU visualmente.
+ *   - v3 (dbce47b): voltaram glow pra background-image na classe com
+ *     color-mix(in oklab, ...). Mas:
+ *       (a) color-mix dentro de calc(var() * 100%) não funciona
+ *           consistentemente em todos browsers modernos
+ *       (b) background: shorthand em asset-page-client.tsx matava
+ *           o background-image da classe
+ *   - v4 (atual): inline style direto com cor + alpha pré-calculados.
+ *     Sem color-mix, sem pseudo-elemento, sem @supports hacks.
+ *     Classe .asset-bg só cuida de position/isolation.
  *
- * Camadas pintadas top→bottom (CSS pinta primeiro a última listada):
- *   layer 1 (topo):  radial-gradient da cor da marca (com opacidade calibrada)
- *   layer 2 (base):  cor sólida #151619
+ * Calibração visual:
+ *   - Opacidade: 0.16 (cor clara) → 0.26 (cor escura).
+ *     Sobe de v2 (0.10/0.18 que ficou "barriga") e v3 (0.04/0.08 que
+ *     ficou fraco demais).
+ *   - Ellipse 150%×85%, falloff 75% — espalha lateral e vertical sem
+ *     hot-spot no topo (revisão 2026-08-27).
  *
  * `isolation: isolate` impede que pseudo-elementos do topbar/dock herdem.
  * ───────────────────────────────────────────────────────────────────── */
 .asset-bg {
   position: relative;
   isolation: isolate;
-  background-color: #151619;
-  background-image:
-    radial-gradient(
-      ellipse 150% 85% at 50% 0%,
-      color-mix(
-        in oklab,
-        var(--asset-glow-color, #475569)
-          calc(var(--asset-glow-opacity, 0.21) * 100%),
-        transparent
-      ) 0%,
-      transparent 75%
-    );
 }
 
 /* Chip de ticker nas news — fundo tingido pela cor da marca quando o

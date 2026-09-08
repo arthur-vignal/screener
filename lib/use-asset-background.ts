@@ -20,12 +20,6 @@
 import { useMemo } from "react";
 import { getBrandColor } from "@/lib/brand-colors";
 
-export type AssetBackgroundStyle = React.CSSProperties & {
-  // CSS variables consumidas em globals.css
-  "--asset-glow-color": string;
-  "--asset-glow-opacity": string;
-};
-
 /**
  * Converte um hex em componentes r,g,b (0-255, inteiros).
  * Aceita "#RGB", "#RRGGBB".
@@ -47,6 +41,22 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 }
 
 /**
+ * Converte um hex em hex+alpha (RGBA-equivalente).
+ *   "#008542" + 0.24 → "#0085423d"  (alpha 0.24 * 255 = 61 = 0x3d)
+ * Aceita "#RGB", "#RRGGBB".
+ */
+function hexWithAlpha(hex: string, alpha: number): string {
+  let h = hex.replace("#", "");
+  if (h.length === 3) {
+    h = h.split("").map((c) => c + c).join("");
+  }
+  const alphaHex = Math.round(alpha * 255)
+    .toString(16)
+    .padStart(2, "0");
+  return `#${h}${alphaHex}`;
+}
+
+/**
  * Calcula a luminância percebida (0-1). Cores escuras precisam de glow
  * mais opaco pra serem visíveis; cores claras precisam de menos.
  */
@@ -61,8 +71,7 @@ function perceivedLuminance(hex: string): number {
 
 /**
  * Opacidade calibrada: cor escura → glow forte (até 0.26),
- * cor clara → glow fraco (até 0.16). Sobe de v5 (0.10-0.18) que
- * ficou perceptível mas fraco.
+ * cor clara → glow fraco (até 0.16).
  */
 function glowOpacityForLuminance(lum: number): number {
   // 0.0 (preto) → 0.26; 0.5 (cinza médio) → 0.21; 1.0 (branco) → 0.16
@@ -72,21 +81,24 @@ function glowOpacityForLuminance(lum: number): number {
 }
 
 /**
- * Retorna o style (CSS variables) pra aplicar no container raiz da
- * página do ativo. Usado junto com a classe `asset-bg` que vive no
- * globals.css e referencia essas variables.
+ * Retorna style + className pra aplicar no container raiz da página
+ * do ativo. O style inclui TUDO (background-color base + radial
+ * gradient do glow com alpha pré-calculado) — sem CSS vars, sem
+ * color-mix, sem pseudo-elemento ::before. Funciona em qualquer
+ * browser 2017+.
  */
 export function useAssetBackground(symbol: string): {
-  style: AssetBackgroundStyle;
+  style: React.CSSProperties;
   className: string;
 } {
-  const style = useMemo<AssetBackgroundStyle>(() => {
+  const style = useMemo<React.CSSProperties>(() => {
     const hex = getBrandColor(symbol);
     const lum = perceivedLuminance(hex);
     const opacity = glowOpacityForLuminance(lum);
+    const glowColor = hexWithAlpha(hex, opacity);
     return {
-      "--asset-glow-color": hex,
-      "--asset-glow-opacity": String(opacity),
+      backgroundColor: "#151619",
+      backgroundImage: `radial-gradient(ellipse 150% 85% at 50% 0%, ${glowColor} 0%, transparent 75%)`,
     };
   }, [symbol]);
 
