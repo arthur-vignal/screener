@@ -28,10 +28,7 @@ import { useMemo } from "react";
 import type { JSX } from "react";
 import {
   Area,
-  Bar,
-  BarChart,
   CartesianGrid,
-  Cell,
   ComposedChart,
   Line,
   ReferenceDot,
@@ -55,6 +52,7 @@ import {
   packTooltipStyle,
 } from "@/lib/chart-pack";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PriceForecastDensity } from "@/components/asset/price-forecast-density";
 
 type HistoryPoint = { date: string; close: number };
 
@@ -68,6 +66,13 @@ type ForecastBand = {
 
 type MonteCarlo = {
   paths: number[];
+  /**
+   * Trajetórias temporais: amostra de paths × 7 timesteps (mensal).
+   *   trajectories[i] = [S0, S1, S2, S3, S4, S5, S6]
+   * Sorteadas por GBM mês-a-mês (Brownian motion genuíno).
+   * Visualizadas no ComposedChart como linhas cinza claro sobrepostas.
+   */
+  trajectories?: number[][];
   prob_up: number;
   prob_double: number;
   var_95: number;
@@ -110,6 +115,8 @@ type ChartRow = {
   low?: number;
   bandLow?: number;
   bandHigh?: number;
+  /** Linhas de trajetória MC — chaves dinâmicas `path_<idx>`. */
+  [k: `path_${number}`]: number | undefined;
 };
 
 function ymdToTs(ymd: string): number {
@@ -131,12 +138,16 @@ export function PriceForecastChart({
     futureTs: number;
     color: string;
     gradientId: string;
+    /** Quantas trajetórias (0 = sem trajectories). */
+    nTrajectories: number;
   } | null>(() => {
     if (!forecast) return null;
 
     const asOfDate = forecast.as_of.slice(0, 10);
     const asOfTs = ymdToTs(asOfDate);
-    const futureTs = asOfTs + 1000 * 60 * 60 * 24 * 30 * 6; // +6 meses
+    const horizonMonths = 6;
+    const futureTs = asOfTs + 1000 * 60 * 60 * 24 * 30 * horizonMonths;
+    const monthMs = 1000 * 60 * 60 * 24 * 30;
 
     // Filtra candles históricos até as_of (inclusive).
     const hist = historicalPrices
@@ -161,20 +172,6 @@ export function PriceForecastChart({
       });
     }
 
-    // Forecast rows: 3 pontos por cenário (as_of → as_of+6m, dobra no
-    // meio pra dar ligeira curvatura visual). Sem histórico.
-    const midTs = asOfTs + (futureTs - asOfTs) / 2;
-    const fRows: ChartRow[] = [
-      { ts: asOfTs, date: asOfDate },
-      { ts: midTs, date: "" },
-      { ts: futureTs, date: "" },
-    ];
-    fRows[0].base = forecast.current_price;
-    fRows[0].high = forecast.current_price;
-    fRows[0].low = forecast.current_price;
-    fRows[0].bandLow = forecast.current_price;
-    fRows[0].bandHigh = forecast.current_price;
-
     // Pontos finais: anchor = current_price; +6m = cenário.
     // Se MC GBM disponível, cenários high/base/low vêm dos percentis P75/P50/P25
     // dos 1000 paths MC (visualização geométrica real, não aproximação lognormal).
@@ -186,17 +183,63 @@ export function PriceForecastChart({
     const p10_6m = mc ? mc.paths[100] : forecast.band.p10_price;
     const p90_6m = mc ? mc.paths[900] : forecast.band.p90_price;
 
-    fRows[1].base = (forecast.current_price + base6m) / 2;
-    fRows[1].high = (forecast.current_price + high6m) / 2;
-    fRows[1].low = (forecast.current_price + low6m) / 2;
-    fRows[1].bandLow = (forecast.current_price + p10_6m) / 2;
-    fRows[1].bandHigh = (forecast.current_price + p90_6m) / 2;
+    // Trajetórias: amostra MC de 50 paths × 7 timesteps (Brownian genuíno).
+    // Cada trajectories[i] = [S0, S1, ..., S6].
+    // Se ausentes (endpoint sem MC), caímos nos 3 pontos clássicos.
+    const trajectories = mc?.trajectories ?? [];
+    const nTimesteps = horizonMonths + 1; // 7
+    const hasTrajectories = trajectories.length > 0;
 
-    fRows[2].base = base6m;
-    fRows[2].high = high6m;
-    fRows[2].low = low6m;
-    fRows[2].bandLow = p10_6m;
-    fRows[2].bandHigh = p90_6m;
+    // Gera rows de forecast: 7 timesteps (1 por mês) OU 3 pontos (sem trajectories).
+    const nForecastRows = hasTrajectories ? nTimesteps : 3;
+    const fRows: ChartRow[] = [];
+    for (let t = 0; t < nForecastRows; t++) {
+      // Mapear índice "t" pra timestep real. Quando hasTrajectories, t=0..6
+      // correspondem a t=0..6 meses. Sem trajectories, layout original [0, mid, end].
+      const step =
+        hasTrajectories
+          ? t
+          : t === 0
+            ? 0
+            : t === 1
+              ? horizonMonths / 2
+              : horizonMonths;
+      const ts = asOfTs + step * monthMs;
+      const fraction = step / horizonMonths; // 0..1
+      const row: ChartRow = {
+        ts,
+        date: t === 0 ? asOfDate : "",
+      };
+      // Cenários via interpolação linear (straight line do current_price ao 6m).
+      row.base =
+        forecast.current_price +
+        (base6m - forecast.current_price) * fraction;
+      row.high =
+        forecast.current_price +
+        (high6m - forecast.current_price) * fraction;
+      row.low =
+        forecast.current_price +
+        (low6m - forecast.current_price) * fraction;
+      row.bandLow =
+        forecast.current_price +
+        (p10_6m - forecast.current_price) * fraction;
+      row.bandHigh =
+        forecast.current_price +
+        (p90_6m - forecast.current_price) * fraction;
+      // Trajetórias: cada path contribui um valor nesse timestep.
+      if (hasTrajectories) {
+        for (let i = 0; i < trajectories.length; i++) {
+          const path = trajectories[i];
+          // path tem 7 elementos [S0..S6]; mapear t do row → t do path.
+          // Quando nForecastRows=7 e t=0..6, é direto. Quando nForecastRows=3
+          // (sem trajectories), não preenchemos paths.
+          if (t < path.length) {
+            row[`path_${i}`] = path[t];
+          }
+        }
+      }
+      fRows.push(row);
+    }
 
     // Junta — histórico termina em as_of, forecast começa em as_of (com
     // mesmo valor de close/current_price, garantindo continuidade visual).
@@ -211,6 +254,12 @@ export function PriceForecastChart({
       bandLow: forecast.current_price,
       bandHigh: forecast.current_price,
     };
+    // Adiciona paths ao bridge também (S0 = current_price pra todas).
+    if (hasTrajectories) {
+      for (let i = 0; i < trajectories.length; i++) {
+        bridge[`path_${i}`] = forecast.current_price;
+      }
+    }
     // Substitui o último ponto histórico (que tem as_ofTs) pela ponte
     // unificada, evitando duplicação.
     const rows: ChartRow[] = [
@@ -223,7 +272,14 @@ export function PriceForecastChart({
       forecast.direction === "up" ? PACK.asset : PACK.negative;
     const gradientId = `forecast-band-${symbol}-${forecast.direction}`;
 
-    return { rows, asOfTs, futureTs, color, gradientId };
+    return {
+      rows,
+      asOfTs,
+      futureTs,
+      color,
+      gradientId,
+      nTrajectories: trajectories.length,
+    };
   }, [forecast, historicalPrices, symbol]);
 
   // Estados (sulfur-ui-rules §5) ───────────────────────────────────────
@@ -447,6 +503,24 @@ export function PriceForecastChart({
               legendType="none"
             />
 
+            {/* Trajetórias MC (cone de paths) — 50 linhas cinza claro
+                sobrepostas mostrando a incerteza mês-a-mês (Brownian
+                genuíno). Renderizadas ANTES do histórico pra ficar atrás. */}
+            {data.nTrajectories > 0 &&
+              Array.from({ length: data.nTrajectories }, (_, idx) => (
+                <Line
+                  key={`mc-path-${idx}`}
+                  dataKey={`path_${idx}`}
+                  type="monotone"
+                  stroke="rgba(255, 255, 255, 0.06)"
+                  strokeWidth={0.6}
+                  dot={false}
+                  isAnimationActive={false}
+                  connectNulls
+                  legendType="none"
+                />
+              ))}
+
             {/* Linha histórica (branco fino). */}
             <Line
               dataKey="historical"
@@ -617,82 +691,17 @@ export function PriceForecastChart({
         </div>
       )}
 
-      {/* Mini-histograma dos 1000 paths MC — distribuição log-normal
-          esperada, com cauda à direita. Cores: verde se > current_price,
-          vermelho se < current_price. Linha vertical no preço atual. */}
+      {/* Distribuição MC (KDE-like histograma) — 50 bins dos 1000 paths finais.
+          Cores: verde se > current_price, vermelho se <. Linha tracejada no
+          preço atual. Stats header: P(up), VaR95, CVaR95. Footer: P10, P90. */}
       {mc && (
-        <div className="mt-2">
-          <div className="text-[9px] text-foreground/60 uppercase tracking-wider mb-1">
-            Distribuição MC · preço em +6m
-          </div>
-          <div className="h-[80px] w-full">
-            <ResponsiveContainer>
-              <BarChart
-                data={buildHistogramRows(mc, forecast.current_price)}
-                margin={{ top: 4, right: 14, left: 0, bottom: 0 }}
-                barCategoryGap={1}
-              >
-                <XAxis
-                  dataKey="x"
-                  tick={{ fill: PACK.tick, fontSize: 8 }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v: number) => `R$${v.toFixed(0)}`}
-                  minTickGap={50}
-                />
-                <YAxis hide />
-                <Tooltip
-                  wrapperStyle={packTooltipStyle}
-                  cursor={{ fill: "rgba(255,255,255,0.05)" }}
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null;
-                    const p = payload[0]?.payload as HistogramRow | undefined;
-                    if (!p) return null;
-                    return (
-                      <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
-                        <div className="text-[10px] tabular-nums text-foreground mb-0.5">
-                          R$ {p.xMin.toFixed(2)} — R$ {p.xMax.toFixed(2)}
-                        </div>
-                        <div className="text-[11px] tabular-nums text-foreground">
-                          {p.count} paths ({((p.count / mc.n_sims) * 100).toFixed(1)}%)
-                        </div>
-                        {p.xMin < forecast.current_price && p.xMax > forecast.current_price && (
-                          <div className="text-[9px] text-foreground/70 mt-0.5">
-                            cruza preço atual
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }}
-                />
-                <Bar dataKey="count" isAnimationActive={false}>
-                  {buildHistogramRows(mc, forecast.current_price).map(
-                    (row, i) => (
-                      <Cell
-                        key={i}
-                        fill={
-                          row.xMax <= forecast.current_price
-                            ? PACK.negative
-                            : row.xMin >= forecast.current_price
-                              ? PACK.asset
-                              : "color-mix(in srgb, var(--positive) 50%, var(--negative) 50%)"
-                        }
-                        fillOpacity={0.75}
-                      />
-                    ),
-                  )}
-                </Bar>
-                <ReferenceLine
-                  x={Math.round(forecast.current_price)}
-                  stroke={PACK.foreground}
-                  strokeWidth={1}
-                  strokeDasharray="2 2"
-                  strokeOpacity={0.6}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        <PriceForecastDensity
+          paths={mc.paths}
+          currentPrice={forecast.current_price}
+          probUp={mc.prob_up}
+          var95={mc.var_95}
+          cvar95={mc.cvar_95}
+        />
       )}
 
       {/* Disclaimer */}
@@ -703,35 +712,5 @@ export function PriceForecastChart({
       </p>
     </ChartCard>
   );
-}
-
-/** Histograma de paths MC — 30 bins do min ao max. */
-type HistogramRow = {
-  x: number;
-  xMin: number;
-  xMax: number;
-  count: number;
-};
-
-function buildHistogramRows(mc: MonteCarlo, _currentPrice: number): HistogramRow[] {
-  const paths = mc.paths;
-  if (paths.length === 0) return [];
-  const min = paths[0];
-  const max = paths[paths.length - 1];
-  const nBins = 30;
-  const binWidth = (max - min) / nBins;
-  if (binWidth <= 0) return [];
-  const counts = new Array<number>(nBins).fill(0);
-  for (const p of paths) {
-    let idx = Math.floor((p - min) / binWidth);
-    if (idx >= nBins) idx = nBins - 1;
-    if (idx < 0) idx = 0;
-    counts[idx]++;
-  }
-  return counts.map((c, i) => {
-    const xMin = min + i * binWidth;
-    const xMax = xMin + binWidth;
-    return { x: Math.round((xMin + xMax) / 2), xMin, xMax, count: c };
-  });
 }
 

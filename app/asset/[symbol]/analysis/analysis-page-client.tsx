@@ -79,6 +79,8 @@ import { MarginTrend } from "@/components/analysis/margin-trend";
 import { RevenueVsPIB } from "@/components/analysis/revenue-vs-pib";
 
 import { AssetHeader } from "@/components/asset/asset-header";
+import { PriceForecastChart } from "@/components/asset/price-forecast-chart";
+import { PriceForecastDensity } from "@/components/asset/price-forecast-density";
 import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
 import { StaggerOnMount } from "@/components/foundation/stagger";
 
@@ -208,6 +210,57 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
     fetchJson,
     { revalidateOnFocus: false },
   );
+
+  // ── Forecast 6m (sulfur-ml v9 regime_specialist_xs) ────────────────────
+  // MOVIDO da raiz /asset/[symbol] pra cá (seção 5 do drilldown). O card
+  // mostra: histórico + 3 cenários (high/base/low) derivados dos percentis
+  // MC + 50 paths cinza claro sobrepostos + density plot KDE-like dos 1000
+  // finais + stats (P(up), VaR95, CVaR95, σ empírica).
+  type ForecastRow = {
+    date: string;
+    close: number;
+  };
+  type ForecastPayload = {
+    symbol: string;
+    current_price: number;
+    as_of: string;
+    horizon: "6m";
+    predicted_price_6m: number;
+    predicted_pct_return: number;
+    direction: "up" | "down";
+    confidence: number;
+    band: {
+      p10_price: number;
+      p90_price: number;
+      low_6m_price: number;
+      base_6m_price: number;
+      high_6m_price: number;
+    };
+    monte_carlo?: {
+      paths: number[];
+      trajectories?: number[][];
+      prob_up: number;
+      prob_double: number;
+      var_95: number;
+      cvar_95: number;
+      sigma_annualized: number;
+      sigma_6m_log: number;
+      n_sims: number;
+      n_days: number;
+      vol_source: "brapi_1y" | "model_fallback";
+    };
+  };
+  const { data: forecast, error: forecastError } = useSWR<ForecastPayload>(
+    `/api/forecast/${symbol}`,
+    fetchJson,
+    { revalidateOnFocus: false, shouldRetryOnError: false },
+  );
+  const { data: forecastHistoryData } = useSWR<{
+    symbol: string;
+    history: ForecastRow[];
+  }>(`/api/forecast/${symbol}/history`, fetchJson, {
+    revalidateOnFocus: false,
+  });
 
   const peers: Peer[] = useMemo(
     () => peerData?.peers ?? [],

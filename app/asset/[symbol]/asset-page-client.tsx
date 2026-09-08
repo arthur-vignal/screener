@@ -40,7 +40,6 @@ import { PEHistoryChart, type PEHistoryRow, type PESectorStats } from "@/compone
 import { PERatioComparison, type PeerRow } from "@/components/asset/pe-ratio-comparison";
 import { PriceChart, type RangeKey } from "@/components/asset/price-chart";
 import { PriceHero } from "@/components/asset/price-hero";
-import { PriceForecastChart } from "@/components/asset/price-forecast-chart";
 import { ValueAddedCard } from "@/components/asset/value-added-card";
 import {
   QuarterResults,
@@ -164,51 +163,9 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     fetchJson,
     { revalidateOnFocus: false },
   );
-  // ── Forecast 6m (sulfur-ml v9 regime_specialist_xs) ────────────────────
-  type ForecastRow = {
-    date: string;
-    close: number;
-  };
-  type ForecastPayload = {
-    symbol: string;
-    current_price: number;
-    as_of: string;
-    horizon: "6m";
-    predicted_price_6m: number;
-    predicted_pct_return: number;
-    direction: "up" | "down";
-    confidence: number;
-    band: {
-      p10_price: number;
-      p90_price: number;
-      low_6m_price: number;
-      base_6m_price: number;
-      high_6m_price: number;
-    };
-    monte_carlo?: {
-      paths: number[];
-      prob_up: number;
-      prob_double: number;
-      var_95: number;
-      cvar_95: number;
-      sigma_annualized: number;
-      sigma_6m_log: number;
-      n_sims: number;
-      n_days: number;
-      vol_source: "brapi_1y" | "model_fallback";
-    };
-  };
-  const { data: forecast, error: forecastError } = useSWR<ForecastPayload>(
-    `/api/forecast/${symbol}`,
-    fetchJson,
-    { revalidateOnFocus: false, shouldRetryOnError: false },
-  );
-  const { data: forecastHistoryData } = useSWR<{
-    symbol: string;
-    history: ForecastRow[];
-  }>(`/api/forecast/${symbol}/history`, fetchJson, {
-    revalidateOnFocus: false,
-  });
+  // ── Forecast 6m foi MOVIDO pra /asset/[symbol]/analysis (seção 5). ───────────
+  // O endpoint /api/forecast/[symbol] e o componente PriceForecastChart agora
+  // vivem em /analysis. A raiz do ticker foca em PE / earnings / EPS / snapshot.
 
   const peerSymbols = useMemo(
     () =>
@@ -540,8 +497,9 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
               </a>
             </div>
 
-            <div className="grid grid-cols-2 gap-5">
-              {/* Analyst ratings breakdown */}
+            <div>
+              {/* Analyst ratings breakdown — radar pentagonal (sell-side
+                  consensus). O PriceForecastChart foi MOVIDO pra /analysis. */}
               <div className="rounded-xl bg-[#0d0d11] border border-white/[0.06] p-5">
                 <AnalystRatingsRadar
                   ratings={deriveRatings(
@@ -552,18 +510,6 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
                   total={bundle?.metrics.numberOfAnalystOpinions ?? null}
                 />
               </div>
-
-              {/* A7 fix (spec 2026-08-29): substituir PriceTargetChart (que
-                  mockava target sell-side — brapi não tem pra BR) por
-                  FairValueChart que plota preço vs fair value implícito
-                  (= EPS LTM × P/L médio 5a). Só dado real. */}
-              <PriceForecastChart
-                              symbol={symbol}
-                              historicalPrices={forecastHistoryData?.history ?? []}
-                              forecast={forecast ?? null}
-                              loading={!forecast && !forecastError}
-                              unavailable={!!forecastError && forecast == null}
-                            />
             </div>
           </div>
         </StaggerOnMount>

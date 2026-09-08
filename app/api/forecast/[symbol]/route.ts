@@ -112,6 +112,16 @@ type ForecastResponse = {
 type MonteCarloGBM = {
   /** 1000 preços finais (+6m) ordenados do menor pro maior. */
   paths: number[];
+  /**
+   * Trajetórias temporais: amostra de 50 paths × 7 timesteps (mensal).
+   *   trajectories[i] = [S0, S1, S2, S3, S4, S5, S6]
+   *   onde S0 = current_price e S6 = preço final.
+   *   Sorteadas por GBM mês-a-mês com Z independentes por timestep
+   *   (Brownian motion genuíno, não lognormal direto).
+   *   ~3KB JSON (50 × 7 = 350 pontos).
+   *   Visualização no fan chart (50 linhas cinza claro sobrepostas).
+   */
+  trajectories: number[][];
   /** P(price_final > current_price) — probabilidade de alta nos próximos 6m. */
   prob_up: number;
   /** P(price_final > 2 * current_price) — cauda extrema de alta. */
@@ -290,36 +300,56 @@ async function simulateGBM(
     volSource = "model_fallback";
   }
 
-  // 4) Drift do GBM com correção de Itô (μ - σ²/2)·T.
+  // 4) Drift mensal do GBM com correção de Itô (μ - σ²/2)·dt.
   //    μ implícito: yPred / horizonMonths (log return mensal médio).
   const muMonthly = yPred / horizonMonths;
-  const driftCorrected =
-    (muMonthly - 0.5 * Math.pow(sigmaAnnualized / Math.sqrt(12), 2)) *
-    horizonMonths;
+  const dt = 1 / 12; // passo mensal
+  const sigmaStep = sigmaAnnualized * Math.sqrt(dt);
+  const driftStep = muMonthly - 0.5 * sigmaStep * sigmaStep;
 
   // 5) σ_6m_log = σ_ann × √(horizonMonths/12).
   const sigma6m = sigmaAnnualized * Math.sqrt(horizonMonths / 12);
 
-  // 6) Simula 1000 paths (Box-Muller, vetorizado).
-  const Z = normalSample(nSims);
-  const finalPrices = new Array<number>(nSims);
-  for (let i = 0; i < nSims; i++) {
-    finalPrices[i] = currentPrice * Math.exp(driftCorrected + sigma6m * Z[i]);
+  // 6) Simula 1000 paths mês-a-mês (7 timesteps: t=0..6).
+  //    Cada path: S_{t+1} = S_t · exp(driftStep + sigmaStep · Z_t).
+  //    Z_t independentes por timestep (Brownian motion genuíno).
+  //    Amostra 50 paths pra visualização (não 1000, pra não pesar JSON).
+  const nSimsActual = nSims;
+  const nTimesteps = horizonMonths + 1;
+  const nSamplePaths = 50;
+  const finalPrices = new Array<number>(nSimsActual);
+  const sampleTrajectories: number[][] = [];
+  // Índices espaçados uniformemente em [0, nSims).
+  const sampleStride = Math.max(1, Math.floor(nSimsActual / nSamplePaths));
+  for (let i = 0; i < nSimsActual; i++) {
+    const path = new Array<number>(nTimesteps);
+    path[0] = currentPrice;
+    for (let t = 1; t < nTimesteps; t++) {
+      const u1 = Math.random() || 1e-12;
+      const u2 = Math.random();
+      const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      path[t] = path[t - 1] * Math.exp(driftStep + sigmaStep * z);
+    }
+    finalPrices[i] = path[nTimesteps - 1];
+    // Sample deterministic: indices 0, stride, 2*stride, ...
+    if (i < nSamplePaths * sampleStride && i % sampleStride === 0) {
+      sampleTrajectories.push(path);
+    }
   }
   finalPrices.sort((a, b) => a - b);
 
   // 7) Estatísticas.
   let upCount = 0;
   let doubleCount = 0;
-  for (let i = 0; i < nSims; i++) {
+  for (let i = 0; i < nSimsActual; i++) {
     if (finalPrices[i] > currentPrice) upCount++;
     if (finalPrices[i] > 2 * currentPrice) doubleCount++;
   }
-  const probUp = upCount / nSims;
-  const probDouble = doubleCount / nSims;
+  const probUp = upCount / nSimsActual;
+  const probDouble = doubleCount / nSimsActual;
 
   // VaR95 = perda esperada no cenário dos 5% piores.
-  const var95Index = Math.floor(nSims * 0.05);
+  const var95Index = Math.floor(nSimsActual * 0.05);
   const var95 = Math.max(0, currentPrice - finalPrices[var95Index]);
   // CVaR95 = perda média nos 5% piores.
   const cvar95 =
@@ -330,13 +360,14 @@ async function simulateGBM(
 
   return {
     paths: finalPrices,
+    trajectories: sampleTrajectories,
     prob_up: probUp,
     prob_double: probDouble,
     var_95: var95,
     cvar_95: cvar95,
     sigma_annualized: sigmaAnnualized,
     sigma_6m_log: sigma6m,
-    n_sims: nSims,
+    n_sims: nSimsActual,
     n_days: logReturns.length,
     vol_source: volSource,
   };
@@ -434,13 +465,32 @@ export async function GET(
     // Fallback: usa σ_6m_log do regime_aware_xs walkforward (constante global).
     const sigmaFallback = 0.0607; // ~6.07% aa
     const sigma6mFb = sigmaFallback * Math.sqrt(0.5);
+    const dtFb = 1 / 12;
+    const sigmaStepFb = sigmaFallback * Math.sqrt(dtFb);
+    const driftStepFb =
+      (yPred / 6) - 0.5 * sigmaStepFb * sigmaStepFb;
     const Z = Array.from({ length: 1000 }, () => Math.random() * 2 - 1);
-    const fb = Z.map(
-      (z) => currentPrice * Math.exp(yPred + sigma6mFb * z),
-    ).sort((a, b) => a - b);
+    // Sorteia trajetórias (50 × 7) + finais (1000)
+    const fbSampleTrajectories: number[][] = [];
+    const fbStride = Math.floor(1000 / 50);
+    for (let i = 0; i < 1000; i++) {
+      const path = [currentPrice];
+      for (let t = 1; t < 7; t++) {
+        const u1 = Math.random() || 1e-12;
+        const u2 = Math.random();
+        const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        path.push(path[t - 1] * Math.exp(driftStepFb + sigmaStepFb * z));
+      }
+      if (i < 50 * fbStride && i % fbStride === 0) {
+        fbSampleTrajectories.push(path);
+      }
+      Z[i] = path[6];
+    }
+    const fb = [...Z].sort((a, b) => a - b);
     const upCount = fb.filter((p) => p > currentPrice).length;
     monteCarlo = {
       paths: fb,
+      trajectories: fbSampleTrajectories,
       prob_up: upCount / 1000,
       prob_double: fb.filter((p) => p > 2 * currentPrice).length / 1000,
       var_95: Math.max(0, currentPrice - fb[50]),
