@@ -148,6 +148,12 @@ export async function GET(
     change1mPercent: number | null;
     positionValue: number;
     positionChangeToday: number;
+    /** Retorno absoluto da posição desde a compra (R$). null se sem preço atual. */
+    positionReturn: number | null;
+    /** Retorno % da posição desde a compra. null se sem preço atual. */
+    positionReturnPct: number | null;
+    /** Mini-série de candles pro popover (mesmo range/interval da performance). */
+    candles: Array<{ ts: number; close: number }>;
   }> = [];
 
   // Primeiro passo: calcular valor bruto de cada posição pra derivar weight.
@@ -185,6 +191,23 @@ export async function GET(
       changeToday += positionChangeToday;
     }
 
+    // Retorno da posição desde a compra (não desde "1 mês atrás").
+    let positionReturn: number | null = null;
+    let positionReturnPct: number | null = null;
+    if (price != null && h.avg_price > 0) {
+      positionReturn = h.qty * (price - h.avg_price);
+      positionReturnPct = ((price - h.avg_price) / h.avg_price) * 100;
+    }
+
+    // Candles individuais do ativo pra alimentar o popover de detalhes.
+    // Usamos o mesmo histRange já carregado, filtrando a partir do
+    // purchased_at (mesma lógica da performance do portfolio).
+    const rawCandles = histRange.get(h.symbol) ?? [];
+    const purchaseMs = h.purchased_at * 1000;
+    const candles = rawCandles
+      .filter((c) => c.timestamp >= purchaseMs)
+      .map((c) => ({ ts: c.timestamp, close: c.close }));
+
     enrichedHoldings.push({
       symbol: h.symbol,
       // weight = fração do portfolio baseada em posição atual (preço de mercado)
@@ -201,6 +224,9 @@ export async function GET(
       change1mPercent,
       positionValue: currentPositionValue,
       positionChangeToday,
+      positionReturn,
+      positionReturnPct,
+      candles,
     });
   }
 

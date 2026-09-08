@@ -30,6 +30,7 @@
  */
 
 import { motion } from "motion/react";
+import { AnimatePresence } from "motion/react";
 import useSWR from "swr";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -38,6 +39,7 @@ import type { JSX } from "react";
 import {
   ArrowDown,
   ArrowUp,
+  ChevronDown,
   ChevronLeft,
   ExternalLink,
   LineChart,
@@ -55,6 +57,7 @@ import {
   type RangeKey,
 } from "@/components/portfolio/portfolio-value-chart";
 import { AddHoldingDialog } from "@/components/portfolio/add-holding-dialog";
+import { HoldingDetailPopover } from "@/components/portfolio/holding-detail-popover";
 import { PortfolioCalendar } from "@/components/portfolio/portfolio-calendar";
 import { PortfolioAllocationChart } from "@/components/portfolio/portfolio-allocation-chart";
 import { TickerLogo } from "@/components/foundation/ticker-logo";
@@ -91,6 +94,9 @@ type Bundle = {
     change1mPercent: number | null;
     positionValue: number;
     positionChangeToday: number;
+    positionReturn: number | null;
+    positionReturnPct: number | null;
+    candles: Array<{ ts: number; close: number }>;
   }>;
   performance: {
     candles: Array<{ ts: number; value: number }>;
@@ -432,53 +438,83 @@ function HoldingRow({
   canEdit?: boolean;
   onDelete?: () => void;
 }): JSX.Element {
+  const [open, setOpen] = useState(false);
   const mPos = (h.change1mPercent ?? 0) >= 0;
-  // Modelo novo: mostrar qty × avg_price (posição de custo) e variação
-  // 1m (ou peso se preferir). Default: mostra posição + 1m.
   const qtyLabel =
     h.qty >= 1 && Number.isInteger(h.qty)
       ? h.qty.toLocaleString("pt-BR")
       : h.qty.toLocaleString("pt-BR", { maximumFractionDigits: 4 });
   return (
     <li>
-      <Link
-        href={`/asset/${h.symbol}`}
-        className="group flex items-center gap-3 px-5 py-2.5 hover:bg-white/[0.02] transition-colors"
-      >
-        <TickerLogo symbol={h.symbol} size="md" />
-        <div className="min-w-0 flex-1">
-          <div className="text-[12px] font-semibold text-foreground tracking-tight truncate">
-            {h.symbol}
-          </div>
-          <div className="text-[11px] text-muted-foreground/70 truncate">
-            {qtyLabel} × R$ {h.avgPrice.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            {" · "}
-            <span className="truncate" title={h.longName ?? h.symbol}>
-              {h.longName ?? h.sector ?? "Ativo"}
-            </span>
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-[13px] tabular-nums text-foreground font-medium">
-            {h.price != null
-              ? h.price.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-              : "—"}
-          </div>
-          {h.change1m != null && h.change1mPercent != null ? (
-            <div
-              className={cn(
-                "text-[11px] tabular-nums font-semibold",
-                mPos ? "text-[#4dbe95]" : "text-[#d84f68]",
-              )}
-            >
-              {mPos ? "+" : ""}
-              {h.change1mPercent.toFixed(2)}%
+      <div className="group flex items-center gap-3 px-5 py-2.5 hover:bg-white/[0.02] transition-colors">
+        {/* Logo + nome do ativo: clica → vai pra página do ativo */}
+        <Link
+          href={`/asset/${h.symbol}`}
+          className="flex items-center gap-3 min-w-0 flex-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <TickerLogo symbol={h.symbol} size="md" />
+          <div className="min-w-0">
+            <div className="text-[12px] font-semibold text-foreground tracking-tight truncate">
+              {h.symbol}
             </div>
-          ) : (
-            <div className="text-[11px] text-muted-foreground/60">—</div>
-          )}
-        </div>
-      </Link>
+            <div className="text-[11px] text-muted-foreground/70 truncate">
+              {qtyLabel} × R$ {h.avgPrice.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {" · "}
+              <span className="truncate" title={h.longName ?? h.symbol}>
+                {h.longName ?? h.sector ?? "Ativo"}
+              </span>
+            </div>
+          </div>
+        </Link>
+
+        {/* Preço + variação: clica → abre/fecha popover de detalhes */}
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          aria-expanded={open}
+          aria-controls={`holding-popover-${h.symbol}`}
+          className="flex items-center gap-2 text-right rounded-md px-2 py-1 -mx-2 hover:bg-white/[0.04] transition-colors"
+        >
+          <div>
+            <div className="text-[13px] tabular-nums text-foreground font-medium">
+              {h.price != null
+                ? h.price.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : "—"}
+            </div>
+            {h.change1m != null && h.change1mPercent != null ? (
+              <div
+                className={cn(
+                  "text-[11px] tabular-nums font-semibold",
+                  mPos ? "text-[#4dbe95]" : "text-[#d84f68]",
+                )}
+              >
+                {mPos ? "+" : ""}
+                {h.change1mPercent.toFixed(2)}%
+              </div>
+            ) : (
+              <div className="text-[11px] text-muted-foreground/60">—</div>
+            )}
+          </div>
+          <motion.span
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={{ duration: 0.15 }}
+            className="text-muted-foreground/60"
+            aria-hidden="true"
+          >
+            <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
+          </motion.span>
+        </button>
+      </div>
+
+      {/* Popover expandido abaixo do card */}
+      <AnimatePresence initial={false}>
+        {open && (
+          <div id={`holding-popover-${h.symbol}`}>
+            <HoldingDetailPopover holding={h} />
+          </div>
+        )}
+      </AnimatePresence>
     </li>
   );
 }
