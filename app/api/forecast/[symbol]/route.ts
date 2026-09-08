@@ -13,9 +13,10 @@ import { cached } from "@/lib/cache";
  *     - predictions_latest.csv         (10 tickers top com y_pred direto)
  *     - composite_scores_latest.csv    (25 tickers com composite_score)
  *
- * Banda (P10/P90 e high/base/low) é construída a partir do IC95% do
- * hist_gbm validator (multi_fold_summary.json IC95 hist_gbm = [-2.93, +2.00]).
- * Heurística calibrada conservadoramente — band low/high = exp(y_pred ± 0.40).
+ * Banda (P10/P90 e high/base/low) usa vol anualizada empírica do hist_gbm
+ * (vol_ann_pct = 5.76% do walkforward_summary.json → σ_6m_log = 4.07%).
+ * P10/P90: z=1.645 (IC 90% bilateral) × σ_6m_log.
+ * Cenários low/high: ±1σ_6m_log (~68% IC, banda provável).
  *
  * Cache: 6h (forecast não muda intra-day).
  */
@@ -26,13 +27,13 @@ export const maxDuration = 20;
 const CHECKPOINT_DIR =
   "C:\\Users\\vigna\\projects\\sulfur-ml\\models\\checkpoints\\v8_real_fund_2026-09-08";
 
-// Heurística: |log_return| típico do IC95% do hist_gbm (vol do modelo).
-// 0.40 cobre ~80% da banda esperada (≈ ±1.28σ empírico em log space).
-const BAND_HALF_LOG = 0.40;
+// Vol anualizada empírica do hist_gbm (validator v8 walkforward_summary.json).
+// vol_ann_pct = 5.76% (hist_gbm winner) → σ_ann = 5.76% / 100 = 0.0576.
+// Para horizonte 6m: σ_6m_log = σ_ann × √(6/12) ≈ 0.0407.
+const SIGMA_6M_LOG = 0.0407;
 
-// Para P10/P90 usamos z = 1.28 (one-tail 80% centralizado em ~90% intervalo).
-const Z_P90 = 1.28;
-const SIGMA_LOG = 0.45; // desvio log retornado pelo validator
+// z-score one-tail 95% (= IC 90% bilateral). Mesma convenção do qnorm(0.95).
+const Z_P90 = 1.645;
 
 const DISCLAIMER =
   "Previsão probabilística baseada em backtest histórico. NÃO é recomendação de investimento.";
@@ -289,13 +290,14 @@ export async function GET(
   const predictedPrice6m = currentPrice * Math.exp(yPred);
   const baseLog = yPred;
 
-  // Banda P10/P90 com z=1.28 e sigma 0.45 (IC95% do hist_gbm validator).
-  const p10Price = currentPrice * Math.exp(yPred - Z_P90 * SIGMA_LOG);
-  const p90Price = currentPrice * Math.exp(yPred + Z_P90 * SIGMA_LOG);
+  // Banda P10/P90 usa z=1.645 (IC 90% bilateral) × σ_6m_log empírica do hist_gbm.
+  // Cenários low/high do fan chart usam ±1σ (~68% IC, banda provável).
+  const p10Price = currentPrice * Math.exp(yPred - Z_P90 * SIGMA_6M_LOG);
+  const p90Price = currentPrice * Math.exp(yPred + Z_P90 * SIGMA_6M_LOG);
 
-  // Cenários high/base/low para fan chart (BAND_HALF_LOG = 0.40).
-  const lowPrice = currentPrice * Math.exp(baseLog - BAND_HALF_LOG);
-  const highPrice = currentPrice * Math.exp(baseLog + BAND_HALF_LOG);
+  // Cenários fan chart: low/base/high = ±1σ_6m_log em torno do base (68% IC).
+  const lowPrice = currentPrice * Math.exp(baseLog - SIGMA_6M_LOG);
+  const highPrice = currentPrice * Math.exp(baseLog + SIGMA_6M_LOG);
 
   const response: ForecastResponse = {
     symbol,
