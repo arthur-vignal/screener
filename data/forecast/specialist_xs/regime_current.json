@@ -1,0 +1,37 @@
+{
+  "generated_at": "2026-09-08T19:54:33.389199+00:00",
+  "model": "regime_specialist_xs",
+  "version": "v9_xs_regime_combined_2026-09-08",
+  "latest_date": "2026-09-30",
+  "current_regime": "value",
+  "current_selic_real_pct": 13.83,
+  "thresholds": {
+    "value": [
+      7.0,
+      "Infinity"
+    ],
+    "transition": [
+      5.0,
+      7.0
+    ],
+    "momentum": [
+      "-Infinity",
+      5.0
+    ]
+  },
+  "full_panel_distribution": {
+    "n_months_total": 121,
+    "n_value": 73,
+    "n_transition": 25,
+    "n_momentum": 23,
+    "pct_value": 60.3,
+    "pct_transition": 20.7,
+    "pct_momentum": 19.0,
+    "thresholds": {
+      "value": "selic_real > 7%",
+      "transition": "5% <= selic_real <= 7%",
+      "momentum": "selic_real < 5%"
+    }
+  },
+  "n_tickers_predicted": 32
+}

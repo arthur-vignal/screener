@@ -6,29 +6,39 @@
  * Substitui o FairValueChart em /asset/[symbol] (raiz). Mostra:
  *   1. Histórico de preço (linha branca fina) até "agora"
  *   2. Triângulo verde no preço atual (as_of)
- *   3. Três cenários pontilhados saindo de agora até as_of+6m:
- *      - high (otimista)  exp(y_pred + 0.40)
- *      - base (esperado)  exp(y_pred)
- *      - low (pessimista) exp(y_pred - 0.40)
+ *   3. Três cenários saindo de agora até as_of+6m:
+ *      - high (P75 dos paths MC)  — otimista
+ *      - base (P50 / mediana MC)  — esperado
+ *      - low  (P25 dos paths MC)  — pessimista
  *   4. Banda P10-P90 sombreada (z=1.28 × 0.45) entre high e low expandida
  *
  * Cor condicional pelo direction (up=positivo, down=negativo). Token
  * `var(--positive)` / `var(--negative)`. Texto do chart é branco puro
  * (sulfur-ui-rules §13.1). Sem labels dentro da área (§13.4) — só no
  * header e legenda embaixo.
+ *
+ * NOVO 2026-09-08 — Monte Carlo GBM real:
+ *   - σ empírica por ativo (vol realizada 252d via brapi)
+ *   - P(up), VaR95, CVaR95 mostrados no header
+ *   - Mini-histograma dos 1000 paths MC abaixo do chart principal
+ *   - Cenários (high/base/low) derivados dos percentis MC (P75/P50/P25)
  */
 
 import { useMemo } from "react";
 import type { JSX } from "react";
 import {
   Area,
+  Bar,
+  BarChart,
   CartesianGrid,
+  Cell,
   ComposedChart,
   Line,
   ReferenceDot,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
+  XAxis,
   YAxis,
 } from "recharts";
 
@@ -56,6 +66,19 @@ type ForecastBand = {
   p90_price: number;
 };
 
+type MonteCarlo = {
+  paths: number[];
+  prob_up: number;
+  prob_double: number;
+  var_95: number;
+  cvar_95: number;
+  sigma_annualized: number;
+  sigma_6m_log: number;
+  n_sims: number;
+  n_days: number;
+  vol_source: "brapi_1y" | "model_fallback";
+};
+
 type Forecast = {
   current_price: number;
   as_of: string;
@@ -64,6 +87,8 @@ type Forecast = {
   direction: "up" | "down";
   confidence: number;
   band: ForecastBand;
+  /** Opcional — presente quando a API devolve MC GBM. */
+  monte_carlo?: MonteCarlo;
 };
 
 type Props = {
@@ -71,7 +96,7 @@ type Props = {
   historicalPrices: HistoryPoint[];
   forecast: Forecast | null;
   loading?: boolean;
-  /** Quando true, mostra empty state (ex: ticker fora do painel v8). */
+  /** Quando true, mostra empty state (ex: ticker fora do painel). */
   unavailable?: boolean;
   className?: string;
 };
@@ -151,22 +176,27 @@ export function PriceForecastChart({
     fRows[0].bandHigh = forecast.current_price;
 
     // Pontos finais: anchor = current_price; +6m = cenário.
-    fRows[1].base =
-      (forecast.current_price + forecast.band.base_6m_price) / 2;
-    fRows[1].high =
-      (forecast.current_price + forecast.band.high_6m_price) / 2;
-    fRows[1].low =
-      (forecast.current_price + forecast.band.low_6m_price) / 2;
-    fRows[1].bandLow =
-      (forecast.current_price + forecast.band.p10_price) / 2;
-    fRows[1].bandHigh =
-      (forecast.current_price + forecast.band.p90_price) / 2;
+    // Se MC GBM disponível, cenários high/base/low vêm dos percentis P75/P50/P25
+    // dos 1000 paths MC (visualização geométrica real, não aproximação lognormal).
+    // Banda P10-P90 idem: P10/P90 dos paths.
+    const mc = forecast.monte_carlo;
+    const base6m = mc ? mc.paths[500] : forecast.band.base_6m_price;
+    const high6m = mc ? mc.paths[750] : forecast.band.high_6m_price;
+    const low6m = mc ? mc.paths[250] : forecast.band.low_6m_price;
+    const p10_6m = mc ? mc.paths[100] : forecast.band.p10_price;
+    const p90_6m = mc ? mc.paths[900] : forecast.band.p90_price;
 
-    fRows[2].base = forecast.band.base_6m_price;
-    fRows[2].high = forecast.band.high_6m_price;
-    fRows[2].low = forecast.band.low_6m_price;
-    fRows[2].bandLow = forecast.band.p10_price;
-    fRows[2].bandHigh = forecast.band.p90_price;
+    fRows[1].base = (forecast.current_price + base6m) / 2;
+    fRows[1].high = (forecast.current_price + high6m) / 2;
+    fRows[1].low = (forecast.current_price + low6m) / 2;
+    fRows[1].bandLow = (forecast.current_price + p10_6m) / 2;
+    fRows[1].bandHigh = (forecast.current_price + p90_6m) / 2;
+
+    fRows[2].base = base6m;
+    fRows[2].high = high6m;
+    fRows[2].low = low6m;
+    fRows[2].bandLow = p10_6m;
+    fRows[2].bandHigh = p90_6m;
 
     // Junta — histórico termina em as_of, forecast começa em as_of (com
     // mesmo valor de close/current_price, garantindo continuidade visual).
@@ -238,6 +268,9 @@ export function PriceForecastChart({
     forecast.direction === "up"
       ? "text-[var(--positive)]"
       : "text-[var(--negative)]";
+  const mc = forecast.monte_carlo;
+  const probUpPct = mc ? Math.round(mc.prob_up * 100) : null;
+  const sigmaAnnPct = mc ? (mc.sigma_annualized * 100).toFixed(1) : null;
 
   return (
     <ChartCard className={className}>
@@ -257,7 +290,7 @@ export function PriceForecastChart({
 
       {/* Hero number (Calibre display no título, Inter nos labels — typography-pack).
           Texto em foreground puro (sem opacity) per §13.1. */}
-      <div className="flex items-baseline gap-2 mb-3">
+      <div className="flex items-baseline gap-2 mb-3 flex-wrap">
         <span
           className={`text-[24px] font-semibold tabular-nums tracking-tight ${colorClass}`}
         >
@@ -267,6 +300,22 @@ export function PriceForecastChart({
           {pctSign}
           {pctAbs}% expected
         </span>
+        {probUpPct != null && (
+          <span
+            className="text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded ml-1"
+            style={{
+              background:
+                probUpPct >= 50
+                  ? "color-mix(in srgb, var(--positive) 18%, transparent)"
+                  : "color-mix(in srgb, var(--negative) 18%, transparent)",
+              color:
+                probUpPct >= 50 ? "var(--positive)" : "var(--negative)",
+            }}
+            title="Probabilidade de alta em 6m, via Monte Carlo GBM (1000 paths, σ empírica 252d)"
+          >
+            P(up) {probUpPct}%
+          </span>
+        )}
       </div>
 
       {/* Wrapper com altura CONCRETA (§15.12 — ResponsiveContainer em flex
@@ -538,13 +587,151 @@ export function PriceForecastChart({
         </div>
       </div>
 
+      {/* Info row σ empírica + VaR95 (NOVO — MC GBM real). */}
+      {mc && (
+        <div className="mt-3 flex items-center gap-3 text-[10px] text-foreground flex-wrap">
+          <span className="tabular-nums">
+            <span className="text-foreground/70">σ empírica:</span>{" "}
+            <span className="font-semibold">{sigmaAnnPct}% aa</span>
+          </span>
+          <span className="text-foreground/30">|</span>
+          <span className="tabular-nums">
+            <span className="text-foreground/70">VaR95:</span>{" "}
+            <span className="font-semibold">
+              R$ {mc.var_95.toFixed(2)}
+            </span>
+          </span>
+          {mc.cvar_95 > 0 && (
+            <span className="tabular-nums">
+              <span className="text-foreground/70">CVaR95:</span>{" "}
+              <span className="font-semibold">
+                R$ {mc.cvar_95.toFixed(2)}
+              </span>
+            </span>
+          )}
+          <span className="text-foreground/30">|</span>
+          <span className="tabular-nums text-foreground/70">
+            {mc.n_sims} sims · {mc.n_days}d vol
+            {mc.vol_source === "model_fallback" && " · σ fallback"}
+          </span>
+        </div>
+      )}
+
+      {/* Mini-histograma dos 1000 paths MC — distribuição log-normal
+          esperada, com cauda à direita. Cores: verde se > current_price,
+          vermelho se < current_price. Linha vertical no preço atual. */}
+      {mc && (
+        <div className="mt-2">
+          <div className="text-[9px] text-foreground/60 uppercase tracking-wider mb-1">
+            Distribuição MC · preço em +6m
+          </div>
+          <div className="h-[80px] w-full">
+            <ResponsiveContainer>
+              <BarChart
+                data={buildHistogramRows(mc, forecast.current_price)}
+                margin={{ top: 4, right: 14, left: 0, bottom: 0 }}
+                barCategoryGap={1}
+              >
+                <XAxis
+                  dataKey="x"
+                  tick={{ fill: PACK.tick, fontSize: 8 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v: number) => `R$${v.toFixed(0)}`}
+                  minTickGap={50}
+                />
+                <YAxis hide />
+                <Tooltip
+                  wrapperStyle={packTooltipStyle}
+                  cursor={{ fill: "rgba(255,255,255,0.05)" }}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const p = payload[0]?.payload as HistogramRow | undefined;
+                    if (!p) return null;
+                    return (
+                      <div className="rounded-md bg-[#0d0d11] border border-white/15 px-2.5 py-1.5 shadow-xl">
+                        <div className="text-[10px] tabular-nums text-foreground mb-0.5">
+                          R$ {p.xMin.toFixed(2)} — R$ {p.xMax.toFixed(2)}
+                        </div>
+                        <div className="text-[11px] tabular-nums text-foreground">
+                          {p.count} paths ({((p.count / mc.n_sims) * 100).toFixed(1)}%)
+                        </div>
+                        {p.xMin < forecast.current_price && p.xMax > forecast.current_price && (
+                          <div className="text-[9px] text-foreground/70 mt-0.5">
+                            cruza preço atual
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }}
+                />
+                <Bar dataKey="count" isAnimationActive={false}>
+                  {buildHistogramRows(mc, forecast.current_price).map(
+                    (row, i) => (
+                      <Cell
+                        key={i}
+                        fill={
+                          row.xMax <= forecast.current_price
+                            ? PACK.negative
+                            : row.xMin >= forecast.current_price
+                              ? PACK.asset
+                              : "color-mix(in srgb, var(--positive) 50%, var(--negative) 50%)"
+                        }
+                        fillOpacity={0.75}
+                      />
+                    ),
+                  )}
+                </Bar>
+                <ReferenceLine
+                  x={Math.round(forecast.current_price)}
+                  stroke={PACK.foreground}
+                  strokeWidth={1}
+                  strokeDasharray="2 2"
+                  strokeOpacity={0.6}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
       {/* Disclaimer */}
       <p className="mt-3 text-[10px] text-foreground leading-relaxed">
         Previsão probabilística baseada em backtest histórico. Não é
-        recomendação de investimento. Modelo v8 (ensemble_ridge_hgb, painel
-        10y blue chips B3).
+        recomendação de investimento. Modelo v9 (regime_specialist_xs,
+        painel 32 blue chips B3).
       </p>
     </ChartCard>
   );
+}
+
+/** Histograma de paths MC — 30 bins do min ao max. */
+type HistogramRow = {
+  x: number;
+  xMin: number;
+  xMax: number;
+  count: number;
+};
+
+function buildHistogramRows(mc: MonteCarlo, _currentPrice: number): HistogramRow[] {
+  const paths = mc.paths;
+  if (paths.length === 0) return [];
+  const min = paths[0];
+  const max = paths[paths.length - 1];
+  const nBins = 30;
+  const binWidth = (max - min) / nBins;
+  if (binWidth <= 0) return [];
+  const counts = new Array<number>(nBins).fill(0);
+  for (const p of paths) {
+    let idx = Math.floor((p - min) / binWidth);
+    if (idx >= nBins) idx = nBins - 1;
+    if (idx < 0) idx = 0;
+    counts[idx]++;
+  }
+  return counts.map((c, i) => {
+    const xMin = min + i * binWidth;
+    const xMax = xMin + binWidth;
+    return { x: Math.round((xMin + xMax) / 2), xMin, xMax, count: c };
+  });
 }
 

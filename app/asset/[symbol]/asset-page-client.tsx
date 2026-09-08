@@ -164,7 +164,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     fetchJson,
     { revalidateOnFocus: false },
   );
-  // ── Forecast 6m (sulfur-ml v8 ensemble_ridge_hgb) ────────────────────
+  // ── Forecast 6m (sulfur-ml v9 regime_specialist_xs) ────────────────────
   type ForecastRow = {
     date: string;
     close: number;
@@ -184,6 +184,18 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
       low_6m_price: number;
       base_6m_price: number;
       high_6m_price: number;
+    };
+    monte_carlo?: {
+      paths: number[];
+      prob_up: number;
+      prob_double: number;
+      var_95: number;
+      cvar_95: number;
+      sigma_annualized: number;
+      sigma_6m_log: number;
+      n_sims: number;
+      n_days: number;
+      vol_source: "brapi_1y" | "model_fallback";
     };
   };
   const { data: forecast, error: forecastError } = useSWR<ForecastPayload>(
