@@ -241,7 +241,7 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
   }, [statsHistory]);
 
   return (
-    <div className="min-h-screen text-foreground asset-bg" style={{ background: "#08090b" }}>
+    <div className="min-h-screen text-foreground asset-bg" style={{ background: "#151619" }}>
       <main className="w-[90%] mx-auto py-6 pb-32">
         {/* Header padrão da página de asset */}
         <StaggerOnMount>

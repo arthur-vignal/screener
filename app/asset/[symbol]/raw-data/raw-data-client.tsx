@@ -85,7 +85,7 @@ export function RawDataPageClient({ symbol }: Props): JSX.Element {
   return (
     <div
       className="min-h-screen text-foreground"
-      style={{ background: "#08090b" }}
+      style={{ background: "#151619" }}
     >
       <main className="w-[90%] mx-auto py-6 pb-32">
         <StaggerOnMount>
