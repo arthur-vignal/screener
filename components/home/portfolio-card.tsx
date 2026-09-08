@@ -135,10 +135,12 @@ function ReadyCard({
               </div>
             )}
 
-      {/* Top 3 holdings */}
-      <PortfolioTopHoldings holdings={state.holdings} />
+      {/* Top 3 holdings — flex-1 empurra o botão pro final */}
+      <div className="flex-1 min-h-0">
+        <PortfolioTopHoldings holdings={state.holdings} />
+      </div>
 
-      {/* CTA */}
+      {/* CTA — mt-auto funciona porque holdings tem flex-1 acima */}
       <Link
         href="/portfolio"
         className={cn(

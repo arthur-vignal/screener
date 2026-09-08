@@ -68,6 +68,14 @@ export function PortfolioPreviewChart({
   // between the line and the reference value (initialValue), not the Y=0.
   const data = points.map((p) => ({ ts: p.ts, value: p.value }));
 
+  // Sparkline usa baseValue=initialValue, mas domain do YAxis precisa
+  // padding pra visual não ficar gigante quando range é minúsculo.
+  // Margem de 0.3% do valor central cobre a variação típica de 1 pregao
+  // sem inflar o gráfico quando o range é naturalmente apertado.
+  const center = (initialValue + finalValue) / 2;
+  const pad = Math.max(Math.abs(center) * 0.003, 0.01);
+  const yDomain: [number, number] = [center - pad, center + pad];
+
   return (
     <div className={className} style={{ width: "100%", height }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -82,7 +90,7 @@ export function PortfolioPreviewChart({
             </linearGradient>
           </defs>
 
-          <YAxis hide domain={["auto", "auto"]} />
+          <YAxis hide domain={yDomain} allowDataOverflow={false} />
 
           {/* Reference line = valor inicial (linha d'água) */}
           <ReferenceLine
