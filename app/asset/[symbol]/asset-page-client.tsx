@@ -166,38 +166,56 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
   );
 
   // ── Forecast 6m ──────────────────────────────────────────────────────────
-  // Resumo LEVE na raiz (PriceForecastSummary) com 3 métricas:
-  // preço previsto, P(up), banda P10-P90. Sem chart.
-  // Versão completa (fan chart geométrico + density plot com paths MC)
-  // fica em /asset/[symbol]/analysis seção 5.
-  // Erro 404 do endpoint = ticker fora do painel v8 → mostra empty state.
-  const { data: forecastResponse, isLoading: forecastLoading, error: forecastError } = useSWR<{
-    symbol: string;
-    current_price: number;
-    predicted_price_6m: number;
-    predicted_pct_return: number;
-    direction: "up" | "down";
-    band: {
-      p10_price: number;
-      p90_price: number;
-    };
-    monte_carlo: {
-      prob_up: number;
-      p10_price?: number;
-      p90_price?: number;
-    } | null;
-    disclaimer: string;
-  }>(
-    `/api/forecast/${symbol}`,
-    fetchJson,
-    { revalidateOnFocus: false, dedupingInterval: 60 * 60 * 1000 },
-  );
+    // Resumo LEVE na raiz (PriceForecastSummary) com 3 métricas:
+    // preço previsto, P(up), banda P10-P90. Sem chart.
+    // Versão completa (fan chart geométrico + density plot com paths MC)
+    // fica em /asset/[symbol]/analysis seção 5.
+    // Erro 404 do endpoint = ticker fora do painel v8 → mostra empty state.
+    const { data: forecastResponse, isLoading: forecastLoading, error: forecastError } = useSWR<{
+      symbol: string;
+      current_price: number;
+      predicted_price_6m: number;
+      predicted_pct_return: number;
+      direction: "up" | "down";
+      band: {
+        p10_price: number;
+        p90_price: number;
+        high_6m_price?: number;
+        base_6m_price?: number;
+        low_6m_price?: number;
+      };
+      monte_carlo: {
+        prob_up: number;
+        p10_price?: number;
+        p90_price?: number;
+      } | null;
+      disclaimer: string;
+    }>(
+      `/api/forecast/${symbol}`,
+      fetchJson,
+      { revalidateOnFocus: false, dedupingInterval: 60 * 60 * 1000 },
+    );
 
-  const forecast = forecastResponse ?? null;
-  const forecastUnavailable =
-    !!forecastError &&
-    typeof (forecastError as { status?: number })?.status === "number" &&
-    (forecastError as { status: number }).status === 404;
+    const forecast = forecastResponse ?? null;
+    const forecastUnavailable =
+      !!forecastError &&
+      typeof (forecastError as { status?: number })?.status === "number" &&
+      (forecastError as { status: number }).status === 404;
+
+    // ── Histórico 90d (alimenta o mini fan chart dentro do summary card) ──
+    // Só busca se o forecast existe (ticker tem previsão). Sem isso, o
+    // PriceForecastSummary ainda renderiza mas sem chart.
+    type ForecastHistoryResponse = {
+      symbol: string;
+      history: Array<{ date: string; close: number }>;
+    };
+    const { data: forecastHistoryData } = useSWR<ForecastHistoryResponse>(
+      forecast ? `/api/forecast/${symbol}/history` : null,
+      fetchJson,
+      { revalidateOnFocus: false, dedupingInterval: 60 * 60 * 1000 },
+    );
+    const forecastHistory: Array<{ date: string; close: number }> =
+      forecastHistoryData?.history ?? [];
 
   const peerSymbols = useMemo(
     () =>
@@ -515,10 +533,11 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
         <StaggerOnMount className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <PriceForecastSummary
-              forecast={forecast}
-              loading={forecastLoading}
-              unavailable={forecastUnavailable}
-            />
+                          forecast={forecast}
+                          historicalPrices={forecastHistory}
+                          loading={forecastLoading}
+                          unavailable={forecastUnavailable}
+                        />
 
             <div className="rounded-2xl fey-card p-6">
               <div className="flex items-center justify-between mb-5">

@@ -21,6 +21,9 @@ import { ArrowRight, TrendingUp, TrendingDown, AlertCircle } from "lucide-react"
 import type { JSX } from "react";
 
 import { cn } from "@/lib/utils";
+import { MiniFanChart } from "@/components/asset/mini-fan-chart";
+
+type HistoryPoint = { date: string; close: number };
 
 type Forecast = {
   symbol: string;
@@ -31,6 +34,12 @@ type Forecast = {
   band: {
     p10_price: number;
     p90_price: number;
+    /** Cenário otimista (P75 dos paths MC). Pode estar ausente no fallback. */
+    high_6m_price?: number;
+    /** Cenário base/mediano (P50 dos paths MC). Pode estar ausente no fallback. */
+    base_6m_price?: number;
+    /** Cenário pessimista (P25 dos paths MC). Pode estar ausente no fallback. */
+    low_6m_price?: number;
   };
   monte_carlo: {
     prob_up: number;
@@ -42,6 +51,8 @@ type Forecast = {
 
 type Props = {
   forecast: Forecast | null;
+  /** Últimos 90 pregões do ticker. Alimenta a linha histórica do mini fan chart. */
+  historicalPrices?: HistoryPoint[];
   loading?: boolean;
   unavailable?: boolean;
   className?: string;
@@ -49,6 +60,7 @@ type Props = {
 
 export function PriceForecastSummary({
   forecast,
+  historicalPrices,
   loading,
   unavailable,
   className,
@@ -87,6 +99,19 @@ export function PriceForecastSummary({
   const probUp = forecast.monte_carlo?.prob_up ?? null;
   const Icon = isUp ? TrendingUp : TrendingDown;
   const colorClass = isUp ? "text-[var(--positive)]" : "text-[var(--negative)]";
+
+  // Cenários 6m para o mini fan chart. Se ausentes (fallback antigo),
+  // usa predicted_price_6m como base e infere high/low via P10/P90.
+  const band = forecast.band ?? {};
+  const base6m =
+    typeof band.base_6m_price === "number"
+      ? band.base_6m_price
+      : forecast.predicted_price_6m;
+  const high6m =
+    typeof band.high_6m_price === "number" ? band.high_6m_price : base6m;
+  const low6m =
+    typeof band.low_6m_price === "number" ? band.low_6m_price : base6m;
+  const showChart = (historicalPrices?.length ?? 0) >= 2;
 
   return (
     <div
@@ -150,6 +175,20 @@ export function PriceForecastSummary({
           </div>
         </div>
       </div>
+
+      {/* Mini fan chart inline — histórico + 3 cenários divergentes.
+          Versão resumida; chart geométrico completo (paths MC + density)
+          fica em /asset/[symbol]/analysis seção 5. */}
+      {showChart && (
+        <MiniFanChart
+          historicalPrices={historicalPrices ?? []}
+          currentPrice={forecast.current_price}
+          high6m={high6m}
+          base6m={base6m}
+          low6m={low6m}
+          direction={forecast.direction}
+        />
+      )}
 
       {/* CTA pra /analysis — onde tem o fan chart geométrico completo */}
       <Link

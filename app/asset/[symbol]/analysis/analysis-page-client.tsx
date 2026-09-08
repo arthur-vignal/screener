@@ -451,6 +451,33 @@ export function AnalysisPageClient({ symbol }: Props): JSX.Element {
           </div>
         </StaggerOnMount>
 
+        {/* Seção 5 — Forecast probabilístico 6m (fan chart + density plot) */}
+        {forecast && (
+          <StaggerOnMount className="mt-6">
+            <SectionHeader
+              index={5}
+              title="Forecast probabilístico 6m"
+              question="Distribuição MC + paths temporais do preço projetado"
+            />
+            <div className="grid grid-cols-1 gap-5 mt-4">
+              <PriceForecastChart
+                symbol={symbol}
+                historicalPrices={forecastHistoryData?.history ?? []}
+                forecast={forecast}
+              />
+              {forecast.monte_carlo && (
+                <PriceForecastDensity
+                  paths={forecast.monte_carlo.paths}
+                  currentPrice={forecast.current_price}
+                  probUp={forecast.monte_carlo.prob_up}
+                  var95={forecast.monte_carlo.var_95}
+                  cvar95={forecast.monte_carlo.cvar_95}
+                />
+              )}
+            </div>
+          </StaggerOnMount>
+        )}
+
         {/* Disclaimer sobre mocks */}
         <p className="mt-8 text-[10px] text-muted-foreground/45 leading-relaxed text-center">
           Dados brapi (B3 + BCB via brapi). Sell-side target não disponível
