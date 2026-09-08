@@ -177,11 +177,15 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     predicted_price_6m: number;
     predicted_pct_return: number;
     direction: "up" | "down";
-    monte_carlo: {
-      prob_up: number;
+    band: {
       p10_price: number;
       p90_price: number;
     };
+    monte_carlo: {
+      prob_up: number;
+      p10_price?: number;
+      p90_price?: number;
+    } | null;
     disclaimer: string;
   }>(
     `/api/forecast/${symbol}`,

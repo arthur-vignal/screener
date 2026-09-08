@@ -28,11 +28,15 @@ type Forecast = {
   predicted_price_6m: number;
   predicted_pct_return: number;
   direction: "up" | "down";
-  monte_carlo: {
-    prob_up: number;
+  band: {
     p10_price: number;
     p90_price: number;
   };
+  monte_carlo: {
+    prob_up: number;
+    p10_price?: number;
+    p90_price?: number;
+  } | null;
   disclaimer: string;
 };
 
@@ -65,16 +69,22 @@ export function PriceForecastSummary({
     currency: "BRL",
     maximumFractionDigits: 2,
   });
-  const p10Fmt = forecast.monte_carlo.p10_price.toLocaleString("pt-BR", {
+  // Banda P10/P90 vem de forecast.band (sempre presente), não de
+  // monte_carlo (pode estar ausente no fallback model_fallback).
+  const p10Price = forecast.band?.p10_price ?? null;
+  const p90Price = forecast.band?.p90_price ?? null;
+  const p10Fmt = p10Price != null ? p10Price.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
     maximumFractionDigits: 2,
-  });
-  const p90Fmt = forecast.monte_carlo.p90_price.toLocaleString("pt-BR", {
+  }) : "—";
+  const p90Fmt = p90Price != null ? p90Price.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
     maximumFractionDigits: 2,
-  });
+  }) : "—";
+  // P(up) do MC GBM (pode ser null no fallback antigo).
+  const probUp = forecast.monte_carlo?.prob_up ?? null;
   const Icon = isUp ? TrendingUp : TrendingDown;
   const colorClass = isUp ? "text-[var(--positive)]" : "text-[var(--negative)]";
 
@@ -118,10 +128,10 @@ export function PriceForecastSummary({
             <span
               className={cn(
                 "text-[15px] font-semibold tabular-nums",
-                forecast.monte_carlo.prob_up >= 0.5 ? "text-[var(--positive)]" : "text-[var(--negative)]"
+                probUp != null && probUp >= 0.5 ? "text-[var(--positive)]" : "text-[var(--negative)]"
               )}
             >
-              {(forecast.monte_carlo.prob_up * 100).toFixed(1)}%
+              {probUp != null ? `${(probUp * 100).toFixed(1)}%` : "—"}
             </span>
           </div>
         </div>
