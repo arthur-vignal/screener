@@ -24,8 +24,11 @@ import { cached } from "@/lib/cache";
 export const dynamic = "force-dynamic";
 export const maxDuration = 20;
 
-const CHECKPOINT_DIR =
-  "C:\\Users\\vigna\\projects\\sulfur-ml\\models\\checkpoints\\v8_real_fund_2026-09-08";
+// CSVs versionados no próprio projeto Sulfur (data/forecast/v8/) pra que o
+// endpoint funcione em produção sem depender do projeto sulfur-ml separado.
+// Atualização: rodar `sync-forecast.ts` periodicamente ou copiar manualmente
+// do sulfur-ml (ver scripts/sync-forecast-data.sh).
+const CHECKPOINT_DIR = path.join(process.cwd(), "data", "forecast", "v8");
 
 // Vol anualizada empírica do hist_gbm (validator v8 walkforward_summary.json).
 // vol_ann_pct = 5.76% (hist_gbm winner) → σ_ann = 5.76% / 100 = 0.0576.
