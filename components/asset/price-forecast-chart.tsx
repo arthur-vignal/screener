@@ -375,25 +375,26 @@ export function PriceForecastChart({
             {/* Banda P10–P90 sombreada. ReferenceArea cobre todo o chart
                 (de as_of até futureTs), mas como o bandLow/bandHigh só têm
                 valor no segmento forecast, a área só pinta no lado direito
-                da ponte. */}
+                da ponte. connectNulls=true garante que a banda saia do
+                preço atual (as_of) sem gap. */}
             <Area
-              type="linear"
+              type="monotone"
               dataKey="bandHigh"
               stroke="none"
               fill={`url(#${data.gradientId})`}
               fillOpacity={1}
               isAnimationActive={false}
-              connectNulls={false}
+              connectNulls
               legendType="none"
             />
             <Area
-              type="linear"
+              type="monotone"
               dataKey="bandLow"
               stroke="none"
               fill={PACK.tooltipBg}
               fillOpacity={1}
               isAnimationActive={false}
-              connectNulls={false}
+              connectNulls
               legendType="none"
             />
 
@@ -406,44 +407,49 @@ export function PriceForecastChart({
                 lineType: "monotone",
               })}
               dot={false}
+              connectNulls
             />
 
-            {/* Cenário high (otimista) — pontilhado fino. */}
+            {/* Cenário high (otimista) — sólido, mesma espessura do histórico. */}
             <Line
               dataKey="high"
               {...packLineProps({
                 stroke: data.color,
-                strokeWidth: 1.25,
-                strokeOpacity: 0.65,
-                dashed: true,
-                lineType: "linear",
+                strokeWidth: 1.5,
+                strokeOpacity: 0.55,
+                dashed: false,
+                lineType: "monotone",
               })}
               dot={false}
+              connectNulls
             />
 
-            {/* Cenário low (pessimista) — pontilhado fino. */}
+            {/* Cenário low (pessimista) — sólido, mesma espessura do histórico. */}
             <Line
               dataKey="low"
               {...packLineProps({
                 stroke: data.color,
-                strokeWidth: 1.25,
-                strokeOpacity: 0.65,
-                dashed: true,
-                lineType: "linear",
+                strokeWidth: 1.5,
+                strokeOpacity: 0.55,
+                dashed: false,
+                lineType: "monotone",
               })}
               dot={false}
+              connectNulls
             />
 
-            {/* Cenário base — pontilhado grosso. */}
+            {/* Cenário base — sólido, levemente mais grosso, mesma cor. */}
             <Line
               dataKey="base"
               {...packLineProps({
                 stroke: data.color,
-                strokeWidth: 2.25,
-                dashed: true,
-                lineType: "linear",
+                strokeWidth: 2,
+                strokeOpacity: 0.85,
+                dashed: false,
+                lineType: "monotone",
               })}
               dot={false}
+              connectNulls
             />
 
             {/* Marcador do preço atual (triângulo via ReferenceDot). */}
