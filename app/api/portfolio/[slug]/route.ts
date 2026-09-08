@@ -423,27 +423,52 @@ export async function DELETE(
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  // Confirma que o portfolio existe E que o user é dono.
-  const rows = await query<{ id: number; owner_id_text: string }>(
-    `SELECT id, owner_id::text AS owner_id_text
-     FROM portfolios
-     WHERE slug = $1
-     LIMIT 1`,
-    [slug],
-  );
-  if (rows.length === 0) {
-    return NextResponse.json({ error: "não encontrado" }, { status: 404 });
-  }
-  const portfolio = rows[0]!;
-  if (portfolio.owner_id_text !== user.userId) {
+  try {
+    // Confirma que o portfolio existe E que o user é dono.
+    const rows = await query<{ id: number; owner_id_text: string }>(
+      `SELECT id, owner_id::text AS owner_id_text
+       FROM portfolios
+       WHERE slug = $1
+       LIMIT 1`,
+      [slug],
+    );
+    if (rows.length === 0) {
+      return NextResponse.json({ error: "não encontrado" }, { status: 404 });
+    }
+    const portfolio = rows[0]!;
+    if (portfolio.owner_id_text !== user.userId) {
+      return NextResponse.json(
+        { error: "apenas o dono pode deletar o portfolio" },
+        { status: 403 },
+      );
+    }
+
+    // Hard delete. Cascade cuida das tabelas dependentes.
+    // IMPORTANTE: usar REST API direto, não `query()` — o RPC exec_sql
+    // no projeto só aceita SELECT. DELETE via query() vira 500.
+    const { error: deleteError, count } = await (
+      await import("@/lib/supabase")
+    )
+      .supabaseAdmin()
+      .from("portfolios")
+      .delete({ count: "exact" })
+      .eq("id", portfolio.id);
+    if (deleteError) {
+      throw new Error(`DELETE portfolios failed: ${deleteError.message}`);
+    }
+    if ((count ?? 0) === 0) {
+      // Race condition: portfolio foi deletado entre o SELECT e o DELETE.
+      return NextResponse.json({ error: "não encontrado" }, { status: 404 });
+    }
+
+    return new NextResponse(null, { status: 204 });
+  } catch (err) {
+    // Log completo no servidor pra debugging; mensagem genérica pro cliente.
+    console.error("[DELETE /api/portfolio/[slug]] failed:", err);
+    const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: "apenas o dono pode deletar o portfolio" },
-      { status: 403 },
+      { error: "falha ao deletar portfolio", detail: message },
+      { status: 500 },
     );
   }
-
-  // Hard delete. Cascade cuida das tabelas dependentes.
-  await query(`DELETE FROM portfolios WHERE id = $1`, [portfolio.id]);
-
-  return new NextResponse(null, { status: 204 });
 }
