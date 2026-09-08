@@ -68,11 +68,11 @@ export function PortfolioValueChart({
 
   return (
     <div className={cn("relative h-full flex flex-col", className)}>
-      <div className="min-h-0 flex-1 w-full">
+      <div className="min-h-[220px] flex-1 w-full">
         {data.length === 0 ? (
           <EmptyChart />
         ) : (
-          <ResponsiveContainer>
+          <ResponsiveContainer width="100%" height="100%">
             <ChartInner data={data} />
           </ResponsiveContainer>
         )}
@@ -194,7 +194,7 @@ function ValueTooltip({
 function LoadingChart({ className }: { className?: string }): JSX.Element {
   return (
     <div className={cn("relative h-full flex flex-col", className)}>
-      <Skeleton className="min-h-0 flex-1 w-full" roundedMd />
+      <Skeleton className="min-h-[220px] flex-1 w-full" roundedMd />
       <div className="mt-3 flex gap-1 shrink-0">
         {Array.from({ length: 8 }).map((_, i) => (
           <Skeleton key={i} className="h-7 w-12" />
@@ -206,7 +206,7 @@ function LoadingChart({ className }: { className?: string }): JSX.Element {
 
 function EmptyChart(): JSX.Element {
   return (
-    <div className="h-full min-h-0 flex items-center justify-center">
+    <div className="min-h-[220px] h-full flex items-center justify-center">
       <div className="text-center">
         <p className="text-[14px] text-foreground">Sem dados de variação.</p>
         <p className="mt-1.5 text-[12px] text-muted-foreground/70">
