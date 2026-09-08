@@ -92,12 +92,8 @@ function ReadyCard({
         className
       )}
     >
-      {/* Header: "Carteira" eyebrow + valor */}
+      {/* Header: valor + chip de variação (sem título "Carteira", sobe conteúdo) */}
             <div>
-              <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">
-                Carteira
-              </div>
-
               <div className="mt-1 text-[28px] font-semibold tabular-nums text-foreground leading-none tracking-tight">
                 {valueFormatted}
               </div>
@@ -135,8 +131,8 @@ function ReadyCard({
               </div>
             )}
 
-      {/* Top 3 holdings — flex-1 empurra o botão pro final */}
-      <div className="flex-1 min-h-0">
+      {/* Top 3 holdings — flex-1 min-h-0 empurra botão pro final */}
+      <div className="flex-1 min-h-0 overflow-hidden">
         <PortfolioTopHoldings holdings={state.holdings} />
       </div>
 

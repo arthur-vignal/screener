@@ -68,13 +68,28 @@ export function PortfolioPreviewChart({
   // between the line and the reference value (initialValue), not the Y=0.
   const data = points.map((p) => ({ ts: p.ts, value: p.value }));
 
-  // Sparkline usa baseValue=initialValue, mas domain do YAxis precisa
-  // padding pra visual não ficar gigante quando range é minúsculo.
-  // Margem de 0.3% do valor central cobre a variação típica de 1 pregao
-  // sem inflar o gráfico quando o range é naturalmente apertado.
-  const center = (initialValue + finalValue) / 2;
-  const pad = Math.max(Math.abs(center) * 0.003, 0.01);
-  const yDomain: [number, number] = [center - pad, center + pad];
+  // Sparkline com domain dinâmico baseado no range REAL dos pontos,
+  // NÃO em initialValue (que pode ser valor de dias atrás). O baseValue
+  // da Area é initialValue (linha d'água), mas o eixo Y precisa refletir
+  // a variação dos candles do pregao, senão o gráfico fica achatado ou
+  // extrapolado quando a variação típica de 1 pregao (0.3-1%) conflita
+  // com a escala fixa.
+  const yDomain: [number, number] = useMemo(() => {
+    if (points.length === 0) {
+      const c0 = initialValue;
+      return [c0 * 0.9995, c0 * 1.0005];
+    }
+    const values = points.map((p) => p.value);
+    const dataMin = Math.min(...values);
+    const dataMax = Math.max(...values);
+    // Garante que o range cubra o initialValue (linha d'água) E os dados
+    const lo = Math.min(dataMin, initialValue);
+    const hi = Math.max(dataMax, initialValue);
+    const span = hi - lo;
+    // Padding de 20% do span pra visual não grudar nas bordas
+    const pad = span > 0 ? span * 0.2 : Math.max(hi * 0.0005, 0.01);
+    return [lo - pad, hi + pad];
+  }, [points, initialValue]);
 
   return (
     <div className={className} style={{ width: "100%", height }}>
