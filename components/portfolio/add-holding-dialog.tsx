@@ -258,7 +258,7 @@ export function AddHoldingDialog({
       />
 
       {/* Card */}
-      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#101116] shadow-2xl shadow-black/40">
+      <div className="relative w-full max-w-md rounded-2xl fey-card shadow-2xl shadow-black/40">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
           <div>
             <h2 className="text-[16px] font-semibold tracking-tight text-foreground">

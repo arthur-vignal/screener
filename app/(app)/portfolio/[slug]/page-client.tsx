@@ -168,7 +168,7 @@ export default function PortfolioDetailPage({
   const meta = bundle?.meta;
 
   return (
-    <div className="min-h-screen text-foreground" style={{ background: "#070709" }}>
+    <div className="min-h-screen text-foreground">
       <motion.main
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         variants={staggerParentVariants as any}
@@ -258,7 +258,7 @@ export default function PortfolioDetailPage({
           </div>
         </StaggerOnMount>
 
-        <div className="grid flex-1 min-h-0 grid-cols-1 gap-5 overflow-hidden rounded-2xl border border-white/10 bg-[#101116] lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)] lg:grid-rows-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+        <div className="grid flex-1 min-h-0 grid-cols-1 gap-5 overflow-hidden rounded-2xl fey-card lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)] lg:grid-rows-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
           <div className="min-h-0 overflow-hidden border-b border-white/[0.08] p-5 lg:border-b-0 lg:border-r">
             <StaggerOnMount>
               <div className="flex flex-col">
@@ -405,7 +405,7 @@ function HoldingsCard({
   flush?: boolean;
 }): JSX.Element {
   return (
-    <div className={cn("rounded-2xl border border-white/10 bg-[#101116] overflow-hidden", expanded && "h-full flex flex-col", flush && "rounded-none border-0 bg-transparent")}>
+    <div className={cn("rounded-2xl fey-card overflow-hidden", expanded && "h-full flex flex-col", flush && "fey-card--flat rounded-none border-0 bg-transparent")}>
       <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
         <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
           Holdings
@@ -575,7 +575,7 @@ function PortfolioNewsColumn({ slug }: { slug: string }): JSX.Element {
 
   return (
     <aside
-      className="rounded-2xl border border-white/10 bg-[#101116] overflow-hidden w-full flex flex-col"
+      className="rounded-2xl fey-card overflow-hidden w-full flex flex-col"
       aria-label="Notícias do portfolio"
     >
       <div className="px-5 py-4 border-b border-white/[0.06]">
@@ -682,7 +682,7 @@ function formatRelative(iso: string): string {
 
 function ErrorShell({ children }: { children: React.ReactNode }): JSX.Element {
   return (
-    <div className="min-h-screen text-foreground flex items-center justify-center" style={{ background: "#070709" }}>
+    <div className="min-h-screen text-foreground flex items-center justify-center">
       <div className="text-center">
         <p className="text-[14px] text-foreground">{children}</p>
         <Link

@@ -80,7 +80,7 @@ export default function NewPortfolioPage(): JSX.Element {
   }
 
   return (
-    <div className="min-h-screen text-foreground" style={{ background: "#070709" }}>
+    <div className="min-h-screen text-foreground">
       <motion.main
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         variants={staggerParentVariants as any}
@@ -115,7 +115,7 @@ export default function NewPortfolioPage(): JSX.Element {
         <StaggerOnMount className="mt-8">
           <form
             onSubmit={onSubmit}
-            className="max-w-xl rounded-2xl border border-white/10 bg-[#101116] p-6 space-y-5"
+            className="max-w-xl rounded-2xl fey-card p-6 space-y-5"
           >
             <Field
               label="Nome"

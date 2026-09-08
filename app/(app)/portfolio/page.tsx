@@ -81,7 +81,7 @@ export default function PortfolioMenuPage(): JSX.Element {
   }, [error, router]);
 
   return (
-    <div className="min-h-screen text-foreground" style={{ background: "#070709" }}>
+    <div className="min-h-screen text-foreground">
       <motion.main
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         variants={staggerParentVariants as any}
@@ -149,7 +149,7 @@ function PortfolioCard({
     <Link
       href={`/portfolio/${portfolio.slug}`}
       className={cn(
-        "block rounded-2xl border border-white/10 bg-[#101116] p-5",
+        "block rounded-2xl fey-card p-5",
         "hover:border-white/20 hover:bg-[#13141a] transition-colors",
         "group",
       )}
@@ -280,7 +280,7 @@ function SkeletonGrid(): JSX.Element {
       {Array.from({ length: 3 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-2xl border border-white/10 bg-[#101116] p-5"
+          className="rounded-2xl fey-card p-5"
         >
           <Skeleton className="h-4 w-32 mb-3" />
           <Skeleton className="h-3 w-full mb-2" />

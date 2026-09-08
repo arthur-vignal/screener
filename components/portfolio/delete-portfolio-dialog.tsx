@@ -79,7 +79,7 @@ export function DeletePortfolioDialog({
       aria-labelledby="delete-portfolio-title"
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-white/10 bg-[#101116] shadow-2xl"
+        className="w-full max-w-md rounded-2xl fey-card shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

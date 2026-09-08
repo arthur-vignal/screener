@@ -476,7 +476,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
 
         <StaggerOnMount className="mt-6">
           {/* Card container estilo Fey: Analyst estimates */}
-          <div className="rounded-2xl border border-white/10 bg-[#101116] p-6">
+          <div className="rounded-2xl fey-card p-6">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
                 <h2 className="text-[16px] font-semibold tracking-tight text-foreground">
@@ -520,7 +520,7 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
 
         <StaggerOnMount className="mt-6">
           {/* Card Earnings expandido (estilo Fey TSLA) — 100% dado real */}
-          <div className="rounded-2xl border border-white/10 bg-[#101116] p-6">
+          <div className="rounded-2xl fey-card p-6">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
                 <h2 className="text-[16px] font-semibold tracking-tight text-foreground">

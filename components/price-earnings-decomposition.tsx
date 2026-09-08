@@ -79,7 +79,7 @@ export function PriceEarningsDecomposition({ years, loading }: Props) {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-[#101116] p-5">
+      <div className="rounded-2xl fey-card p-5">
         <Skeleton className="h-4 w-48 mb-4" />
         <Skeleton className="h-32 w-full" />
       </div>
@@ -88,14 +88,14 @@ export function PriceEarningsDecomposition({ years, loading }: Props) {
 
   if (validYears.length < 2) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-[#101116] p-5 text-center text-[12px] text-muted-foreground/85">
+      <div className="rounded-2xl fey-card p-5 text-center text-[12px] text-muted-foreground/85">
         Histórico insuficiente pra decompor o P/L (precisa de ≥2 anos com preço e LPA).
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] p-5">
+    <div className="rounded-2xl fey-card p-5">
       <div className="flex items-baseline justify-between mb-4">
         <div className="text-[12px] uppercase tracking-[0.18em] text-foreground">
           Decomposição Δln P/L

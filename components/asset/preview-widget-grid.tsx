@@ -70,7 +70,7 @@ function LoadingGrid({ className }: { className?: string }): JSX.Element {
       {Array.from({ length: 12 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-xl border border-white/10 bg-[#101116] p-4"
+          className="rounded-xl fey-card p-4"
         >
           <Skeleton className="h-3 w-16 mb-3" />
           <Skeleton className="h-4 w-24 mb-2" />

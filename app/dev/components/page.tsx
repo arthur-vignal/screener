@@ -54,7 +54,7 @@ function DemoCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-[#101116] p-5 mb-4">
+    <div className="rounded-xl fey-card p-5 mb-4">
       <div className="text-[12px] uppercase tracking-[0.14em] text-muted-foreground mb-3 font-medium">
         {title}
       </div>
@@ -185,7 +185,7 @@ export default function DevComponentsPage() {
 
         {/* ── MetricRow ──────────────────────────────────────────────────── */}
         <div className={SECTION_H}>MetricRow — linha da tabela de métricas</div>
-        <div className="rounded-xl border border-white/10 bg-[#101116] overflow-hidden">
+        <div className="rounded-xl fey-card overflow-hidden">
           <MetricGroupHeader label="Valuation" />
           <MetricRow
             label="P/L"

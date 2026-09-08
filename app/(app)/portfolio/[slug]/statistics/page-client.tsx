@@ -133,7 +133,7 @@ export default function PortfolioStatisticsPage({
 
 function Shell({ children }: { children: React.ReactNode }): JSX.Element {
   return (
-    <div className="min-h-screen text-foreground" style={{ background: "#070709" }}>
+    <div className="min-h-screen text-foreground">
       <main className="w-[90%] mx-auto py-6 pb-32">{children}</main>
       <AnimatedFloatingDock />
     </div>
@@ -246,7 +246,7 @@ function KPI({
   muted?: boolean;
 }): JSX.Element {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] p-5">
+    <div className="rounded-2xl fey-card p-5">
       <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold mb-2">
         {label}
       </div>
@@ -273,7 +273,7 @@ function GainKPI({
   const Icon = positive ? ArrowUp : ArrowDown;
   const colorClass = positive ? "text-[#4dbe95]" : "text-[#d84f68]";
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] p-5">
+    <div className="rounded-2xl fey-card p-5">
       <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold mb-2">
         Ganho / Perda
       </div>
@@ -299,7 +299,7 @@ function SectorDistribution({
 }): JSX.Element | null {
   if (sectors.length === 0) return null;
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] p-5">
+    <div className="rounded-2xl fey-card p-5">
       <h3 className="text-[15px] font-semibold tracking-tight text-foreground mb-4">
         Distribuição por setor
       </h3>
@@ -341,7 +341,7 @@ function TopMovers({
   losers: StatsResponse["topLosers"];
 }): JSX.Element {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] p-5">
+    <div className="rounded-2xl fey-card p-5">
       <h3 className="text-[15px] font-semibold tracking-tight text-foreground mb-4">
         Top movers
       </h3>
@@ -432,7 +432,7 @@ function OldestCard({
   const Icon = positive ? ArrowUp : ArrowDown;
   const colorClass = positive ? "text-[#4dbe95]" : "text-[#d84f68]";
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] p-5">
+    <div className="rounded-2xl fey-card p-5">
       <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold mb-2">
         Holding mais antiga
       </div>
@@ -497,7 +497,7 @@ function YTDCard({
   const labelText =
     label === "ytd" ? "Retorno YTD" : "Retorno desde criação";
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] p-5">
+    <div className="rounded-2xl fey-card p-5">
       <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold mb-2">
         {labelText}
       </div>

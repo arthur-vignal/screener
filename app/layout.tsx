@@ -74,9 +74,7 @@ export default function RootLayout({
       lang="en"
       className={`dark ${inter.variable} ${archia.variable} ${geistMono.variable} ${commitMono.variable} ${manrope.variable} ${archivoBlack.variable} h-full antialiased`}
     >
-      <body className="min-h-full text-ink" style={{ background: "transparent" }}>
-        {children}
-      </body>
+      <body className="min-h-full text-ink">{children}</body>
     </html>
   );
 }

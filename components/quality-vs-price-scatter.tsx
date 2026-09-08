@@ -51,7 +51,7 @@ export function QualityVsPriceScatter({
 }: Props) {
   if (loading) {
     return (
-      <div className="rounded-xl border border-white/10 bg-[#101116] p-4 h-full flex flex-col">
+      <div className="rounded-xl fey-card p-4 h-full flex flex-col">
         <Skeleton className="h-4 w-32 mb-3" />
         <div className="flex-1">
           <Skeleton className="h-full w-full" />
@@ -77,7 +77,7 @@ export function QualityVsPriceScatter({
   const xMid = mx ?? 50; // mediana X ou meio do gráfico
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#101116] p-4 h-full flex flex-col">
+    <div className="rounded-xl fey-card p-4 h-full flex flex-col">
       <div className="flex items-baseline justify-between mb-3">
         <div className="text-[12px] uppercase tracking-[0.18em] text-muted-foreground/85">
           Qualidade × preço

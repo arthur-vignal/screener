@@ -114,7 +114,7 @@ export function ValuationBandChart({
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-xl border border-white/10 bg-[#101116] px-5 py-12 text-center text-[12px] text-muted-foreground/80">
+      <div className="rounded-xl fey-card px-5 py-12 text-center text-[12px] text-muted-foreground/80">
         Sem histórico suficiente pra {title.toLowerCase()}.
       </div>
     );
@@ -122,7 +122,7 @@ export function ValuationBandChart({
 
   if (!stats) {
     return (
-      <div className="rounded-xl border border-white/10 bg-[#101116] px-5 py-12 text-center text-[12px] text-muted-foreground/80">
+      <div className="rounded-xl fey-card px-5 py-12 text-center text-[12px] text-muted-foreground/80">
         Histórico de {title} insuficiente (precisa de pelo menos 2 anos válidos).
       </div>
     );
@@ -133,7 +133,7 @@ export function ValuationBandChart({
   const yMax = Math.max(...rows.filter((r) => r.valid).map((r) => r.value as number)) + std;
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#101116] p-4">
+    <div className="rounded-xl fey-card p-4">
       <div className="flex items-baseline justify-between mb-3 px-1">
         <div className="text-[12px] uppercase tracking-[0.18em] text-muted-foreground/85">
           {title} — banda histórica ±2σ

@@ -157,7 +157,7 @@ function RawDataCard({
   );
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] overflow-hidden">
+    <div className="rounded-2xl fey-card overflow-hidden">
       <div className="px-5 pt-4 pb-3 border-b border-border/40 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
@@ -280,7 +280,7 @@ function ColumnEditor({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-[calc(100%+6px)] z-30 w-72 max-h-[480px] overflow-y-auto rounded-xl border border-white/10 bg-[#101116]/95 shadow-2xl shadow-black/40 backdrop-blur-md p-2"
+          className="absolute right-0 top-[calc(100%+6px)] z-30 w-72 max-h-[480px] overflow-y-auto rounded-xl fey-card/95 shadow-2xl shadow-black/40 backdrop-blur-md p-2"
         >
           <div className="px-2 py-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/55 font-semibold">
             Anos

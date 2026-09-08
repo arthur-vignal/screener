@@ -78,7 +78,7 @@ export function MetricsTable({
   }, [filtered]);
 
   return (
-    <div className={cn("rounded-2xl border border-white/10 bg-[#101116]", className)}>
+    <div className={cn("rounded-2xl fey-card", className)}>
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border/40">
         <div>

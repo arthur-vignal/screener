@@ -70,7 +70,7 @@ export function NewsFeed({
   return (
     <aside
       className={cn(
-        "flex flex-col rounded-2xl border border-white/10 bg-[#101116] overflow-hidden",
+        "flex flex-col rounded-2xl fey-card overflow-hidden",
         className,
       )}
       aria-label="Feed de notícias"

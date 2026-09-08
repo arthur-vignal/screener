@@ -154,7 +154,7 @@ export function QuotationsTable({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] overflow-hidden flex flex-col",
+        "rounded-2xl fey-card overflow-hidden flex flex-col",
         className
       )}
     >
@@ -372,7 +372,7 @@ function LoadingTable({ className }: { className?: string }): JSX.Element {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] overflow-hidden p-2 flex flex-col",
+        "rounded-2xl fey-card overflow-hidden p-2 flex flex-col",
         className
       )}
     >
@@ -405,7 +405,7 @@ function EmptyTable({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] px-6 py-12 text-center",
+        "rounded-2xl fey-card px-6 py-12 text-center",
         className
       )}
     >

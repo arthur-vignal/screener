@@ -56,7 +56,7 @@ export function DayHighlightCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-6",
+        "rounded-2xl fey-card p-6",
         className
       )}
     >
@@ -169,7 +169,7 @@ function LoadingCard({ className }: { className?: string }): JSX.Element {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] p-6",
+        "rounded-2xl fey-card p-6",
         className
       )}
     >

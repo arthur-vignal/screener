@@ -132,7 +132,7 @@ export function DataTable<T extends Record<string, unknown>>({
       {/* Tabela */}
       <div
         className={cn(
-          "rounded-xl border border-white/10 bg-[#101116]",
+          "rounded-xl fey-card",
           "overflow-hidden"
         )}
       >

@@ -67,7 +67,7 @@ export function AnalysisHero(props: AnalysisHeroProps): JSX.Element {
     v == null ? "—" : `${v.toFixed(2)}% a.a.`;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] p-6">
+    <div className="rounded-2xl fey-card p-6">
       <div className="flex items-baseline justify-between gap-4 mb-4">
         <div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/70 font-semibold mb-1">

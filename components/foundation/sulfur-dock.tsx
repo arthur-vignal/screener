@@ -113,13 +113,13 @@ export function SulfurDock({
       <FloatingDock
         items={acItems}
         desktopClassName={cn(
-          // Liquid glass override — aceternity usa bg-gray-50 dark:bg-neutral-900.
-          // ! força override (twMerge respeita o `!` na nova versão do Tailwind).
-          "!bg-black/30 !border-white/10 backdrop-blur-md",
-          "!shadow-[0_8px_32px_-12px_rgba(0,0,0,0.8)]",
-          "!ring-1 !ring-inset !ring-white/[0.04]",
+          // Fey dock (2026-09-08 — sistema visual do Google Stitch):
+          // liquid glass + inset rim-light + sombra externa grande.
+          // Mantém `!` pra forçar override do bg-gray-50 default do
+          // aceternity. Sombra é aplicada via classe .fey-dock no CSS.
+          "!bg-black/30 backdrop-blur-md fey-dock",
         )}
-        mobileClassName="!bg-black/30 !border-white/10 backdrop-blur-md"
+        mobileClassName="!bg-black/30 backdrop-blur-md fey-dock"
       />
     </div>
   );

@@ -137,7 +137,7 @@ export function ChartPeriodSelector({
             onClick={() => setOpenCustom(false)}
             aria-hidden
           />
-          <div className="absolute top-11 right-0 z-40 rounded-xl border border-white/10 bg-[#101116] shadow-2xl shadow-black/40 p-3 flex items-center gap-2">
+          <div className="absolute top-11 right-0 z-40 rounded-xl fey-card shadow-2xl shadow-black/40 p-3 flex items-center gap-2">
             <div className="flex flex-col gap-1">
               <label className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground/60">
                 De

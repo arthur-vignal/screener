@@ -31,7 +31,7 @@ export const metadata = {
 
 export default function AnalysisPage() {
   return (
-    <div className="min-h-screen text-foreground" style={{ background: "#070709" }}>
+    <div className="min-h-screen text-foreground">
       <div className="w-[90%] mx-auto py-8 pb-32">
         <Suspense fallback={<AnalysisTabsSkeleton />}>
           <AnalysisTabs />

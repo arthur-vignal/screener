@@ -129,7 +129,7 @@ export function ExcelTable({
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-[#101116] overflow-hidden">
+      <div className="rounded-2xl fey-card overflow-hidden">
         <div className="p-4 border-b border-white/10 flex items-center gap-3">
           <Skeleton className="h-9 w-72" />
           <Skeleton className="h-9 w-40 ml-auto" />
@@ -145,7 +145,7 @@ export function ExcelTable({
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] overflow-hidden">
+    <div className="rounded-2xl fey-card overflow-hidden">
       {/* Toolbar: search + column picker */}
       <div className="px-4 py-3 border-b border-white/10 flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
@@ -282,7 +282,7 @@ function ColumnPicker({
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          <div className="absolute right-0 top-11 z-40 w-64 rounded-xl border border-white/10 bg-[#101116] shadow-2xl shadow-black/40 overflow-hidden">
+          <div className="absolute right-0 top-11 z-40 w-64 rounded-xl fey-card shadow-2xl shadow-black/40 overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
               <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
                 Mostrar / ocultar colunas

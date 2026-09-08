@@ -388,7 +388,7 @@ export default function HomePage(): JSX.Element {
   });
 
   return (
-    <div className="min-h-screen text-foreground" style={{ background: "#070709" }}>
+    <div className="min-h-screen text-foreground">
       <motion.main
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         variants={staggerParentVariants as any}

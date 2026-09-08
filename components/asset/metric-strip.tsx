@@ -30,7 +30,7 @@ export function MetricStrip({ cells, className }: Props): JSX.Element {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-white/10 bg-[#101116] px-5 py-4",
+        "rounded-2xl fey-card px-5 py-4",
         "flex items-stretch justify-between overflow-x-auto",
         className
       )}

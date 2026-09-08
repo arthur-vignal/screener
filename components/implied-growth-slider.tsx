@@ -49,7 +49,7 @@ export function ImpliedGrowthSlider({
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-[#101116] p-5">
+      <div className="rounded-2xl fey-card p-5">
         <Skeleton className="h-4 w-48 mb-4" />
         <Skeleton className="h-32 w-full" />
       </div>
@@ -58,7 +58,7 @@ export function ImpliedGrowthSlider({
 
   if (currentPrice == null || lpa == null || lpa <= 0) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-[#101116] p-5 text-center text-[12px] text-muted-foreground/85">
+      <div className="rounded-2xl fey-card p-5 text-center text-[12px] text-muted-foreground/85">
         Sem LPA ou preço pra calcular expectativas.
       </div>
     );
@@ -85,7 +85,7 @@ export function ImpliedGrowthSlider({
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#101116] p-5">
+    <div className="rounded-2xl fey-card p-5">
       <div className="flex items-baseline justify-between mb-4">
         <div className="text-[12px] uppercase tracking-[0.18em] text-foreground">
           Expectativas implícitas

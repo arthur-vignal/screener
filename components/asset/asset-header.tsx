@@ -202,7 +202,7 @@ function MoreMenu({ symbol }: { symbol: string }): JSX.Element {
         <div
           ref={ref}
           role="menu"
-          className="absolute right-0 top-[calc(100%+6px)] z-30 min-w-[200px] rounded-xl border border-white/10 bg-[#101116]/95 shadow-2xl shadow-black/40 backdrop-blur-md p-1.5"
+          className="absolute right-0 top-[calc(100%+6px)] z-30 min-w-[200px] rounded-xl fey-card/95 shadow-2xl shadow-black/40 backdrop-blur-md p-1.5"
         >
           <Link
             href={`/asset/${symbol}/raw-data`}
