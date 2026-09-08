@@ -76,14 +76,11 @@ export function NewsFeed({
       aria-label="Feed de notícias"
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border/40">
-        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
-          Notícias da B3
-        </div>
-        <div className="mt-1 text-[12px] text-muted-foreground/70">
-          Portais verificados · Google News
-        </div>
-      </div>
+            <div className="px-5 py-4 border-b border-border/40">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
+                Notícias da B3
+              </div>
+            </div>
 
       {/* Body — rola dentro do card */}
                   <div
@@ -187,16 +184,14 @@ function NewsCard({
         {item.title}
       </p>
 
-      {/* Metadata */}
-      <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/70 tabular-nums">
-        <span className="font-medium uppercase tracking-wide">{item.source}</span>
-        <span aria-hidden>·</span>
-        <span>{time}</span>
-        <ExternalLink
-          className="ml-auto h-3 w-3 text-muted-foreground/40 shrink-0"
-          strokeWidth={2}
-        />
-      </div>
+      {/* Metadata — só tempo (nome da fonte fica no hover/título do link) */}
+            <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/70 tabular-nums">
+              <span>{time}</span>
+              <ExternalLink
+                className="ml-auto h-3 w-3 text-muted-foreground/40 shrink-0"
+                strokeWidth={2}
+              />
+            </div>
     </a>
   );
 }

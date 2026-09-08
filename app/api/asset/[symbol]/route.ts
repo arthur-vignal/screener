@@ -7,6 +7,7 @@ import {
   brapiBalanceSheet,
   brapiIncomeStatement,
   brapiCashflow,
+  brapiValueAdded,
   brapiHistorical,
   normalizeYield,
 } from "@/lib/brapi";
@@ -53,6 +54,7 @@ export async function GET(
     statsHistoryRaw,
     fdHistoryAnnual,
     incomeQuarterly,
+    valueAddedAnnual,
   ] = await Promise.all([
     brapiQuote([symbol]),
     brapiProfile(symbol),
@@ -70,6 +72,9 @@ export async function GET(
     brapiFinancialData({ symbol, mode: "history", period: "annual" }),
     // B3: preenche historicals.incomeQuarterly (idem).
     brapiIncomeStatement({ symbol, period: "quarterly" }),
+    // B4: preenche historicals.valueAdded (DVA anual).
+    // Antes ficava [] — rota antiga chamava endpoint 404.
+    brapiValueAdded({ symbol, period: "annual" }),
   ]);
 
   const q = quoteMap.get(symbol);
@@ -161,7 +166,7 @@ export async function GET(
       incomeQuarterly: incomeQuarterly ?? [],
       balance: balanceAnnual ?? [],
       cashflow: cashflowAnnual ?? [],
-      valueAdded: [],
+      valueAdded: valueAddedAnnual ?? [],
       // B1: stats history (P/L, P/VP, EV/EBITDA por quarter) — vinha []
       // apesar da rota já chamar brapiStatistics mode=history. Reaproveita
       // statsHistoryRaw (já computado pra earningsYieldHistory).

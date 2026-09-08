@@ -184,9 +184,6 @@ function HoldingRow({
           <div className="text-[12px] font-semibold text-foreground tracking-tight truncate">
             {h.symbol}
           </div>
-          <div className="text-[10.5px] text-muted-foreground/85 truncate">
-            {h.longName ?? "—"}
-          </div>
         </div>
         <div className="text-right shrink-0">
           <div className="text-[12px] tabular-nums font-semibold text-foreground">

@@ -92,33 +92,30 @@ function ReadyCard({
         className
       )}
     >
-      {/* Header: "Carteira" eyebrow + saudação nova */}
-      <div>
-        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">
-          Carteira
-        </div>
+      {/* Header: "Carteira" eyebrow + valor */}
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">
+                Carteira
+              </div>
 
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <h2 className="text-[16px] font-medium text-foreground leading-snug max-w-[200px]">
-            Seu portfolio valorizou{" "}
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 align-middle px-2 py-0.5 rounded-full text-[13px] font-semibold tabular-nums backdrop-blur-md",
-                chipBg
-              )}
-            >
-              <Icon className="h-3 w-3" strokeWidth={2.5} />
-              {positive ? "+" : "−"}
-              {Math.abs(pct).toFixed(2)}%
-            </span>{" "}
-            hoje
-          </h2>
-        </div>
-
-        <div className="mt-4 text-[28px] font-semibold tabular-nums text-foreground leading-none tracking-tight">
-          {valueFormatted}
-        </div>
-      </div>
+              <div className="mt-1 text-[28px] font-semibold tabular-nums text-foreground leading-none tracking-tight">
+                {valueFormatted}
+              </div>
+              {/* Chip de variação 24h (badge compacto, sem subtítulo) */}
+              <div className="mt-2">
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-semibold tabular-nums backdrop-blur-md",
+                    chipBg
+                  )}
+                >
+                  <Icon className="h-3 w-3" strokeWidth={2.5} />
+                  {positive ? "+" : "−"}
+                  {Math.abs(pct).toFixed(2)}%
+                  <span className="ml-0.5 text-foreground/70 font-medium">hoje</span>
+                </span>
+              </div>
+            </div>
 
       {/* Chart preview do último pregão (pack 05 — gradient relativo ao initialValue) */}
             {state.preview.length >= 2 && (

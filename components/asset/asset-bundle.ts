@@ -84,6 +84,9 @@ export type AssetBundle = {
     balance?: Array<Record<string, unknown>>;
     cashflow?: Array<Record<string, unknown>>;
     keyStatistics?: Array<Record<string, unknown>>;
+    /** B4 (2026-08-31): DVA anual — até 16 anos. Populado pelo
+     *  `/api/asset/[symbol]` via `brapiValueAdded`. */
+    valueAdded?: Array<Record<string, unknown>>;
   };
   /** A7: earnings yield histórico (1/trailingPE por quarter) — alimenta FairValueChart. */
   earningsYieldHistory?: Array<{

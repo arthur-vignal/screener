@@ -749,6 +749,48 @@ export async function brapiCashflow(opts: {
 }
 
 /**
+ * DVA — Demonstração do Valor Adicionado (anual). 16 anos.
+ *
+ * Endpoint dedicado: `/api/v2/stocks/value-added?symbols=X&period=annual`
+ * retorna o shape completo de DVA (revenue, grossAddedValue,
+ * netAddedValue, taxes, dividends, retainedEarnings, etc). Diferente
+ * de `valueAddedHistory` no bundle antigo (`/v2/quote/{t}?modules=...`)
+ * que era 404 — esse endpoint dedicado existe e responde com Pro.
+ *
+ * Cache 24h — DVA anual muda só 1x/ano (na divulgação do balanço).
+ *
+ * Antes do commit 2026-08-31 (lib/brapi.ts sem este wrapper):
+ * `historicals.valueAdded` ficava sempre `[]` no `/api/asset/[symbol]`
+ * porque (a) lib/brapi-full.ts chamava 404 endpoint, (b) lib/brapi.ts
+ * não tinha wrapper dedicado. Agora preenche com a série anual real.
+ */
+export async function brapiValueAdded(opts: {
+  symbol: string;
+  period?: "annual" | "quarterly";
+}): Promise<Array<Record<string, unknown>>> {
+  const upper = opts.symbol.toUpperCase().replace(/\.SA$/, "");
+  const period = opts.period ?? "annual";
+  return cached(
+    `brapi:v2:value-added:${upper}:${period}`,
+    24 * 60 * 60,
+    async () => {
+      const params = new URLSearchParams({ symbols: upper, period });
+      const t = getToken();
+      if (t) params.set("token", t);
+      const url = `${BRAPI_BASE}/v2/stocks/value-added?${params.toString()}`;
+      const res = (await fetchJson(url)) as { results?: unknown[] } | null;
+      const item = extractData(res?.results);
+      // extractData já retorna `item.data` (= Array<Period> aqui,
+      // não objeto único como nos outros endpoints). Não precisa
+      // pegar `.data` de novo.
+      const data = item;
+      if (!data || !Array.isArray(data)) return [];
+      return data as unknown as Array<Record<string, unknown>>;
+    },
+  );
+}
+
+/**
  * Indicadores do Tesouro Direto. `symbols` é uma lista de `tesouro-*`.
  * Cache 24h — taxas mudam 1x/dia.
  */

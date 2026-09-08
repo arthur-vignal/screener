@@ -10,7 +10,7 @@
  * + headline + fonte + volume negociado.
  */
 
-import { Calendar, Newspaper, TrendingUp } from "lucide-react";
+import { Calendar, ExternalLink, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import type { JSX } from "react";
 
@@ -86,21 +86,24 @@ export function DayHighlightCard({
           )}
 
           <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block group"
-          >
-            <h3 className="text-[16px] font-semibold text-foreground leading-snug group-hover:text-foreground/90 transition-colors">
-              {headline}
-            </h3>
-            <div className="mt-3 flex items-center gap-1.5 text-[12px] text-muted-foreground/70 tabular-nums">
-              <Newspaper className="h-3.5 w-3.5" strokeWidth={2} />
-              <span className="font-medium uppercase tracking-wide">
-                {source}
-              </span>
-            </div>
-          </a>
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block group"
+                    >
+                      <h3 className="text-[16px] font-semibold text-foreground leading-snug group-hover:text-foreground/90 transition-colors">
+                        {headline}
+                      </h3>
+                      {/* Data + link-out (fonte omitida pra limpar a UI) */}
+                      <div className="mt-3 flex items-center gap-1.5 text-[12px] text-muted-foreground/70 tabular-nums">
+                        <Calendar className="h-3.5 w-3.5" strokeWidth={2} />
+                        <span>{dateText}</span>
+                        <ExternalLink
+                          className="ml-auto h-3 w-3 text-muted-foreground/40 shrink-0"
+                          strokeWidth={2}
+                        />
+                      </div>
+                    </a>
         </div>
       ) : (
         <div className="py-7 text-center">

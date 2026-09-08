@@ -363,6 +363,21 @@ body {
     background: transparent;
   }
   .no-scrollbar::-webkit-scrollbar-thumb {
-    background: transparent;
+      background: transparent;
+    }
   }
-}
+
+  /* Liquid glass in — animação usada pelo overlay de busca na /home
+     (QuotationsTable). Scale + fade + leve blur pra simular material. */
+  @keyframes liquidGlassIn {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(-4px);
+      filter: blur(4px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      filter: blur(0);
+    }
+  }
