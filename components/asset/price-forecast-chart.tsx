@@ -140,6 +140,8 @@ export function PriceForecastChart({
     gradientId: string;
     /** Quantas trajetórias (0 = sem trajectories). */
     nTrajectories: number;
+    /** Cor de cada path (índice = path_<idx>), uma por trajetória MC. */
+    pathColors: string[];
   } | null>(() => {
     if (!forecast) return null;
 
@@ -189,6 +191,35 @@ export function PriceForecastChart({
     const trajectories = mc?.trajectories ?? [];
     const nTimesteps = horizonMonths + 1; // 7
     const hasTrajectories = trajectories.length > 0;
+
+    // Cada path recebe uma cor baseada no seu valor final em relação a
+    // P10/P90 dos paths. Bottom 30% → vermelho (cenário baixo),
+    // Middle 40% → azul (neutro), # Top 30% → verde (otimista).
+    // Antes era rgba(255,255,255,0.06) (cinza quase invisível).
+    const pathColors: string[] = [];
+    if (hasTrajectories) {
+      const indexed = trajectories.map((p, idx) => ({
+        idx,
+        final: p[p.length - 1],
+      }));
+      indexed.sort((a, b) => a.final - b.final);
+      const total = indexed.length;
+      const p30Idx = Math.floor(total * 0.30);
+      const p70Idx = Math.floor(total * 0.70);
+      const colorByRank: string[] = new Array(total);
+      indexed.forEach((item, rank) => {
+        colorByRank[item.idx] =
+          rank < p30Idx
+            ? "rgba(242,85,95,0.15)" // vermelho (PACK.negative)
+            : rank >= p70Idx
+              ? "rgba(77,190,149,0.15)" // verde (PACK.positive)
+              : "rgba(72,159,250,0.15)"; // azul (#489ffa — referência neutra)
+      });
+      // Reordena pra mesma ordem dos trajectories (idx original).
+      for (let i = 0; i < trajectories.length; i++) {
+        pathColors.push(colorByRank[i] ?? "rgba(72,159,250,0.15)");
+      }
+    }
 
     // Gera rows de forecast: 7 timesteps (1 por mês) OU 3 pontos (sem trajectories).
     const nForecastRows = hasTrajectories ? nTimesteps : 3;
@@ -279,6 +310,7 @@ export function PriceForecastChart({
       color,
       gradientId,
       nTrajectories: trajectories.length,
+      pathColors,
     };
   }, [forecast, historicalPrices, symbol]);
 
@@ -503,16 +535,17 @@ export function PriceForecastChart({
               legendType="none"
             />
 
-            {/* Trajetórias MC (cone de paths) — 50 linhas cinza claro
-                sobrepostas mostrando a incerteza mês-a-mês (Brownian
-                genuíno). Renderizadas ANTES do histórico pra ficar atrás. */}
+            {/* Trajetórias MC (cone de paths) — 50 linhas COLORIDAS por
+                faixa (verde/azul/vermelho) baseadas no valor final de
+                cada path em relação a P10/P90. Renderizadas ANTES do
+                histórico pra ficar atrás. */}
             {data.nTrajectories > 0 &&
               Array.from({ length: data.nTrajectories }, (_, idx) => (
                 <Line
                   key={`mc-path-${idx}`}
                   dataKey={`path_${idx}`}
                   type="monotone"
-                  stroke="rgba(255, 255, 255, 0.06)"
+                  stroke={data.pathColors[idx] ?? "rgba(72,159,250,0.15)"}
                   strokeWidth={0.6}
                   dot={false}
                   isAnimationActive={false}

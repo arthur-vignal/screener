@@ -172,29 +172,32 @@ export default function AssetPageClient({ symbol }: Props): JSX.Element {
     // fica em /asset/[symbol]/analysis seção 5.
     // Erro 404 do endpoint = ticker fora do painel v8 → mostra empty state.
     const { data: forecastResponse, isLoading: forecastLoading, error: forecastError } = useSWR<{
-      symbol: string;
-      current_price: number;
-      predicted_price_6m: number;
-      predicted_pct_return: number;
-      direction: "up" | "down";
-      band: {
-        p10_price: number;
-        p90_price: number;
-        high_6m_price?: number;
-        base_6m_price?: number;
-        low_6m_price?: number;
-      };
-      monte_carlo: {
-        prob_up: number;
-        p10_price?: number;
-        p90_price?: number;
-      } | null;
-      disclaimer: string;
-    }>(
-      `/api/forecast/${symbol}`,
-      fetchJson,
-      { revalidateOnFocus: false, dedupingInterval: 60 * 60 * 1000 },
-    );
+          symbol: string;
+          current_price: number;
+          as_of: string;
+          predicted_price_6m: number;
+          predicted_pct_return: number;
+          direction: "up" | "down";
+          band: {
+            p10_price: number;
+            p90_price: number;
+            high_6m_price?: number;
+            base_6m_price?: number;
+            low_6m_price?: number;
+          };
+          monte_carlo: {
+            prob_up: number;
+            p10_price?: number;
+            p90_price?: number;
+            /** Amostra de 50 paths × 7 timesteps do MC GBM. */
+            trajectories?: number[][];
+          } | null;
+          disclaimer: string;
+        }>(
+          `/api/forecast/${symbol}`,
+          fetchJson,
+          { revalidateOnFocus: false, dedupingInterval: 60 * 60 * 1000 },
+        );
 
     const forecast = forecastResponse ?? null;
     const forecastUnavailable =

@@ -28,6 +28,7 @@ type HistoryPoint = { date: string; close: number };
 type Forecast = {
   symbol: string;
   current_price: number;
+  as_of: string;
   predicted_price_6m: number;
   predicted_pct_return: number;
   direction: "up" | "down";
@@ -45,6 +46,9 @@ type Forecast = {
     prob_up: number;
     p10_price?: number;
     p90_price?: number;
+    /** Amostra de 50 paths × 7 timesteps (S0..S6). Usada pelo MiniFanChart
+     *  pra extrair P10/P50/P90 trajectories. */
+    trajectories?: number[][];
   } | null;
   disclaimer: string;
 };
@@ -100,17 +104,6 @@ export function PriceForecastSummary({
   const Icon = isUp ? TrendingUp : TrendingDown;
   const colorClass = isUp ? "text-[var(--positive)]" : "text-[var(--negative)]";
 
-  // Cenários 6m para o mini fan chart. Se ausentes (fallback antigo),
-  // usa predicted_price_6m como base e infere high/low via P10/P90.
-  const band = forecast.band ?? {};
-  const base6m =
-    typeof band.base_6m_price === "number"
-      ? band.base_6m_price
-      : forecast.predicted_price_6m;
-  const high6m =
-    typeof band.high_6m_price === "number" ? band.high_6m_price : base6m;
-  const low6m =
-    typeof band.low_6m_price === "number" ? band.low_6m_price : base6m;
   const showChart = (historicalPrices?.length ?? 0) >= 2;
 
   return (
@@ -176,19 +169,19 @@ export function PriceForecastSummary({
         </div>
       </div>
 
-      {/* Mini fan chart inline — histórico + 3 cenários divergentes.
-          Versão resumida; chart geométrico completo (paths MC + density)
-          fica em /asset/[symbol]/analysis seção 5. */}
-      {showChart && (
-        <MiniFanChart
-          historicalPrices={historicalPrices ?? []}
-          currentPrice={forecast.current_price}
-          high6m={high6m}
-          base6m={base6m}
-          low6m={low6m}
-          direction={forecast.direction}
-        />
-      )}
+      {/* Mini fan chart inline — histórico + 3 caminhos MC
+                representativos (P10/P50/P90) ancorados no preço atual,
+                divergindo pra DIREITA até +6m. Versão resumida; chart
+                geométrico completo (paths MC + density) fica em
+                /asset/[symbol]/analysis seção 5. */}
+            {showChart && (
+              <MiniFanChart
+                historicalPrices={historicalPrices ?? []}
+                currentPrice={forecast.current_price}
+                trajectories={forecast.monte_carlo?.trajectories ?? []}
+                asOfTs={new Date(forecast.as_of).getTime()}
+              />
+            )}
 
       {/* CTA pra /analysis — onde tem o fan chart geométrico completo */}
       <Link

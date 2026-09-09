@@ -4,24 +4,24 @@
  * MiniFanChart — versão COMPACTA do fan chart pra usar DENTRO do
  * PriceForecastSummary (raiz do ticker).
  *
- * Diferenças do PriceForecastChart completo (/analysis seção 5):
- *   - Sem paths MC / density plot (não cabe em 140px)
+ * Estrutura IGUAL conceitualmente ao PriceForecastChart completo
+ * (/analysis seção 5), mas mostrando apenas 3 caminhos mais prováveis
+ * em vez de 50 paths MC:
+ *   - P10 (cenário pessimista)  — vermelho PACK.negative
+ *   - P50 (mediana)             — branco PACK.foreground (mais grosso)
+ *   - P90 (otimista)            — verde PACK.positive
+ *
+ * Diferenças do PriceForecastChart completo:
+ *   - Sem density plot / 50 paths
  *   - Sem Tooltip interativo
  *   - Sem eixo X visível
- *   - 3 linhas pontilhadas divergentes (high/base/low) saindo do preço
- *     atual, cada uma com um dot amarelo no final mostrando o valor 6m
- *   - Labels de banda no eixo Y em overlay HTML (High / Median / Current
- *     price / Low), cada um alinhado à sua linha
  *   - Altura fixa ~140px
  *
- * Visual: minimalista dark (#0d0d11), mesmo padrão do chart completo.
+ * Ancoragem no preço ATUAL (currentPrice, asOfTs) — divergem pra
+ * DIREITA até +6m. Nunca voltam pra esquerda.
  *
- * Dados:
- *   - historicalPrices: [{ date: "YYYY-MM-DD", close: number }] — 90d
- *   - currentPrice, high6m, base6m, low6m — anchor e cenários 6m
- *
- * Cor condicional pelo direction (up = verde, down = vermelho) na linha
- * median e nos dots finais. High/low sempre neutro (cinza/azul).
+ * Cor: SEM CINZA, SEM PRETO. Apenas cores do pack (positive/negative/
+ * foreground). Y domain com padding 8%.
  */
 
 import { useMemo } from "react";
@@ -42,21 +42,29 @@ import { PACK } from "@/lib/chart-pack";
 type HistoryPoint = { date: string; close: number };
 
 type Props = {
+  /** Últimos 90 pregões do ticker. */
   historicalPrices: HistoryPoint[];
+  /** Preço atual (anchor de onde os 3 paths divergem). */
   currentPrice: number;
-  high6m: number;
-  base6m: number;
-  low6m: number;
-  /** "up" pinta a median de verde e os dots; "down" pinta de vermelho. */
-  direction: "up" | "down";
+  /**
+   * Trajetórias MC: array de paths × 7 timesteps (S0..S6).
+   * trajectories[i] = [S0, S1, ..., S6].
+   * Se ausente (endpoint sem MC), cai em fallback determinístico.
+   */
+  trajectories: number[][];
+  /** Timestamp (ms) do momento atual — anchor dos paths futuros. */
+  asOfTs: number;
 };
 
 type ChartRow = {
   ts: number;
   historical?: number;
-  high?: number;
-  base?: number;
-  low?: number;
+  /** Caminho P10 (Pessimista) — vermelho. */
+  p10?: number;
+  /** Caminho P50 (Mediana) — branco, mais grosso. */
+  p50?: number;
+  /** Caminho P90 (Otimista) — verde. */
+  p90?: number;
 };
 
 function ymdToTs(ymd: string): number {
@@ -65,24 +73,67 @@ function ymdToTs(ymd: string): number {
 
 const DAY_MS = 1000 * 60 * 60 * 24;
 const SIX_MONTHS_MS = DAY_MS * 30 * 6;
+const MONTH_MS = DAY_MS * 30;
+
+/**
+ * Calcula a trajetória de um percentil: em cada timestep t, pega o
+ * valor do path na posição `percentil/100` (entre 0 e 1) dos paths
+ * ordenados. Resultado: vetor [v_t0, v_t1, ..., v_tN].
+ *
+ * Ex: percentile=10 → 10% dos paths têm valor MENOR que o retornado
+ *     em cada timestep (cenário pessimista).
+ *     percentile=90 → 90% dos paths têm valor MENOR (otimista).
+ */
+function getPercentileTrajectory(
+  trajectories: number[][],
+  percentile: number,
+): number[] {
+  if (trajectories.length === 0) return [];
+  const nTimesteps = trajectories[0]?.length ?? 0;
+  if (nTimesteps === 0) return [];
+  const result: number[] = [];
+  const idx = Math.min(
+    trajectories.length - 1,
+    Math.max(0, Math.floor((percentile / 100) * (trajectories.length - 1))),
+  );
+  for (let t = 0; t < nTimesteps; t++) {
+    const valuesAtT = trajectories
+      .map((path) => path[t])
+      .filter((v) => Number.isFinite(v))
+      .sort((a, b) => a - b);
+    if (valuesAtT.length === 0) {
+      result.push(NaN);
+      continue;
+    }
+    const i = Math.min(
+      valuesAtT.length - 1,
+      Math.max(0, Math.floor((percentile / 100) * (valuesAtT.length - 1))),
+    );
+    result.push(valuesAtT[i]);
+  }
+  return result;
+}
 
 export function MiniFanChart({
   historicalPrices,
   currentPrice,
-  high6m,
-  base6m,
-  low6m,
-  direction,
+  trajectories,
+  asOfTs,
 }: Props): JSX.Element | null {
   const data = useMemo(() => {
     if (historicalPrices.length < 2) return null;
-    const filtered = historicalPrices
-      .filter((p) => p.close > 0 && Number.isFinite(p.close));
+    const filtered = historicalPrices.filter(
+      (p) => p.close > 0 && Number.isFinite(p.close),
+    );
     if (filtered.length < 2) return null;
 
-    const lastDate = filtered[filtered.length - 1].date;
-    const asOfTs = ymdToTs(lastDate);
     const futureTs = asOfTs + SIX_MONTHS_MS;
+
+    // Pega P10/P50/P90 trajectories do MC (3 vetores de 7 pontos cada).
+    const hasMC = trajectories.length > 0;
+    const p10Path = hasMC ? getPercentileTrajectory(trajectories, 10) : [];
+    const p50Path = hasMC ? getPercentileTrajectory(trajectories, 50) : [];
+    const p90Path = hasMC ? getPercentileTrajectory(trajectories, 90) : [];
 
     // Linhas históricas.
     const histRows: ChartRow[] = filtered.map((p) => ({
@@ -90,10 +141,9 @@ export function MiniFanChart({
       historical: p.close,
     }));
 
-    // Bridge no preço atual (garante continuidade visual entre hist e
-    // forecast). Se a última entrada histórica já é as_of com mesmo
-    // valor, mantemos; senão substituímos o close pelo currentPrice pra
-    // evitar gap visual entre histórico e anchor.
+    // Bridge no preço atual — garante continuidade entre histórico e
+    // forecast. Substitui o último close pelo currentPrice pra evitar
+    // gap visual.
     const last = histRows[histRows.length - 1];
     if (last && last.ts === asOfTs) {
       last.historical = currentPrice;
@@ -101,50 +151,68 @@ export function MiniFanChart({
       histRows.push({ ts: asOfTs, historical: currentPrice });
     }
 
-    // Anchor + ponto futuro dos cenários.
+    // Anchor row — conecta o histórico aos 3 paths futuros (todos
+    // começam em asOfTs no currentPrice).
     const anchor: ChartRow = {
       ts: asOfTs,
       historical: currentPrice,
-      high: currentPrice,
-      base: currentPrice,
-      low: currentPrice,
-    };
-    const future: ChartRow = {
-      ts: futureTs,
-      high: high6m,
-      base: base6m,
-      low: low6m,
+      p10: currentPrice,
+      p50: currentPrice,
+      p90: currentPrice,
     };
 
-    const rows = [...histRows, anchor, future];
+    // Linhas futuras: 6 timesteps após asOfTs (1 por mês).
+    // Trajetória MC tem 7 pontos [S0..S6], onde S0 = asOfTs.
+    // S0 vai pra anchor; S1..S6 mapeiam pra t=1..6 meses.
+    const futureRows: ChartRow[] = [];
+    const nFutureSteps = hasMC ? Math.max(0, p50Path.length - 1) : 0;
+    for (let i = 0; i < nFutureSteps; i++) {
+      futureRows.push({
+        ts: asOfTs + (i + 1) * MONTH_MS,
+        p10: p10Path[i + 1],
+        p50: p50Path[i + 1],
+        p90: p90Path[i + 1],
+      });
+    }
+
+    const rows: ChartRow[] = [...histRows, anchor, ...futureRows];
 
     // Y domain com padding de 8% em cima e embaixo.
-    const allValues = [
+    const allValues: number[] = [
       ...filtered.map((p) => p.close),
       currentPrice,
-      high6m,
-      base6m,
-      low6m,
     ];
-    const minVal = Math.min(...allValues);
-    const maxVal = Math.max(...allValues);
+    if (hasMC) {
+      allValues.push(p10Path[p10Path.length - 1]);
+      allValues.push(p50Path[p50Path.length - 1]);
+      allValues.push(p90Path[p90Path.length - 1]);
+    }
+    const validValues = allValues.filter((v) => Number.isFinite(v));
+    if (validValues.length === 0) return null;
+    const minVal = Math.min(...validValues);
+    const maxVal = Math.max(...validValues);
     const pad = (maxVal - minVal) * 0.08 || maxVal * 0.05 || 1;
     const yDomain: [number, number] = [minVal - pad, maxVal + pad];
 
-    return { rows, asOfTs, futureTs, yDomain };
-  }, [historicalPrices, currentPrice, high6m, base6m, low6m]);
-
-  // Cor condicional pelo direction.
-  const accentColor = direction === "up" ? PACK.positive : PACK.negative;
+    return {
+      rows,
+      asOfTs,
+      futureTs,
+      yDomain,
+      hasMC,
+      p10Final: hasMC ? p10Path[p10Path.length - 1] : currentPrice,
+      p50Final: hasMC ? p50Path[p50Path.length - 1] : currentPrice,
+      p90Final: hasMC ? p90Path[p90Path.length - 1] : currentPrice,
+    };
+  }, [historicalPrices, currentPrice, trajectories, asOfTs]);
 
   if (!data) return null;
 
-  // Posições Y em % (pra overlay HTML dos labels).
-  const { rows, asOfTs, futureTs, yDomain } = data;
+  const { rows, asOfTs: anchorTs, futureTs, yDomain, hasMC, p10Final, p50Final, p90Final } = data;
   const [yMin, yMax] = yDomain;
   const yToPct = (v: number): string => {
+    if (!Number.isFinite(v)) return "50%";
     const pct = ((yMax - v) / (yMax - yMin)) * 100;
-    // Clamp pra não escapar do chart quando muito próximo das bordas.
     return `${Math.max(4, Math.min(96, pct))}%`;
   };
 
@@ -172,7 +240,7 @@ export function MiniFanChart({
             tickLine={false}
           />
 
-          {/* Linha histórica (branca sólida fina) */}
+          {/* Linha histórica (branca sólida fina). */}
           <Line
             type="monotone"
             dataKey="historical"
@@ -185,111 +253,129 @@ export function MiniFanChart({
             connectNulls
           />
 
-          {/* 3 linhas pontilhadas (high/base/low) saindo do preço atual */}
-          <Line
-            type="linear"
-            dataKey="high"
-            stroke="rgba(255,200,87,0.65)"
-            strokeWidth={1}
-            strokeDasharray="3 3"
-            dot={false}
-            activeDot={false}
-            isAnimationActive={false}
-            connectNulls
-          />
-          <Line
-            type="linear"
-            dataKey="base"
-            stroke={accentColor}
-            strokeOpacity={0.8}
-            strokeWidth={1.25}
-            strokeDasharray="3 3"
-            dot={false}
-            activeDot={false}
-            isAnimationActive={false}
-            connectNulls
-          />
-          <Line
-            type="linear"
-            dataKey="low"
-            stroke="rgba(242,140,140,0.65)"
-            strokeWidth={1}
-            strokeDasharray="3 3"
-            dot={false}
-            activeDot={false}
-            isAnimationActive={false}
-            connectNulls
-          />
+          {/* Path P10 — vermelho (PACK.negative), divergindo do anchor pra direita. */}
+          {hasMC && (
+            <Line
+              type="monotone"
+              dataKey="p10"
+              stroke={PACK.negative}
+              strokeWidth={1}
+              strokeOpacity={0.85}
+              dot={false}
+              activeDot={false}
+              isAnimationActive={false}
+              connectNulls
+            />
+          )}
 
-          {/* Linha vertical tracejada no preço atual */}
+          {/* Path P50 — branco (PACK.foreground), MAIS GROSSO (caminho base). */}
+          {hasMC && (
+            <Line
+              type="monotone"
+              dataKey="p50"
+              stroke={PACK.foreground}
+              strokeWidth={1.75}
+              strokeOpacity={0.95}
+              dot={false}
+              activeDot={false}
+              isAnimationActive={false}
+              connectNulls
+            />
+          )}
+
+          {/* Path P90 — verde (PACK.positive), divergindo do anchor pra direita. */}
+          {hasMC && (
+            <Line
+              type="monotone"
+              dataKey="p90"
+              stroke={PACK.positive}
+              strokeWidth={1}
+              strokeOpacity={0.85}
+              dot={false}
+              activeDot={false}
+              isAnimationActive={false}
+              connectNulls
+            />
+          )}
+
+          {/* Linha vertical tracejada no preço atual. */}
           <ReferenceLine
-            x={asOfTs}
+            x={anchorTs}
             stroke={PACK.tick}
             strokeOpacity={0.35}
             strokeDasharray="2 4"
             strokeWidth={1}
           />
 
-          {/* Dots no final de cada linha (valor 6m) */}
-          <ReferenceDot
-            x={futureTs}
-            y={high6m}
-            r={2.5}
-            fill="rgba(255,200,87,1)"
-            stroke="rgba(255,200,87,0.4)"
-            strokeWidth={2}
-          />
-          <ReferenceDot
-            x={futureTs}
-            y={base6m}
-            r={2.5}
-            fill={accentColor}
-            stroke={accentColor}
-            strokeOpacity={0.4}
-            strokeWidth={2}
-          />
-          <ReferenceDot
-            x={futureTs}
-            y={low6m}
-            r={2.5}
-            fill="rgba(242,140,140,1)"
-            stroke="rgba(242,140,140,0.4)"
-            strokeWidth={2}
-          />
+          {/* Dots no final de cada path (valor 6m). */}
+          {hasMC && Number.isFinite(p10Final) && (
+            <ReferenceDot
+              x={futureTs}
+              y={p10Final}
+              r={2.5}
+              fill={PACK.negative}
+              stroke={PACK.negative}
+              strokeOpacity={0.4}
+              strokeWidth={2}
+            />
+          )}
+          {hasMC && Number.isFinite(p50Final) && (
+            <ReferenceDot
+              x={futureTs}
+              y={p50Final}
+              r={3}
+              fill={PACK.foreground}
+              stroke={PACK.foreground}
+              strokeOpacity={0.5}
+              strokeWidth={2}
+            />
+          )}
+          {hasMC && Number.isFinite(p90Final) && (
+            <ReferenceDot
+              x={futureTs}
+              y={p90Final}
+              r={2.5}
+              fill={PACK.positive}
+              stroke={PACK.positive}
+              strokeOpacity={0.4}
+              strokeWidth={2}
+            />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
 
-      {/* Labels de banda no eixo Y (HTML overlay).
-          Absolute right side, alinhados verticalmente à sua linha. */}
+      {/* Labels de banda no eixo Y (HTML overlay). */}
       <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute right-0 -translate-y-1/2 text-[9px] uppercase tracking-[0.14em] text-amber-200/70 font-semibold tabular-nums"
-          style={{ top: yToPct(high6m) }}
-        >
-          High
-        </div>
-        <div
-          className="absolute right-0 -translate-y-1/2 text-[9px] uppercase tracking-[0.14em] font-semibold tabular-nums"
-          style={{
-            top: yToPct(base6m),
-            color: accentColor,
-            opacity: 0.9,
-          }}
-        >
-          Median
-        </div>
+        {hasMC && Number.isFinite(p90Final) && (
+          <div
+            className="absolute right-0 -translate-y-1/2 text-[9px] uppercase tracking-[0.14em] font-semibold tabular-nums"
+            style={{ top: yToPct(p90Final), color: PACK.positive, opacity: 0.9 }}
+          >
+            High
+          </div>
+        )}
+        {hasMC && Number.isFinite(p50Final) && (
+          <div
+            className="absolute right-0 -translate-y-1/2 text-[9px] uppercase tracking-[0.14em] font-semibold tabular-nums"
+            style={{ top: yToPct(p50Final), color: PACK.foreground, opacity: 0.95 }}
+          >
+            Median
+          </div>
+        )}
         <div
           className="absolute right-0 -translate-y-1/2 text-[9px] uppercase tracking-[0.14em] text-foreground/85 font-semibold tabular-nums"
           style={{ top: yToPct(currentPrice) }}
         >
           Current
         </div>
-        <div
-          className="absolute right-0 -translate-y-1/2 text-[9px] uppercase tracking-[0.14em] text-rose-300/70 font-semibold tabular-nums"
-          style={{ top: yToPct(low6m) }}
-        >
-          Low
-        </div>
+        {hasMC && Number.isFinite(p10Final) && (
+          <div
+            className="absolute right-0 -translate-y-1/2 text-[9px] uppercase tracking-[0.14em] font-semibold tabular-nums"
+            style={{ top: yToPct(p10Final), color: PACK.negative, opacity: 0.9 }}
+          >
+            Low
+          </div>
+        )}
       </div>
     </div>
   );
