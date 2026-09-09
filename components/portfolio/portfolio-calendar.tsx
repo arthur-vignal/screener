@@ -21,12 +21,14 @@
  *     séries macro). Dividendos usam cor neutra com badge DIVIDENDO/JCP.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { JSX } from "react";
 import {
   Banknote,
   CalendarDays,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Landmark,
   TrendingUp,
@@ -101,6 +103,10 @@ const MACRO_KIND_META: Record<
 
 export function PortfolioCalendar({ symbols, flush }: Props): JSX.Element {
   const [window, setWindow] = useState<"upcoming" | "recent">("upcoming");
+  // Cursor: índice na lista de meses agrupados (0 = primeiro/upcoming, last = recent).
+  // Permite navegar entre meses sem refetch — os eventos já estão em memória.
+  // Default: índice 0 (primeiro mês disponível na janela atual).
+  const [monthCursor, setMonthCursor] = useState(0);
   const uniqueSymbols = useMemo(() => [...new Set(symbols)], [symbols]);
 
   // Dividendos: 1 request por símbolo (já cacheado server-side 6h).
@@ -177,7 +183,30 @@ export function PortfolioCalendar({ symbols, flush }: Props): JSX.Element {
     );
   }, [macroResp, dividendsBySymbol, uniqueSymbols, window]);
 
-  const grouped = useMemo(() => groupByMonth(events, window), [events, window]);
+  const allGrouped = useMemo(() => groupByMonth(events, window), [events, window]);
+  // Reset do cursor quando a janela muda (Upcoming/Recent) ou lista de meses muda.
+  // Effect: se cursor atual está fora do range, voltar pra 0 (ou last).
+  const grouped = useMemo(() => {
+    if (allGrouped.length === 0) return allGrouped;
+    const safeIndex = Math.max(0, Math.min(monthCursor, allGrouped.length - 1));
+    return [allGrouped[safeIndex]!];
+  }, [allGrouped, monthCursor]);
+  // Ao trocar de janela, cursor volta pro extremo correto:
+  // - upcoming: 0 (começo = mês mais próximo)
+  // - recent: 0 (porque `groupByMonth` inverteu a ordem pra recent,
+  //   então 0 = mês mais recente)
+  // Reset via useEffect abaixo.
+
+  // Reset cursor quando muda a janela (Upcoming <-> Recent).
+  // Também clamp se a lista encolheu (ex: SWR revalidou com menos meses).
+  useEffect(() => {
+    setMonthCursor(0);
+  }, [window]);
+  useEffect(() => {
+    if (monthCursor >= allGrouped.length && allGrouped.length > 0) {
+      setMonthCursor(allGrouped.length - 1);
+    }
+  }, [allGrouped.length, monthCursor]);
 
   const loading = macroLoading || divLoading;
   const error = macroError && divError;
@@ -199,6 +228,36 @@ export function PortfolioCalendar({ symbols, flush }: Props): JSX.Element {
             Calendar
           </h2>
           <CalendarDays className="h-4 w-4 text-muted-foreground/70" strokeWidth={1.75} />
+          {allGrouped.length > 1 && (
+            <div className="flex items-center gap-1 ml-1">
+              <button
+                type="button"
+                onClick={() => setMonthCursor((c) => Math.max(0, c - 1))}
+                disabled={monthCursor <= 0}
+                aria-label="Mês anterior"
+                title="Mês anterior"
+                className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] text-muted-foreground/85 hover:bg-white/[0.08] hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+              <span className="text-[11px] tabular-nums text-muted-foreground/70 min-w-[60px] text-center">
+                {allGrouped[monthCursor]?.label ?? ""}
+                <span className="ml-1 text-muted-foreground/50">
+                  {monthCursor + 1}/{allGrouped.length}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setMonthCursor((c) => Math.min(allGrouped.length - 1, c + 1))}
+                disabled={monthCursor >= allGrouped.length - 1}
+                aria-label="Próximo mês"
+                title="Próximo mês"
+                className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] text-muted-foreground/85 hover:bg-white/[0.08] hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+            </div>
+          )}
         </div>
         <div className="relative">
           <select

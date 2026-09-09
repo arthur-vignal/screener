@@ -78,6 +78,9 @@ type Bundle = {
   };
   summary: {
     totalValue: number;
+    investedValue: number;
+    gainAbs: number;
+    gainPct: number;
     changeToday: number;
     changeTodayPercent: number;
   };
@@ -174,7 +177,7 @@ export default function PortfolioDetailPage({
         variants={staggerParentVariants as any}
         initial="hidden"
         animate="show"
-        className="w-[90%] mx-auto py-4 flex flex-col"
+        className="w-[90%] mx-auto py-4 pb-[96px] flex flex-col"
         style={{ height: "100vh" }}
       >
         {/* Header — seta de voltar à esquerda, Portfolio / {name} no centro, holdings à direita */}
@@ -246,6 +249,9 @@ export default function PortfolioDetailPage({
           <div className="mb-3">
             <ValueAndDelta
               totalValue={summary?.totalValue ?? null}
+              investedValue={summary?.investedValue ?? null}
+              gainAbs={summary?.gainAbs ?? null}
+              gainPct={summary?.gainPct ?? null}
               change={summary?.changeToday ?? null}
               changePercent={summary?.changeTodayPercent ?? null}
               loading={isLoading && !bundle}
@@ -260,8 +266,8 @@ export default function PortfolioDetailPage({
 
         <div className="grid flex-1 min-h-0 grid-cols-1 gap-5 overflow-hidden rounded-2xl fey-card lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)] lg:grid-rows-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
           <div className="min-h-0 overflow-hidden border-b border-white/[0.08] p-5 lg:border-b-0 lg:border-r">
-            <StaggerOnMount>
-              <div className="flex flex-col">
+            <StaggerOnMount className="h-full flex flex-col">
+              <div className="flex flex-col flex-1 min-h-0">
                 <div className="mb-1 flex items-center justify-between gap-3 shrink-0">
                   <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Portfolio performance</h2>
                   <span className="text-[11px] tabular-nums text-muted-foreground/70">{bundle?.performance.candles.length ?? 0} pontos</span>
@@ -278,7 +284,7 @@ export default function PortfolioDetailPage({
           </div>
 
           <div className="flex min-h-0 flex-col overflow-hidden border-b border-white/[0.08] p-5 lg:border-b-0">
-            <StaggerOnMount>
+            <StaggerOnMount className="h-full flex flex-col">
               <HoldingsCard
                 holdings={holdings}
                 loading={isLoading && !bundle}
@@ -291,13 +297,13 @@ export default function PortfolioDetailPage({
           </div>
 
           <div className="flex min-h-0 flex-col overflow-hidden border-t-0 p-5 lg:border-r lg:border-white/[0.08]">
-            <StaggerOnMount>
+            <StaggerOnMount className="h-full flex flex-col">
               <PortfolioAllocationChart holdings={holdings} loading={isLoading && !bundle} flush />
             </StaggerOnMount>
           </div>
 
           <div className="flex min-h-0 flex-col overflow-hidden p-5">
-            <StaggerOnMount>
+            <StaggerOnMount className="h-full flex flex-col">
               <PortfolioCalendar symbols={holdings.map((h) => h.symbol)} flush />
             </StaggerOnMount>
           </div>
@@ -338,18 +344,24 @@ export default function PortfolioDetailPage({
 // ─── Value & delta ────────────────────────────────────────────────────────
 
 function ValueAndDelta({
-  totalValue, change, changePercent, loading,
+  totalValue, investedValue, gainAbs, gainPct, change, changePercent, loading,
 }: {
   totalValue: number | null;
+  investedValue: number | null;
+  gainAbs: number | null;
+  gainPct: number | null;
   change: number | null;
   changePercent: number | null;
   loading: boolean;
 }): JSX.Element {
   if (loading) {
     return (
-      <div className="mt-3 flex items-end gap-3">
-        <Skeleton className="h-9 w-56" roundedMd />
-        <Skeleton className="h-5 w-24" roundedMd />
+      <div className="mt-3 flex flex-col gap-2">
+        <div className="flex items-end gap-3">
+          <Skeleton className="h-9 w-56" roundedMd />
+          <Skeleton className="h-5 w-24" roundedMd />
+        </div>
+        <Skeleton className="h-4 w-72" roundedMd />
       </div>
     );
   }
@@ -359,32 +371,47 @@ function ValueAndDelta({
   const positive = (change ?? 0) >= 0;
   const ChangeIcon = positive ? ArrowUp : ArrowDown;
   const colorClass = positive ? "text-[#4dbe95]" : "text-[#d84f68]";
+  const showGain = investedValue != null && gainAbs != null && gainPct != null && investedValue > 0;
+  const gainPositive = (gainAbs ?? 0) >= 0;
+  const GainIcon = gainPositive ? ArrowUp : ArrowDown;
+  const gainColorClass = gainPositive ? "text-[#4dbe95]" : "text-[#d84f68]";
+  const fmtBRL = (v: number) => v.toLocaleString("pt-BR", {
+    style: "currency", currency: "BRL", maximumFractionDigits: 2,
+  });
+  const fmtPct = (v: number) => Math.abs(v).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  });
   return (
-    <div className="mt-3 flex items-baseline gap-3 flex-wrap">
-      <div className="text-[36px] font-semibold tabular-nums text-foreground leading-none tracking-tight">
-        {totalValue.toLocaleString("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-          maximumFractionDigits: 2,
-        })}
+    <div className="mt-3">
+      <div className="flex items-baseline gap-3 flex-wrap">
+        <div className="text-[36px] font-semibold tabular-nums text-foreground leading-none tracking-tight">
+          {fmtBRL(totalValue)}
+        </div>
+        {change != null && changePercent != null && (
+          <div className={cn("flex items-center gap-1 text-[14px] font-medium tabular-nums", colorClass)}>
+            <ChangeIcon className="h-3.5 w-3.5" strokeWidth={2.25} />
+            <span>
+              {change >= 0 ? "+" : "−"}{fmtBRL(Math.abs(change))}
+            </span>
+            <span className="opacity-90">
+              ({positive ? "+" : "−"}{fmtPct(changePercent)}%)
+            </span>
+          </div>
+        )}
       </div>
-      {change != null && changePercent != null && (
-        <div className={cn("flex items-center gap-1 text-[14px] font-medium tabular-nums", colorClass)}>
-          <ChangeIcon className="h-3.5 w-3.5" strokeWidth={2.25} />
+      {showGain && (
+        <div className="mt-2 flex items-center gap-2 text-[12px] tabular-nums text-muted-foreground/70">
           <span>
-            {change >= 0 ? "+" : "−"}
-            {Math.abs(change).toLocaleString("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-              maximumFractionDigits: 2,
-            })}
+            Custo investido <span className="text-foreground">{fmtBRL(investedValue!)}</span>
           </span>
-          <span className="opacity-90">
-            ({positive ? "+" : "−"}
-            {Math.abs(changePercent).toLocaleString("pt-BR", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}%)
+          <span className="text-muted-foreground/40">·</span>
+          <span className="flex items-center gap-1">
+            <span>desde a compra</span>
+            <span className={cn("flex items-center gap-0.5 font-medium", gainColorClass)}>
+              <GainIcon className="h-3 w-3" strokeWidth={2.25} />
+              {gainPositive ? "+" : "−"}{fmtBRL(Math.abs(gainAbs!))}
+              <span className="opacity-90">({gainPositive ? "+" : "−"}{fmtPct(gainPct!)}%)</span>
+            </span>
           </span>
         </div>
       )}

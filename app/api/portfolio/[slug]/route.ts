@@ -156,14 +156,18 @@ export async function GET(
     candles: Array<{ ts: number; close: number }>;
   }> = [];
 
-  // Primeiro passo: calcular valor bruto de cada posição pra derivar weight.
+  // Primeiro passo: calcular custo investido (qty × avg_price) e valor
+  // atual (qty × preço atual) por posição. Custo vai pra summary.investedValue
+  // e o valor atual vai pra summary.totalValue. Sem isso, totalValue ficava
+  // congelado no custo inicial e o hero do portfolio mostrava o "gasto" em
+  // vez do valor de mercado (regressão visto em 2026-09-09).
   const positionValues = new Map<string, number>();
+  let investedValue = 0;
   for (const h of holdings) {
-    const positionValue = h.qty * h.avg_price;
-    positionValues.set(h.symbol, positionValue);
-    totalValue += positionValue;
+    const positionCost = h.qty * h.avg_price;
+    positionValues.set(h.symbol, positionCost);
+    investedValue += positionCost;
   }
-
   for (const h of holdings) {
     const q = quoteMap.get(h.symbol);
     const price = q?.price ?? null;
@@ -185,6 +189,9 @@ export async function GET(
 
     const positionValue = h.qty * h.avg_price;
     const currentPositionValue = price != null ? h.qty * price : positionValue;
+    // Soma do valor ATUAL (qty × preço) na linha base do summary.
+    // Sem isso o hero mostrava o custo e não o valor de mercado.
+    totalValue += currentPositionValue;
     let positionChangeToday = 0;
     if (price != null && change != null && h.avg_price > 0) {
       positionChangeToday = currentPositionValue * (changePercent ?? 0) / 100;
@@ -326,6 +333,9 @@ export async function GET(
     },
     summary: {
       totalValue,
+      investedValue,
+      gainAbs: totalValue - investedValue,
+      gainPct: investedValue > 0 ? (totalValue - investedValue) / investedValue : 0,
       changeToday,
       changeTodayPercent,
     },
