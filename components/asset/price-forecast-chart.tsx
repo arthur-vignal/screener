@@ -136,6 +136,7 @@ export function PriceForecastChart({
     rows: ChartRow[];
     asOfTs: number;
     futureTs: number;
+    historicalMinTs: number;
     color: string;
     gradientId: string;
     /** Quantas trajetórias (0 = sem trajectories). */
@@ -303,10 +304,15 @@ export function PriceForecastChart({
       forecast.direction === "up" ? PACK.asset : PACK.negative;
     const gradientId = `forecast-band-${symbol}-${forecast.direction}`;
 
+    // Min ts do histórico (pra domain do XAxis ir até futuroTs).
+    const historicalMinTs =
+      hist.length > 0 ? hist[0].ts : asOfTs - 1000 * 60 * 60 * 24 * 30 * 6;
+
     return {
       rows,
       asOfTs,
       futureTs,
+      historicalMinTs,
       color,
       gradientId,
       nTrajectories: trajectories.length,
@@ -421,7 +427,13 @@ export function PriceForecastChart({
               </linearGradient>
             </defs>
             <CartesianGrid {...packGrid} />
-            <TimeXAxis tickFontSize={10} />
+            <TimeXAxis
+              tickFontSize={10}
+              domain={[data.historicalMinTs, data.futureTs]}
+              type="number"
+              scale="time"
+              allowDataOverflow={false}
+            />
             <YAxis
               tick={{
                 fill: PACK.tick,

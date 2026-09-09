@@ -39,15 +39,18 @@ import { cn } from "@/lib/utils";
  */
 export function TimeXAxis({
   tickFontSize = 9,
+  domain,
 }: {
   tickFontSize?: number;
+  /** Override do domain (ex: para estender até futureTs em forecast charts). */
+  domain?: [number | string, number | string];
 }): JSX.Element {
   return (
     <XAxis
       dataKey="ts"
       type="number"
       scale="time"
-      domain={["dataMin", "dataMax"]}
+      domain={domain ?? ["dataMin", "dataMax"]}
       tick={{
         fill: "rgba(200, 210, 230, 0.55)",
         fontSize: tickFontSize,
