@@ -430,8 +430,6 @@ export function PriceForecastChart({
             <TimeXAxis
               tickFontSize={10}
               domain={[data.historicalMinTs, data.futureTs]}
-              type="number"
-              scale="time"
               allowDataOverflow={false}
             />
             <YAxis
