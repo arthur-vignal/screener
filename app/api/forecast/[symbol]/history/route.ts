@@ -33,7 +33,11 @@ export async function GET(
     interval: "1d",
   });
 
-  const series: HistoryPoint[] = candles
+  // brapi retorna candles em ordem decrescente (mais novo primeiro). Ordena
+  // ascendente por timestamp antes de pegar os últimos 90 para garantir que
+  // estamos pegando os mais recentes (incluindo dias/semanas atuais).
+  const sorted = [...candles].sort((a, b) => a.timestamp - b.timestamp);
+  const series: HistoryPoint[] = sorted
     .slice(-90)
     .map((c) => ({ date: c.date, close: c.close }))
     .filter((p) => p.close > 0 && Number.isFinite(p.close));
