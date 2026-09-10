@@ -216,8 +216,8 @@ export function PortfolioCalendar({ symbols, flush }: Props): JSX.Element {
   return (
     <section
       className={cn(
-        "h-full min-h-0 flex flex-col rounded-2xl fey-card p-5",
-        flush && "rounded-none border-0 bg-transparent p-0",
+        "h-full min-h-0 flex flex-col",
+        flush ? "bg-transparent" : "rounded-2xl fey-card p-5",
       )}
       aria-labelledby="portfolio-calendar-title"
     >

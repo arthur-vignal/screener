@@ -81,7 +81,13 @@ export function PortfolioAllocationChart({ holdings, loading, flush }: Props): J
   const activeLabel = MODES.find((item) => item.id === mode)?.label ?? "Setor";
 
   return (
-    <section className={cn("rounded-2xl fey-card p-5 h-full min-h-0 flex flex-col", flush && "border-0 bg-transparent p-0")} aria-labelledby="portfolio-allocation-title">
+    <section
+      className={cn(
+        "h-full min-h-0 flex flex-col",
+        flush ? "bg-transparent" : "rounded-2xl fey-card p-5",
+      )}
+      aria-labelledby="portfolio-allocation-title"
+    >
       <div className="flex items-center justify-between gap-3">
         <h2 id="portfolio-allocation-title" className="text-[15px] font-semibold tracking-tight text-foreground">
           Portfolio allocation
