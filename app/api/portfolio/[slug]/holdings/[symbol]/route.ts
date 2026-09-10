@@ -104,20 +104,51 @@ function validateHoldingBody(body: HoldingBody): {
   return { ok: true, ...out };
 }
 
-/** Recalcula weight (= qty × avg_price / SUM) pra todas as posições do portfolio. */
+/**
+ * Recalcula weight (= qty × avg_price / SUM) pra todas as posições do portfolio.
+ *
+ * Mesma estratégia do POST handler em holdings/route.ts (não usa query()
+ * pra UPDATE — query() é SELECT-only via RPC exec_sql). Pra portfolios
+ * ≤50 holdings o loop é barato.
+ */
 async function recalculateWeights(portfolioId: number): Promise<void> {
-  await query(
-    `UPDATE portfolio_holdings ph
-     SET weight = (
-       SELECT CASE WHEN SUM(qty * avg_price) = 0 THEN 0
-                   ELSE ph.qty * ph.avg_price / SUM(qty * avg_price)
-              END
-       FROM portfolio_holdings
-       WHERE portfolio_id = $1
-     )
+  const sb = (await import("@/lib/supabase")).supabaseAdmin();
+
+  const sumRows = await query<{ total: number | null }>(
+    `SELECT COALESCE(SUM(qty * avg_price), 0)::DOUBLE PRECISION AS total
+     FROM portfolio_holdings WHERE portfolio_id = $1`,
+    [portfolioId],
+  );
+  const total = sumRows[0]?.total ?? 0;
+
+  const positions = await query<{ symbol: string; qty: number; avg_price: number }>(
+    `SELECT symbol, qty, avg_price FROM portfolio_holdings
      WHERE portfolio_id = $1`,
     [portfolioId],
   );
+
+  if (total <= 0) {
+    const { error } = await sb
+      .from("portfolio_holdings")
+      .update({ weight: 0 })
+      .eq("portfolio_id", portfolioId);
+    if (error) {
+      console.error("[recalculateWeights] zero-out failed:", error.message);
+    }
+    return;
+  }
+
+  for (const p of positions) {
+    const weight = (p.qty * p.avg_price) / total;
+    const { error } = await sb
+      .from("portfolio_holdings")
+      .update({ weight })
+      .eq("portfolio_id", portfolioId)
+      .eq("symbol", p.symbol);
+    if (error) {
+      console.error(`[recalculateWeights] update ${p.symbol} failed:`, error.message);
+    }
+  }
 }
 
 export async function PATCH(
