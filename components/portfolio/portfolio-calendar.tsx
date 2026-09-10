@@ -17,8 +17,10 @@
  *   - Lista agrupada por mês (header sticky do mês em sticky-style).
  *   - Cada row tem: ícone do tipo (logo do ativo OU badge do macro),
  *     label, data formatada pt-BR, referência (ex: "Agosto 2026").
- *   - Eventos macro usam cor azul #489ffa (mesmo padrão do projeto pra
- *     séries macro). Dividendos usam cor neutra com badge DIVIDENDO/JCP.
+ *   - Eventos macro usam cor neutra (foreground/muted). Pack 01
+ *     rejeitou cores saturadas em UI neutra; o accent azul #489ffa
+ *     continua sendo usado em gráficos lado-a-lado (macro vs ativo).
+ *   - Dividendos usam cor neutra com badge DIVIDENDO/JCP.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -360,15 +362,14 @@ function CalendarRow({ event }: { event: CalendarEvent }): JSX.Element {
   if (event.kind === "macro") {
     const meta = MACRO_KIND_META[event.macroKind];
     const Icon = meta.icon;
+    // Ícone/badge do macro: neutro (foreground/muted) em vez de azul
+    // #489ffa. Pack 01 rejeitou cores saturadas em UI neutra — o accent
+    // azul continua disponível pra séries macro nos gráficos (lados a
+    // lado com verde do ativo), mas no calendário vira preto/branco.
     return (
       <li className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
         <span
-          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border"
-          style={{
-            borderColor: "rgba(72,159,250,0.35)",
-            backgroundColor: "rgba(72,159,250,0.10)",
-            color: "#489ffa",
-          }}
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/[0.10] bg-white/[0.04] text-foreground/85"
           aria-hidden="true"
         >
           <Icon className="h-3.5 w-3.5" strokeWidth={2} />
@@ -378,13 +379,7 @@ function CalendarRow({ event }: { event: CalendarEvent }): JSX.Element {
             <span className="text-[12px] font-semibold text-foreground truncate">
               {event.label}
             </span>
-            <span
-              className="rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-              style={{
-                backgroundColor: "rgba(72,159,250,0.10)",
-                color: "#489ffa",
-              }}
-            >
+            <span className="rounded-md bg-white/[0.05] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/85">
               {meta.shortLabel}
             </span>
           </div>

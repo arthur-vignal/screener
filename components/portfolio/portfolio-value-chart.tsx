@@ -78,7 +78,11 @@ export function PortfolioValueChart({
         )}
       </div>
 
-      <div className="mt-3 flex items-center gap-1">
+      {/* Seletor 1D/7D/1M/1Y/Max — flex-wrap é defensivo: se a coluna
+          do portfolio ficar muito estreita (viewport < 1100px), os
+          botões quebram pra próxima linha em vez de serem cortados
+          pelo `overflow-hidden` do card pai. */}
+      <div className="mt-3 flex flex-wrap items-center gap-1">
         {RANGES.map((r) => (
           <button
             key={r}
@@ -112,7 +116,13 @@ function ChartInner({
   const fillColor = isPositive ? CHART_COLORS.seriesPositive : CHART_COLORS.seriesNegative;
 
   return (
-    <AreaChart data={data} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
+    // margin.left = 8 em vez de 0: o YAxis usa width=56 mas Recharts só
+    // reserva o `left` pra área do plot. Com left=0, os labels do YAxis
+    // ("R$15k", "R$16k", ...) ficam visualmente sobrepostos ao eixo X
+    // e ao canto inferior esquerdo do gráfico, dando a impressão de
+    // que o primeiro botão do seletor de range (1D) está cortado.
+    // 8px de respiro basta pro label mais largo não encostar no plot.
+    <AreaChart data={data} margin={{ top: 16, right: 16, left: 8, bottom: 0 }}>
       <defs>
         <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={fillColor} stopOpacity={0.18} />
