@@ -325,20 +325,10 @@ export function QuotationsTable({
         className,
       )}
     >
-      {/* ── Header ─────────────────────────────────────────────────────── */}
+      {/* ── Header (sem labels "Cotações oficiais" / contagem, pedido 2026-09-10) ── */}
       <div className="px-4 pt-4 pb-3 border-b border-border/40">
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
-              Cotações oficiais
-            </div>
-            <div className="mt-0.5 text-[11px] text-muted-foreground/70 tabular-nums">
-              {searchActive
-                ? `${displayRows.length} de ${(allRows ?? rows).length} ativos`
-                : showPagination
-                  ? `Página ${page} de ${totalPages}`
-                  : `${rows.length} ativos`}
-            </div>
           </div>
 
           {/* Toolbar: ícones + paginação */}

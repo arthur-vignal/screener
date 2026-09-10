@@ -75,11 +75,8 @@ export function NewsFeed({
       )}
       aria-label="Feed de notícias"
     >
-      {/* Header */}
+      {/* Header (sem label, conforme pedido 2026-09-10) */}
             <div className="px-5 py-4 border-b border-border/40">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
-                Notícias da B3
-              </div>
             </div>
 
       {/* Body — rola dentro do card */}

@@ -38,7 +38,6 @@ import { NewsFeed, type NewsItem } from "@/components/home/news-feed";
 import {
   PortfolioCard,
   type PortfolioCardState,
-  type PreviewPoint,
 } from "@/components/home/portfolio-card";
 import type { TopHolding } from "@/components/home/portfolio-top-holdings";
 import { QuotationsTable, type QuoteRow } from "@/components/home/quotations-table";
@@ -247,9 +246,12 @@ export default function HomePage(): JSX.Element {
                     totalValue?: number;
                     changeToday?: number;
                     changeTodayPercent?: number;
+                    change7d?: number;
+                    change7dPercent?: number;
+                    change30d?: number;
+                    change30dPercent?: number;
                     currency?: "BRL" | "USD";
                     holdings?: TopHolding[];
-                    preview?: PreviewPoint[];
                   };
                   if (cancelled) return;
 
@@ -264,9 +266,12 @@ export default function HomePage(): JSX.Element {
                     totalValue: data.totalValue ?? 0,
                     changeToday: data.changeToday ?? 0,
                     changeTodayPercent: data.changeTodayPercent ?? 0,
+                    change7d: data.change7d ?? 0,
+                    change7dPercent: data.change7dPercent ?? 0,
+                    change30d: data.change30d ?? 0,
+                    change30dPercent: data.change30dPercent ?? 0,
                     currency: data.currency ?? "BRL",
                     holdings: data.holdings ?? [],
-                    preview: data.preview ?? [],
                   });
         } catch {
           if (!cancelled) setPortfolio({ kind: "error" });

@@ -3,11 +3,9 @@
 /**
  * PortfolioCard — hero card da coluna esquerda da /home.
  *
- * Layout (commit 1 — 2026-09-06):
- *   - Header: "Seu portfolio valorizou x%" + chip liquid glass
- *     color coded da variação (verde/vermelho muted)
- *   - Chart preview do último pregão (pack 05 — linha branca +
- *     gradient verde/vermelho relativo ao valor inicial)
+ * Layout (commit 2 — 2026-09-10):
+ *   - Header: valor + "Seu portfolio (nome) valorizou:" + 3 chips
+ *     (hoje / 7d / 30d), mesmo estilo visual do chip de hoje que existia.
  *   - Lista top-3 holdings com dropdown "24h var" / "Alocação"
  *   - CTA "Acessar portfólio"
  *
@@ -22,15 +20,12 @@ import Link from "next/link";
 import { ArrowRight, ArrowUp, ArrowDown, Briefcase } from "lucide-react";
 import type { JSX } from "react";
 
-import { PortfolioPreviewChart } from "@/components/home/portfolio-preview-chart";
 import { Skeleton } from "@/components/foundation/skeleton";
 import {
   PortfolioTopHoldings,
   type TopHolding,
 } from "@/components/home/portfolio-top-holdings";
 import { cn } from "@/lib/utils";
-
-export type PreviewPoint = { ts: number; value: number };
 
 export type PortfolioCardState =
   | { kind: "loading" }
@@ -42,9 +37,12 @@ export type PortfolioCardState =
       totalValue: number;
       changeToday: number;
       changeTodayPercent: number;
+      change7d: number;
+      change7dPercent: number;
+      change30d: number;
+      change30dPercent: number;
       currency: "BRL" | "USD";
       holdings: TopHolding[];
-      preview: PreviewPoint[];
     }
   | { kind: "error" };
 
@@ -77,14 +75,6 @@ function ReadyCard({
     maximumFractionDigits: 2,
   });
 
-  const pct = state.changeTodayPercent;
-  const positive = pct >= 0;
-  const Icon = positive ? ArrowUp : ArrowDown;
-  // Liquid glass color coded: fundo muted da cor + texto na cor cheia
-  const chipBg = positive
-    ? "bg-[var(--positive-soft)] text-[var(--positive)]"
-    : "bg-[var(--negative-soft)] text-[var(--negative)]";
-
   return (
     <div
       className={cn(
@@ -92,44 +82,25 @@ function ReadyCard({
         className
       )}
     >
-      {/* Header: valor + chip de variação (sem título "Carteira", sobe conteúdo) */}
-            <div>
-              <div className="mt-1 text-[28px] font-semibold tabular-nums text-foreground leading-none tracking-tight">
-                {valueFormatted}
-              </div>
-              {/* Chip de variação 24h (badge compacto, sem subtítulo) */}
-              <div className="mt-2">
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-semibold tabular-nums backdrop-blur-md",
-                    chipBg
-                  )}
-                >
-                  <Icon className="h-3 w-3" strokeWidth={2.5} />
-                  {positive ? "+" : "−"}
-                  {Math.abs(pct).toFixed(2)}%
-                  <span className="ml-0.5 text-foreground/70 font-medium">hoje</span>
-                </span>
-              </div>
-            </div>
-
-      {/* Chart preview do último pregão (pack 05 — gradient relativo ao initialValue) */}
-            {state.preview.length >= 2 && (
-              <div
-                className={cn(
-                  "rounded-lg px-3 py-2.5 border",
-                  positive
-                    ? "bg-[var(--positive-soft)] border-[var(--positive)]/15"
-                    : "bg-[var(--negative-soft)] border-[var(--negative)]/15"
-                )}
-              >
-                <PortfolioPreviewChart
-                                  points={state.preview}
-                                  initialValue={state.initialValue}
-                                  height={56}
-                                />
-              </div>
-            )}
+      {/* Header: valor + texto "valorizou" + 3 chips (hoje / 7d / 30d) */}
+      <div>
+        <div className="mt-1 text-[28px] font-semibold tabular-nums text-foreground leading-none tracking-tight">
+          {valueFormatted}
+        </div>
+        <p className="mt-2 text-[13px] text-foreground/70 leading-snug">
+          Seu portfolio{" "}
+          <span className="font-medium text-foreground">{state.name}</span>{" "}
+          valorizou:
+        </p>
+        {/* 3 chips de variação: hoje / 7d / 30d. Mesmo estilo visual:
+            rounded-full, bg/text color coded, ícone up/down, label de
+            período. pct = 0/null → "—" (sem dado histórico suficiente). */}
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <VariationChip pct={state.changeTodayPercent} label="hoje" />
+          <VariationChip pct={state.change7dPercent} label="7d" />
+          <VariationChip pct={state.change30dPercent} label="30d" />
+        </div>
+      </div>
 
       {/* Top 3 holdings — flex-1 min-h-0 empurra botão pro final */}
       <div className="flex-1 min-h-0 overflow-hidden">
@@ -151,6 +122,44 @@ function ReadyCard({
         <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
       </Link>
     </div>
+  );
+}
+
+/** Chip de variação reutilizável. pct = variação % no período; label = "hoje" | "7d" | "30d". */
+function VariationChip({
+  pct,
+  label,
+}: {
+  pct: number;
+  label: "hoje" | "7d" | "30d";
+}): JSX.Element {
+  const hasData = Number.isFinite(pct) && pct !== 0;
+  const positive = pct > 0;
+  const negative = pct < 0;
+  const Icon = positive ? ArrowUp : negative ? ArrowDown : ArrowUp;
+  const chipBg = positive
+    ? "bg-[var(--positive-soft)] text-[var(--positive)]"
+    : negative
+    ? "bg-[var(--negative-soft)] text-[var(--negative)]"
+    : "bg-white/[0.04] text-foreground/60";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-semibold tabular-nums backdrop-blur-md",
+        chipBg,
+      )}
+    >
+      <Icon className="h-3 w-3" strokeWidth={2.5} />
+      {hasData ? (
+        <>
+          {positive ? "+" : "−"}
+          {Math.abs(pct).toFixed(2)}%
+        </>
+      ) : (
+        "—"
+      )}
+      <span className="ml-0.5 text-foreground/70 font-medium">{label}</span>
+    </span>
   );
 }
 
@@ -201,7 +210,7 @@ function EmptyCard({
 
 // ─── Loading ────────────────────────────────────────────────────────────────
 
-function LoadingCard({ className }: { className?: string }): JSX.Element {
+function LoadingCard({ className }: { className?:string }): JSX.Element {
   return (
     <div
       className={cn(
@@ -212,7 +221,6 @@ function LoadingCard({ className }: { className?: string }): JSX.Element {
       <Skeleton className="h-3 w-20" />
       <Skeleton className="h-5 w-44" />
       <Skeleton className="h-8 w-32" />
-      <Skeleton className="h-12 w-full" roundedMd />
       <Skeleton className="h-3 w-24" />
       <Skeleton className="h-10 w-full" roundedMd />
     </div>
@@ -221,7 +229,7 @@ function LoadingCard({ className }: { className?: string }): JSX.Element {
 
 // ─── Error ──────────────────────────────────────────────────────────────────
 
-function ErrorCard({ className }: { className?: string }): JSX.Element {
+function ErrorCard({ className }: { className?:string }): JSX.Element {
   return (
     <div
       className={cn(
