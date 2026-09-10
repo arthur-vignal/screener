@@ -77,7 +77,7 @@ export async function signup(opts: {
     return { ok: false, error: "falha ao criar perfil" };
   }
 
-  await createSession(userId);
+  await createSessionForUser(userId);
   return { ok: true };
 }
 
@@ -107,7 +107,7 @@ export async function login(opts: {
     return { ok: false, error: "usuário ou senha inválidos" };
   }
 
-  await createSession(authData.user.id);
+  await createSessionForUser(authData.user.id);
   return { ok: true };
 }
 
@@ -132,6 +132,12 @@ async function createSession(userId: string): Promise<void> {
     maxAge: COOKIE_MAX_AGE,
     path: "/",
   });
+}
+
+/** Cria sessão + cookie pra um userId já conhecido.
+ *  Usado por login normal e por OAuth callback (Google). */
+export async function createSessionForUser(userId: string): Promise<void> {
+  await createSession(userId);
 }
 
 export async function logout(): Promise<void> {
