@@ -82,15 +82,16 @@ function ReadyCard({
         className
       )}
     >
-      {/* Header: valor + texto "valorizou" + 3 chips (hoje / 7d / 30d) */}
+      {/* Header: texto "valorizou" + 3 chips + valor (embaixo, conforme
+          pedido 2026-09-10). Tipografia pelo pack 02 (Calibre→Manrope
+          no projeto, escala 18/20/24/32):
+            - Texto "valorizou": Heading 3 (display-18, semibold)
+            - Chips: 12px Medium (tag/hint do pack)
+            - Valor: Display H3 (display-32, semibold) — sub-card header */}
       <div>
-        <div className="mt-1 text-[28px] font-semibold tabular-nums text-foreground leading-none tracking-tight">
-          {valueFormatted}
-        </div>
-        <p className="mt-2 text-[13px] text-foreground/70 leading-snug">
+        <p className="font-display text-[18px] font-semibold tracking-tight text-foreground leading-snug">
           Seu portfolio{" "}
-          <span className="font-medium text-foreground">{state.name}</span>{" "}
-          valorizou:
+          <span className="font-display">{state.name}</span> valorizou:
         </p>
         {/* 3 chips de variação: hoje / 7d / 30d. Mesmo estilo visual:
             rounded-full, bg/text color coded, ícone up/down, label de
@@ -99,6 +100,11 @@ function ReadyCard({
           <VariationChip pct={state.changeTodayPercent} label="hoje" />
           <VariationChip pct={state.change7dPercent} label="7d" />
           <VariationChip pct={state.change30dPercent} label="30d" />
+        </div>
+        {/* Valor abaixo do texto, em display H3 (pack 02: 32px semibold).
+            tracking tight (-0.02em) é o padrão pra Calibre/display. */}
+        <div className="mt-3 font-display text-[32px] font-semibold tabular-nums text-foreground leading-[1.1] tracking-tight">
+          {valueFormatted}
         </div>
       </div>
 
