@@ -10,7 +10,7 @@
  * + headline + fonte + volume negociado.
  */
 
-import { Calendar, ExternalLink, TrendingUp } from "lucide-react";
+import { ExternalLink, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import type { JSX } from "react";
 
@@ -60,13 +60,10 @@ export function DayHighlightCard({
         className
       )}
     >
+      {/* Header — sem data (notícia é do dia por definição) */}
       <div className="flex items-center justify-between mb-4">
-        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/85 font-semibold">
+        <div className="font-display text-[13px] font-bold tracking-tight text-foreground">
           Notícia do dia
-        </div>
-        <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground/70 tabular-nums">
-          <Calendar className="h-3.5 w-3.5" strokeWidth={2} />
-          {dateText}
         </div>
       </div>
 
@@ -91,15 +88,13 @@ export function DayHighlightCard({
                       rel="noopener noreferrer"
                       className="block group"
                     >
-                      <h3 className="text-[16px] font-semibold text-foreground leading-snug group-hover:text-foreground/90 transition-colors">
+                      <h3 className="text-[16px] font-bold text-foreground leading-snug group-hover:text-foreground/90 transition-colors">
                         {headline}
                       </h3>
-                      {/* Data + link-out (fonte omitida pra limpar a UI) */}
-                      <div className="mt-3 flex items-center gap-1.5 text-[12px] text-muted-foreground/70 tabular-nums">
-                        <Calendar className="h-3.5 w-3.5" strokeWidth={2} />
-                        <span>{dateText}</span>
+                      {/* Link-out apenas (data omitida — é do dia) */}
+                      <div className="mt-3 flex items-center justify-end text-[12px] text-muted-foreground/70">
                         <ExternalLink
-                          className="ml-auto h-3 w-3 text-muted-foreground/40 shrink-0"
+                          className="h-3 w-3 text-muted-foreground/40 shrink-0"
                           strokeWidth={2}
                         />
                       </div>
