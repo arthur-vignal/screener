@@ -59,6 +59,7 @@ import {
 } from "@/components/portfolio/portfolio-value-chart";
 import { AddHoldingDialog } from "@/components/portfolio/add-holding-dialog";
 import { DeletePortfolioDialog } from "@/components/portfolio/delete-portfolio-dialog";
+import { HoldingActions } from "@/components/portfolio/holding-actions";
 import { HoldingDetailPopover } from "@/components/portfolio/holding-detail-popover";
 import { PortfolioCalendar } from "@/components/portfolio/portfolio-calendar";
 import { PortfolioAllocationChart } from "@/components/portfolio/portfolio-allocation-chart";
@@ -292,6 +293,8 @@ export default function PortfolioDetailPage({
                 canEdit={true}
                 expanded
                 flush
+                slug={slug}
+                onMutate={mutateBundle}
               />
             </StaggerOnMount>
           </div>
@@ -408,7 +411,7 @@ function ValueAndDelta({
 // ─── Holdings ─────────────────────────────────────────────────────────────
 
 function HoldingsCard({
-  holdings, loading, onAddClick, canEdit, expanded, flush,
+  holdings, loading, onAddClick, canEdit, expanded, flush, slug, onMutate,
 }: {
   holdings: Bundle["holdings"];
   loading: boolean;
@@ -416,6 +419,10 @@ function HoldingsCard({
   canEdit?: boolean;
   expanded?: boolean;
   flush?: boolean;
+  /** Slug do portfolio pra URL da API de holdings. */
+  slug?: string;
+  /** Callback após mutação de holding (SWR mutate do bundle). */
+  onMutate?: () => void;
 }): JSX.Element {
   return (
     // Quando flush=true (usado dentro de um card pai em /portfolio/[slug]):
@@ -477,7 +484,12 @@ function HoldingsCard({
             )}
           </div>
         ) : (
-          <HoldingList holdings={holdings} canEdit={canEdit} onDelete={onAddClick} />
+          <HoldingList
+            holdings={holdings}
+            canEdit={canEdit}
+            slug={slug}
+            onMutate={onMutate}
+          />
         )}
       </div>
     </div>
@@ -486,27 +498,35 @@ function HoldingsCard({
 
 /** Lista de holdings no estilo Fey (logo + nome + preço + 3m return). */
 function HoldingList({
-  holdings, canEdit, onDelete,
+  holdings, canEdit, slug, onMutate,
 }: {
   holdings: Bundle["holdings"];
   canEdit?: boolean;
-  onDelete?: () => void;
+  slug?: string;
+  onMutate?: () => void;
 }): JSX.Element {
   return (
     <ul>
       {holdings.map((h) => (
-        <HoldingRow key={h.symbol} holding={h} canEdit={canEdit} onDelete={onDelete} />
+        <HoldingRow
+          key={h.symbol}
+          holding={h}
+          canEdit={canEdit}
+          slug={slug}
+          onMutate={onMutate}
+        />
       ))}
     </ul>
   );
 }
 
 function HoldingRow({
-  holding: h, canEdit, onDelete,
+  holding: h, canEdit, slug, onMutate,
 }: {
   holding: Bundle["holdings"][number];
   canEdit?: boolean;
-  onDelete?: () => void;
+  slug?: string;
+  onMutate?: () => void;
 }): JSX.Element {
   const [open, setOpen] = useState(false);
   const mPos = (h.change1mPercent ?? 0) >= 0;
@@ -575,6 +595,20 @@ function HoldingRow({
             <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
           </motion.span>
         </button>
+
+        {/* Ações de editar/remover (visíveis em hover) */}
+        {canEdit && slug && onMutate && (
+          <HoldingActions
+            symbol={h.symbol}
+            slug={slug}
+            initial={{
+              qty: h.qty,
+              avgPrice: h.avgPrice,
+              purchasedAt: h.purchasedAt,
+            }}
+            onMutate={onMutate}
+          />
+        )}
       </div>
 
       {/* Popover expandido abaixo do card */}
