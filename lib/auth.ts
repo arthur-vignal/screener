@@ -172,4 +172,40 @@ export async function getCurrentUser(): Promise<Session | null> {
   }
 }
 
+/** Retorna perfil completo (userId + username + email) do user logado.
+ *  Mais pesado que getCurrentUser (1 query extra). Usar só quando precisa
+ *  do email — ex: página /account, /settings/account. */
+export type CurrentProfile = {
+  userId: string;
+  username: string;
+  email: string;
+};
+
+export async function getCurrentProfile(): Promise<CurrentProfile | null> {
+  const c = await cookies();
+  const token = c.get(COOKIE_NAME)?.value;
+  if (!token) return null;
+  try {
+    const decoded = jwt.verify(token, SECRET) as { sid: string };
+    const session = await queryOne<{ user_id: string; expires_at: number }>(
+      "SELECT user_id, expires_at FROM sessions WHERE id = $1",
+      [decoded.sid],
+    );
+    if (!session) return null;
+    if (session.expires_at < Math.floor(Date.now() / 1000)) return null;
+    const profile = await queryOne<{ username: string; email: string }>(
+      "SELECT username, email FROM profiles WHERE id = $1",
+      [session.user_id],
+    );
+    if (!profile) return null;
+    return {
+      userId: session.user_id,
+      username: profile.username,
+      email: profile.email,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export { COOKIE_NAME };

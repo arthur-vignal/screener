@@ -20,11 +20,11 @@
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
-  Bell,
   Home,
   LineChart,
   Newspaper,
   Search,
+  UserCircle,
 } from "lucide-react";
 import type { JSX, ReactNode } from "react";
 
@@ -42,7 +42,7 @@ const ICONS = {
   analysis: BarChart3,
   portfolio: LineChart,
   news: Newspaper,
-  notifications: Bell,
+  account: UserCircle,
   search: Search,
 } as const;
 
@@ -51,7 +51,7 @@ const DEFAULT_ITEMS: SulfurDockItem[] = [
   { href: "/analysis", label: "Analysis", icon: "analysis" },
   { href: "/portfolio", label: "Portfolio", icon: "portfolio" },
   { href: "/news", label: "News", icon: "news" },
-  { href: "/notifications", label: "Notifications", icon: "notifications" },
+  { href: "/account", label: "Account", icon: "account" },
   { href: "/search", label: "Search", icon: "search" },
 ];
 
