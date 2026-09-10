@@ -325,10 +325,13 @@ export function QuotationsTable({
         className,
       )}
     >
-      {/* ── Header (sem labels "Cotações oficiais" / contagem, pedido 2026-09-10) ── */}
+      {/* ── Header (só título "Ativos" branco+negrito, sem subtítulo) ── */}
       <div className="px-4 pt-4 pb-3 border-b border-border/40">
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <div>
+            <div className="font-display text-[18px] font-semibold tracking-tight text-foreground">
+              Ativos
+            </div>
           </div>
 
           {/* Toolbar: ícones + paginação */}
@@ -652,22 +655,22 @@ function QuoteRowComponent({ row }: { row: QuoteRow }): JSX.Element {
       </td>
       <td className="px-3 py-2.5 text-right hidden sm:table-cell">
         {row.changePercent7d != null ? (
-          <Delta value={row.changePercent7d} showIcon={false} className="text-[11px] font-medium tabular-nums text-muted-foreground" />
+          <Delta value={row.changePercent7d} showIcon={false} className="text-[11px] font-medium tabular-nums" />
         ) : (
           <span className="text-muted-foreground/40">—</span>
         )}
       </td>
       <td className="px-3 py-2.5 text-right hidden md:table-cell">
         {row.changePercent30d != null ? (
-          <Delta value={row.changePercent30d} showIcon={false} className="text-[11px] font-medium tabular-nums text-muted-foreground" />
+          <Delta value={row.changePercent30d} showIcon={false} className="text-[11px] font-medium tabular-nums" />
         ) : (
           <span className="text-muted-foreground/40">—</span>
         )}
       </td>
-      <td className="px-3 py-2.5 text-right tabular-nums text-[11px] text-foreground/85 hidden lg:table-cell">
+      <td className="px-3 py-2.5 text-right tabular-nums text-[11px] text-foreground/85 font-semibold hidden lg:table-cell">
         {row.volume != null ? formatVolume(row.volume) : "—"}
       </td>
-      <td className="px-4 py-2.5 text-right tabular-nums text-[11px] text-foreground/85 hidden lg:table-cell">
+      <td className="px-3 py-2.5 text-right tabular-nums text-[11px] text-foreground/85 font-semibold hidden lg:table-cell">
         {row.marketCap != null ? formatMarketCap(row.marketCap) : "—"}
       </td>
     </tr>

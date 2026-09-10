@@ -75,8 +75,11 @@ export function NewsFeed({
       )}
       aria-label="Feed de notícias"
     >
-      {/* Header (sem label, conforme pedido 2026-09-10) */}
+      {/* Header (só título "Notícias" branco+negrito, sem subtítulo) */}
             <div className="px-5 py-4 border-b border-border/40">
+              <div className="font-display text-[18px] font-semibold tracking-tight text-foreground">
+                Notícias
+              </div>
             </div>
 
       {/* Body — rola dentro do card */}
