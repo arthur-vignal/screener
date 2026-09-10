@@ -372,9 +372,9 @@ function ValueAndDelta({
   const ChangeIcon = positive ? ArrowUp : ArrowDown;
   const colorClass = positive ? "text-[#4dbe95]" : "text-[#d84f68]";
   const showGain = investedValue != null && gainAbs != null && gainPct != null && investedValue > 0;
-  const gainPositive = (gainAbs ?? 0) >= 0;
-  const GainIcon = gainPositive ? ArrowUp : ArrowDown;
-  const gainColorClass = gainPositive ? "text-[#4dbe95]" : "text-[#d84f68]";
+  // Removido bloco "Custo investido / desde a compra" (pedido 2026-09-10,
+  // já existe em /portfolio/[slug]/statistics). showGain fica aqui só
+  // pra satisfazer o type narrowing de quem chama — não é mais usado.
   const fmtBRL = (v: number) => v.toLocaleString("pt-BR", {
     style: "currency", currency: "BRL", maximumFractionDigits: 2,
   });
@@ -399,22 +399,8 @@ function ValueAndDelta({
           </div>
         )}
       </div>
-      {showGain && (
-        <div className="mt-2 flex items-center gap-2 text-[12px] tabular-nums text-muted-foreground/70">
-          <span>
-            Custo investido <span className="text-foreground">{fmtBRL(investedValue!)}</span>
-          </span>
-          <span className="text-muted-foreground/40">·</span>
-          <span className="flex items-center gap-1">
-            <span>desde a compra</span>
-            <span className={cn("flex items-center gap-0.5 font-medium", gainColorClass)}>
-              <GainIcon className="h-3 w-3" strokeWidth={2.25} />
-              {gainPositive ? "+" : "−"}{fmtBRL(Math.abs(gainAbs!))}
-              <span className="opacity-90">({gainPositive ? "+" : "−"}{fmtPct(gainPct!)}%)</span>
-            </span>
-          </span>
-        </div>
-      )}
+      {/* Bloco "Custo investido / desde a compra" removido em 2026-09-10
+          (info duplicada com /portfolio/[slug]/statistics). */}
     </div>
   );
 }

@@ -432,10 +432,13 @@ export default function HomePage(): JSX.Element {
                         </StaggerOnMount>
           </div>
 
-          {/* Coluna central. Sem maxHeight/overflow — pedido 2026-09-10
-              foi remover a scrollbar interna; a tabela cresce e a página
-              inteira rola se precisar. */}
-          <StaggerOnMount className="flex-1 min-h-0 flex">
+          {/* Coluna central. maxHeight restaura o tamanho original do card
+              (scroll interno já existia antes, pedido 2026-09-10 foi só
+              esconder a barra visual, não mudar layout). */}
+          <StaggerOnMount
+            className="flex-1 min-h-0 flex"
+            style={{ maxHeight: "calc(100dvh - 240px)" }}
+          >
             <QuotationsTable
               className="h-full w-full"
               rows={rows}

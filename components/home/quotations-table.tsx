@@ -582,12 +582,14 @@ export function QuotationsTable({
         )}
       </div>
 
-      {/* ── Table (sem scroll interno — pedido 2026-09-10. Se a lista
-          passar do card, a página inteira rola, evitando 2 scrollbars
-          conflitando) ─────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0">
+      {/* ── Table (scroll interno PRESERVADO, scrollbar VISUAL escondida
+          via CSS — pedido 2026-09-10. Antes: overflow-y-auto + thead
+          sticky dava barra nativa feia. Agora: mesma mecânica, mas
+          scrollbar-width: none + webkit-scrollbar hidden. A página não
+          rola dentro do card — comportamento idêntico ao anterior.) */}
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
         <table className="w-full">
-          <thead>
+          <thead className="sticky top-0 bg-[#0e0f13]/95 backdrop-blur-sm">
             <tr className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 font-medium">
               <th className="text-left px-4 py-2 font-medium">Ativo</th>
               <th className="text-left px-3 py-2 font-medium hidden md:table-cell">Setor</th>
