@@ -418,7 +418,20 @@ function HoldingsCard({
   flush?: boolean;
 }): JSX.Element {
   return (
-    <div className={cn("rounded-2xl fey-card overflow-hidden", expanded && "h-full flex flex-col", flush && "fey-card--flat rounded-none border-0 bg-transparent")}>
+    // Quando flush=true (usado dentro de um card pai em /portfolio/[slug]):
+    // removemos TUDO do card (sem fey-card, sem border, sem rounded) pra
+    // que o card pai (com seu próprio fey-card) seja a única fonte de
+    // background. Sem isso, o wrapper mantinha a classe fey-card que
+    // tem box-shadow mesmo com bg-transparent — dando a sensação de
+    // "fundo duplo" (2 camadas) reportado pelo user.
+    <div
+      className={cn(
+        flush
+          ? "h-full flex flex-col bg-transparent"
+          : "rounded-2xl fey-card overflow-hidden",
+        expanded && !flush && "h-full flex flex-col",
+      )}
+    >
       <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
         <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
           Holdings
