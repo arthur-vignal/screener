@@ -68,12 +68,20 @@ export function PortfolioPreviewChart({
   // between the line and the reference value (initialValue), not the Y=0.
   const data = points.map((p) => ({ ts: p.ts, value: p.value }));
 
-  // Sparkline com domain dinâmico baseado no range REAL dos pontos,
-  // NÃO em initialValue (que pode ser valor de dias atrás). O baseValue
-  // da Area é initialValue (linha d'água), mas o eixo Y precisa refletir
-  // a variação dos candles do pregao, senão o gráfico fica achatado ou
-  // extrapolado quando a variação típica de 1 pregao (0.3-1%) conflita
-  // com a escala fixa.
+  // Sparkline escala em torno dos PONTOS, não do initialValue.
+  //
+  // Bug anterior: yDomain = [min(points, initialValue), max(points, initialValue)].
+  // Quando initialValue vem de `portfolio.initial_value` (custo de criação,
+  // não o open do dia), ele fica FORA do range intraday e o domain se expande
+  // dezenas de vezes o range real dos candles — resultado: linha parece
+  // reta achatada no topo/fundo porque a variação de 1% do pregao ocupa
+  // 1% da altura total.
+  //
+  // Fix: domain = [dataMin, dataMax] dos pontos + padding generoso
+  // pra acomodar a ReferenceLine (initialValue) sem achatar os dados.
+  // A ReferenceLine com `ifOverflow="extendDomain"` cuida de incluir
+  // a linha d'água quando ela está fora, e o padding visual é mantido
+  // pelo `lo - pad, hi + pad`.
   const yDomain: [number, number] = useMemo(() => {
     if (points.length === 0) {
       const c0 = initialValue;
@@ -82,13 +90,13 @@ export function PortfolioPreviewChart({
     const values = points.map((p) => p.value);
     const dataMin = Math.min(...values);
     const dataMax = Math.max(...values);
-    // Garante que o range cubra o initialValue (linha d'água) E os dados
-    const lo = Math.min(dataMin, initialValue);
-    const hi = Math.max(dataMax, initialValue);
-    const span = hi - lo;
-    // Padding de 20% do span pra visual não grudar nas bordas
-    const pad = span > 0 ? span * 0.2 : Math.max(hi * 0.0005, 0.01);
-    return [lo - pad, hi + pad];
+    const span = dataMax - dataMin;
+    // Padding de 100% do span acima e abaixo dos pontos — garante que a
+    // variação de 1-2% intraday fique visualmente óbvia e que a
+    // ReferenceLine (initialValue) caia num lugar razoável quando
+    // próxima mas não coincidente.
+    const pad = span > 0 ? span * 1.0 : Math.max(dataMax * 0.005, 0.01);
+    return [dataMin - pad, dataMax + pad];
   }, [points, initialValue]);
 
   return (
