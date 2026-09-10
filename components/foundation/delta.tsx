@@ -24,6 +24,10 @@ type Props = {
   currency?: "BRL" | "USD";
   /** Sinal explícito antes do número. Default: true. */
   showSign?: boolean;
+  /** Mostra ícone de seta (up/down). Default: true.
+   *  Use `false` quando a cor já é redundante o bastante (ex: tabela
+   *  densa de cotações onde a seta polui visualmente). */
+  showIcon?: boolean;
   /** Tamanho da fonte. Default: "sm". */
   size?: DeltaSize;
   /** Direção da seta invertida (down pra valor positivo = "queda" conceitual). Default: false. */
@@ -43,6 +47,7 @@ export function Delta({
   unit,
   currency,
   showSign = true,
+  showIcon = true,
   size = "sm",
   inverted = false,
   className,
@@ -105,7 +110,7 @@ export function Delta({
         .filter(Boolean)
         .join(" ")}
     >
-      <Icon className={sizes.icon} strokeWidth={2} />
+      {showIcon ? <Icon className={sizes.icon} strokeWidth={2} /> : null}
       {showSign ? sign : ""}
       {display}
     </span>

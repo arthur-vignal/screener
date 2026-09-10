@@ -582,10 +582,12 @@ export function QuotationsTable({
         )}
       </div>
 
-      {/* ── Table ──────────────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      {/* ── Table (sem scroll interno — pedido 2026-09-10. Se a lista
+          passar do card, a página inteira rola, evitando 2 scrollbars
+          conflitando) ─────────────────────────────────────────────── */}
+      <div className="flex-1 min-h-0">
         <table className="w-full">
-          <thead className="sticky top-0 bg-[#0e0f13]/95 backdrop-blur-sm">
+          <thead>
             <tr className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 font-medium">
               <th className="text-left px-4 py-2 font-medium">Ativo</th>
               <th className="text-left px-3 py-2 font-medium hidden md:table-cell">Setor</th>
@@ -641,29 +643,29 @@ function QuoteRowComponent({ row }: { row: QuoteRow }): JSX.Element {
       </td>
       <td className="px-3 py-2.5 text-right">
         {row.changePercent != null ? (
-          <Delta value={row.changePercent} className="text-[12px] font-semibold tabular-nums" />
+          <Delta value={row.changePercent} showIcon={false} className="text-[12px] font-semibold tabular-nums" />
         ) : (
           <span className="text-muted-foreground/40">—</span>
         )}
       </td>
       <td className="px-3 py-2.5 text-right hidden sm:table-cell">
         {row.changePercent7d != null ? (
-          <Delta value={row.changePercent7d} className="text-[11px] font-medium tabular-nums text-muted-foreground" />
+          <Delta value={row.changePercent7d} showIcon={false} className="text-[11px] font-medium tabular-nums text-muted-foreground" />
         ) : (
           <span className="text-muted-foreground/40">—</span>
         )}
       </td>
       <td className="px-3 py-2.5 text-right hidden md:table-cell">
         {row.changePercent30d != null ? (
-          <Delta value={row.changePercent30d} className="text-[11px] font-medium tabular-nums text-muted-foreground" />
+          <Delta value={row.changePercent30d} showIcon={false} className="text-[11px] font-medium tabular-nums text-muted-foreground" />
         ) : (
           <span className="text-muted-foreground/40">—</span>
         )}
       </td>
-      <td className="px-3 py-2.5 text-right tabular-nums text-[11px] text-muted-foreground/70 hidden lg:table-cell">
+      <td className="px-3 py-2.5 text-right tabular-nums text-[11px] text-foreground/85 hidden lg:table-cell">
         {row.volume != null ? formatVolume(row.volume) : "—"}
       </td>
-      <td className="px-4 py-2.5 text-right tabular-nums text-[11px] text-muted-foreground/70 hidden lg:table-cell">
+      <td className="px-4 py-2.5 text-right tabular-nums text-[11px] text-foreground/85 hidden lg:table-cell">
         {row.marketCap != null ? formatMarketCap(row.marketCap) : "—"}
       </td>
     </tr>

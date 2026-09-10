@@ -432,11 +432,10 @@ export default function HomePage(): JSX.Element {
                         </StaggerOnMount>
           </div>
 
-          {/* Coluna central */}
-          <StaggerOnMount
-            className="flex-1 min-h-0 flex"
-            style={{ maxHeight: "calc(100dvh - 240px)" }}
-          >
+          {/* Coluna central. Sem maxHeight/overflow — pedido 2026-09-10
+              foi remover a scrollbar interna; a tabela cresce e a página
+              inteira rola se precisar. */}
+          <StaggerOnMount className="flex-1 min-h-0 flex">
             <QuotationsTable
               className="h-full w-full"
               rows={rows}
