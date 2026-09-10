@@ -27,7 +27,6 @@ import type { JSX } from "react";
 import {
   Area,
   AreaChart,
-  ReferenceLine,
   ResponsiveContainer,
   YAxis,
 } from "recharts";
@@ -47,41 +46,52 @@ export function PortfolioPreviewChart({
   height = 56,
   className,
 }: Props): JSX.Element | null {
-  const { gradientId, lineColor, finalValue } = useMemo(() => {
+  // baseValue = primeiro ponto do dia (= "open" intraday do portfolio).
+  // Gradient é desenhado entre a linha e esse valor, então a área verde/vermelha
+  // reflete a VARIAÇÃO INTRADAY desde a abertura, não a variação desde que
+  // a carteira foi criada (que pode distorcer a escala).
+  const { gradientId, lineColor, finalValue, baseValue } = useMemo(() => {
     const id = `ppc-grad-${Math.random().toString(36).slice(2, 9)}`;
     if (points.length === 0) {
-      return { gradientId: id, lineColor: "var(--foreground)", finalValue: initialValue };
+      return {
+        gradientId: id,
+        lineColor: "var(--foreground)",
+        finalValue: initialValue,
+        baseValue: initialValue,
+      };
     }
     const final = points[points.length - 1]!.value;
+    const base = points[0]!.value;
     return {
       gradientId: id,
       lineColor: "var(--foreground)",
       finalValue: final,
+      baseValue: base,
     };
   }, [points, initialValue]);
 
   if (points.length < 2) return null;
 
-  const positive = finalValue >= initialValue;
+  const positive = finalValue >= baseValue;
   const fillColor = positive ? "var(--positive)" : "var(--negative)";
   // Build data with explicit ref so recharts plots the gradient area
-  // between the line and the reference value (initialValue), not the Y=0.
+  // between the line and the reference value, not the Y=0.
   const data = points.map((p) => ({ ts: p.ts, value: p.value }));
 
-  // Sparkline escala em torno dos PONTOS, não do initialValue.
+  // Sparkline escala em torno dos PONTOS, com padding generoso pra variação
+  // intraday (tipicamente 0.5-2%) ficar visualmente óbvia.
   //
-  // Bug anterior: yDomain = [min(points, initialValue), max(points, initialValue)].
-  // Quando initialValue vem de `portfolio.initial_value` (custo de criação,
-  // não o open do dia), ele fica FORA do range intraday e o domain se expande
-  // dezenas de vezes o range real dos candles — resultado: linha parece
-  // reta achatada no topo/fundo porque a variação de 1% do pregao ocupa
-  // 1% da altura total.
+  // Bug que estava achatando o gráfico:
+  // 1. yDomain incluía `initialValue` (custo de criação da carteira, não o
+  //    open do dia) → domain se expandia dezenas de vezes o range intraday
+  //    real, esmagando a variação visual.
+  // 2. baseValue do <Area> = initialValue → gradient desenhado entre a
+  //    linha dos candles e o initialValue (que está longe), criando uma
+  //    área gigante que esmaga a linha branca no topo.
   //
-  // Fix: domain = [dataMin, dataMax] dos pontos + padding generoso
-  // pra acomodar a ReferenceLine (initialValue) sem achatar os dados.
-  // A ReferenceLine com `ifOverflow="extendDomain"` cuida de incluir
-  // a linha d'água quando ela está fora, e o padding visual é mantido
-  // pelo `lo - pad, hi + pad`.
+  // Fix: yDomain centrado nos candles com padding; baseValue = primeiro
+  // candle do dia (= open intraday). Assim o gradient reflete a
+  // variação do pregão, não a variação desde a criação da carteira.
   const yDomain: [number, number] = useMemo(() => {
     if (points.length === 0) {
       const c0 = initialValue;
@@ -91,11 +101,9 @@ export function PortfolioPreviewChart({
     const dataMin = Math.min(...values);
     const dataMax = Math.max(...values);
     const span = dataMax - dataMin;
-    // Padding de 100% do span acima e abaixo dos pontos — garante que a
-    // variação de 1-2% intraday fique visualmente óbvia e que a
-    // ReferenceLine (initialValue) caia num lugar razoável quando
-    // próxima mas não coincidente.
-    const pad = span > 0 ? span * 1.0 : Math.max(dataMax * 0.005, 0.01);
+    // Padding de 50% do span — variação intraday típica (0.5-2%) ocupa
+    // ~30-60% da altura visual, ficando óbvia sem colar nas bordas.
+    const pad = span > 0 ? span * 0.5 : Math.max(dataMax * 0.001, 0.01);
     return [dataMin - pad, dataMax + pad];
   }, [points, initialValue]);
 
@@ -115,15 +123,6 @@ export function PortfolioPreviewChart({
 
           <YAxis hide domain={yDomain} allowDataOverflow={false} />
 
-          {/* Reference line = valor inicial (linha d'água) */}
-          <ReferenceLine
-            y={initialValue}
-            stroke="rgba(255,255,255,0.18)"
-            strokeDasharray="3 4"
-            strokeWidth={1}
-            ifOverflow="extendDomain"
-          />
-
           <Area
             type="monotone"
             dataKey="value"
@@ -131,7 +130,7 @@ export function PortfolioPreviewChart({
             strokeWidth={1.5}
             fill={`url(#${gradientId})`}
             isAnimationActive={false}
-            baseValue={initialValue}
+            baseValue={baseValue}
           />
         </AreaChart>
       </ResponsiveContainer>
