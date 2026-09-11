@@ -139,7 +139,7 @@ export function AccountPanel(): JSX.Element {
   }
 
   return (
-    <div className="flex flex-col gap-10 px-4 py-8 sm:px-8 lg:px-12">
+    <div className="flex flex-col gap-10">
       {/* ─── Header Fey: Title + subtitle + ações canto direito ──────── */}
       <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -671,7 +671,7 @@ function PasswordField({
 
 function AccountPanelSkeleton(): JSX.Element {
   return (
-    <div className="flex flex-col gap-10 px-4 py-8 sm:px-8 lg:px-12">
+    <div className="flex flex-col gap-10">
       <div className="space-y-2">
         <div className="h-10 w-32 rounded bg-white/[0.04] animate-pulse" />
         <div className="h-3 w-48 rounded bg-white/[0.04] animate-pulse" />
