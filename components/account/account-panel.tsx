@@ -1,36 +1,51 @@
 "use client";
 
 /**
- * AccountPanel — conteúdo completo da página de perfil de conta.
+ * AccountPanel — versão Fey 1:1 da tela de Preferences.
  *
- * Reutilizado em /account (rota dedicada) e /settings/account (dentro
- * do menu de settings). Mostra 3 seções:
+ * Layout (replica do print Fey `05_screen_preferences.png`):
+ *   ┌─────────────────────────────────────────────────────────────┐
+ *   │  Logo Fey (substituído por logo Sulfur)        [Sing out]    │
+ *   │  Title bold gigante ("Conta")                                │
+ *   │  subtitle email muted                                         │
+ *   ├─────────────────────────────────────────────────────────────┤
+ *   │  "Sua conta" (h2 muted)                                      │
+ *   │                                                              │
+ *   │  ┌─ card 1 ──────────────────────────────────────┐ ┌── card  │
+ *   │  │ [📧] Account info                  →           │ │ destaque│
+ *   │  │      Pritam Sensei agrawal                     │ │  lateral
+ *   │  │      pritam.sensei@gmail.com                  │ │         │
+ *   │  └────────────────────────────────────────────────┘ └─────────
+ *   │  ┌─ card 2 ──────────────────────────────────────┐
+ *   │  │ [🔑] Senha                            →        │
+ *   │  └────────────────────────────────────────────────┘
+ *   │  ┌─ card 3 ──────────────────────────────────────┐
+ *   │  │ [📱] Sessões ativas                   →        │
+ *   │  └────────────────────────────────────────────────┘
+ *   │  ┌─ card 4 ──────────────────────────────────────┐
+ *   │  │ [💬] Feedback                         →        │
+ *   │  └────────────────────────────────────────────────┘
+ *   │                                                              │
+ *   │  [Download banner: "Pressione K e digite 'feedback'..."]      │
+ *   └─────────────────────────────────────────────────────────────┘
  *
- *   1. Profile: display name + email (editáveis, com feedback de erro)
- *   2. Password: troca com validação de senha atual (via Supabase Auth)
- *   3. Sessions ativas: lista de devices + botão logout em cada
- *   4. Sign out: botão de logout (limpa cookie de sessão)
- *
- * Todos os forms chamam APIs reais (não mockam). Dados vêm de
- * GET /api/account/profile no mount.
+ * - Cards da esquerda abrem/expandem onClick (accordion)
+ * - Card da direita mostra estatísticas de uso do user
+ * - Tipografia Fey: títulos weight 700 bold, body 400, muted 0.7
  */
 
 import {
-  Eye,
-  EyeOff,
-  LogOut,
+  ChevronRight,
   Mail,
   Lock,
   Smartphone,
-  Globe,
-  Monitor,
+  MessageSquare,
+  LogOut,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { JSX } from "react";
 
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type Profile = {
@@ -42,37 +57,33 @@ type Profile = {
 type SessionInfo = {
   id: string;
   isCurrent: boolean;
-  /** ISO date string. */
   createdAt: string;
-  /** User-Agent header. */
   userAgent: string | null;
-  /** IP address. */
   ip: string | null;
 };
 
-function parseUserAgent(ua: string | null): {
-  type: "mobile" | "web" | "unknown";
-  label: string;
-} {
-  if (!ua) return { type: "unknown", label: "Desconhecido" };
-  if (/mobile|android|iphone|ipad/i.test(ua)) {
-    return { type: "mobile", label: "Mobile" };
-  }
-  if (/mozilla|chrome|safari|firefox|edge/i.test(ua)) {
-    return { type: "web", label: "Web" };
-  }
-  return { type: "unknown", label: "Outro" };
+type UsageStats = {
+  portfolioCount: number;
+  holdingCount: number;
+  indicesCount: number;
+  watchlistCount: number;
+  accountAgeDays: number;
+};
+
+function parseUserAgent(ua: string | null): { label: string } {
+  if (!ua) return { label: "Desconhecido" };
+  if (/mobile|android|iphone|ipad/i.test(ua)) return { label: "Mobile" };
+  if (/mozilla|chrome|safari|firefox|edge/i.test(ua)) return { label: "Web" };
+  return { label: "Outro" };
 }
 
 function formatDate(unixSec: number | string): string {
   const ms = typeof unixSec === "string" ? Date.parse(unixSec) : unixSec * 1000;
   if (!Number.isFinite(ms)) return "—";
-  return new Date(ms).toLocaleString("pt-BR", {
+  return new Date(ms).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   });
 }
 
@@ -80,35 +91,38 @@ export function AccountPanel(): JSX.Element {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [stats, setStats] = useState<UsageStats | null>(null);
+  const [openCard, setOpenCard] = useState<"account" | "password" | "sessions" | "feedback" | null>("account");
   const [loading, setLoading] = useState(true);
 
-  async function loadProfile() {
+  async function loadAll() {
     try {
-      const r = await fetch("/api/account/profile", { cache: "no-store" });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const data = (await r.json()) as Profile;
-      setProfile(data);
+      const [profileRes, sessionsRes, statsRes] = await Promise.all([
+        fetch("/api/account/profile", { cache: "no-store" }),
+        fetch("/api/account/sessions", { cache: "no-store" }),
+        fetch("/api/account/stats", { cache: "no-store" }).catch(() => null),
+      ]);
+      if (profileRes.ok) {
+        const p = (await profileRes.json()) as Profile;
+        setProfile(p);
+      }
+      if (sessionsRes.ok) {
+        const s = (await sessionsRes.json()) as { sessions: SessionInfo[] };
+        setSessions(s.sessions ?? []);
+      }
+      if (statsRes?.ok) {
+        const u = (await statsRes.json()) as UsageStats;
+        setStats(u);
+      }
     } catch {
-      setProfile(null);
+      // ignore — UI degrada gracefully
     } finally {
       setLoading(false);
     }
   }
 
-  async function loadSessions() {
-    try {
-      const r = await fetch("/api/account/sessions", { cache: "no-store" });
-      if (!r.ok) return;
-      const data = (await r.json()) as { sessions: SessionInfo[] };
-      setSessions(data.sessions ?? []);
-    } catch {
-      // ignore — lista de sessões é nice-to-have
-    }
-  }
-
   useEffect(() => {
-    loadProfile();
-    loadSessions();
+    loadAll();
   }, []);
 
   if (loading) {
@@ -116,53 +130,244 @@ export function AccountPanel(): JSX.Element {
   }
   if (!profile) {
     return (
-      <div className="rounded-2xl fey-card p-6 text-center">
-        <p className="text-sm text-muted-foreground">
+      <div className="px-6 py-10 text-center">
+        <p className="text-[14px] text-muted-foreground">
           Não foi possível carregar seu perfil.
         </p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-3"
-          onClick={loadProfile}
-        >
-          Tentar novamente
-        </Button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <ProfileSection
-        profile={profile}
-        onSaved={(p) => {
-          setProfile(p);
-          loadSessions();
-        }}
-      />
-      <PasswordSection />
-      <SessionsSection
-        sessions={sessions}
-        onChange={() => {
-          loadSessions();
-          loadProfile();
-        }}
-      />
-      <SignOutSection
-        onSignedOut={() => {
-          router.push("/login");
-        }}
-      />
+    <div className="flex flex-col gap-10 px-4 py-8 sm:px-8 lg:px-12">
+      {/* ─── Header Fey: Title + subtitle + ações canto direito ──────── */}
+      <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-display text-[40px] font-bold tracking-tight text-foreground leading-[1.05]">
+            Conta
+          </h1>
+          <p className="mt-1.5 text-[14px] text-muted-foreground/85">
+            {profile.email}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => router.push("/login?oauth=google&action=gift")}
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] font-medium text-foreground hover:bg-white/[0.08] transition-colors cursor-pointer"
+          >
+            <MessageSquare size={14} />
+            Convidar um amigo
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              await fetch("/api/auth/logout", { method: "POST" });
+              router.push("/login");
+            }}
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] font-medium text-foreground hover:bg-white/[0.08] transition-colors cursor-pointer"
+          >
+            <LogOut size={14} />
+            Sair
+          </button>
+        </div>
+      </header>
+
+      {/* Separador sutil (Fey: borda full-width transparente) */}
+      <div className="h-px bg-white/[0.06]" />
+
+      {/* ─── 2-coluna: cards esquerda + destaque direita ────────────── */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
+        {/* ESQUERDA: lista de cards */}
+        <section className="flex flex-col gap-6">
+          <h2 className="text-[16px] font-semibold text-muted-foreground/85">
+            Sua conta
+          </h2>
+
+          <Card
+            icon={<Mail size={16} className="text-orange-400" />}
+            iconBg="bg-orange-400/15"
+            title={profile.username}
+            description="Email e nome de usuário exibidos no Sulfur."
+            open={openCard === "account"}
+            onToggle={() => setOpenCard(openCard === "account" ? null : "account")}
+          >
+            <AccountInfoCard
+              profile={profile}
+              onSaved={(p) => {
+                setProfile(p);
+                loadAll();
+              }}
+            />
+          </Card>
+
+          <Card
+            icon={<Lock size={16} className="text-blue-400" />}
+            iconBg="bg-blue-400/15"
+            title="Senha"
+            description="Atualize sua senha pra manter a conta segura."
+            open={openCard === "password"}
+            onToggle={() => setOpenCard(openCard === "password" ? null : "password")}
+          >
+            <PasswordCard />
+          </Card>
+
+          <Card
+            icon={<Smartphone size={16} className="text-emerald-400" />}
+            iconBg="bg-emerald-400/15"
+            title={`Sessões ativas${sessions.length > 1 ? ` (${sessions.length})` : ""}`}
+            description="Dispositivos logados na sua conta."
+            open={openCard === "sessions"}
+            onToggle={() => setOpenCard(openCard === "sessions" ? null : "sessions")}
+          >
+            <SessionsCard
+              sessions={sessions}
+              onChange={loadAll}
+            />
+          </Card>
+
+          <Card
+            icon={<MessageSquare size={16} className="text-fuchsia-400" />}
+            iconBg="bg-fuchsia-400/15"
+            title="Feedback"
+            description="Bugs, sugestões ou um oi?"
+            open={openCard === "feedback"}
+            onToggle={() => setOpenCard(openCard === "feedback" ? null : "feedback")}
+          >
+            <FeedbackCard />
+          </Card>
+
+          {/* Banner Fey no rodapé */}
+          <div className="mt-2 flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+            <ChevronRight size={14} className="text-muted-foreground/70" />
+            <p className="text-[12px] text-muted-foreground/85">
+              <span className="font-semibold text-foreground">Precisa de ajuda?</span>
+              {" "}ou pressione{" "}
+              <kbd className="rounded border border-white/[0.1] bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-mono font-semibold text-foreground">
+                K
+              </kbd>
+              {" "}e digite{" "}
+              <code className="text-[11px] font-mono text-foreground">"feedback"</code>
+              {" "}a qualquer momento.
+            </p>
+          </div>
+        </section>
+
+        {/* DIREITA: card destaque com stats */}
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-6">
+            <span className="absolute right-4 top-4 inline-flex items-center rounded-full bg-white/[0.08] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Plano ativo
+            </span>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
+                  Sulfur Pro
+                </p>
+                <p className="mt-1 font-display text-[40px] font-bold tracking-tight text-foreground leading-[1.05]">
+                  Free
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground/70">
+                  Conta ativa desde{" "}
+                  {profile.createdAt ? formatDate(profile.createdAt) : "—"}
+                </p>
+              </div>
+
+              {stats && (
+                <div className="space-y-2 border-t border-white/[0.06] pt-4">
+                  <StatRow label="Portfolios" value={stats.portfolioCount} />
+                  <StatRow label="Holdings" value={stats.holdingCount} />
+                  <StatRow label="Índices criados" value={stats.indicesCount} />
+                  <StatRow label="Watchlist" value={stats.watchlistCount} />
+                  <StatRow label="Dias de conta" value={stats.accountAgeDays} />
+                </div>
+              )}
+
+              <div className="space-y-2 border-t border-white/[0.06] pt-4">
+                <a
+                  href="/settings"
+                  className="block w-full rounded-md bg-white/[0.04] border border-white/[0.08] py-2 text-center text-[12px] font-medium text-foreground hover:bg-white/[0.08] transition-colors"
+                >
+                  Configurações
+                </a>
+                <a
+                  href="mailto:support@sulfur.io"
+                  className="block w-full text-center text-[11px] text-muted-foreground/85 hover:text-foreground transition-colors"
+                >
+                  Falar com o suporte
+                </a>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
 
-// ─── Profile ──────────────────────────────────────────────────────────────
+// ─── Card genérico (Fey-style: ícone soft + título + descrição) ───────────
 
-function ProfileSection({
-  profile,
-  onSaved,
+function Card({
+  icon, iconBg, title, description, open, onToggle, children,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  title: string;
+  description: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-xl border border-white/[0.06] bg-white/[0.02] transition-colors",
+        open && "bg-white/[0.04]",
+      )}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-4 px-5 py-4 text-left cursor-pointer"
+      >
+        <div
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
+            iconBg,
+          )}
+        >
+          {icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[15px] font-semibold text-foreground tracking-tight">
+            {title}
+          </div>
+          <div className="mt-0.5 text-[13px] text-muted-foreground/85">
+            {description}
+          </div>
+        </div>
+        <ChevronRight
+          size={16}
+          className={cn(
+            "shrink-0 text-muted-foreground/60 transition-transform",
+            open && "rotate-90",
+          )}
+        />
+      </button>
+      {open && (
+        <div className="border-t border-white/[0.06] px-5 py-5">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Conteúdo de cada card ──────────────────────────────────────────────
+
+function AccountInfoCard({
+  profile, onSaved,
 }: {
   profile: Profile;
   onSaved: (p: Profile) => void;
@@ -171,9 +376,8 @@ function ProfileSection({
   const [email, setEmail] = useState(profile.email);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [saved, setSaved] = useState(false);
 
-  // Re-sync local state se profile mudar externamente.
   useEffect(() => {
     setUsername(profile.username);
     setEmail(profile.email);
@@ -186,6 +390,7 @@ function ProfileSection({
   async function save() {
     setSaving(true);
     setError(null);
+    setSaved(false);
     try {
       const r = await fetch("/api/account/profile", {
         method: "PATCH",
@@ -198,8 +403,8 @@ function ProfileSection({
       }
       const data = (await r.json()) as Profile;
       onSaved(data);
-      setSavedAt(Date.now());
-      window.setTimeout(() => setSavedAt(null), 2400);
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2400);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao salvar");
     } finally {
@@ -208,73 +413,32 @@ function ProfileSection({
   }
 
   return (
-    <section className="rounded-2xl fey-card p-5">
-      <header className="mb-4 flex items-baseline justify-between gap-3">
-        <div>
-          <h2 className="font-display text-[15px] font-semibold text-foreground tracking-tight">
-            Perfil
-          </h2>
-          <p className="mt-0.5 text-[12px] text-muted-foreground/85">
-            Nome e email exibidos no Sulfur.
-          </p>
-        </div>
-        {profile.createdAt && (
-          <span className="text-[11px] text-muted-foreground/70 tabular-nums">
-            desde {formatDate(profile.createdAt)}
-          </span>
-        )}
-      </header>
-
-      <div className="flex flex-col gap-3">
-        <FieldRow
-          id="account-username"
-          label="Nome de usuário"
-          value={username}
-          onChange={setUsername}
-        />
-        <FieldRow
-          id="account-email"
-          label="Email"
-          type="email"
-          value={email}
-          onChange={setEmail}
-          icon={<Mail size={14} className="text-muted-foreground" />}
-        />
-
-        <div className="flex items-center justify-end gap-3 pt-1">
-          {error && (
-            <span className="text-[12px] text-[var(--negative)]">{error}</span>
-          )}
-          {savedAt && (
-            <span className="text-[12px] text-[var(--positive)]">
-              Salvo
-            </span>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={saving || !dirty}
-            onClick={save}
-          >
-            {saving ? "Salvando…" : "Salvar alterações"}
-          </Button>
-        </div>
+    <div className="flex flex-col gap-3">
+      <FieldRow id="acc-username" label="Nome de usuário" value={username} onChange={setUsername} />
+      <FieldRow id="acc-email" label="Email" type="email" value={email} onChange={setEmail} />
+      <div className="flex items-center justify-end gap-3 pt-1">
+        {error && <span className="text-[12px] text-[var(--negative)]">{error}</span>}
+        {saved && <span className="text-[12px] text-[var(--positive)]">Salvo</span>}
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving || !dirty}
+          className="inline-flex h-9 items-center justify-center rounded-md border border-white/[0.08] bg-white/[0.04] px-4 text-[13px] font-medium text-foreground hover:bg-white/[0.08] transition-colors cursor-pointer disabled:opacity-50"
+        >
+          {saving ? "Salvando…" : "Salvar alterações"}
+        </button>
       </div>
-    </section>
+    </div>
   );
 }
 
-// ─── Password ─────────────────────────────────────────────────────────────
-
-function PasswordSection(): JSX.Element {
+function PasswordCard(): JSX.Element {
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [saved, setSaved] = useState(false);
 
   const ready =
     currentPwd.length >= 8 &&
@@ -285,6 +449,7 @@ function PasswordSection(): JSX.Element {
   async function change() {
     setSaving(true);
     setError(null);
+    setSaved(false);
     try {
       const r = await fetch("/api/account/password", {
         method: "POST",
@@ -301,8 +466,8 @@ function PasswordSection(): JSX.Element {
       setCurrentPwd("");
       setNewPwd("");
       setConfirmPwd("");
-      setSavedAt(Date.now());
-      window.setTimeout(() => setSavedAt(null), 2400);
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2400);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao trocar senha");
     } finally {
@@ -311,296 +476,215 @@ function PasswordSection(): JSX.Element {
   }
 
   return (
-    <section className="rounded-2xl fey-card p-5">
-      <header className="mb-4">
-        <h2 className="font-display text-[15px] font-semibold text-foreground tracking-tight">
-          Senha
-        </h2>
-        <p className="mt-0.5 text-[12px] text-muted-foreground/85">
-          Troque sua senha pra manter a conta segura.
-        </p>
-      </header>
-
-      <div className="flex flex-col gap-3">
-        <PasswordField
-          id="account-current-pwd"
-          label="Senha atual"
-          value={currentPwd}
-          onChange={setCurrentPwd}
-          shown={showCurrent}
-          onToggle={() => setShowCurrent((v) => !v)}
-          autocomplete="current-password"
-        />
-        <PasswordField
-          id="account-new-pwd"
-          label="Nova senha"
-          value={newPwd}
-          onChange={setNewPwd}
-          shown={showNew}
-          onToggle={() => setShowNew((v) => !v)}
-          autocomplete="new-password"
-        />
-        <PasswordField
-          id="account-confirm-pwd"
-          label="Confirmar nova senha"
-          value={confirmPwd}
-          onChange={setConfirmPwd}
-          shown={showNew}
-          onToggle={() => setShowNew((v) => !v)}
-          autocomplete="new-password"
-        />
-
-        {newPwd && confirmPwd && newPwd !== confirmPwd && (
-          <p className="text-[11px] text-[var(--negative)]">
-            As senhas não conferem.
-          </p>
-        )}
-        {newPwd && currentPwd === newPwd && (
-          <p className="text-[11px] text-[var(--negative)]">
-            Nova senha deve ser diferente da atual.
-          </p>
-        )}
-
-        <div className="flex items-center justify-end gap-3 pt-1">
-          {error && (
-            <span className="text-[12px] text-[var(--negative)]">{error}</span>
-          )}
-          {savedAt && (
-            <span className="text-[12px] text-[var(--positive)]">
-              Senha atualizada
-            </span>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={saving || !ready}
-            onClick={change}
-          >
-            {saving ? "Atualizando…" : "Atualizar senha"}
-          </Button>
-        </div>
+    <div className="flex flex-col gap-3">
+      <PasswordField
+        id="pw-current"
+        label="Senha atual"
+        value={currentPwd}
+        onChange={setCurrentPwd}
+        autocomplete="current-password"
+      />
+      <PasswordField
+        id="pw-new"
+        label="Nova senha"
+        value={newPwd}
+        onChange={setNewPwd}
+        autocomplete="new-password"
+      />
+      <PasswordField
+        id="pw-confirm"
+        label="Confirmar"
+        value={confirmPwd}
+        onChange={setConfirmPwd}
+        autocomplete="new-password"
+      />
+      {newPwd && confirmPwd && newPwd !== confirmPwd && (
+        <p className="text-[11px] text-[var(--negative)]">As senhas não conferem.</p>
+      )}
+      <div className="flex items-center justify-end gap-3 pt-1">
+        {error && <span className="text-[12px] text-[var(--negative)]">{error}</span>}
+        {saved && <span className="text-[12px] text-[var(--positive)]">Senha atualizada</span>}
+        <button
+          type="button"
+          onClick={change}
+          disabled={saving || !ready}
+          className="inline-flex h-9 items-center justify-center rounded-md border border-white/[0.08] bg-white/[0.04] px-4 text-[13px] font-medium text-foreground hover:bg-white/[0.08] transition-colors cursor-pointer disabled:opacity-50"
+        >
+          {saving ? "Atualizando…" : "Atualizar senha"}
+        </button>
       </div>
-    </section>
+    </div>
   );
 }
 
-// ─── Sessions ─────────────────────────────────────────────────────────────
-
-function SessionsSection({
-  sessions,
-  onChange,
+function SessionsCard({
+  sessions, onChange,
 }: {
   sessions: SessionInfo[];
   onChange: () => void;
 }): JSX.Element {
   async function revoke(id: string) {
     try {
-      const r = await fetch(
-        `/api/account/sessions/${encodeURIComponent(id)}`,
-        { method: "DELETE" },
-      );
-      if (!r.ok) {
-        const err = (await r.json().catch(() => ({}))) as { error?: string };
-        alert(err.error ?? `HTTP ${r.status}`);
-        return;
-      }
+      await fetch(`/api/account/sessions/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
       onChange();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Erro ao revogar sessão");
+    } catch {
+      // ignore
     }
   }
 
-  return (
-    <section className="rounded-2xl fey-card p-5">
-      <header className="mb-4">
-        <h2 className="font-display text-[15px] font-semibold text-foreground tracking-tight">
-          Sessões ativas
-        </h2>
-        <p className="mt-0.5 text-[12px] text-muted-foreground/85">
-          Dispositivos logados na sua conta. Você pode revogar acesso de
-          qualquer um que não reconheça.
-        </p>
-      </header>
+  if (sessions.length === 0) {
+    return <p className="text-[12px] text-muted-foreground/70">Nenhuma sessão ativa.</p>;
+  }
 
-      {sessions.length === 0 ? (
-        <p className="text-[12px] text-muted-foreground/70">Nenhuma sessão ativa.</p>
-      ) : (
-        <ul className="space-y-2">
-          {sessions.map((s) => {
-            const ua = parseUserAgent(s.userAgent);
-            const Icon =
-              ua.type === "mobile" ? Smartphone : ua.type === "web" ? Globe : Monitor;
-            return (
-              <li
-                key={s.id}
-                className="flex items-center gap-3 rounded-md border border-white/[0.06] bg-white/[0.02] px-3 py-2"
-              >
-                <Icon
-                  size={14}
-                  className="shrink-0 text-muted-foreground"
-                  strokeWidth={2}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[12px] font-medium text-foreground">
-                      {ua.label}
-                    </span>
-                    {s.isCurrent && (
-                      <span className="text-[10px] uppercase tracking-wide rounded-full bg-[var(--positive-soft)] px-1.5 py-0.5 font-semibold text-[var(--positive)]">
-                        Esta sessão
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground/70 tabular-nums truncate">
-                    {s.ip ? `${s.ip} · ` : ""}iniciada em {formatDate(s.createdAt)}
-                  </div>
-                </div>
-                {!s.isCurrent && (
-                  <button
-                    type="button"
-                    onClick={() => revoke(s.id)}
-                    className={cn(
-                      "shrink-0 inline-flex h-7 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] px-2 text-[11px] font-medium text-foreground hover:bg-[var(--negative-soft)] hover:text-[var(--negative)] hover:border-[var(--negative)]/30 transition-colors cursor-pointer",
-                    )}
-                  >
-                    Revogar
-                  </button>
+  return (
+    <ul className="space-y-2">
+      {sessions.map((s) => {
+        const ua = parseUserAgent(s.userAgent);
+        return (
+          <li
+            key={s.id}
+            className="flex items-center gap-3 rounded-md border border-white/[0.04] bg-white/[0.02] px-3 py-2"
+          >
+            <Smartphone size={14} className="shrink-0 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] font-medium text-foreground">
+                  {ua.label}
+                </span>
+                {s.isCurrent && (
+                  <span className="rounded-full bg-[var(--positive-soft)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--positive)]">
+                    Esta
+                  </span>
                 )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
+              </div>
+              <div className="text-[11px] text-muted-foreground/70 tabular-nums truncate">
+                {s.ip ? `${s.ip} · ` : ""}{formatDate(s.createdAt)}
+              </div>
+            </div>
+            {!s.isCurrent && (
+              <button
+                type="button"
+                onClick={() => revoke(s.id)}
+                className="shrink-0 inline-flex h-7 items-center rounded-md border border-white/[0.08] bg-white/[0.04] px-2 text-[11px] font-medium text-foreground hover:bg-[var(--negative-soft)] hover:text-[var(--negative)] hover:border-[var(--negative)]/30 transition-colors cursor-pointer"
+              >
+                Revogar
+              </button>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
-// ─── Sign out ─────────────────────────────────────────────────────────────
-
-function SignOutSection({
-  onSignedOut,
-}: {
-  onSignedOut: () => void;
-}): JSX.Element {
-  const [signingOut, setSigningOut] = useState(false);
-
-  async function signOut() {
-    setSigningOut(true);
-    try {
-      const r = await fetch("/api/auth/logout", { method: "POST" });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      onSignedOut();
-    } catch {
-      setSigningOut(false);
-    }
-  }
-
+function FeedbackCard(): JSX.Element {
   return (
-    <section className="rounded-2xl fey-card p-5">
-      <header className="mb-3">
-        <h2 className="font-display text-[15px] font-semibold text-foreground tracking-tight">
-          Sair
-        </h2>
-        <p className="mt-0.5 text-[12px] text-muted-foreground/85">
-          Encerra sua sessão neste dispositivo.
-        </p>
-      </header>
-      <Button
-        variant="destructive"
-        size="default"
-        className="gap-1.5"
-        disabled={signingOut}
-        onClick={signOut}
-      >
-        <LogOut size={14} />
-        {signingOut ? "Saindo…" : "Sair da conta"}
-      </Button>
-    </section>
+    <div className="flex flex-col gap-3">
+      <p className="text-[13px] text-muted-foreground/85">
+        Encontrou um bug? Tem uma ideia? Manda pra gente.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <a
+          href="mailto:feedback@sulfur.io"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] font-medium text-foreground hover:bg-white/[0.08] transition-colors"
+        >
+          <MessageSquare size={14} />
+          Mandar email
+        </a>
+        <a
+          href="https://github.com/arthur-vignal/screener/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] font-medium text-foreground hover:bg-white/[0.08] transition-colors"
+        >
+          Abrir issue no GitHub
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function StatRow({
+  label, value,
+}: {
+  label: string;
+  value: number | string;
+}) {
+  return (
+    <div className="flex items-center justify-between text-[12px]">
+      <span className="text-muted-foreground/85">{label}</span>
+      <span className="font-semibold tabular-nums text-foreground">{value}</span>
+    </div>
   );
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
 function FieldRow({
-  id, label, value, onChange, type = "text", icon,
+  id, label, value, onChange, type = "text",
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
-  icon?: React.ReactNode;
 }) {
   return (
     <label htmlFor={id} className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-medium text-muted-foreground">
-        {label}
-      </span>
-      <div className="flex h-9 items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 transition-colors focus-within:border-white/20 focus-within:bg-white/[0.06]">
-        {icon}
-        <input
-          id={id}
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-        />
-      </div>
+      <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
+      <input
+        id={id}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-9 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:border-white/20 focus:bg-white/[0.06] focus:outline-none"
+      />
     </label>
   );
 }
 
 function PasswordField({
-  id, label, value, onChange, shown, onToggle, autocomplete,
+  id, label, value, onChange, autocomplete,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
-  shown: boolean;
-  onToggle: () => void;
   autocomplete?: string;
 }) {
   return (
     <label htmlFor={id} className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-medium text-muted-foreground">
-        {label}
-      </span>
-      <div className="flex h-9 items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 transition-colors focus-within:border-white/20 focus-within:bg-white/[0.06]">
-        <Lock size={14} className="text-muted-foreground" />
-        <input
-          id={id}
-          type={shown ? "text" : "password"}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          autoComplete={autocomplete ?? "off"}
-          className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-        />
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-label={shown ? "Hide password" : "Show password"}
-          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
-        >
-          {shown ? <EyeOff size={14} /> : <Eye size={14} />}
-        </button>
-      </div>
+      <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
+      <input
+        id={id}
+        type="password"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        autoComplete={autocomplete ?? "off"}
+        className="h-9 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:border-white/20 focus:bg-white/[0.06] focus:outline-none"
+      />
     </label>
   );
 }
 
 function AccountPanelSkeleton(): JSX.Element {
   return (
-    <div className="flex flex-col gap-4">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="rounded-2xl fey-card p-5">
-          <div className="h-3 w-24 rounded bg-white/[0.04] animate-pulse" />
-          <div className="mt-3 space-y-3">
-            <div className="h-9 w-full rounded-md bg-white/[0.04] animate-pulse" />
-            <div className="h-9 w-full rounded-md bg-white/[0.04] animate-pulse" />
-          </div>
+    <div className="flex flex-col gap-10 px-4 py-8 sm:px-8 lg:px-12">
+      <div className="space-y-2">
+        <div className="h-10 w-32 rounded bg-white/[0.04] animate-pulse" />
+        <div className="h-3 w-48 rounded bg-white/[0.04] animate-pulse" />
+      </div>
+      <div className="h-px bg-white/[0.06]" />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-3">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-16 rounded-xl bg-white/[0.02] animate-pulse" />
+          ))}
         </div>
-      ))}
+        <div className="h-64 rounded-2xl bg-white/[0.02] animate-pulse" />
+      </div>
     </div>
   );
 }
