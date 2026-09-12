@@ -1,0 +1,3912 @@
+{
+  "PMAM3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Artefatos de Cobre",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "LREN3": {
+    "sector": "Comércio",
+    "subsectorEn": "Tecidos, Vestuário e Calçados",
+    "sectorEn": "Retail Trade"
+  },
+  "BEEF3": {
+    "sector": "Comércio",
+    "subsectorEn": "Carnes e Derivados",
+    "sectorEn": "Distribution Services"
+  },
+  "CSNA3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Siderurgia",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "CSAN3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Exploração, Refino e Distribuição",
+    "sectorEn": "Utilities"
+  },
+  "COGN3": {
+    "sector": "Serviços",
+    "subsectorEn": "Serviços Educacionais",
+    "sectorEn": "Commercial Services"
+  },
+  "BBDC4": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos Diversificados",
+    "sectorEn": "Finance"
+  },
+  "B3SA3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Dados Financeiros e Bolsas de Valores",
+    "sectorEn": "Finance"
+  },
+  "VAMO3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Aluguel de Carros",
+    "sectorEn": "Finance"
+  },
+  "PETR4": {
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "subsectorEn": "Petróleo e Gás Integrado",
+    "sectorEn": "Energy Minerals"
+  },
+  "MGLU3": {
+    "sector": "Comércio",
+    "subsectorEn": "Varejo Especializado",
+    "sectorEn": "Retail Trade"
+  },
+  "ABEV3": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "Cervejas e Refrigerantes",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "MOTV3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Exploração de Rodovias",
+    "sectorEn": "Transportation"
+  },
+  "BBAS3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos Diversificados",
+    "sectorEn": "Finance"
+  },
+  "ITSA4": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "BHIA3": {
+    "sector": "Comércio",
+    "subsectorEn": "Eletrodomésticos",
+    "sectorEn": "Retail Trade"
+  },
+  "SBSP3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Água e Saneamento",
+    "sectorEn": "Utilities"
+  },
+  "ITUB4": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos Diversificados",
+    "sectorEn": "Finance"
+  },
+  "RAIZ4": {
+    "sector": "Comércio",
+    "subsectorEn": "Açúcar e Álcool",
+    "sectorEn": "Retail Trade"
+  },
+  "GFSA3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "CMIG4": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "VBBR3": {
+    "sector": "Comércio",
+    "subsectorEn": "Exploração, Refino e Distribuição",
+    "sectorEn": "Retail Trade"
+  },
+  "CXSE3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Seguradoras",
+    "sectorEn": "Finance"
+  },
+  "HAPV3": {
+    "sector": "Saúde",
+    "subsectorEn": "Serviços Médicos Hospitalares",
+    "sectorEn": "Health Services"
+  },
+  "GOAU4": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Siderurgia",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "VALE3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Mineração de Minerais Metálicos",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "USIM5": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Siderurgia",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "PETR3": {
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "subsectorEn": "Exploração. Refino e Distribuição",
+    "sectorEn": "Energy Minerals"
+  },
+  "AXIA3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Emp. Adm. Part. - Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "POMO4": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "CPLE3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "CVCB3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Viagens e Turismo",
+    "sectorEn": "Consumer Services"
+  },
+  "BBSE3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Seguradoras",
+    "sectorEn": "Finance"
+  },
+  "CMIN3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Minerais Metálicos",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "RENT3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Aluguel de Carros",
+    "sectorEn": "Finance"
+  },
+  "GGBR4": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Siderurgia",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "DIRR3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "MRVE3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Consumer Durables"
+  },
+  "EQTL3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "UGPA3": {
+    "sector": "Comércio",
+    "subsectorEn": "Exploração, Refino e Distribuição",
+    "sectorEn": "Retail Trade"
+  },
+  "SAUD3": {
+    "sector": "Saúde",
+    "subsectorEn": "Serviços Médicos",
+    "sectorEn": "Health Services"
+  },
+  "CEAB3": {
+    "sector": "Comércio",
+    "subsectorEn": "Tecidos. Vestuário e Calçados",
+    "sectorEn": "Retail Trade"
+  },
+  "BPAC11": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "RAIL3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Transporte Ferroviário",
+    "sectorEn": "Transportation"
+  },
+  "HYPE3": {
+    "sector": "Saúde",
+    "subsectorEn": "Medicamentos e Outros Produtos",
+    "sectorEn": "Health Technology"
+  },
+  "NATU3": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "Produtos de Uso Pessoal",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "PRIO3": {
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "subsectorEn": "Exploração e Produção de Petróleo",
+    "sectorEn": "Energy Minerals"
+  },
+  "SMFT3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Atividades Esportivas",
+    "sectorEn": "Consumer Services"
+  },
+  "ONCO3": {
+    "sector": "Saúde",
+    "subsectorEn": "Serv.Méd.Hospit..Análises e Diagnósticos",
+    "sectorEn": "Health Services"
+  },
+  "CYRE3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "TIMS3": {
+    "sector": "Comunicações",
+    "subsectorEn": "Telecomunicações",
+    "sectorEn": "Communications"
+  },
+  "WEGE3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Máquinas e Equipamentos",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "ASAI3": {
+    "sector": "Comércio",
+    "subsectorEn": "Alimentos",
+    "sectorEn": "Retail Trade"
+  },
+  "RAPT4": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "SUZB3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Papel e Celulose",
+    "sectorEn": "Process Industries"
+  },
+  "ENEV3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "ECOR3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Exploração de Rodovias",
+    "sectorEn": "Transportation"
+  },
+  "MOVI3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Aluguel de carros",
+    "sectorEn": "Finance"
+  },
+  "FLRY3": {
+    "sector": "Saúde",
+    "subsectorEn": "Serviços Médicos Hospitalares",
+    "sectorEn": "Health Services"
+  },
+  "BBDC3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "JHSF3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "AUAU3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Produtos Diversos",
+    "sectorEn": "Process Industries"
+  },
+  "RADL3": {
+    "sector": "Comércio",
+    "subsectorEn": "Medicamentos e Outros Produtos",
+    "sectorEn": "Retail Trade"
+  },
+  "EMBJ3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "Máquinas, Equipamentos, Veículos e Peças",
+    "sectorEn": "Electronic Technology"
+  },
+  "TOTS3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "Programas e Serviços",
+    "sectorEn": "Technology Services"
+  },
+  "QUAL3": {
+    "sector": "Saúde",
+    "subsectorEn": "Serv.Méd.Hospit..Análises e Diagnósticos",
+    "sectorEn": "Health Services"
+  },
+  "ANIM3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Serviços Educacionais",
+    "sectorEn": "Consumer Services"
+  },
+  "YDUQ3": {
+    "sector": "Serviços",
+    "subsectorEn": "Serviços Educacionais",
+    "sectorEn": "Commercial Services"
+  },
+  "SIMH3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Holdings Diversificadas",
+    "sectorEn": "Transportation"
+  },
+  "CSMG3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Água e Saneamento",
+    "sectorEn": "Utilities"
+  },
+  "BRSR6": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "SLCE3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Agricultura",
+    "sectorEn": "Process Industries"
+  },
+  "ALOS3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Exploração de Imóveis",
+    "sectorEn": "Finance"
+  },
+  "MBRF3": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "Emp. Adm. Part. - Alimentos",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "RDOR3": {
+    "sector": "Saúde",
+    "subsectorEn": "Serviços Médicos Hospitalares",
+    "sectorEn": "Health Services"
+  },
+  "VIVT3": {
+    "sector": "Comunicações",
+    "subsectorEn": "Telecomunicações",
+    "sectorEn": "Communications"
+  },
+  "AURE3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "PCAR3": {
+    "sector": "Comércio",
+    "subsectorEn": "Alimentos",
+    "sectorEn": "Retail Trade"
+  },
+  "GRND3": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "Calçados",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "TEND3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "KLBN11": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Papel e Celulose",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "SBFG3": {
+    "sector": "Comércio",
+    "subsectorEn": "Produtos Diversos",
+    "sectorEn": "Retail Trade"
+  },
+  "PGMN3": {
+    "sector": "Comércio",
+    "subsectorEn": "Medicamentos e Outros Produtos",
+    "sectorEn": "Retail Trade"
+  },
+  "BRKM5": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Petroquímicos",
+    "sectorEn": "Process Industries"
+  },
+  "GGPS3": {
+    "sector": "Serviços",
+    "subsectorEn": "Serviços Diversos",
+    "sectorEn": "Commercial Services"
+  },
+  "BRAV3": {
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "subsectorEn": "Exploração e Produção de Petróleo",
+    "sectorEn": "Energy Minerals"
+  },
+  "LWSA3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "Programas e Serviços",
+    "sectorEn": "Technology Services"
+  },
+  "VULC3": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "Calçados",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "EGIE3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "GMAT3": {
+    "sector": "Comércio",
+    "subsectorEn": "Alimentos",
+    "sectorEn": "Retail Trade"
+  },
+  "KLBN4": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "PLPL3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "HBSA3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Transporte Hidroviário",
+    "sectorEn": "Transportation"
+  },
+  "ITUB3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "AZEV4": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "MULT3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Exploração de Imóveis",
+    "sectorEn": "Finance"
+  },
+  "ENGI11": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "AXIA7": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "AZTE3": {
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "subsectorEn": "",
+    "sectorEn": "Energy Minerals"
+  },
+  "RCSL4": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "IGTI11": {
+    "sector": "Financeiro",
+    "subsectorEn": "Exploração de Imóveis",
+    "sectorEn": "Finance"
+  },
+  "EZTC3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "SANB11": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "AZZA3": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "Tecidos, Vestuário e Calçados",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "SAPR11": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "VIVA3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Acessórios",
+    "sectorEn": "Consumer Durables"
+  },
+  "SAPR4": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "ORVR3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Água e Saneamento",
+    "sectorEn": "Utilities"
+  },
+  "CURY3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "AMER3": {
+    "sector": "Comércio",
+    "subsectorEn": "Produtos Diversos",
+    "sectorEn": "Retail Trade"
+  },
+  "MLAS3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "Computadores e Equipamentos",
+    "sectorEn": "Electronic Technology"
+  },
+  "TTEN3": {
+    "sector": "Serviços",
+    "subsectorEn": "Agricultura",
+    "sectorEn": "Commercial Services"
+  },
+  "LJQQ3": {
+    "sector": "Comércio",
+    "subsectorEn": "Produtos Diversos",
+    "sectorEn": "Retail Trade"
+  },
+  "DXCO3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Madeira",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "ALPA4": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "ISAE4": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "RECV3": {
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "subsectorEn": "Exploração e Produção de Petróleo",
+    "sectorEn": "Energy Minerals"
+  },
+  "OPCT3": {
+    "sector": "Serviços",
+    "subsectorEn": "Equipamentos e Serviços",
+    "sectorEn": "Commercial Services"
+  },
+  "BRAP4": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "CPFE3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "RIAA3": {
+    "sector": "Comércio",
+    "subsectorEn": "Têxtil e Vestuário",
+    "sectorEn": "Distribution Services"
+  },
+  "LIGT3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "CBAV3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Minerais Metálicos",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "PSSA3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Seguradoras",
+    "sectorEn": "Finance"
+  },
+  "SEQL3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "DESK3": {
+    "sector": "Comunicações",
+    "subsectorEn": "Telecomunicações",
+    "sectorEn": "Communications"
+  },
+  "PASS3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Gás",
+    "sectorEn": "Utilities"
+  },
+  "USIM3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Siderurgia",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "SMTO3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Açúcar e Álcool",
+    "sectorEn": "Process Industries"
+  },
+  "MDNE3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "TAEE11": {
+    "sector": "Serviços",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Industrial Services"
+  },
+  "JALL3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Açucar e Alcool",
+    "sectorEn": "Process Industries"
+  },
+  "POMO3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Material Rodoviário",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "TFCO4": {
+    "sector": "Comércio",
+    "subsectorEn": "Vestuário",
+    "sectorEn": "Retail Trade"
+  },
+  "EVEN3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "CASH3": {
+    "sector": "Serviços",
+    "subsectorEn": "Programas e Serviços",
+    "sectorEn": "Commercial Services"
+  },
+  "JSLG3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Transporte Rodoviário",
+    "sectorEn": "Transportation"
+  },
+  "BMGB4": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "DASA3": {
+    "sector": "Saúde",
+    "subsectorEn": "Serv.Méd.Hospit..Análises e Diagnósticos",
+    "sectorEn": "Health Services"
+  },
+  "AZEV3": {
+    "sector": "Serviços",
+    "subsectorEn": "Construção Pesada",
+    "sectorEn": "Industrial Services"
+  },
+  "INTB3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "Computadores e Equipamentos",
+    "sectorEn": "Technology Services"
+  },
+  "MEAL3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Restaurante e Similares",
+    "sectorEn": "Consumer Services"
+  },
+  "FESA4": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "ARML3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Máq. e Equip. Industriais",
+    "sectorEn": "Finance"
+  },
+  "CYRE4": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "KEPL3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Máq. e Equip. Industriais",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "SOJA3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Agricultura",
+    "sectorEn": "Process Industries"
+  },
+  "PTBL3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Produtos para Construção",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "LAVV3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "MTRE3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "AMBP3": {
+    "sector": "Serviços",
+    "subsectorEn": "Água e Saneamento",
+    "sectorEn": "Commercial Services"
+  },
+  "TASA4": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Electronic Technology"
+  },
+  "PINE4": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "VVEO3": {
+    "sector": "Comércio",
+    "subsectorEn": "Medicamentos e Outros Produtos",
+    "sectorEn": "Distribution Services"
+  },
+  "OBTC3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Technology Services"
+  },
+  "ENJU3": {
+    "sector": "Comércio",
+    "subsectorEn": "Programas e Serviços",
+    "sectorEn": "Retail Trade"
+  },
+  "WIZC3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Corretoras de Seguros e Resseguros",
+    "sectorEn": "Finance"
+  },
+  "MDIA3": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "Alimentos Diversos",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "CAML3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Alimentos Diversos",
+    "sectorEn": "Process Industries"
+  },
+  "ALUP11": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "RANI3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Embalagens",
+    "sectorEn": "Process Industries"
+  },
+  "SHUL4": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "FIQE3": {
+    "sector": "Comunicações",
+    "subsectorEn": "Telecomunicações",
+    "sectorEn": "Communications"
+  },
+  "SEER3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Serviços Educacionais",
+    "sectorEn": "Consumer Services"
+  },
+  "VTRU3": {
+    "sector": "Serviços",
+    "subsectorEn": "Serviços Educacionais",
+    "sectorEn": "Commercial Services"
+  },
+  "IRBR3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Resseguradoras",
+    "sectorEn": "Finance"
+  },
+  "AGXY3": {
+    "sector": "Comércio",
+    "subsectorEn": "Agricultura",
+    "sectorEn": "Distribution Services"
+  },
+  "ALLD3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "Eletrodomésticos",
+    "sectorEn": "Technology Services"
+  },
+  "ONCO11": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Services"
+  },
+  "HBOR3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Consumer Durables"
+  },
+  "LOGG3": {
+    "sector": "Serviços",
+    "subsectorEn": "Exploração de Imóveis",
+    "sectorEn": "Industrial Services"
+  },
+  "HBRE3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Exploração de Imóveis",
+    "sectorEn": "Finance"
+  },
+  "SYNE3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Exploração de Imóveis",
+    "sectorEn": "Finance"
+  },
+  "ABCB4": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "MYPK3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Automóveis e Motocicletas",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "TUPY3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Material Rodoviário",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "BMOB3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "Programas e Serviços",
+    "sectorEn": "Technology Services"
+  },
+  "BLAU3": {
+    "sector": "Saúde",
+    "subsectorEn": "Medicamentos e Outros Produtos",
+    "sectorEn": "Health Technology"
+  },
+  "SANB4": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "POSI3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "Computadores e Equipamentos",
+    "sectorEn": "Electronic Technology"
+  },
+  "AGRO3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Agricultura",
+    "sectorEn": "Finance"
+  },
+  "PNVL3": {
+    "sector": "Comércio",
+    "subsectorEn": "Medicamentos e Outros Produtos",
+    "sectorEn": "Retail Trade"
+  },
+  "KLBN3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Papel e Celulose",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "PRNR3": {
+    "sector": "Serviços",
+    "subsectorEn": "Serviços Diversos",
+    "sectorEn": "Industrial Services"
+  },
+  "MELK3": {
+    "sector": "Serviços",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Industrial Services"
+  },
+  "BRBI11": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "CSED3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Serviços Educacionais",
+    "sectorEn": "Consumer Services"
+  },
+  "RCSL3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Material Rodoviário",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "VLID3": {
+    "sector": "Serviços",
+    "subsectorEn": "Serviços Diversos",
+    "sectorEn": "Commercial Services"
+  },
+  "LEVE3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Automóveis e Motocicletas",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "FRAS3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Material Rodoviário",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "MILS3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Máq. e Equip. Industriais",
+    "sectorEn": "Finance"
+  },
+  "TRIS3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Consumer Durables"
+  },
+  "UNIP6": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "CMIG3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "SANB3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "TAEE4": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "FASA3": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "RNEW4": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "BBAS3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "TGMA3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Transporte Rodoviário",
+    "sectorEn": "Transportation"
+  },
+  "LPSB3": {
+    "sector": "Serviços",
+    "subsectorEn": "Intermediação Imobiliária",
+    "sectorEn": "Commercial Services"
+  },
+  "BRST3": {
+    "sector": "Comunicações",
+    "subsectorEn": "Telecomunicações",
+    "sectorEn": "Communications"
+  },
+  "ITSA3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Holdings Diversificadas",
+    "sectorEn": "Finance"
+  },
+  "POMO4F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "IFCM3": {
+    "sector": "Comércio",
+    "subsectorEn": "Programas e Serviços",
+    "sectorEn": "Distribution Services"
+  },
+  "WHRL4": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "BBSE3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "SAPR3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Água e Saneamento",
+    "sectorEn": "Utilities"
+  },
+  "PFRM3": {
+    "sector": "Comércio",
+    "subsectorEn": "Medicamentos e Outros Produtos",
+    "sectorEn": "Distribution Services"
+  },
+  "INEP3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Máq. e Equip. Industriais",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "AZUL3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "SAPR4F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "ROMI3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Máquinas e Equipamentos Industriais",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "MATD3": {
+    "sector": "Saúde",
+    "subsectorEn": "Serv.Méd.Hospit..Análises e Diagnósticos",
+    "sectorEn": "Health Services"
+  },
+  "PETR4F": {
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "subsectorEn": "",
+    "sectorEn": "Energy Minerals"
+  },
+  "VITT3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Fertilizantes e Defensivos",
+    "sectorEn": "Process Industries"
+  },
+  "KLBN4F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "TAEE3": {
+    "sector": "Serviços",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Industrial Services"
+  },
+  "PMAM3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "DEXP3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Petroquímicos",
+    "sectorEn": "Process Industries"
+  },
+  "ITSA4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "CMIG4F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "RNEW3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "CXSE3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "EUCA4": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "ITUB4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "RENT4": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "WEST3": {
+    "sector": "Comércio",
+    "subsectorEn": "Móveis",
+    "sectorEn": "Retail Trade"
+  },
+  "AMAR3": {
+    "sector": "Comércio",
+    "subsectorEn": "Tecidos. Vestuário e Calçados",
+    "sectorEn": "Retail Trade"
+  },
+  "BRKM3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Petroquímicos",
+    "sectorEn": "Process Industries"
+  },
+  "VALE3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "BBDC4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "BIOM3": {
+    "sector": "Saúde",
+    "subsectorEn": "Medicamentos e Outros Produtos",
+    "sectorEn": "Health Technology"
+  },
+  "PDGR3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "TECN3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Acessórios",
+    "sectorEn": "Consumer Durables"
+  },
+  "ALPK3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Serviços Diversos",
+    "sectorEn": "Consumer Services"
+  },
+  "CSNA3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "GOAU3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Siderurgia",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "LAND3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Agricultura",
+    "sectorEn": "Finance"
+  },
+  "B3SA3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "ESPA3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Produtos Diversos",
+    "sectorEn": "Consumer Services"
+  },
+  "BHIA3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "RAIZ4F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "TIMS3F": {
+    "sector": "Comunicações",
+    "subsectorEn": "",
+    "sectorEn": "Communications"
+  },
+  "ALOS3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "BSLI4": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "WEGE3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "CPLE3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "BBDC3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "GGBR4F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "DIRR3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "AGXY3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Distribution Services"
+  },
+  "JHSF3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "CSAN3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "MNPR3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Carnes e Derivados",
+    "sectorEn": "Process Industries"
+  },
+  "VSTE3": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "Tecidos. Vestuário e Calçados",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "MGLU3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "AXIA3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "EGIE3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "TAEE11F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "CPFE3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "SBSP3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "TCSA3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "BRSR6F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "PRIO3F": {
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "subsectorEn": "",
+    "sectorEn": "Energy Minerals"
+  },
+  "POMO3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "CSUD3": {
+    "sector": "Serviços",
+    "subsectorEn": "Serviços Financeiros Diversos",
+    "sectorEn": "Commercial Services"
+  },
+  "GRND3F": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "DMVF3": {
+    "sector": "Comércio",
+    "subsectorEn": "Medicamentos e Outros Produtos",
+    "sectorEn": "Distribution Services"
+  },
+  "TAEE4F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "VAMO3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "VIVT3F": {
+    "sector": "Comunicações",
+    "subsectorEn": "",
+    "sectorEn": "Communications"
+  },
+  "AERI3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Máq. e Equip. Industriais",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "CMIN3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "AALR3": {
+    "sector": "Saúde",
+    "subsectorEn": "Serv.Méd.Hospit..Análises e Diagnósticos",
+    "sectorEn": "Health Services"
+  },
+  "DOTZ3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "Programas de Fidelização",
+    "sectorEn": "Technology Services"
+  },
+  "BMEB4": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "PETR3F": {
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "subsectorEn": "",
+    "sectorEn": "Energy Minerals"
+  },
+  "GOAU4F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "BMGB4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "IGTI3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Exploração de Imóveis",
+    "sectorEn": "Finance"
+  },
+  "SAPR11F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "VULC3F": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "GGBR3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Siderurgia",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "BEEF3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Distribution Services"
+  },
+  "ETER3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Produtos para Construção",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "ISAE4F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "LREN3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "PSSA3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "EQTL3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "BPAC11F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "FLRY3F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Services"
+  },
+  "WIZC3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "BRAP3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Minerais Metálicos",
+    "sectorEn": "Finance"
+  },
+  "ABEV3F": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "SCAR3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Exploração de Imóveis",
+    "sectorEn": "Finance"
+  },
+  "RECV3F": {
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "subsectorEn": "",
+    "sectorEn": "Energy Minerals"
+  },
+  "KLBN11F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "RAPT3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Material Rodoviário",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "EMBJ3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Electronic Technology"
+  },
+  "CSMG3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "ITSA3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "SUZB3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "JFEN3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Consumer Durables"
+  },
+  "AZZA3F": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "SLCE3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "COGN3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "GFSA3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "VIVR3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Consumer Durables"
+  },
+  "SOJA3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "HAPV3F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Services"
+  },
+  "PLAS3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Automóveis e Motocicletas",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "WDCN3": {
+    "sector": "Comércio",
+    "subsectorEn": "Comércio (Atacado e Varejo)",
+    "sectorEn": "Distribution Services"
+  },
+  "RENT3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "SAUD3F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Services"
+  },
+  "ENGI4": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "MBRF3F": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "LEVE3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "TTEN3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "TAEE3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "USIM5F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "LOGN3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Transporte Hidroviário",
+    "sectorEn": "Transportation"
+  },
+  "RANI3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "SANB11F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "TASA3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "Armas e Munições",
+    "sectorEn": "Electronic Technology"
+  },
+  "UNIP6F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "KLBN3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "ALUP4F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "VBBR3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "KEPL3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "ABCB4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "TOTS3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Technology Services"
+  },
+  "ENEV3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "CVCB3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Services"
+  },
+  "FIQE3F": {
+    "sector": "Comunicações",
+    "subsectorEn": "",
+    "sectorEn": "Communications"
+  },
+  "CYRE3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "BRBI11F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "AURE3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "ECOM3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "Comunicação e Informática",
+    "sectorEn": "Technology Services"
+  },
+  "ITUB3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "BRKM5F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "SAPR3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "BSLI3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "MOVI3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "LUXM4": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "CURY3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "ASAI3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "TASA4F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Electronic Technology"
+  },
+  "CEBR5": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "RDOR3F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Services"
+  },
+  "FSRF11F": {
+    "sector": "Outros",
+    "subsectorEn": "",
+    "sectorEn": "Miscellaneous"
+  },
+  "HAGA4": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "RADL3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "AGRO3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "NUTR3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Fertilizantes e Defensivos",
+    "sectorEn": "Process Industries"
+  },
+  "DOHL4": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "MDIA3F": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "EZTC3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "FESA4F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "GMAT3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "BRAP4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "CEAB3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "CAMB3": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "Calçados",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "NATU3F": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "WHRL3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Eletrodomésticos",
+    "sectorEn": "Consumer Durables"
+  },
+  "UGPA3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "TEND3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "SHUL4F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "EPAR3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Material de Transporte",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "SANB4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "BEES3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "VIVA3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "ALUP11F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "ALUP4": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "BPAC3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "SMFT3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Services"
+  },
+  "IRBR3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "MRVE3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "AXIA7F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "HAGA3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Produtos para Construção",
+    "sectorEn": "Consumer Durables"
+  },
+  "OBTC3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Technology Services"
+  },
+  "OFSA3": {
+    "sector": "Saúde",
+    "subsectorEn": "Medicamentos e Outros Produtos",
+    "sectorEn": "Health Technology"
+  },
+  "TPIS3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Exploração de Rodovias",
+    "sectorEn": "Transportation"
+  },
+  "SIMH3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "BGIP3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "BRAV3F": {
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "subsectorEn": "",
+    "sectorEn": "Energy Minerals"
+  },
+  "AMER3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "SEQL3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "BRAP3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "SMTO3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "RAIL3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "ONCO3F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Services"
+  },
+  "MTRE3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "CMIG3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "EQPA3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "MDNE3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "PLPL3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "LOGG3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "ANIM3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Services"
+  },
+  "PDTC3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "Programas e Serviços",
+    "sectorEn": "Electronic Technology"
+  },
+  "BRSR3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "AUAU3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "AZEV3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "PGMN3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "ENGI11F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "CAML3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "QUAL3F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Services"
+  },
+  "LAVV3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "CASH3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "MELK3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "BMEB3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "PCAR3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "AMOB3": {
+    "sector": "Comércio",
+    "subsectorEn": "Automóveis e Motocicletas",
+    "sectorEn": "Retail Trade"
+  },
+  "CEBR3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "SYNE3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "AZEV4F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "AMBP3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "SANB3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "EVEN3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "JALL3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "PINE3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "IGTI11F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "MULT3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "UNIP3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Químicos Diversos",
+    "sectorEn": "Process Industries"
+  },
+  "HYPE3F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Technology"
+  },
+  "YDUQ3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "RIAA3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Distribution Services"
+  },
+  "PINE4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "MTSA4": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "INTB3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Technology Services"
+  },
+  "RAPT4F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "VLID3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "LUPA3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Equipamentos e Serviços",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "ALLD3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Technology Services"
+  },
+  "MOTV3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "TUPY3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "DEXP4": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "ECOR3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "ROMI3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "ORVR3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "ALPA4F": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "CRPG5": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "SEER3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Services"
+  },
+  "AZTE3F": {
+    "sector": "Petróleo, Gás e Biocombustíveis",
+    "subsectorEn": "",
+    "sectorEn": "Energy Minerals"
+  },
+  "CLSC4": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "CEBR6": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "EMAE4": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "UCAS3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Móveis",
+    "sectorEn": "Consumer Durables"
+  },
+  "CEDO4": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "POSI3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Electronic Technology"
+  },
+  "PEAB3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Exploração de Imóveis",
+    "sectorEn": "Finance"
+  },
+  "ALUP3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "CSUD3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "GOAU3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "MEAL3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Services"
+  },
+  "LIGT3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "BAZA3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "ALPA3": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "Calçados",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "PASS3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "GGBR3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "ARML3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "WHRL4F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "TGMA3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "SNSY5": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "CTKA4": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "RSUL4": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "LWSA3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Technology Services"
+  },
+  "BEES3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "ATED3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "Serviços Educacionais",
+    "sectorEn": "Technology Services"
+  },
+  "AZUL3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "BMOB3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Technology Services"
+  },
+  "PTBL3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "USIM3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "RCSL4F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "AMAR3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "AMOB3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "SBFG3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "JSLG3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "CYRE4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "TRIS3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "VTRU3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "PNVL3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "TOKY3": {
+    "sector": "Tecnologia",
+    "subsectorEn": "Comércio (Atacado e Varejo)",
+    "sectorEn": "Technology Services"
+  },
+  "DXCO3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "BIED3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Serviços Educacionais",
+    "sectorEn": "Consumer Services"
+  },
+  "BPAC5": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "OSXB3": {
+    "sector": "Serviços",
+    "subsectorEn": "Equipamentos e Serviços",
+    "sectorEn": "Industrial Services"
+  },
+  "BEES4": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "AERI3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "BRSR3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "HOOT4": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Services"
+  },
+  "INEP4": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "LJQQ3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "CGRA4": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "VVEO3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Distribution Services"
+  },
+  "DASA3F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Services"
+  },
+  "GGPS3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "BLAU3F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Technology"
+  },
+  "PRNR3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "CBAV3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "EUCA4F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "ENMT3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "BRKM3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "MYPK3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "TELB3": {
+    "sector": "Comunicações",
+    "subsectorEn": "Telecomunicações",
+    "sectorEn": "Communications"
+  },
+  "ENGI3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "MLAS3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Electronic Technology"
+  },
+  "TASA3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Electronic Technology"
+  },
+  "GEPA4": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "BMEB4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "LPSB3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "OPCT3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "DEXP3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "EQPA3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "NORD3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Máq. e Equip. Industriais",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "AZUL99": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "HBOR3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "BEES4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "DESK3F": {
+    "sector": "Comunicações",
+    "subsectorEn": "",
+    "sectorEn": "Communications"
+  },
+  "HBSA3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "CEBR3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "EALT4": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "ETER3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "MILS3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "TFCO4F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "TELB4": {
+    "sector": "Comunicações",
+    "subsectorEn": "",
+    "sectorEn": "Communications"
+  },
+  "ISAE3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "MNDL3": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "Acessórios",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "FESA3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Siderurgia",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "IFCM3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Distribution Services"
+  },
+  "FRAS3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "CEBR5F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "REDE3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "CTAX3": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "ESTR4": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "TECN3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "FASA3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "DTCY3": {
+    "sector": "Comunicações",
+    "subsectorEn": "Serviços Diversos",
+    "sectorEn": "Communications"
+  },
+  "COCE5": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "UNIP3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "VITT3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "RCSL3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "ENJU3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "FIEI3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "ABCB10": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "CSED3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Services"
+  },
+  "BPAC3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "PFRM3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Distribution Services"
+  },
+  "BRST3F": {
+    "sector": "Comunicações",
+    "subsectorEn": "",
+    "sectorEn": "Communications"
+  },
+  "WEST3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "CAMB3F": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "PLAS3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "CGRA3": {
+    "sector": "Comércio",
+    "subsectorEn": "Tecidos. Vestuário e Calçados",
+    "sectorEn": "Retail Trade"
+  },
+  "MGEL4": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "EQMA3B": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "SCAR3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "OFSA3F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Technology"
+  },
+  "IGTI3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "CRPG5F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "BAZA3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "RENT4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "EALT4F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "TCSA3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "CGRA4F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "B1003": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "RNEW3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "CEBR6F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "TOKY3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Technology Services"
+  },
+  "ISAE3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "ALUP3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "VSTE3F": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "CGAS5": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "IGTI4": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "RNEW4F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "ENGI4F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "ONCO11F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Services"
+  },
+  "BSLI3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "TPIS3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "EMAE4F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "ALPK3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Services"
+  },
+  "HBRE3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "VIVR3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "TXRX4": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "EKTR4": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "UNIP5": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "FHER3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Fertilizantes e Defensivos",
+    "sectorEn": "Process Industries"
+  },
+  "PINE3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "ESPA3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Services"
+  },
+  "AALR3F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Services"
+  },
+  "CGRA3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Retail Trade"
+  },
+  "MATD3F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Services"
+  },
+  "INEP3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "EPAR3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "MNPR3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "FSPE11F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "WHRL3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "RAPT3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "NEXP3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Intermediação Imobiliária",
+    "sectorEn": "Finance"
+  },
+  "PATI4": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "CEGR3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Gás",
+    "sectorEn": "Utilities"
+  },
+  "ENMT4": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "AVLL3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Incorporações",
+    "sectorEn": "Finance"
+  },
+  "JOPA4": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "GEPA3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "BSLI4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "DOTZ3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Technology Services"
+  },
+  "ABCB10F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "BPAC5F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "RSUL4F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "AFLT3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "BRSR5F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "LAND3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "ALPA3F": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "WDCN3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Distribution Services"
+  },
+  "BMEB3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "CGAS5F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "CLSC4F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "PDGR3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "DMVF3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Distribution Services"
+  },
+  "UCAS3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "CGAS3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Gás",
+    "sectorEn": "Utilities"
+  },
+  "AHEB3": {
+    "sector": "Serviços",
+    "subsectorEn": "Produção de Eventos e Shows",
+    "sectorEn": "Commercial Services"
+  },
+  "BALM4": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Technology"
+  },
+  "AFLT3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "BRSR5": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "EALT3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Máq. e Equip. Industriais",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "BOBR4": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "PEAB4": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "CEEB3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "BDLL4": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "ARND3": {
+    "sector": "Serviços",
+    "subsectorEn": "Emp. Adm. Part. - Intermediação Financeira",
+    "sectorEn": "Commercial Services"
+  },
+  "PATI3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Artefatos de Ferro e Aço",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "MWET4": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "ENGI3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "MTSA4F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "MSPA3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "ECOM3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Technology Services"
+  },
+  "DEXP4F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "GEPA3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "PDTC3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Electronic Technology"
+  },
+  "LOGN3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "LUXM4F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "NEXP3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "BGIP4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "REDE3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "BIOM3F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Technology"
+  },
+  "CEEB3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "COCE5F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "LUPA3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "ARND3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "HAGA4F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "INEP4F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "BALM4F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Technology"
+  },
+  "CBEE3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "SOND6": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "CLSC3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "RPAD3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "USIM6": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "BMIN4": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "SOND5": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "BNBR3": {
+    "sector": "Financeiro",
+    "subsectorEn": "Bancos",
+    "sectorEn": "Finance"
+  },
+  "EQPA5": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "BDLL3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Máq. e Equip. Industriais",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "BGIP4": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "MWET3": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Material Rodoviário",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "BALM3": {
+    "sector": "Saúde",
+    "subsectorEn": "Equipamentos",
+    "sectorEn": "Health Technology"
+  },
+  "CRPG6": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "MSPA4": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "EUCA3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Madeira",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "COCE3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "JOPA3": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "Alimentos Diversos",
+    "sectorEn": "Process Industries"
+  },
+  "MAPT3": {
+    "sector": "Outros",
+    "subsectorEn": "Outros",
+    "sectorEn": "Miscellaneous"
+  },
+  "CEED3": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "Energia Elétrica",
+    "sectorEn": "Utilities"
+  },
+  "CTAX3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "BOBR4F": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "WLMM4": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Distribution Services"
+  },
+  "HETA4": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "BRKM6": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "BAUH4": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Distribution Services"
+  },
+  "RVEE3": {
+    "sector": "Outros",
+    "subsectorEn": "",
+    "sectorEn": "Miscellaneous"
+  },
+  "MRSA3B": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "Serviços Transporte e Logística",
+    "sectorEn": "Transportation"
+  },
+  "RVEE3F": {
+    "sector": "Outros",
+    "subsectorEn": "",
+    "sectorEn": "Miscellaneous"
+  },
+  "GEPA4F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "TXRX4F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "MSPA4F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "FESA3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "AVLL3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "ATED3F": {
+    "sector": "Tecnologia",
+    "subsectorEn": "",
+    "sectorEn": "Technology Services"
+  },
+  "PATI3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "WLMM4F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Distribution Services"
+  },
+  "BDLL4F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "BNBR3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "ENMT4F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "JFEN3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "BIED3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Services"
+  },
+  "EUCA3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "CTKA4F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "CLSC3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "CCTY3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "FHER3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "MWET3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "HETA4F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "CEGR3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "MAPT4F": {
+    "sector": "Outros",
+    "subsectorEn": "",
+    "sectorEn": "Miscellaneous"
+  },
+  "ESTR4F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "BRKM6F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "UNIP5F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "DOHL4F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "EKTR4F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "AHEB3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Commercial Services"
+  },
+  "MNDL3F": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "SOND5F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "PATI4F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "COCE3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "BMIN4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "USIM6F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Non-Energy Minerals"
+  },
+  "HOOT4F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Services"
+  },
+  "CRPG3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "CGAS3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "TELB3F": {
+    "sector": "Comunicações",
+    "subsectorEn": "",
+    "sectorEn": "Communications"
+  },
+  "CALI3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "HAGA3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "EALT3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "FIGE4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "TELB4F": {
+    "sector": "Comunicações",
+    "subsectorEn": "",
+    "sectorEn": "Communications"
+  },
+  "HBTS5F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "B1003F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "SOND6F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "NUTR3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "IGTI4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "BALM3F": {
+    "sector": "Saúde",
+    "subsectorEn": "",
+    "sectorEn": "Health Technology"
+  },
+  "MWET4F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "SNSY5F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "MAPT3F": {
+    "sector": "Outros",
+    "subsectorEn": "",
+    "sectorEn": "Miscellaneous"
+  },
+  "TXRX3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "MGEL4F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "BMKS3": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "Bicicletas",
+    "sectorEn": "Consumer Durables"
+  },
+  "PSVM11F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "WLMM3F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Distribution Services"
+  },
+  "CBEE3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "PEAB3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "CEDO3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "SNSY3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "FRIO3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "BMIN3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "CEDO4F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "MRSA6BF": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "RPAD3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "AZUL98": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "RPAD5F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "CEED3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "OSXB3F": {
+    "sector": "Serviços",
+    "subsectorEn": "",
+    "sectorEn": "Industrial Services"
+  },
+  "AZUL97": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "DTCY3F": {
+    "sector": "Comunicações",
+    "subsectorEn": "",
+    "sectorEn": "Communications"
+  },
+  "EQMA3BF": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "CRPG6F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "NORD3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "EQPA5F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "JOPA4F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "FSTU11F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "FIGE3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "MRSA3BF": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "EKTR3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "GSHP3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "MRSA5BF": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Transportation"
+  },
+  "BAUH4F": {
+    "sector": "Comércio",
+    "subsectorEn": "",
+    "sectorEn": "Distribution Services"
+  },
+  "ODER4F": {
+    "sector": "Consumo Não Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Non-Durables"
+  },
+  "FIEI3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "RPAD6F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "EQPA7F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "GPAR3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "CEED4F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "JOPA3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "PEAB4F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "DOHL3F": {
+    "sector": "Materiais Básicos",
+    "subsectorEn": "",
+    "sectorEn": "Process Industries"
+  },
+  "CEEB5F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "BGIP3F": {
+    "sector": "Financeiro",
+    "subsectorEn": "",
+    "sectorEn": "Finance"
+  },
+  "ENMT3F": {
+    "sector": "Utilidades Públicas",
+    "subsectorEn": "",
+    "sectorEn": "Utilities"
+  },
+  "BDLL3F": {
+    "sector": "Bens Industriais",
+    "subsectorEn": "",
+    "sectorEn": "Producer Manufacturing"
+  },
+  "ESTR3F": {
+    "sector": "Consumo Cíclico",
+    "subsectorEn": "",
+    "sectorEn": "Consumer Durables"
+  },
+  "BRAX": {
+    "sector": "",
+    "subsectorEn": "",
+    "sectorEn": ""
+  }
+}

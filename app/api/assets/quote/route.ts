@@ -18,6 +18,7 @@ import { isBrazilianTicker, brapiQuote } from "@/lib/brapi";
 import { B3_LIST } from "@/lib/b3-list";
 import { classifyB3Ticker, type BrAssetType } from "@/lib/b3-classify";
 import { IBOV_BY_SYMBOL } from "@/lib/ibovespa";
+import { SECTOR_BY_SYMBOL } from "@/lib/sector-map";
 import { cached } from "@/lib/cache";
 
 const BRAPI_BASE = "https://brapi.dev/api";
@@ -226,17 +227,25 @@ export async function GET(req: NextRequest) {
       const isBr = isBrazilianTicker(upper);
 
       if (!b) {
-        return {
-          symbol: upper,
-          type: "stock" as const,
-          sector: IBOV_BY_SYMBOL[upper]?.sector ?? "—",
-          quote: null,
-          metrics: { marketCap: null },
-        };
-      }
+              return {
+                symbol: upper,
+                type: "stock" as const,
+                sector:
+                  IBOV_BY_SYMBOL[upper]?.sector ??
+                  SECTOR_BY_SYMBOL[upper]?.sector ??
+                  "—",
+                quote: null,
+                metrics: { marketCap: null },
+              };
+            }
 
-      const currency = b.currency || (isBr ? "BRL" : "USD");
-      const sector = b.sector ?? IBOV_BY_SYMBOL[upper]?.sector ?? "—";
+            const currency = b.currency || (isBr ? "BRL" : "USD");
+            // Cadeia: brapi quote → IBOV (manter compat) → CSV estático (781 ações B3).
+            const sector =
+              b.sector ??
+              IBOV_BY_SYMBOL[upper]?.sector ??
+              SECTOR_BY_SYMBOL[upper]?.sector ??
+              "—";
 
       return {
         symbol: upper,
