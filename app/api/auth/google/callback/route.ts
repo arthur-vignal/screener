@@ -34,8 +34,19 @@ export const dynamic = "force-dynamic";
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "";
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
-const BASE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL ?? "https://screener-production-4f58.up.railway.app";
+
+/**
+ * Base URL do request atual — bate com a origin que o Google vai usar
+ * no redirect. Evita `redirect_uri_mismatch` quando o subdomínio
+ * Railway muda (ex: -4f58 → outro sufixo).
+ */
+function requestBaseUrl(req: NextRequest): string {
+  return (
+    req.nextUrl.origin ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    "https://screener-production-4f58.up.railway.app"
+  );
+}
 
 type GoogleTokenResponse = {
   access_token: string;
@@ -55,15 +66,15 @@ type GoogleUserInfo = {
   picture?: string;
 };
 
-function errorRedirect(error: string): NextResponse {
-  const url = new URL("/login", BASE_URL);
+function errorRedirect(req: NextRequest, error: string): NextResponse {
+  const url = new URL("/login", requestBaseUrl(req));
   url.searchParams.set("oauth", "google");
   url.searchParams.set("oauth_error", error);
   return NextResponse.redirect(url);
 }
 
-function homeRedirect(): NextResponse {
-  return NextResponse.redirect(new URL("/home", BASE_URL));
+function homeRedirect(req: NextRequest): NextResponse {
+  return NextResponse.redirect(new URL("/home", requestBaseUrl(req)));
 }
 
 /** Gera username a partir do email: "joao@gmail.com" → "joao". */
@@ -94,7 +105,10 @@ async function generateUniqueUsername(baseEmail: string): Promise<string> {
   return `${base.slice(0, 12)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-async function exchangeCodeForTokens(code: string): Promise<GoogleTokenResponse> {
+async function exchangeCodeForTokens(
+  code: string,
+  baseUrl: string,
+): Promise<GoogleTokenResponse> {
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -102,7 +116,7 @@ async function exchangeCodeForTokens(code: string): Promise<GoogleTokenResponse>
       code,
       client_id: CLIENT_ID,
       client_secret: CLIENT_SECRET,
-      redirect_uri: `${BASE_URL}/api/auth/google/callback`,
+      redirect_uri: `${baseUrl}/api/auth/google/callback`,
       grant_type: "authorization_code",
     }).toString(),
   });
@@ -124,26 +138,27 @@ async function fetchGoogleUserInfo(accessToken: string): Promise<GoogleUserInfo>
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!CLIENT_ID || !CLIENT_SECRET) {
-    return errorRedirect("oauth_not_configured");
+    return errorRedirect(req, "oauth_not_configured");
   }
 
+  const baseUrl = requestBaseUrl(req);
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const errorParam = searchParams.get("error");
 
   if (errorParam) {
-    return errorRedirect(errorParam);
+    return errorRedirect(req, errorParam);
   }
   if (!code) {
-    return errorRedirect("missing_code");
+    return errorRedirect(req, "missing_code");
   }
 
   let tokens: GoogleTokenResponse;
   try {
-    tokens = await exchangeCodeForTokens(code);
+    tokens = await exchangeCodeForTokens(code, baseUrl);
   } catch (e) {
     console.error("[google-oauth] token exchange failed:", e);
-    return errorRedirect("token_exchange_failed");
+    return errorRedirect(req, "token_exchange_failed");
   }
 
   let userInfo: GoogleUserInfo;
@@ -151,11 +166,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     userInfo = await fetchGoogleUserInfo(tokens.access_token);
   } catch (e) {
     console.error("[google-oauth] userinfo failed:", e);
-    return errorRedirect("userinfo_failed");
+    return errorRedirect(req, "userinfo_failed");
   }
 
   if (!userInfo.email || !userInfo.email_verified) {
-    return errorRedirect("email_not_verified");
+    return errorRedirect(req, "email_not_verified");
   }
 
   const sb = supabaseAdmin();
@@ -193,7 +208,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
     if (createErr || !authData.user) {
       console.error("[google-oauth] createUser failed:", createErr?.message);
-      return errorRedirect("create_user_failed");
+      return errorRedirect(req, "create_user_failed");
     }
     userId = authData.user.id;
 
@@ -207,7 +222,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     if (!inserted[0]) {
       // Rollback: deleta o user do Supabase Auth.
       await sb.auth.admin.deleteUser(userId);
-      return errorRedirect("create_profile_failed");
+      return errorRedirect(req, "create_profile_failed");
     }
   }
 
@@ -215,5 +230,5 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   await createSessionForUser(userId);
 
   // 5. Redireciona pra home.
-  return homeRedirect();
+  return homeRedirect(req);
 }
