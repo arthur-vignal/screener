@@ -1,23 +1,22 @@
 "use client";
 
 /**
- * LandingNavbar — header minimal, sem backdrop sticky (full section background cobre ela).
+ * LandingNavbar — header minimal.
  *
- * Tokens:
- * - Logo "Sulfur" Michroma (já carregado em app/layout.tsx via next/font)
- * - Menu vertical pills simples, alinhados à esquerda da coluna direita
- * - CTA "Entrar" outline + "Criar conta" solid white
+ * Layout:
+ *   - Logo "Sulfur" à esquerda
+ *   - "Features" e "Planos" no centro (hidden em < md)
+ *   - Botão único "Entrar" à direita (link pra /login)
  *
- * Idempotente ao scroll: NÃO usa `sticky` (não combina com layout de landing
- * que faz split de seção inteira). Fica no topo da seção, ancorado pelo flow.
+ * Idempotente ao scroll: NÃO usa `sticky` (não combina com layout
+ * de landing que faz split de seção inteira).
  */
 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { label: "Recursos", href: "#recursos" },
-  { label: "Mercados", href: "#mercados" },
+  { label: "Features", href: "#features" },
   { label: "Planos", href: "#planos" },
 ] as const;
 
@@ -75,24 +74,13 @@ export function LandingNavbar() {
         <Link
           href="/login"
           className={cn(
-            "inline-flex items-center h-9 px-3.5 rounded-md",
-            "border border-white/10 bg-white/[0.04]",
-            "text-[13px] font-medium text-foreground",
-            "hover:bg-white/[0.08] hover:border-white/20 transition-colors",
-          )}
-        >
-          Entrar
-        </Link>
-        <Link
-          href="/signup"
-          className={cn(
-            "inline-flex items-center h-9 px-3.5 rounded-md",
+            "inline-flex items-center h-9 px-4 rounded-md",
             "bg-foreground text-background",
             "text-[13px] font-semibold tracking-tight",
             "hover:opacity-90 transition-opacity",
           )}
         >
-          Criar conta
+          Login
         </Link>
       </div>
     </header>
