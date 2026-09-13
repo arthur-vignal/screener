@@ -24,7 +24,7 @@ export function LandingNavbar() {
   return (
     <header
       className={cn(
-        "relative z-20 w-full",
+        "absolute top-0 left-0 right-0 z-20 w-full",
         "px-6 lg:px-12",
         "h-16 lg:h-20",
         "flex items-center justify-between",

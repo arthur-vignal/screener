@@ -4,15 +4,18 @@ import { LandingHero } from "@/components/landing/landing-hero";
 /**
  * Landing pública do Sulfur. Não exige auth.
  *
- * Estrutura mínima: header (Sulfur | Features | Planos | Login) + hero
- * (título + macbook-scroll com print real de /asset/PETR3). Sem seções
- * intermediárias — feedback "Hero + header. Mais nada."
+ * Layout:
+ *   - Navbar absolute/transparent sobre o hero
+ *   - Hero full-viewport estilo Prisma (Sulfur* gigante à esquerda +
+ *     descrição + CTA à direita sobre background image)
+ *   - Sem seções intermediárias.
  *
- * Body herda gradient metálico do globals.css (§35 sulfur-design-hardening).
+ * Body da página é bg-black pra não vazar o gradient metálico global
+ * quando o hero é full-screen.
  */
 export default function LandingPage() {
   return (
-    <main className="relative w-full text-foreground">
+    <main className="relative w-full bg-black text-foreground">
       <LandingNavbar />
       <LandingHero />
     </main>
