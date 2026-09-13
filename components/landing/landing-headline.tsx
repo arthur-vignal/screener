@@ -1,78 +1,38 @@
 "use client";
 
 /**
- * LandingHeadline — frase central com typewriter effect.
+ * LandingHeadline — frase central do hero (estática).
  *
- * Implementação:
- *   - useState index avança 1 a cada X ms.
- *   - Cursor "_" pisca com CSS keyframes.
- *   - Loop onFinished (1.5s pausa → apaga → digita de novo)
- *     pra página inativa não ficar estática se user demora pra scrollar.
- *
- * Tokens:
- *   - Arquvo Black (já em next/font), clamp(2.5rem, 7vw, 6rem)
- *   - text-balance pra quebra de linha elegante em pt-BR
- *   - text-foreground (claro no dark)
+ * Spec (2026-09-12):
+ *   - Tipografia: Roboto Slab (serif slab, caloroso). Via `--font-roboto-slab`
+ *     exposto em `app/layout.tsx`. Aplicada com `style={{ fontFamily: 'var(--font-roboto-slab)' }}`
+ *     pra não conflitar com `--font-display` (que resolve pra Manrope no projeto).
+ *   - Ting bege: `#f5e9d3` (cream/warm) com opacidade total. Não aplicar em
+ *     features/CTA — só no headline, decisão visual do Arthur.
+ *   - Sem typing effect: frase renderiza inteira. Sem cursor. Decisão do Arthur.
  */
 
-import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const PHRASE = "Todas as informações que você precisa em um só lugar.";
 
-const TYPING_MS = 45; // tempo por caractere digitando
-const PAUSE_AFTER_MS = 2200; // pausa quando termina de digitar
+// Cream warm — leve ting bege sobre texto claro no hero dark
+const HEADLINE_COLOR = "#f5e9d3";
 
 export function LandingHeadline() {
-  const [index, setIndex] = useState(0);
-  const [deleting, setDeleting] = useState(false);
-  const [paused, setPaused] = useState(false);
-
-  useEffect(() => {
-    let timeout: ReturnType<typeof setTimeout>;
-
-    if (paused) {
-      timeout = setTimeout(() => {
-        setPaused(false);
-        setDeleting(true);
-      }, PAUSE_AFTER_MS);
-    } else if (deleting && index === 0) {
-      timeout = setTimeout(() => {
-        setDeleting(false);
-      }, 250);
-    } else if (!deleting && index === PHRASE.length) {
-      timeout = setTimeout(() => setPaused(true), 100);
-    } else {
-      const nextIdx = deleting ? index - 1 : index + 1;
-      const delay = deleting ? TYPING_MS / 1.6 : TYPING_MS;
-      timeout = setTimeout(() => {
-        setIndex(nextIdx);
-      }, delay);
-    }
-
-    return () => clearTimeout(timeout);
-  }, [index, deleting, paused]);
-
   return (
     <h1
       className={cn(
-        "max-w-3xl text-center font-display font-black",
-        "text-balance leading-[1.1] tracking-[-0.02em]",
-        "text-[clamp(2.25rem,7vw,5.5rem)] text-foreground",
+        "max-w-3xl text-center",
+        "font-medium leading-[1.1] tracking-[-0.01em]",
+        "text-[clamp(2.25rem,7vw,5.5rem)] text-balance",
       )}
-      aria-label={PHRASE}
+      style={{
+        fontFamily: "var(--font-roboto-slab)",
+        color: HEADLINE_COLOR,
+      }}
     >
-      <span aria-hidden="true">
-        {PHRASE.slice(0, index)}
-      </span>
-      <span
-        aria-hidden="true"
-        className={cn(
-          "ml-1 inline-block h-[0.9em] w-[0.06em] translate-y-[0.05em] align-baseline",
-          "bg-foreground",
-          "animate-blink",
-        )}
-      />
+      {PHRASE}
     </h1>
   );
 }

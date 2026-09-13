@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import localFont from "next/font/local";
-import { Manrope, Archivo_Black } from "next/font/google";
+import { Manrope, Archivo_Black, Roboto_Slab } from "next/font/google";
 import "./globals.css";
 
 // Inter — UI sans (kept)
@@ -58,6 +58,15 @@ const archivoBlack = Archivo_Black({
   weight: "400",
 });
 
+// Roboto Slab — landing hero (serif slab, leve, caloroso)
+const robotoSlab = Roboto_Slab({
+  subsets: ["latin"],
+  variable: "--font-roboto-slab",
+  display: "swap",
+  preload: false,
+  weight: ["400", "500", "700"],
+});
+
 export const metadata: Metadata = {
   title: "Sulfur.io",
   description:
@@ -72,7 +81,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${archia.variable} ${geistMono.variable} ${commitMono.variable} ${manrope.variable} ${archivoBlack.variable} h-full antialiased`}
+      className={`dark ${inter.variable} ${archia.variable} ${geistMono.variable} ${commitMono.variable} ${manrope.variable} ${archivoBlack.variable} ${robotoSlab.variable} h-full antialiased`}
     >
       <body className="min-h-full text-ink">{children}</body>
     </html>
