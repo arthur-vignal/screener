@@ -34,54 +34,8 @@ export function LandingHero() {
       id="hero"
       className="relative flex min-h-[100svh] w-full items-center overflow-hidden"
     >
-      {/* bg image sutil (desfocada + escurecida) */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{
-          backgroundImage: "url(/landing-bg.webp)",
-          backgroundSize: "cover",
-          backgroundPosition: "center 35%",
-          filter: "blur(40px) saturate(0.6)",
-          opacity: 0.30,
-          transform: "scale(1.15)", // cobre a borda criada pelo blur
-        }}
-      />
-
-      {/* overlay duplo — gradiente radial central + fade bottom pra bg #08090b */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.65) 60%, rgba(8,9,11,0.95) 100%)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-40"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(8,9,11,0) 0%, rgba(8,9,11,1) 100%)",
-        }}
-      />
-
-      {/* conteúdo central */}
+      {/* conteúdo central — bg preto sólido #08090b */}
       <div className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-col items-center gap-7 px-6 py-32 text-center">
-        {/* Eyebrow */}
-        <motion.span
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className={cn(
-            "rounded-full border border-white/[0.08] bg-white/[0.02] px-3 py-1",
-            "text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground",
-          )}
-        >
-          Sulfur <span className="mx-1.5 text-white/30">•</span> Mercado
-          Brasileiro
-        </motion.span>
-
         {/* Headline */}
         <h1
           className={cn(
@@ -125,16 +79,6 @@ export function LandingHero() {
             <span aria-hidden="true">→</span>
           </Link>
         </motion.div>
-
-        {/* marca d'água inferior */}
-        <motion.span
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.0, delay: 0.8 }}
-          className="absolute bottom-10 text-xs text-muted-foreground/60"
-        >
-          Acesso gratuito durante o beta.
-        </motion.span>
       </div>
     </section>
   );

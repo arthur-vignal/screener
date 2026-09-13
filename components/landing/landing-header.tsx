@@ -38,24 +38,9 @@ export function LandingHeader() {
         <a
           href="#hero"
           aria-label="Sulfur — Início"
-          className="inline-flex items-center gap-2.5"
+          className="inline-flex items-center font-display font-bold tracking-[-0.02em] text-foreground text-[16px]"
         >
-          <span
-            aria-hidden="true"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-white/[0.04] ring-1 ring-white/10"
-          >
-            <span
-              className="block h-3.5 w-3.5 rounded-full"
-              style={{
-                background:
-                  "radial-gradient(circle at 30% 30%, #489ffa 0%, #1d4ed8 70%, transparent 100%)",
-                boxShadow: "0 0 12px rgba(72,159,250,0.55)",
-              }}
-            />
-          </span>
-          <span className="font-semibold tracking-[0.18em] text-[14px] uppercase text-foreground">
-            Sulfur
-          </span>
+          /Sulfur
         </a>
 
         {/* Nav central */}
