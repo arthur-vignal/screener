@@ -405,7 +405,7 @@ export function QuotationsTable({
                   role="menu"
                   className={cn(
                     "absolute right-0 top-9 z-40 min-w-[180px]",
-                    "rounded-md bg-[#101116]/95 backdrop-blur-md border border-white/10",
+                    "rounded-md bg-popover/95 backdrop-blur-md border border-border",
                     "shadow-2xl overflow-hidden",
                   )}
                 >
@@ -471,7 +471,7 @@ export function QuotationsTable({
                   role="menu"
                   className={cn(
                     "absolute right-0 top-9 z-40 min-w-[200px]",
-                    "rounded-md bg-[#101116]/95 backdrop-blur-md border border-white/10",
+                    "rounded-md bg-popover/95 backdrop-blur-md border border-border",
                     "shadow-2xl overflow-hidden",
                   )}
                 >
@@ -558,7 +558,7 @@ export function QuotationsTable({
             ref={searchOverlayRef}
             className="absolute left-3 right-3 top-[68px] z-30 animate-[liquidGlassIn_200ms_ease-out]"
           >
-            <div className="rounded-lg bg-[#0e0f13]/85 backdrop-blur-md border border-white/15 shadow-2xl px-3 py-2 flex items-center gap-2">
+            <div className="rounded-lg bg-popover/95 backdrop-blur-md border border-border shadow-2xl px-3 py-2 flex items-center gap-2">
               <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <input
                 ref={searchInputRef}
@@ -592,7 +592,7 @@ export function QuotationsTable({
           rola dentro do card — comportamento idêntico ao anterior.) */}
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
         <table className="w-full">
-          <thead className="sticky top-0 bg-[#0e0f13]/95 backdrop-blur-sm">
+          <thead className="sticky top-0 bg-card/95 backdrop-blur-sm">
             <tr className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 font-medium">
               <th className="text-left px-4 py-2 font-medium">Ativo</th>
               <th className="text-left px-3 py-2 font-medium hidden md:table-cell">Setor</th>
