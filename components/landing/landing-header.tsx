@@ -33,12 +33,12 @@ export function LandingHeader() {
       )}
       data-scrolled="false"
     >
-      <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between px-6 lg:h-20">
+      <div className="mx-auto flex h-20 w-full max-w-[1400px] items-center justify-between px-6 lg:h-24">
         {/* Logo */}
         <a
           href="#hero"
           aria-label="Sulfur — Início"
-          className="inline-flex items-center font-display font-bold tracking-[-0.02em] text-foreground text-[16px]"
+          className="inline-flex items-center font-display font-bold tracking-[-0.02em] text-foreground text-[18px] lg:text-[20px]"
         >
           /Sulfur
         </a>
@@ -49,7 +49,7 @@ export function LandingHeader() {
             <a
               key={item.href}
               href={item.href}
-              className="rounded-md px-3 py-1.5 text-[13px] font-medium text-muted-foreground/85 transition-colors hover:bg-white/[0.04] hover:text-foreground"
+              className="rounded-md px-4 py-2 text-[14px] font-medium text-muted-foreground/85 transition-colors hover:bg-white/[0.04] hover:text-foreground"
             >
               {item.label}
             </a>
@@ -59,7 +59,7 @@ export function LandingHeader() {
         {/* Login */}
         <Link
           href="/login"
-          className="inline-flex h-9 items-center rounded-md bg-foreground px-4 text-[13px] font-semibold tracking-tight text-background transition-opacity hover:opacity-90"
+          className="inline-flex h-11 items-center rounded-md bg-foreground px-5 text-[14px] font-semibold tracking-tight text-background transition-opacity hover:opacity-90"
         >
           Login
         </Link>

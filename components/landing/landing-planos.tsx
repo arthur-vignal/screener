@@ -83,28 +83,14 @@ export function LandingPlanos() {
       id="planos"
       className="relative w-full px-6 py-24 lg:py-32"
     >
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-12 lg:gap-16">
-        {/* Cabeçalho */}
-        <div className="flex flex-col gap-3 text-center lg:gap-4">
-          <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-            Planos
-          </span>
-          <h2
-            className="text-balance text-[clamp(1.875rem,4vw,2.75rem)] leading-[1.1] tracking-[-0.02em]"
-            style={{ fontFamily: "var(--font-roboto-slab)", color: "#f5e9d3" }}
-          >
-            Comece <span className="font-black">grátis.</span>{" "}
-            <span className="font-medium">Evolua quando fizer sentido.</span>
-          </h2>
-        </div>
-
+      <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-12 lg:gap-16">
         {/* Grid 3-col */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-7">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-9">
           {PLANS.map((plan) => (
             <article
               key={plan.name}
               className={cn(
-                "relative flex flex-col gap-6 rounded-3xl p-8",
+                "relative flex flex-col gap-6 rounded-3xl p-10",
                 "border bg-white/[0.02] transition-colors",
                 plan.highlight
                   ? "border-white/15 bg-white/[0.04] ring-1 ring-white/[0.08]"
@@ -141,9 +127,11 @@ export function LandingPlanos() {
                   <span className="text-4xl font-bold tracking-tight text-foreground">
                     {plan.price}
                   </span>
-                  <span className="text-2xl font-bold tracking-tight text-foreground/85">
-                    ,{plan.priceCents}
-                  </span>
+                  {plan.priceCents !== "0" && (
+                    <span className="text-2xl font-bold tracking-tight text-foreground/85">
+                      ,{plan.priceCents}
+                    </span>
+                  )}
                   <span className="ml-1 text-sm text-muted-foreground">
                     {plan.cadence}
                   </span>
@@ -183,8 +171,7 @@ export function LandingPlanos() {
                     : "border border-white/[0.12] bg-white/[0.04] text-foreground hover:bg-white/[0.08]",
                 )}
               >
-                Entrar
-                <span aria-hidden="true">→</span>
+                Assinar
               </Link>
             </article>
           ))}

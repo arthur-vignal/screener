@@ -35,7 +35,7 @@ export function LandingHero() {
       className="relative flex min-h-[100svh] w-full items-center overflow-hidden"
     >
       {/* conteúdo central — bg preto sólido #08090b */}
-      <div className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-col items-center gap-7 px-6 py-32 text-center">
+      <div className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-col items-center gap-7 px-6 py-32 text-center">
         {/* Headline */}
         <h1
           className={cn(
