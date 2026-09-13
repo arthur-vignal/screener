@@ -1,32 +1,33 @@
 "use client";
 
 /**
- * /login — split-screen 1:1 (referência lavikatiyar).
+ * /login — card centralizado (referência preetsuthar17/modern-stunning-sign-in).
  *
- * Layout (2026-09-13):
- *   - Sem top bar (igual referência original)
- *   - 2 colunas (50/50 em desktop, stack em mobile)
- *   - Esquerda: logo "Sulfur" + form Email/Password tradicional
- *     (Welcome! + subtitle + Email + Password + Remember + Forgot + Continue)
- *   - Direita: imagem de montanha full-bleed
+ * Spec (2026-09-13):
+ *   - Layout: card único centralizado vertical e horizontalmente
+ *   - Bg: #000 puro
+ *   - Logo: circle SVG cream no topo
+ *   - Título "Sulfur" em mono (JetBrains Mono via --font-geist-mono)
+ *   - 2 inputs (Email, Password) com rounded-2xl
+ *   - Botão "Sign in" full-width
+ *   - Botão "Continue with Google" full-width
+ *   - "Don't have an account? Sign up, it's free!" embaixo
+ *   - Sem imagem, sem avatares, sem termos, sem split-screen
  */
 
 import { Suspense, useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 
-function LoginForm() {
+function LoginCard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") || "/home";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Block back navigation
   useEffect(() => {
     window.history.pushState({ noback: true }, "");
     function onPop() {
@@ -62,93 +63,106 @@ function LoginForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex w-full max-w-[400px] flex-col gap-6"
+      className="flex w-full max-w-[400px] flex-col gap-3 rounded-2xl border border-white/[0.06] bg-[#0a0a0a] p-8"
     >
-      {/* Welcome + subtitle */}
-      <div className="flex flex-col gap-2">
-        <h2 className="text-[28px] font-bold tracking-[-0.01em] text-white">
-          Welcome!
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Sign in by entering the information below
-        </p>
+      {/* Logo circle */}
+      <div className="mb-2 flex justify-center">
+        <div
+          aria-hidden="true"
+          className="flex h-12 w-12 items-center justify-center rounded-full"
+          style={{
+            background:
+              "repeating-linear-gradient(45deg, #f5e9d3 0 4px, #1a1a1a 4px 8px)",
+            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.10)",
+          }}
+        />
       </div>
+
+      {/* Title */}
+      <h1
+        className="mb-4 text-center text-[24px] font-bold tracking-[-0.01em] text-white"
+        style={{ fontFamily: "var(--font-geist-mono)" }}
+      >
+        Sulfur
+      </h1>
 
       {/* Email */}
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="email" className="text-sm font-medium text-white">
-          Email Address
-        </label>
-        <input
-          id="email"
-          type="email"
-          required
-          autoComplete="email"
-          placeholder="email@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="h-10 w-full rounded-md border border-white/15 bg-transparent px-3 text-sm text-foreground placeholder:text-white/30 focus:border-white/40 focus:outline-none"
-        />
-      </div>
+      <input
+        type="email"
+        required
+        autoComplete="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="h-11 w-full rounded-2xl border border-white/[0.06] bg-[#1a1a1a] px-4 text-sm text-foreground placeholder:text-white/40 focus:border-white/20 focus:outline-none"
+      />
 
       {/* Password */}
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="text-sm font-medium text-white">
-          Password
-        </label>
-        <input
-          id="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="h-10 w-full rounded-md border border-white/15 bg-transparent px-3 text-sm text-foreground placeholder:text-white/30 focus:border-white/40 focus:outline-none"
-        />
-      </div>
+      <input
+        type="password"
+        required
+        autoComplete="current-password"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        className="h-11 w-full rounded-2xl border border-white/[0.06] bg-[#1a1a1a] px-4 text-sm text-foreground placeholder:text-white/40 focus:border-white/20 focus:outline-none"
+      />
 
-      {/* Remember + Forgot */}
-      <div className="flex items-center justify-between text-sm">
-        <label className="inline-flex cursor-pointer items-center gap-2 text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={remember}
-            onChange={(e) => setRemember(e.target.checked)}
-            className="h-4 w-4 cursor-pointer rounded border-white/20 bg-transparent accent-white"
-          />
-          Remember Me
-        </label>
-        <a
-          href="/signup"
-          className="text-muted-foreground transition-colors hover:text-white"
-        >
-          Forgotten Password
-        </a>
-      </div>
-
-      {/* Submit */}
+      {/* Sign in */}
       <button
         type="submit"
         disabled={submitting}
-        className="mt-2 h-11 w-full rounded-md bg-white text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+        className="mt-1 h-11 w-full rounded-2xl bg-[#2a2a2a] text-sm font-medium text-white transition-colors hover:bg-[#333] disabled:opacity-50"
       >
-        {submitting ? "..." : "Continue"}
+        {submitting ? "..." : "Sign in"}
       </button>
 
+      {/* Google */}
+      <a
+        href="/api/auth/google/start"
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#2a2a2a] text-sm font-medium text-white transition-colors hover:bg-[#333]"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 48 48"
+          aria-hidden="true"
+        >
+          <path
+            fill="#FFC107"
+            d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.5-6 7.7-11.3 7.7-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 5.7 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"
+          />
+          <path
+            fill="#FF3D00"
+            d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 5.7 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"
+          />
+          <path
+            fill="#4CAF50"
+            d="M24 44c5.2 0 9.9-2 13.5-5.2l-6.2-5.2c-2 1.5-4.6 2.4-7.3 2.4-5.2 0-9.7-3.2-11.3-7.7l-6.5 5C9.6 39.6 16.2 44 24 44z"
+          />
+          <path
+            fill="#1976D2"
+            d="M43.6 20.5H42V20H24v8h11.3c-.7 2-2.1 3.8-3.9 5l6.2 5.2C42.3 35.3 44 30.1 44 24c0-1.3-.1-2.4-.4-3.5z"
+          />
+        </svg>
+        Continue with Google
+      </a>
+
       {/* Error */}
-      {error && <p className="text-center text-sm text-red-400">{error}</p>}
+      {error && (
+        <p className="text-center text-sm text-red-400">{error}</p>
+      )}
 
       {/* Create account */}
-      <p className="mt-4 text-center text-sm text-muted-foreground">
+      <p className="mt-2 text-center text-sm text-white/60">
         Don&apos;t have an account?{" "}
         <a
           href="/signup"
-          className="font-semibold text-white transition-opacity hover:opacity-80"
+          className="text-white underline underline-offset-2 transition-opacity hover:opacity-80"
         >
-          Create one here
+          Sign up, it&apos;s free!
         </a>
-        .
       </p>
     </form>
   );
@@ -156,39 +170,14 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="relative grid min-h-screen w-full grid-cols-1 bg-black text-foreground lg:grid-cols-2">
-      {/* ESQUERDA — Form 1:1 com referência */}
-      <div className="flex flex-col justify-start px-12 pt-16 pb-12 lg:px-20 lg:pt-24">
-        {/* Logo Sulfur (cream bold ~22px) */}
-        <h1
-          className="mb-20 text-[22px] font-bold tracking-[-0.01em] text-foreground"
-          style={{ color: "#f5e9d3", fontFamily: "var(--font-roboto-slab)" }}
-        >
-          Sulfur
-        </h1>
-
-        <Suspense
-          fallback={
-            <div className="h-96 w-full max-w-[400px] animate-pulse rounded-md bg-white/[0.02]" />
-          }
-        >
-          <LoginForm />
-        </Suspense>
-      </div>
-
-      {/* DIREITA — Imagem de montanha full-bleed */}
-      <div className="relative hidden overflow-hidden bg-black lg:block">
-        <Image
-          src="/login-mountain.jpg"
-          alt="Montanha nevada"
-          fill
-          priority
-          quality={95}
-          sizes="(min-width: 1024px) 50vw, 100vw"
-          className="object-cover"
-          style={{ objectPosition: "center 35%" }}
-        />
-      </div>
+    <main className="flex min-h-screen w-full items-center justify-center bg-black p-4">
+      <Suspense
+        fallback={
+          <div className="h-[480px] w-[400px] animate-pulse rounded-2xl bg-[#0a0a0a]" />
+        }
+      >
+        <LoginCard />
+      </Suspense>
     </main>
   );
 }
