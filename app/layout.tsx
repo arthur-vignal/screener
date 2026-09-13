@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Manrope, Archivo_Black, Roboto_Slab } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/foundation/theme-provider";
 
-// Inter — UI sans (kept)
 const inter = localFont({
   src: "../public/fonts/InterVariable.woff2",
   variable: "--font-inter",
@@ -13,7 +13,6 @@ const inter = localFont({
   weight: "100 900",
 });
 
-// Archia (Bricolage Grotesque substitute) — display, single weight to reduce bundle
 const archia = localFont({
   src: "../public/fonts/archia/Archia-Regular.woff2",
   variable: "--font-archia",
@@ -22,7 +21,6 @@ const archia = localFont({
   weight: "400",
 });
 
-// Geist Mono — primary mono, single weight
 const geistMono = localFont({
   src: "../public/fonts/geist-mono/GeistMono-Regular.woff2",
   variable: "--font-geist-mono",
@@ -31,7 +29,6 @@ const geistMono = localFont({
   weight: "400",
 });
 
-// Commit Mono — secondary mono, single weight
 const commitMono = localFont({
   src: "../public/fonts/commit-mono/CommitMono-Regular.ttf",
   variable: "--font-commit-mono",
@@ -40,7 +37,6 @@ const commitMono = localFont({
   weight: "400",
 });
 
-// Manrope — display + UI typography (Fey UI Kit)
 const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-manrope",
@@ -49,16 +45,14 @@ const manrope = Manrope({
   weight: ["300", "400", "500", "600", "700", "800"],
 });
 
-// Archivo Black — heavyweight display for hero headlines
 const archivoBlack = Archivo_Black({
   subsets: ["latin"],
   variable: "--font-archivo-black",
   display: "swap",
   preload: false,
-  weight: "400",
+  weight: ["400"],
 });
 
-// Roboto Slab — landing hero (serif slab, leve, caloroso)
 const robotoSlab = Roboto_Slab({
   subsets: ["latin"],
   variable: "--font-roboto-slab",
@@ -81,9 +75,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${archia.variable} ${geistMono.variable} ${commitMono.variable} ${manrope.variable} ${archivoBlack.variable} ${robotoSlab.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${inter.variable} ${archia.variable} ${geistMono.variable} ${commitMono.variable} ${manrope.variable} ${archivoBlack.variable} ${robotoSlab.variable} h-full antialiased`}
     >
-      <body className="min-h-full text-ink">{children}</body>
+      <body className="min-h-full text-ink">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

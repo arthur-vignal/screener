@@ -143,8 +143,47 @@
   --warning: #f6c86a;
 }
 
+/* Dark theme — default. Ativado por `:root.dark` (next-themes) OU via
+   media query prefers-color-scheme quando nenhuma classe/data-theme é
+   definida (mantém comportamento legado). */
+:root.dark,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #151619;
+  --foreground: #eeeff1;
+  --card: #101116;
+  --card-foreground: #eeeff1;
+  --popover: #131419;
+  --popover-foreground: #eeeff1;
+  --primary: #489ffa;
+  --primary-foreground: #08090b;
+  --secondary: #1a1b20;
+  --secondary-foreground: #eeeff1;
+  --muted: #16181c;
+  --muted-foreground: #7d8b96;
+  --accent: #1f2427;
+  --accent-foreground: #eeeff1;
+  --destructive: #d84f68;
+  --border: rgba(238, 239, 241, 0.08);
+  --input: rgba(238, 239, 241, 0.12);
+  --ring: #489ffa;
+  --chart-1: #489ffa;
+  --chart-2: #4dbe95;
+  --chart-3: #8085ff;
+  --chart-4: #c88fcf;
+  --chart-5: #f6c86a;
+  --sidebar: #101116;
+  --sidebar-foreground: #eeeff1;
+  --sidebar-primary: #489ffa;
+  --sidebar-primary-foreground: #070709;
+  --sidebar-accent: #1a1b20;
+  --sidebar-accent-foreground: #eeeff1;
+  --sidebar-border: rgba(238, 239, 241, 0.08);
+  --sidebar-ring: #489ffa;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root:not(.light) {
+  :root:not(.light):not(.dark):not([data-theme]) {
     color-scheme: dark;
     --background: #151619;
     --foreground: #eeeff1;
@@ -178,6 +217,46 @@
     --sidebar-border: rgba(238, 239, 241, 0.08);
     --sidebar-ring: #489ffa;
   }
+}
+
+/* Light theme — opt-in via toggle. Cards são MAIS CLAROS que o bg
+   (efeito de elevação/relevo, inversão do dark onde card é recesso).
+   Hairlines e inset highlights calibrados pra dar peso/profundidade
+   sem virar glass pesado. */
+:root.light,
+:root[data-theme="light"] {
+  color-scheme: light;
+  --background: #F4F4F2;          /* off-white quente, base do bg */
+  --foreground: #0A0A0C;          /* texto primário */
+  --card: #FFFFFF;                /* card branco sólido (topo do gradient) */
+  --card-foreground: #0A0A0C;
+  --popover: #FFFFFF;
+  --popover-foreground: #0A0A0C;
+  --primary: #2563EB;             /* azul saturado — melhor contraste em claro */
+  --primary-foreground: #FFFFFF;
+  --secondary: #EDEAE3;
+  --secondary-foreground: #0A0A0C;
+  --muted: #EDEAE3;
+  --muted-foreground: #6B7280;
+  --accent: #F5F4F1;
+  --accent-foreground: #0A0A0C;
+  --destructive: #DC2626;
+  --border: rgba(10, 10, 12, 0.08);       /* hairline escuro sutil */
+  --input: rgba(10, 10, 12, 0.12);
+  --ring: #2563EB;
+  --chart-1: #2563EB;
+  --chart-2: #059669;
+  --chart-3: #6366F1;
+  --chart-4: #A855F7;
+  --chart-5: #D97706;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0A0A0C;
+  --sidebar-primary: #2563EB;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EDEAE3;
+  --sidebar-accent-foreground: #0A0A0C;
+  --sidebar-border: rgba(10, 10, 12, 0.08);
+  --sidebar-ring: #2563EB;
 }
 
 @layer base {
@@ -249,7 +328,30 @@ html {
    Tailwind CDN no Stitch define bg-background = #08090b, MAS o inline
    style do body sobrescreve pra rgb(21,22,25). Peguei o valor exato
    do que renderizou de verdade no browser do Stitch. */
+/* Body background — gradiente metálico fixo (não rola junto com a página).
+   Dark: radial highlight sutil + linear diagonal com falloff pra escurecer
+   (mantém look original).
+   Light: radial branco no topo (fonte de luz) + linear off-white pra
+   profundidade sutil sem virar cinza chato. Variantes por `[data-theme]`. */
 body {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(circle at 50% -20%, rgba(255, 255, 255, 0.06) 0%, transparent 60%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.025) 0%, rgba(255, 255, 255, 0.005) 40%, rgba(0, 0, 0, 0.45) 100%);
+  background-attachment: fixed;
+}
+
+:root.light body,
+:root[data-theme="light"] body {
+  background-color: #F4F4F2;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(255, 255, 255, 0.95) 0%, transparent 55%),
+    linear-gradient(180deg, #FFFFFF 0%, #F4F4F2 35%, #EDEAE3 100%);
+  background-attachment: fixed;
+}
+
+:root.dark body,
+:root[data-theme="dark"] body {
   background-color: #151619;
   background-image:
     radial-gradient(circle at 50% -20%, rgba(255, 255, 255, 0.06) 0%, transparent 60%),
@@ -258,15 +360,12 @@ body {
 }
 
 /* .fey-card — substitui cards antigos com bg-[#101116] border-white/10.
-   Cores do Google Stitch:
-     - Topo: rgb(14, 16, 20) = #0e1014
-     - Base: rgb(9, 10, 13)   = #090a0d
-   Card é MAIS ESCURO que o body (#08090b) → efeito layer/recesso.
-   Gradient vertical + 2-layer box-shadow pra profundidade. SEM borda.
-
-   Override `.fey-card--flat` zera o box-shadow (cards internos a um
-   container pai que já tem sombra; ou quando `flush` remove o fundo
-   próprio). */
+   Dark: gradient vertical escuro + 2-layer box-shadow pra profundidade,
+   SEM borda. Card mais escuro que body → efeito layer/recesso.
+   Light: gradient vertical branco → off-white, card MAIS CLARO que o
+   body → efeito de elevação/relevo. Hairline escuro sutil pra
+   definição + inset highlight branco no topo (detalhe fresnel/cristal
+   que dá peso). Sombra externa ampliada pra flutuar. */
 .fey-card {
   background: linear-gradient(180deg, #0e1014 0%, #090a0d 100%);
   box-shadow:
@@ -277,17 +376,42 @@ body {
   box-shadow: none;
 }
 
-/* .fey-card-sm — variante pra sub-cards (lista de holdings, news items).
-   Mesmas cores do card principal, sombras mais suaves. */
+/* Light — card branco com leve relevo */
+:root.light .fey-card,
+:root[data-theme="light"] .fey-card {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F5F4F1 100%);
+  border: 1px solid rgba(10, 10, 12, 0.06);
+  box-shadow:
+    rgba(10, 10, 12, 0.06) 0px 1px 2px inset,                    /* inset highlight (fresnel) */
+    rgba(10, 10, 12, 0.04) 0px 1px 2px,                          /* sombra 1: batida dura */
+    rgba(10, 10, 12, 0.08) 0px 12px 32px;                        /* sombra 2: difusa externa */
+}
+:root.light .fey-card--flat,
+:root[data-theme="light"] .fey-card--flat {
+  box-shadow:
+    rgba(10, 10, 12, 0.06) 0px 1px 2px inset;
+}
+
+/* .fey-card-sm — variante pra sub-cards (lista de holdings, news items). */
 .fey-card-sm {
   background: linear-gradient(180deg, #0e1014 0%, #090a0d 100%);
   box-shadow:
     rgba(0, 0, 0, 0.35) 0px 2px 6px,
     rgba(0, 0, 0, 0.2) 0px 1px 2px;
 }
+:root.light .fey-card-sm,
+:root[data-theme="light"] .fey-card-sm {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F5F4F1 100%);
+  border: 1px solid rgba(10, 10, 12, 0.06);
+  box-shadow:
+    rgba(10, 10, 12, 0.05) 0px 1px 1px inset,
+    rgba(10, 10, 12, 0.04) 0px 2px 6px;
+}
 
 /* .fey-dock — dock flutuante com efeito cristal: inset highlight no
-   topo (rim-light) + sombra externa grande. */
+   topo (rim-light) + sombra externa grande. Dark: backdrop escuro
+   semi-transparente. Light: backdrop branco semi-transparente com
+   blur mais agressivo pra continuar "liquid" sobre bg claro. */
 .fey-dock {
   background: rgba(10, 11, 15, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -296,6 +420,39 @@ body {
     rgba(0, 0, 0, 0.7) 0px 12px 32px;
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+}
+:root.light .fey-dock,
+:root[data-theme="light"] .fey-dock {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(10, 10, 12, 0.08);
+  box-shadow:
+    rgba(255, 255, 255, 0.9) 0px 1px 0px inset,                  /* highlight cristal no topo */
+    rgba(10, 10, 12, 0.08) 0px 12px 32px;
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+}
+
+/* .fey-dock-sm — variante menor pra chips/pills (theme toggle, badges).
+   Mesmo lenguaje visual mas sem sombra externa pesada — sombra sutil
+   é suficiente pra dar peso nesse tamanho. */
+.fey-dock-sm {
+  background: rgba(10, 11, 15, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow:
+    rgba(255, 255, 255, 0.08) 0px 1px 0px inset,
+    rgba(0, 0, 0, 0.4) 0px 4px 12px;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+:root.light .fey-dock-sm,
+:root[data-theme="light"] .fey-dock-sm {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(10, 10, 12, 0.08);
+  box-shadow:
+    rgba(255, 255, 255, 0.9) 0px 1px 0px inset,
+    rgba(10, 10, 12, 0.06) 0px 4px 12px;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
 }
 /*
  * Aplicado no container raiz de /asset/[symbol]/* via

@@ -32,6 +32,7 @@ import type { JSX } from "react";
 import { AnimatedFloatingDock } from "@/components/foundation/sulfur-dock";
 import { StaggerOnMount, staggerParentVariants } from "@/components/foundation/stagger";
 import { StatusBar } from "@/components/foundation/status-bar";
+import { ThemeToggle } from "@/components/foundation/theme-toggle";
 import { TypedGreeting } from "@/components/foundation/typed-greeting";
 import { DayHighlightCard } from "@/components/home/day-highlight-card";
 import { NewsFeed, type NewsItem } from "@/components/home/news-feed";
@@ -402,10 +403,13 @@ export default function HomePage(): JSX.Element {
         className="w-[90%] mx-auto py-6 pb-32"
       >
         {/* Header */}
-        <div className="flex items-baseline justify-between mb-6">
-          <TypedGreeting name={userName} size="lg" />
-          <StatusBar />
-        </div>
+                <div className="flex items-center justify-between mb-6 gap-4">
+                  <TypedGreeting name={userName} size="lg" />
+                  <div className="flex items-center gap-4">
+                    <StatusBar />
+                    <ThemeToggle />
+                  </div>
+                </div>
 
         {/* 3-col grid */}
         <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)_360px] gap-5 items-stretch">
