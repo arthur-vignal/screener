@@ -89,20 +89,23 @@ export default function LoginPage() {
 
         {/* DIREITA — Logo + imagem full-bleed */}
         <div className="relative hidden lg:block overflow-hidden bg-black">
-          {/* Imagem full-bleed */}
+          {/* Imagem full-bleed — crop um pouco acima do centro pra
+              mostrar mais céu (referência lavikatiyar) */}
           <Image
             src="/login-mountain.jpg"
             alt="Montanha nevada"
             fill
             priority
+            quality={95}
             sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-cover object-center"
+            className="object-cover"
+            style={{ objectPosition: "center 35%" }}
           />
 
           {/* Logo Sulfur sobreposto */}
-          <div className="absolute left-12 top-12 z-10">
+          <div className="absolute left-8 top-8 z-10">
             <span
-              className="font-display font-bold tracking-[-0.02em] text-[28px] lg:text-[32px]"
+              className="font-sans font-bold tracking-[-0.02em] text-[24px] lg:text-[26px]"
               style={{ color: "#f5e9d3" }}
             >
               Sulfur
