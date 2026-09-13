@@ -27,6 +27,7 @@ const PUBLIC_PREFIXES = [
   "/asset",
   "/index", // /index/[tickerindex] é público
   "/api/auth",
+  "/api/health", // healthcheck do Railway — sem auth pra passar no probe
   "/api/news", // feeds públicos (Google News etc)
   "/_next",
   "/favicon",
@@ -50,8 +51,15 @@ export function middleware(req: NextRequest) {
   const sessionCookie = req.cookies.get(SESSION_COOKIE);
 
   if (!sessionCookie?.value) {
-    // Sem sessão → redireciona pra /login com param `next` pra
-    // retornar depois do login.
+    // Sem sessão.
+    if (pathname.startsWith("/api/")) {
+      // APIs: retornar 401 JSON (cliente SWR/fetch reconhece o status)
+      return new NextResponse(
+        JSON.stringify({ error: "unauthorized" }),
+        { status: 401, headers: { "content-type": "application/json" } },
+      );
+    }
+    // Páginas: redireciona pra /login com param `next` pra retornar.
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
