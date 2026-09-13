@@ -37,12 +37,19 @@ export function LoginModal({
   onClose,
   onSuccess,
   showGoogleOnlyOnFirstStage = false,
+  embedded = false,
 }: {
   open: boolean;
   initialMode?: Mode;
   onClose: () => void;
   onSuccess?: (user: { username: string }) => void;
   showGoogleOnlyOnFirstStage?: boolean;
+  /**
+   * Quando true (split-screen layout), o modal não cobre a tela inteira:
+   * remove o overlay fixo, backdrop-filter e halo central. Renderiza
+   * contido no pai (que controla o layout 2-col).
+   */
+  embedded?: boolean;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [stage, setStage] = useState<Stage>("name");
@@ -158,35 +165,47 @@ export function LoginModal({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) onClose();
+            if (e.target === e.currentTarget && !embedded) onClose();
           }}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center px-6 py-8"
-          style={{
-            background: "rgba(10, 10, 12, 0.55)",
-            backdropFilter: "blur(48px) saturate(140%)",
-            WebkitBackdropFilter: "blur(48px) saturate(140%)",
-          }}
+          className={
+            embedded
+              ? "relative z-[100] flex w-full flex-col items-center justify-center px-2 py-4"
+              : "fixed inset-0 z-[100] flex flex-col items-center justify-center px-6 py-8"
+          }
+          style={
+            embedded
+              ? undefined
+              : {
+                  background: "rgba(10, 10, 12, 0.55)",
+                  backdropFilter: "blur(48px) saturate(140%)",
+                  WebkitBackdropFilter: "blur(48px) saturate(140%)",
+                }
+          }
         >
-          {/* Center radial halo */}
-          <div
-            aria-hidden
-            className="pointer-events-none fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-            style={{
-              width: 520,
-              height: 520,
-              background:
-                "radial-gradient(circle, rgba(167,139,250,0.22) 0%, rgba(232,147,91,0.12) 35%, transparent 65%)",
-              filter: "blur(20px)",
-            }}
-          />
+          {/* Center radial halo — só no modo standalone */}
+          {!embedded && (
+            <div
+              aria-hidden
+              className="pointer-events-none fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+              style={{
+                width: 520,
+                height: 520,
+                background:
+                  "radial-gradient(circle, rgba(167,139,250,0.22) 0%, rgba(232,147,91,0.12) 35%, transparent 65%)",
+                filter: "blur(20px)",
+              }}
+            />
+          )}
 
-          <button
-            onClick={onClose}
-            aria-label="Fechar"
-            className="absolute top-5 right-5 text-white/50 hover:text-white transition-colors z-10 cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {!embedded && (
+            <button
+              onClick={onClose}
+              aria-label="Fechar"
+              className="absolute top-5 right-5 text-white/50 hover:text-white transition-colors z-10 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
 
           {/* Header */}
           <div className="w-full max-w-[440px] text-center mb-8">

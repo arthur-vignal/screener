@@ -40,7 +40,7 @@ export function LandingHero() {
         <h1
           className={cn(
             "max-w-[1000px] text-balance",
-            "leading-[1.05] tracking-[-0.02em]",
+            "leading-[0.95] tracking-[-0.02em]",
             "text-[clamp(2.5rem,7vw,5.25rem)]",
           )}
           style={{ fontFamily: "var(--font-roboto-slab)", color: CREAM }}
@@ -50,22 +50,11 @@ export function LandingHero() {
           <span className="block font-medium italic">{HEADLINE_LINE_3}</span>
         </h1>
 
-        {/* Subtítulo */}
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.35 }}
-          className="max-w-xl text-pretty text-base text-muted-foreground lg:text-lg"
-        >
-          Análise fundamentalista, drilldown quant e acompanhamento de
-          carteira num só lugar. Sem paywall de dados e sem ruído.
-        </motion.p>
-
         {/* CTA único */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
         >
           <Link
             href="/login"
