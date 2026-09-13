@@ -23,9 +23,9 @@ export function LandingHeadline() {
   return (
     <h1
       className={cn(
-        "max-w-3xl text-center",
-        "font-medium leading-[1.1] tracking-[-0.01em]",
-        "text-[clamp(2.25rem,7vw,5.5rem)] text-balance",
+        "text-center whitespace-nowrap",
+        "font-medium leading-[1.1] tracking-[-0.02em]",
+        "text-[clamp(2rem,5.5vw,4.5rem)]",
       )}
       style={{
         fontFamily: "var(--font-roboto-slab)",

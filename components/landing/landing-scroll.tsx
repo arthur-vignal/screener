@@ -48,7 +48,7 @@ export function LandingScroll() {
   const overlayOpacity = useTransform(scrollYProgress, [0, 0.8], [0.4, 0.85]);
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef} className="relative w-full overflow-x-hidden">
       {/* Background full-viewport FIXO — não rola, só zoom interno */}
       <motion.div
         aria-hidden="true"
