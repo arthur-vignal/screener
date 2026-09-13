@@ -15,9 +15,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
+import Image from "next/image";
 import { LoginModal } from "@/components/login/login-modal";
 import { WelcomeScreen } from "@/components/login/welcome-screen";
-import { cn } from "@/lib/utils";
 
 type Phase = "form" | "welcome" | "exit";
 
@@ -87,87 +87,26 @@ export default function LoginPage() {
           </AnimatePresence>
         </div>
 
-        {/* DIREITA — Visual de promo */}
-        <div
-          className={cn(
-            "relative hidden lg:flex lg:items-center lg:justify-center",
-            "overflow-hidden px-12 py-16",
-          )}
-          style={{
-            background:
-              "linear-gradient(135deg, #0c0d10 0%, #15171c 50%, #08090b 100%)",
-          }}
-        >
-          {/* dot pattern sutil */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 opacity-[0.20]"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.10) 1px, transparent 0)",
-              backgroundSize: "24px 24px",
-            }}
+        {/* DIREITA — Logo + imagem full-bleed */}
+        <div className="relative hidden lg:block overflow-hidden bg-black">
+          {/* Imagem full-bleed */}
+          <Image
+            src="/login-mountain.jpg"
+            alt="Montanha nevada"
+            fill
+            priority
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            className="object-cover object-center"
           />
 
-          {/* Glow radial central */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(circle at 70% 30%, rgba(72,159,250,0.18) 0%, rgba(8,9,11,0) 50%)",
-            }}
-          />
-
-          {/* Headline + sub */}
-          <div className="relative z-10 flex max-w-md flex-col gap-6">
-            <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-              Sulfur · Mercado Brasileiro
-            </span>
-            <h2
-              className="text-balance text-[clamp(2rem,3.5vw,2.75rem)] leading-[1.05] tracking-[-0.02em]"
-              style={{
-                fontFamily: "var(--font-roboto-slab)",
-                color: "#f5e9d3",
-              }}
+          {/* Logo Sulfur sobreposto */}
+          <div className="absolute left-12 top-12 z-10">
+            <span
+              className="font-display font-bold tracking-[-0.02em] text-[28px] lg:text-[32px]"
+              style={{ color: "#f5e9d3" }}
             >
-              <span className="block font-medium">Análise que</span>
-              <span className="block font-black">cabe numa</span>
-              <span className="block font-medium italic">só tela.</span>
-            </h2>
-            <p className="max-w-sm text-pretty text-base leading-relaxed text-muted-foreground">
-              P/L, ROE, valuation bands do subsetor, forecast 6m
-              calibrado e acompanhamento de carteira — sem paywall de
-              dados e sem ruído.
-            </p>
-
-            {/* Stats em 3-col */}
-            <div className="mt-4 grid grid-cols-3 gap-4 border-t border-white/[0.06] pt-6">
-              <div className="flex flex-col gap-1">
-                <span className="text-2xl font-bold tracking-tight text-foreground">
-                  781
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Ações cobertas
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-2xl font-bold tracking-tight text-foreground">
-                  63Q
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Histórico fundamentalista
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-2xl font-bold tracking-tight text-foreground">
-                  6m
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Forecast quantitativo
-                </span>
-              </div>
-            </div>
+              Sulfur
+            </span>
           </div>
         </div>
       </div>
