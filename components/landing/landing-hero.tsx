@@ -20,11 +20,13 @@
  *   - Asterisco é sufixo da palavra gigante (mesmo padrão do print).
  *
  * Background:
- *   - public/landing-bg.jpg (placeholder diagonal escuro gerado via
- *     scripts/placeholders/gen-landing-bg.js até o .svg real chegar).
- *     Trocar somente o arquivo, manter o nome + path.
+ *   - public/landing-bg.png (4096×2288, ~3.7MB): ilha suspensa com céu
+ *     escuro à esquerda e nuvens douradas à direita. Posicionada em
+ *     `25% 50%` pra focar o céu escuro na viewport (texto fica em zona
+ *     de alto contraste).
  *   - background-attachment fixed pra não rolar junto com a página.
- *   - Overlay gradiente escuro no bottom-left pra dar contraste pro texto.
+ *   - Overlay duplo: vignette lateral-esquerda (escurece onde o texto fica)
+ *     + bottom-fade (contraste geral). Compensa a zona dourada à direita.
  *
  * Responsivo:
  *   - ≥ lg: 2-coluna (Sulfur* | texto+CTA), alinhados no rodapé.
@@ -37,22 +39,24 @@ import { cn } from "@/lib/utils";
 export function LandingHero() {
   return (
     <section className="relative isolate min-h-[100svh] w-full overflow-hidden bg-black text-foreground">
-      {/* Background image full-screen */}
+      {/* Background image full-screen, deslocada pra esquerda */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0 -z-10 bg-cover bg-no-repeat"
         style={{
-          backgroundImage: "url(/landing-bg.jpg)",
+          backgroundImage: "url(/landing-bg.webp)",
+          backgroundPosition: "25% 50%",
           backgroundAttachment: "fixed",
         }}
       />
-      {/* Overlay pra dar contraste pro texto */}
+      {/* Overlay duplo: vignette esquerda + bottom-fade */}
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10"
         style={{
           background:
-            "linear-gradient(180deg, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.85) 100%)",
+            "linear-gradient(270deg, rgba(0,0,0,0.70) 0%, rgba(0,0,0,0.25) 45%, rgba(0,0,0,0) 70%), " +
+            "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.85) 100%)",
         }}
       />
 
